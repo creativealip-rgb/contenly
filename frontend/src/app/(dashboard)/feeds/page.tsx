@@ -1,0 +1,365 @@
+'use client'
+
+import { useState } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table'
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select'
+import {
+    Plus,
+    Rss,
+    MoreHorizontal,
+    Play,
+    Pause,
+    Trash2,
+    Edit,
+    RefreshCw,
+    CheckCircle2,
+    XCircle,
+    Clock
+} from 'lucide-react'
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+
+const mockFeeds = [
+    {
+        id: '1',
+        name: 'TechCrunch',
+        url: 'https://techcrunch.com/feed/',
+        status: 'active',
+        pollingInterval: 15,
+        lastPolled: new Date(Date.now() - 1000 * 60 * 5),
+        itemsFetched: 127,
+        autoPublish: false,
+    },
+    {
+        id: '2',
+        name: 'The Verge',
+        url: 'https://www.theverge.com/rss/index.xml',
+        status: 'active',
+        pollingInterval: 30,
+        lastPolled: new Date(Date.now() - 1000 * 60 * 15),
+        itemsFetched: 89,
+        autoPublish: true,
+    },
+    {
+        id: '3',
+        name: 'Hacker News',
+        url: 'https://news.ycombinator.com/rss',
+        status: 'paused',
+        pollingInterval: 60,
+        lastPolled: new Date(Date.now() - 1000 * 60 * 60 * 2),
+        itemsFetched: 342,
+        autoPublish: false,
+    },
+    {
+        id: '4',
+        name: 'Product Hunt',
+        url: 'https://www.producthunt.com/feed',
+        status: 'error',
+        pollingInterval: 30,
+        lastPolled: new Date(Date.now() - 1000 * 60 * 60 * 24),
+        itemsFetched: 56,
+        autoPublish: false,
+        error: 'Connection timeout',
+    },
+]
+
+const mockPendingItems = [
+    { id: '1', feed: 'TechCrunch', title: 'OpenAI Announces New GPT-5 Model', publishedAt: new Date(Date.now() - 1000 * 60 * 30) },
+    { id: '2', feed: 'The Verge', title: 'Apple Vision Pro Gets Major Update', publishedAt: new Date(Date.now() - 1000 * 60 * 45) },
+    { id: '3', feed: 'TechCrunch', title: 'Startup Raises $50M in Series B', publishedAt: new Date(Date.now() - 1000 * 60 * 60) },
+]
+
+export default function FeedsPage() {
+    const [isAddOpen, setIsAddOpen] = useState(false)
+
+    const getStatusBadge = (status: string) => {
+        switch (status) {
+            case 'active':
+                return <Badge className="bg-green-500/10 text-green-600 hover:bg-green-500/20"><CheckCircle2 className="h-3 w-3 mr-1" />Active</Badge>
+            case 'paused':
+                return <Badge variant="secondary"><Pause className="h-3 w-3 mr-1" />Paused</Badge>
+            case 'error':
+                return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Error</Badge>
+            default:
+                return <Badge variant="outline">{status}</Badge>
+        }
+    }
+
+    const formatTimeAgo = (date: Date) => {
+        const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
+        if (seconds < 60) return `${seconds}s ago`
+        const minutes = Math.floor(seconds / 60)
+        if (minutes < 60) return `${minutes}m ago`
+        const hours = Math.floor(minutes / 60)
+        if (hours < 24) return `${hours}h ago`
+        const days = Math.floor(hours / 24)
+        return `${days}d ago`
+    }
+
+    return (
+        <div className="space-y-6">
+            {/* Page Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold">RSS Feeds</h1>
+                    <p className="text-muted-foreground">
+                        Manage your RSS feed sources and pending items.
+                    </p>
+                </div>
+                <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+                    <DialogTrigger asChild>
+                        <Button className="bg-gradient-to-r from-violet-600 to-indigo-600">
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Feed
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Add RSS Feed</DialogTitle>
+                            <DialogDescription>
+                                Add a new RSS feed to automatically fetch content.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="name">Feed Name</Label>
+                                <Input id="name" placeholder="e.g., TechCrunch" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="feedUrl">Feed URL</Label>
+                                <Input id="feedUrl" placeholder="https://example.com/rss" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="interval">Polling Interval</Label>
+                                <Select defaultValue="15">
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="5">Every 5 minutes</SelectItem>
+                                        <SelectItem value="15">Every 15 minutes</SelectItem>
+                                        <SelectItem value="30">Every 30 minutes</SelectItem>
+                                        <SelectItem value="60">Every hour</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="targetSite">Target WordPress Site</Label>
+                                <Select defaultValue="site1">
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="site1">myblog.com</SelectItem>
+                                        <SelectItem value="site2">techsite.wordpress.com</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancel</Button>
+                            <Button className="bg-gradient-to-r from-violet-600 to-indigo-600">Add Feed</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </div>
+
+            {/* Stats */}
+            <div className="grid gap-4 md:grid-cols-4">
+                <Card>
+                    <CardContent className="pt-6">
+                        <div className="flex items-center gap-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-violet-500/10">
+                                <Rss className="h-6 w-6 text-violet-600" />
+                            </div>
+                            <div>
+                                <p className="text-2xl font-bold">4</p>
+                                <p className="text-sm text-muted-foreground">Total Feeds</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardContent className="pt-6">
+                        <div className="flex items-center gap-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-500/10">
+                                <CheckCircle2 className="h-6 w-6 text-green-600" />
+                            </div>
+                            <div>
+                                <p className="text-2xl font-bold">2</p>
+                                <p className="text-sm text-muted-foreground">Active</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardContent className="pt-6">
+                        <div className="flex items-center gap-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-500/10">
+                                <Clock className="h-6 w-6 text-amber-600" />
+                            </div>
+                            <div>
+                                <p className="text-2xl font-bold">3</p>
+                                <p className="text-sm text-muted-foreground">Pending Items</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardContent className="pt-6">
+                        <div className="flex items-center gap-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/10">
+                                <RefreshCw className="h-6 w-6 text-blue-600" />
+                            </div>
+                            <div>
+                                <p className="text-2xl font-bold">614</p>
+                                <p className="text-sm text-muted-foreground">Items Fetched</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Feeds Table */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Your Feeds</CardTitle>
+                    <CardDescription>Manage your RSS feed sources</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Name</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Interval</TableHead>
+                                <TableHead>Last Polled</TableHead>
+                                <TableHead>Items</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {mockFeeds.map((feed) => (
+                                <TableRow key={feed.id}>
+                                    <TableCell>
+                                        <div>
+                                            <p className="font-medium">{feed.name}</p>
+                                            <p className="text-xs text-muted-foreground truncate max-w-[200px]">{feed.url}</p>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>{getStatusBadge(feed.status)}</TableCell>
+                                    <TableCell>{feed.pollingInterval}m</TableCell>
+                                    <TableCell>{formatTimeAgo(feed.lastPolled)}</TableCell>
+                                    <TableCell>{feed.itemsFetched}</TableCell>
+                                    <TableCell className="text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon">
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuItem>
+                                                    <RefreshCw className="h-4 w-4 mr-2" />
+                                                    Poll Now
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem>
+                                                    <Edit className="h-4 w-4 mr-2" />
+                                                    Edit
+                                                </DropdownMenuItem>
+                                                {feed.status === 'active' ? (
+                                                    <DropdownMenuItem>
+                                                        <Pause className="h-4 w-4 mr-2" />
+                                                        Pause
+                                                    </DropdownMenuItem>
+                                                ) : (
+                                                    <DropdownMenuItem>
+                                                        <Play className="h-4 w-4 mr-2" />
+                                                        Resume
+                                                    </DropdownMenuItem>
+                                                )}
+                                                <DropdownMenuItem className="text-red-600">
+                                                    <Trash2 className="h-4 w-4 mr-2" />
+                                                    Delete
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+
+            {/* Pending Items */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Pending Items</CardTitle>
+                    <CardDescription>Items fetched but not yet processed</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Title</TableHead>
+                                <TableHead>Source</TableHead>
+                                <TableHead>Published</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {mockPendingItems.map((item) => (
+                                <TableRow key={item.id}>
+                                    <TableCell className="font-medium max-w-[400px] truncate">
+                                        {item.title}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge variant="outline">{item.feed}</Badge>
+                                    </TableCell>
+                                    <TableCell>{formatTimeAgo(item.publishedAt)}</TableCell>
+                                    <TableCell className="text-right">
+                                        <Button size="sm" className="bg-gradient-to-r from-violet-600 to-indigo-600">
+                                            Process
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </div>
+    )
+}
