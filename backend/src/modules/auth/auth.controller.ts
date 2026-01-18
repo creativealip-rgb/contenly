@@ -1,0 +1,74 @@
+import { Controller, Post, Body, Get, Headers, Res, Req, All, HttpCode, HttpStatus } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Request, Response } from 'express';
+import { AuthService } from './auth.service';
+import { RegisterDto, LoginDto, ForgotPasswordDto, ResetPasswordDto } from './dto';
+import { auth } from '../../auth/auth.config';
+import { toNodeHandler } from 'better-auth/node';
+
+@ApiTags('auth')
+@Controller('auth')
+export class AuthController {
+    constructor(private authService: AuthService) { }
+
+    // Handle all Better Auth routes (OAuth, callbacks, etc.)
+    @All('*')
+    async handleBetterAuth(@Req() req: Request, @Res() res: Response) {
+        // Let Better Auth handle OAuth and other built-in routes
+        const handler = toNodeHandler(auth);
+        return handler(req, res);
+    }
+
+    @Post('register')
+    @ApiOperation({ summary: 'Register a new user with email and password' })
+    @ApiResponse({ status: 201, description: 'User registered successfully' })
+    @ApiResponse({ status: 400, description: 'Bad request' })
+    async register(@Body() dto: RegisterDto) {
+        return this.authService.signUp({
+            email: dto.email,
+            password: dto.password,
+            name: dto.fullName,
+        });
+    }
+
+    @Post('login')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Login with email and password' })
+    @ApiResponse({ status: 200, description: 'Login successful' })
+    @ApiResponse({ status: 401, description: 'Invalid credentials' })
+    async login(@Body() dto: LoginDto) {
+        return this.authService.signIn({
+            email: dto.email,
+            password: dto.password,
+        });
+    }
+
+    @Post('logout')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Logout user' })
+    async logout(@Headers('authorization') authHeader: string) {
+        const token = authHeader?.replace('Bearer ', '');
+        return this.authService.signOut(token);
+    }
+
+    @Get('session')
+    @ApiOperation({ summary: 'Get current session' })
+    async getSession(@Headers('authorization') authHeader: string) {
+        const token = authHeader?.replace('Bearer ', '');
+        return this.authService.getSession(token);
+    }
+
+    @Post('forgot-password')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Request password reset email' })
+    async forgotPassword(@Body() dto: ForgotPasswordDto) {
+        return this.authService.forgotPassword(dto.email);
+    }
+
+    @Post('reset-password')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Reset password with token' })
+    async resetPassword(@Body() dto: ResetPasswordDto) {
+        return this.authService.resetPassword(dto.token, dto.password);
+    }
+}

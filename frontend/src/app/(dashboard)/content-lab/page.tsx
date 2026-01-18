@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -87,25 +87,29 @@ const mockFeedArticles: Record<string, Array<{
         { id: 'hn3', title: 'The State of Rust in 2026: A Comprehensive Review', url: 'https://news.ycombinator.com/item3', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 3), excerpt: 'How Rust has evolved and where it\'s heading...' },
         { id: 'hn4', title: 'Building a Compiler from Scratch in Go', url: 'https://news.ycombinator.com/item4', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 5), excerpt: 'A step-by-step guide to understanding compilers...' },
         { id: 'hn5', title: 'How We Reduced Our Cloud Costs by 80%', url: 'https://news.ycombinator.com/item5', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 8), excerpt: 'Our journey from $50k to $10k monthly spend...' },
-        { id: 'hn6', title: 'The Future of WebAssembly: Beyond the Browser', url: 'https://news.ycombinator.com/item6', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 12), excerpt: 'WASM is finding new homes in serverless...' },
-        { id: 'hn7', title: 'Understanding Zero-Knowledge Proofs Simply', url: 'https://news.ycombinator.com/item7', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 16), excerpt: 'A beginner-friendly explanation of ZK proofs...' },
-        { id: 'hn8', title: 'My Experience Running a Solo SaaS for 5 Years', url: 'https://news.ycombinator.com/item8', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 22), excerpt: 'Lessons learned from bootstrapping alone...' },
-        { id: 'hn9', title: 'A Deep Dive into Linux Kernel Networking', url: 'https://news.ycombinator.com/item9', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 28), excerpt: 'Understanding how packets flow through the kernel...' },
-        { id: 'hn10', title: 'Why I Switched from TypeScript Back to JavaScript', url: 'https://news.ycombinator.com/item10', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 35), excerpt: 'A controversial take on type systems in JS...' },
+        { id: 'hn6', title: 'The Future of WebAssembly: Beyond the Browser', url: 'https://news.ycombinator.com/item6', publishedAt: new Date('2024-01-17T08:00:00Z'), excerpt: 'WASM is finding new homes in serverless...' },
+        { id: 'hn7', title: 'Understanding Zero-Knowledge Proofs Simply', url: 'https://news.ycombinator.com/item7', publishedAt: new Date('2024-01-17T05:00:00Z'), excerpt: 'A beginner-friendly explanation of ZK proofs...' },
+        { id: 'hn8', title: 'My Experience Running a Solo SaaS for 5 Years', url: 'https://news.ycombinator.com/item8', publishedAt: new Date('2024-01-16T22:00:00Z'), excerpt: 'Lessons learned from bootstrapping alone...' },
+        { id: 'hn9', title: 'A Deep Dive into Linux Kernel Networking', url: 'https://news.ycombinator.com/item9', publishedAt: new Date('2024-01-16T18:00:00Z'), excerpt: 'Understanding how packets flow through the kernel...' },
+        { id: 'hn10', title: 'Why I Switched from TypeScript Back to JavaScript', url: 'https://news.ycombinator.com/item10', publishedAt: new Date('2024-01-16T14:00:00Z'), excerpt: 'A controversial take on type systems in JS...' },
     ],
     '4': [
-        { id: 'ph1', title: 'AI Resume Builder - Generate Perfect Resumes in Minutes', url: 'https://producthunt.com/posts/1', publishedAt: new Date(Date.now() - 1000 * 60 * 15), excerpt: 'Use AI to create tailored resumes for any job...' },
-        { id: 'ph2', title: 'Focus Timer 3.0 - Pomodoro with AI Break Suggestions', url: 'https://producthunt.com/posts/2', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 2), excerpt: 'Stay productive with smart break recommendations...' },
-        { id: 'ph3', title: 'Design System Kit - Complete UI Component Library', url: 'https://producthunt.com/posts/3', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 4), excerpt: 'Everything you need to build beautiful interfaces...' },
-        { id: 'ph4', title: 'Email AI - Smart Email Responses in Seconds', url: 'https://producthunt.com/posts/4', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 6), excerpt: 'Never write a boring email again with AI...' },
-        { id: 'ph5', title: 'Code Review Bot - Automated PR Reviews', url: 'https://producthunt.com/posts/5', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 9), excerpt: 'Get instant feedback on your pull requests...' },
-        { id: 'ph6', title: 'Meeting Notes AI - Auto Transcribe & Summarize', url: 'https://producthunt.com/posts/6', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 13), excerpt: 'Turn meetings into actionable summaries...' },
-        { id: 'ph7', title: 'SEO Analyzer Pro - Complete Website Audit Tool', url: 'https://producthunt.com/posts/7', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 18), excerpt: 'Find and fix SEO issues automatically...' },
-        { id: 'ph8', title: 'Budget Tracker AI - Smart Financial Planning', url: 'https://producthunt.com/posts/8', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 24), excerpt: 'AI-powered insights for your spending habits...' },
-        { id: 'ph9', title: 'Social Media Scheduler - Multi-Platform Publishing', url: 'https://producthunt.com/posts/9', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 30), excerpt: 'Schedule posts across all platforms at once...' },
-        { id: 'ph10', title: 'Customer Support Bot - AI-Powered Help Desk', url: 'https://producthunt.com/posts/10', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 38), excerpt: 'Automate customer support with smart AI...' },
+        { id: 'ph1', title: 'AI Resume Builder - Generate Perfect Resumes in Minutes', url: 'https://producthunt.com/posts/1', publishedAt: new Date('2024-01-18T09:45:00Z'), excerpt: 'Use AI to create tailored resumes for any job...' },
+        { id: 'ph2', title: 'Focus Timer 3.0 - Pomodoro with AI Break Suggestions', url: 'https://producthunt.com/posts/2', publishedAt: new Date('2024-01-18T08:00:00Z'), excerpt: 'Stay productive with smart break recommendations...' },
+        { id: 'ph3', title: 'Design System Kit - Complete UI Component Library', url: 'https://producthunt.com/posts/3', publishedAt: new Date('2024-01-18T06:00:00Z'), excerpt: 'Everything you need to build beautiful interfaces...' },
+        { id: 'ph4', title: 'Email AI - Smart Email Responses in Seconds', url: 'https://producthunt.com/posts/4', publishedAt: new Date('2024-01-18T04:00:00Z'), excerpt: 'Never write a boring email again with AI...' },
+        { id: 'ph5', title: 'Code Review Bot - Automated PR Reviews', url: 'https://producthunt.com/posts/5', publishedAt: new Date('2024-01-18T01:00:00Z'), excerpt: 'Get instant feedback on your pull requests...' },
+        { id: 'ph6', title: 'Meeting Notes AI - Auto Transcribe & Summarize', url: 'https://producthunt.com/posts/6', publishedAt: new Date('2024-01-17T21:00:00Z'), excerpt: 'Turn meetings into actionable summaries...' },
+        { id: 'ph7', title: 'SEO Analyzer Pro - Complete Website Audit Tool', url: 'https://producthunt.com/posts/7', publishedAt: new Date('2024-01-17T16:00:00Z'), excerpt: 'Find and fix SEO issues automatically...' },
+        { id: 'ph8', title: 'Budget Tracker AI - Smart Financial Planning', url: 'https://producthunt.com/posts/8', publishedAt: new Date('2024-01-17T10:00:00Z'), excerpt: 'AI-powered insights for your spending habits...' },
+        { id: 'ph9', title: 'Social Media Scheduler - Multi-Platform Publishing', url: 'https://producthunt.com/posts/9', publishedAt: new Date('2024-01-17T04:00:00Z'), excerpt: 'Schedule posts across all platforms at once...' },
+        { id: 'ph10', title: 'Customer Support Bot - AI-Powered Help Desk', url: 'https://producthunt.com/posts/10', publishedAt: new Date('2024-01-16T20:00:00Z'), excerpt: 'Automate customer support with smart AI...' },
     ],
 }
+
+import { WordPressSite, getSites } from '@/lib/sites-store'
+
+// ... (other imports)
 
 export default function ContentLabPage() {
     const [selectedFeed, setSelectedFeed] = useState('')
@@ -114,15 +118,43 @@ export default function ContentLabPage() {
     const [isGenerating, setIsGenerating] = useState(false)
     const [sourceContent, setSourceContent] = useState('')
     const [generatedContent, setGeneratedContent] = useState('')
+    const [generatedTitle, setGeneratedTitle] = useState('')
     const [tone, setTone] = useState('professional')
     const [generateImage, setGenerateImage] = useState(true)
     const [copied, setCopied] = useState(false)
+
+    // Publishing state
+    const [isPublishing, setIsPublishing] = useState(false)
+    const [publishResult, setPublishResult] = useState<{ success: boolean; message: string; link?: string } | null>(null)
 
     // Scheduling state
     const [isScheduleOpen, setIsScheduleOpen] = useState(false)
     const [scheduleDate, setScheduleDate] = useState('')
     const [scheduleTime, setScheduleTime] = useState('')
     const [selectedSite, setSelectedSite] = useState('')
+    const [postStatus, setPostStatus] = useState('draft')
+
+    // Sites state
+    const [sites, setSites] = useState<WordPressSite[]>([])
+
+    useEffect(() => {
+        setSites(getSites())
+    }, [])
+
+    // Derived credentials from selected site
+    const getSelectedSiteCredentials = () => {
+        // Use selected site or fallback to first available site
+        const siteId = selectedSite || sites[0]?.id
+        const site = sites.find(s => s.id === siteId)
+
+        if (!site) return null
+
+        return {
+            wpUrl: site.url,
+            username: site.username,
+            appPassword: site.appPassword
+        }
+    }
 
     const feedArticles = selectedFeed ? mockFeedArticles[selectedFeed] || [] : []
 
@@ -159,9 +191,12 @@ Source: ${article.url}`)
     const handleGenerate = async () => {
         if (!sourceContent) return
         setIsGenerating(true)
+        setPublishResult(null)
         // Simulate AI generation
         setTimeout(() => {
-            setGeneratedContent(`# Transform Your Workflow: A Complete Guide
+            const title = 'Transform Your Workflow: A Complete Guide'
+            setGeneratedTitle(title)
+            setGeneratedContent(`# ${title}
 
 Discover how modern approaches are revolutionizing the way professionals work. This comprehensive guide explores cutting-edge strategies that deliver measurable results.
 
@@ -205,16 +240,112 @@ Ready to transform your workflow? Start implementing these strategies today.`)
         setTimeout(() => setCopied(false), 2000)
     }
 
-    const handleSchedulePublish = () => {
-        // Simulate scheduling - in real app, this would call the API
-        console.log('Scheduling post:', {
-            site: selectedSite,
-            date: scheduleDate,
-            time: scheduleTime,
-            content: generatedContent,
-        })
-        setIsScheduleOpen(false)
-        // Show success toast/notification
+    // Publish to WordPress
+    const handlePublishNow = async (status: 'draft' | 'publish') => {
+        if (!generatedContent || !generatedTitle) return
+
+        const credentials = getSelectedSiteCredentials()
+        if (!credentials) {
+            setPublishResult({
+                success: false,
+                message: 'Silakan hubungkan akun WordPress di halaman Integrations terlebih dahulu.',
+            })
+            return
+        }
+
+        setIsPublishing(true)
+        setPublishResult(null)
+
+        try {
+            const response = await fetch('/api/wordpress', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...credentials,
+                    title: generatedTitle,
+                    content: generatedContent,
+                    status,
+                }),
+            })
+
+            const data = await response.json()
+
+            if (data.success) {
+                setPublishResult({
+                    success: true,
+                    message: status === 'publish' ? 'Artikel berhasil dipublish!' : 'Draft berhasil disimpan!',
+                    link: data.post.link,
+                })
+            } else {
+                setPublishResult({
+                    success: false,
+                    message: data.error || 'Gagal mempublish artikel',
+                })
+            }
+        } catch (error: any) {
+            setPublishResult({
+                success: false,
+                message: error.message || 'Terjadi kesalahan',
+            })
+        } finally {
+            setIsPublishing(false)
+        }
+    }
+
+    // Schedule publish
+    const handleSchedulePublish = async () => {
+        if (!generatedContent || !generatedTitle || !scheduleDate || !scheduleTime) return
+
+        const credentials = getSelectedSiteCredentials()
+        if (!credentials) {
+            setPublishResult({
+                success: false,
+                message: 'Silakan pilih situs WordPress.',
+            })
+            return
+        }
+
+        setIsPublishing(true)
+
+        try {
+            // Combine date and time for scheduled post
+            const scheduledDateTime = new Date(`${scheduleDate}T${scheduleTime}:00`)
+
+            const response = await fetch('/api/wordpress', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...credentials,
+                    title: generatedTitle,
+                    content: generatedContent,
+                    status: 'future',
+                    date: scheduledDateTime.toISOString(),
+                }),
+            })
+
+            const data = await response.json()
+
+            if (data.success) {
+                setPublishResult({
+                    success: true,
+                    message: `Artikel dijadwalkan untuk ${scheduleDate} ${scheduleTime}`,
+                    link: data.post.link,
+                })
+                setIsScheduleOpen(false)
+            } else {
+                setPublishResult({
+                    success: false,
+                    message: data.error || 'Gagal menjadwalkan artikel',
+                })
+            }
+        } catch (error: any) {
+            setPublishResult({
+                success: false,
+                message: error.message || 'Terjadi kesalahan',
+            })
+        } finally {
+            setIsPublishing(false)
+        }
     }
 
     return (
@@ -487,14 +618,65 @@ Ready to transform your workflow? Start implementing these strategies today.`)
                         </Button>
 
                         {/* Publish Now Button */}
-                        <Button
-                            variant="outline"
-                            className="w-full"
-                            disabled={!generatedContent}
-                        >
-                            <Send className="h-4 w-4 mr-2" />
-                            Publish Now
-                        </Button>
+                        <div className="space-y-2">
+                            <Label>Publish Destination</Label>
+                            <Select value={selectedSite} onValueChange={setSelectedSite}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder={sites.length > 0 ? "Select site/account" : "No sites connected"} />
+                                </SelectTrigger>
+                                <SelectContent position="popper" side="bottom" sideOffset={4}>
+                                    {sites.length > 0 ? (
+                                        sites.map(site => (
+                                            <SelectItem key={site.id} value={site.id}>{site.name}</SelectItem>
+                                        ))
+                                    ) : (
+                                        <div className="p-2 text-center text-sm text-muted-foreground">
+                                            <p className="mb-2">No connected sites</p>
+                                            <a href="/integrations" className="text-violet-600 hover:underline block">Go to Integrations</a>
+                                        </div>
+                                    )}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* Publish Status Feedback */}
+                        {publishResult && (
+                            <div className={`p-3 rounded-md text-sm ${publishResult.success ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                                <div className="flex items-center gap-2">
+                                    {publishResult.success ? <Check className="h-4 w-4" /> : <Loader2 className="h-4 w-4 animate-spin hidden" />}
+                                    <p>{publishResult.message}</p>
+                                </div>
+                                {publishResult.link && (
+                                    <a href={publishResult.link} target="_blank" rel="noopener noreferrer" className="text-xs underline mt-1 block hover:text-green-800">
+                                        View Post
+                                    </a>
+                                )}
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-2">
+                            <Button
+                                variant="outline"
+                                className="w-full"
+                                onClick={() => handlePublishNow('draft')}
+                                disabled={!generatedContent || isPublishing}
+                            >
+                                {isPublishing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Draft"}
+                            </Button>
+
+                            <Button
+                                className="w-full bg-gradient-to-r from-violet-600 to-indigo-600"
+                                onClick={() => handlePublishNow('publish')}
+                                disabled={!generatedContent || isPublishing}
+                            >
+                                {isPublishing ? (
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                    <Send className="h-4 w-4 mr-2" />
+                                )}
+                                Publish
+                            </Button>
+                        </div>
 
                         {/* Schedule Publish Button */}
                         <Dialog open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
@@ -502,7 +684,7 @@ Ready to transform your workflow? Start implementing these strategies today.`)
                                 <Button
                                     variant="outline"
                                     className="w-full"
-                                    disabled={!generatedContent}
+                                    disabled={!generatedContent || isPublishing}
                                 >
                                     <Calendar className="h-4 w-4 mr-2" />
                                     Schedule Post
@@ -520,14 +702,26 @@ Ready to transform your workflow? Start implementing these strategies today.`)
                                         <Label>WordPress Site</Label>
                                         <Select value={selectedSite} onValueChange={setSelectedSite}>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Select destination site" />
+                                                <SelectValue placeholder={sites.length > 0 ? "Select destination site" : "No sites connected"} />
                                             </SelectTrigger>
                                             <SelectContent position="popper" side="bottom" sideOffset={4}>
-                                                <SelectItem value="myblog">myblog.com</SelectItem>
-                                                <SelectItem value="techsite">techsite.wordpress.com</SelectItem>
-                                                <SelectItem value="portfolio">portfolio.example.com</SelectItem>
+                                                {sites.length > 0 ? (
+                                                    sites.map(site => (
+                                                        <SelectItem key={site.id} value={site.id}>{site.name}</SelectItem>
+                                                    ))
+                                                ) : (
+                                                    <div className="p-2 text-center text-sm text-muted-foreground">
+                                                        <p className="mb-2">No connected sites</p>
+                                                        <a href="/integrations" className="text-violet-600 hover:underline block">Go to Integrations</a>
+                                                    </div>
+                                                )}
                                             </SelectContent>
                                         </Select>
+                                        {sites.length === 0 && (
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                You need to connect a site in the <a href="/integrations" className="underline hover:text-foreground">Integrations page</a> first.
+                                            </p>
+                                        )}
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
@@ -577,7 +771,7 @@ Ready to transform your workflow? Start implementing these strategies today.`)
                                     <Button
                                         className="bg-gradient-to-r from-violet-600 to-indigo-600"
                                         onClick={handleSchedulePublish}
-                                        disabled={!selectedSite || !scheduleDate || !scheduleTime}
+                                        disabled={!selectedSite || !scheduleDate || !scheduleTime || isPublishing}
                                     >
                                         <Calendar className="h-4 w-4 mr-2" />
                                         Schedule

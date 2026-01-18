@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -46,36 +46,10 @@ import {
     CheckCircle2,
     XCircle,
     ExternalLink,
-    ArrowRight
+    ArrowRight,
+    Loader2
 } from 'lucide-react'
-
-const mockSites = [
-    {
-        id: '1',
-        name: 'My Tech Blog',
-        url: 'https://myblog.com',
-        status: 'connected',
-        lastSync: new Date(Date.now() - 1000 * 60 * 30),
-        articlesPublished: 45,
-    },
-    {
-        id: '2',
-        name: 'TechSite WordPress',
-        url: 'https://techsite.wordpress.com',
-        status: 'connected',
-        lastSync: new Date(Date.now() - 1000 * 60 * 60 * 2),
-        articlesPublished: 82,
-    },
-    {
-        id: '3',
-        name: 'Portfolio Blog',
-        url: 'https://portfolio.example.com',
-        status: 'error',
-        lastSync: new Date(Date.now() - 1000 * 60 * 60 * 24),
-        articlesPublished: 12,
-        error: 'Invalid application password',
-    },
-]
+import { WordPressSite, getSites, addSite, removeSite } from '@/lib/sites-store'
 
 const mockMappings = [
     { source: 'Technology', target: 'Tech News' },
@@ -86,6 +60,22 @@ const mockMappings = [
 
 export default function IntegrationsPage() {
     const [isAddOpen, setIsAddOpen] = useState(false)
+    const [sites, setSites] = useState<WordPressSite[]>([])
+
+    // Form state
+    const [formData, setFormData] = useState({
+        name: '',
+        url: '',
+        username: '',
+        appPassword: ''
+    })
+    const [isTesting, setIsTesting] = useState(false)
+    const [connectionError, setConnectionError] = useState('')
+
+    // Load sites on mount
+    useEffect(() => {
+        setSites(getSites())
+    }, [])
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -98,7 +88,9 @@ export default function IntegrationsPage() {
         }
     }
 
-    const formatTimeAgo = (date: Date) => {
+    const formatTimeAgo = (dateStr?: string) => {
+        if (!dateStr) return 'Never'
+        const date = new Date(dateStr)
         const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
         if (seconds < 60) return `${seconds}s ago`
         const minutes = Math.floor(seconds / 60)
@@ -107,6 +99,63 @@ export default function IntegrationsPage() {
         if (hours < 24) return `${hours}h ago`
         const days = Math.floor(hours / 24)
         return `${days}d ago`
+    }
+
+    const handleAddSite = async () => {
+        if (!formData.name || !formData.url || !formData.username || !formData.appPassword) {
+            setConnectionError('Please fill in all fields')
+            return
+        }
+
+        setIsTesting(true)
+        setConnectionError('')
+
+        try {
+            // Ensure URL has protocol
+            let wpUrl = formData.url
+            if (!wpUrl.startsWith('http')) {
+                wpUrl = `https://${wpUrl}`
+            }
+
+            const params = new URLSearchParams({
+                wpUrl,
+                username: formData.username,
+                appPassword: formData.appPassword
+            })
+
+            const response = await fetch(`/api/wordpress?${params.toString()}`)
+            const data = await response.json()
+
+            if (!response.ok || data.error) {
+                throw new Error(data.error || 'Connection failed')
+            }
+
+            // Success - Add to store
+            const newSite: WordPressSite = {
+                id: Date.now().toString(),
+                name: formData.name,
+                url: wpUrl,
+                username: formData.username,
+                appPassword: formData.appPassword,
+                status: 'connected',
+                lastSync: new Date().toISOString(),
+                articlesPublished: 0
+            }
+
+            setSites(addSite(newSite))
+            setIsAddOpen(false)
+            setFormData({ name: '', url: '', username: '', appPassword: '' })
+        } catch (error: any) {
+            setConnectionError(error.message || 'Failed to connect to WordPress site')
+        } finally {
+            setIsTesting(false)
+        }
+    }
+
+    const handleRemoveSite = (id: string) => {
+        if (confirm('Are you sure you want to remove this site?')) {
+            setSites(removeSite(id))
+        }
     }
 
     return (
@@ -136,28 +185,66 @@ export default function IntegrationsPage() {
                         <div className="space-y-4 py-4">
                             <div className="space-y-2">
                                 <Label htmlFor="siteName">Site Name</Label>
-                                <Input id="siteName" placeholder="e.g., My Blog" />
+                                <Input
+                                    id="siteName"
+                                    placeholder="e.g., My Blog"
+                                    value={formData.name}
+                                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="siteUrl">WordPress URL</Label>
-                                <Input id="siteUrl" placeholder="https://yourblog.com" />
+                                <Input
+                                    id="siteUrl"
+                                    placeholder="https://yourblog.com"
+                                    value={formData.url}
+                                    onChange={e => setFormData({ ...formData, url: e.target.value })}
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="username">Username</Label>
-                                <Input id="username" placeholder="admin" />
+                                <Input
+                                    id="username"
+                                    placeholder="admin"
+                                    value={formData.username}
+                                    onChange={e => setFormData({ ...formData, username: e.target.value })}
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="appPassword">Application Password</Label>
-                                <Input id="appPassword" type="password" placeholder="xxxx xxxx xxxx xxxx xxxx" />
+                                <Input
+                                    id="appPassword"
+                                    type="password"
+                                    placeholder="xxxx xxxx xxxx xxxx xxxx"
+                                    value={formData.appPassword}
+                                    onChange={e => setFormData({ ...formData, appPassword: e.target.value })}
+                                />
                                 <p className="text-xs text-muted-foreground">
                                     Generate this in your WordPress Admin → Users → Application Passwords
                                 </p>
                             </div>
+                            {connectionError && (
+                                <div className="text-xs text-red-600 bg-red-50 p-2 rounded flex items-center gap-2 border border-red-200">
+                                    <XCircle className="h-3 w-3" />
+                                    {connectionError}
+                                </div>
+                            )}
                         </div>
                         <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancel</Button>
-                            <Button className="bg-gradient-to-r from-violet-600 to-indigo-600">
-                                Test & Connect
+                            <Button variant="outline" onClick={() => setIsAddOpen(false)} disabled={isTesting}>Cancel</Button>
+                            <Button
+                                className="bg-gradient-to-r from-violet-600 to-indigo-600"
+                                onClick={handleAddSite}
+                                disabled={isTesting}
+                            >
+                                {isTesting ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                        Testing...
+                                    </>
+                                ) : (
+                                    'Test & Connect'
+                                )}
                             </Button>
                         </DialogFooter>
                     </DialogContent>
@@ -171,66 +258,73 @@ export default function IntegrationsPage() {
                     <CardDescription>Your WordPress integrations</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid gap-4">
-                        {mockSites.map((site) => (
-                            <div
-                                key={site.id}
-                                className="flex items-center justify-between p-4 rounded-lg border"
-                            >
-                                <div className="flex items-center gap-4">
-                                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600/20 to-cyan-600/20">
-                                        <Plug className="h-6 w-6 text-blue-600" />
+                    {sites.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                            <Plug className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                            <p>No sites connected yet. Click "Add Site" to start.</p>
+                        </div>
+                    ) : (
+                        <div className="grid gap-4">
+                            {sites.map((site) => (
+                                <div
+                                    key={site.id}
+                                    className="flex items-center justify-between p-4 rounded-lg border"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600/20 to-cyan-600/20">
+                                            <Plug className="h-6 w-6 text-blue-600" />
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <p className="font-medium">{site.name}</p>
+                                                {getStatusBadge(site.status)}
+                                            </div>
+                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                <span>{site.url}</span>
+                                                <a href={site.url} target="_blank" rel="noopener noreferrer">
+                                                    <ExternalLink className="h-3 w-3" />
+                                                </a>
+                                            </div>
+                                            {site.error && (
+                                                <p className="text-xs text-red-600 mt-1">{site.error}</p>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <p className="font-medium">{site.name}</p>
-                                            {getStatusBadge(site.status)}
+                                    <div className="flex items-center gap-4">
+                                        <div className="text-right text-sm">
+                                            <p className="font-medium">{site.articlesPublished} articles</p>
+                                            <p className="text-muted-foreground">Last sync: {formatTimeAgo(site.lastSync)}</p>
                                         </div>
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <span>{site.url}</span>
-                                            <a href={site.url} target="_blank" rel="noopener noreferrer">
-                                                <ExternalLink className="h-3 w-3" />
-                                            </a>
-                                        </div>
-                                        {site.error && (
-                                            <p className="text-xs text-red-600 mt-1">{site.error}</p>
-                                        )}
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon">
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuItem onClick={() => { }}>
+                                                    <RefreshCw className="h-4 w-4 mr-2" />
+                                                    Test Connection
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem>
+                                                    <Settings className="h-4 w-4 mr-2" />
+                                                    Settings
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem className="text-red-600" onClick={() => handleRemoveSite(site.id)}>
+                                                    <Trash2 className="h-4 w-4 mr-2" />
+                                                    Disconnect
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-4">
-                                    <div className="text-right text-sm">
-                                        <p className="font-medium">{site.articlesPublished} articles</p>
-                                        <p className="text-muted-foreground">Last sync: {formatTimeAgo(site.lastSync)}</p>
-                                    </div>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon">
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuItem>
-                                                <RefreshCw className="h-4 w-4 mr-2" />
-                                                Test Connection
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem>
-                                                <Settings className="h-4 w-4 mr-2" />
-                                                Settings
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem className="text-red-600">
-                                                <Trash2 className="h-4 w-4 mr-2" />
-                                                Disconnect
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 
-            {/* Category Mappings */}
+            {/* Category Mappings (Static Mock) */}
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
@@ -270,7 +364,7 @@ export default function IntegrationsPage() {
                                             <SelectTrigger className="w-[140px]">
                                                 <SelectValue />
                                             </SelectTrigger>
-                                            <SelectContent>
+                                            <SelectContent position="popper" side="bottom" sideOffset={4}>
                                                 <SelectItem value="all">All Sites</SelectItem>
                                                 <SelectItem value="myblog">myblog.com</SelectItem>
                                                 <SelectItem value="techsite">techsite.com</SelectItem>
