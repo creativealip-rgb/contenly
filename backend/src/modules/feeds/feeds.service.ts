@@ -1,11 +1,16 @@
 import { Injectable } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 import { eq, desc } from 'drizzle-orm';
 import { DrizzleService } from '../../db/drizzle.service';
 import { feed, feedItem } from '../../db/schema';
 
 @Injectable()
 export class FeedsService {
-    constructor(private drizzle: DrizzleService) { }
+    constructor(
+        private drizzle: DrizzleService,
+        @InjectQueue('feed-polling') private feedQueue: Queue,
+    ) { }
 
     get db() {
         return this.drizzle.db;
@@ -29,6 +34,12 @@ export class FeedsService {
             })
             .returning();
 
+        // Trigger immediate poll for new feed
+        await this.triggerPoll(newFeed.id);
+
+        // Schedule recurring polling
+        await this.scheduleFeedPolling(newFeed.id, newFeed.pollingIntervalMinutes);
+
         return newFeed;
     }
 
@@ -37,5 +48,22 @@ export class FeedsService {
         return { message: 'Feed deleted' };
     }
 
-    // Additional methods for feed polling would be implemented here
+    async triggerPoll(feedId: string) {
+        // Add job to queue for immediate polling
+        await this.feedQueue.add('poll-feed', { feedId });
+    }
+
+    async scheduleFeedPolling(feedId: string, intervalMinutes: number) {
+        // Schedule recurring job based on pollingIntervalMinutes
+        await this.feedQueue.add(
+            'poll-feed',
+            { feedId },
+            {
+                repeat: {
+                    every: intervalMinutes * 60 * 1000, // Convert minutes to milliseconds
+                },
+                jobId: `feed-${feedId}-recurring`, // Unique ID to prevent duplicates
+            }
+        );
+    }
 }

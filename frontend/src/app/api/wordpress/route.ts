@@ -10,7 +10,10 @@ async function wpFetch(endpoint: string, options: {
 }) {
     const { method = 'GET', body, wpUrl, username, appPassword } = options
 
-    const auth = Buffer.from(`${username}:${appPassword}`).toString('base64')
+    // Remove spaces from application password (WordPress format: "xxxx xxxx xxxx xxxx")
+    const cleanPassword = appPassword.replace(/\s/g, '')
+
+    const auth = Buffer.from(`${username}:${cleanPassword}`).toString('base64')
 
     const response = await fetch(`${wpUrl}/wp-json/wp/v2${endpoint}`, {
         method,
@@ -55,7 +58,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
-        const { wpUrl, username, appPassword, title, content, status, date } = body
+        const { wpUrl, username, appPassword, title, content, status, date, categories } = body
 
         if (!wpUrl || !username || !appPassword) {
             return NextResponse.json({ error: 'Missing credentials' }, { status: 400 })
@@ -69,6 +72,7 @@ export async function POST(request: NextRequest) {
             title,
             content,
             status: status || 'draft', // draft, publish, private, future
+            categories,
         }
 
         // For scheduled posts, add date

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -49,50 +49,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-
-const mockFeeds = [
-    {
-        id: '1',
-        name: 'TechCrunch',
-        url: 'https://techcrunch.com/feed/',
-        status: 'active',
-        pollingInterval: 15,
-        lastPolled: new Date(Date.now() - 1000 * 60 * 5),
-        itemsFetched: 127,
-        autoPublish: false,
-    },
-    {
-        id: '2',
-        name: 'The Verge',
-        url: 'https://www.theverge.com/rss/index.xml',
-        status: 'active',
-        pollingInterval: 30,
-        lastPolled: new Date(Date.now() - 1000 * 60 * 15),
-        itemsFetched: 89,
-        autoPublish: true,
-    },
-    {
-        id: '3',
-        name: 'Hacker News',
-        url: 'https://news.ycombinator.com/rss',
-        status: 'paused',
-        pollingInterval: 60,
-        lastPolled: new Date(Date.now() - 1000 * 60 * 60 * 2),
-        itemsFetched: 342,
-        autoPublish: false,
-    },
-    {
-        id: '4',
-        name: 'Product Hunt',
-        url: 'https://www.producthunt.com/feed',
-        status: 'error',
-        pollingInterval: 30,
-        lastPolled: new Date(Date.now() - 1000 * 60 * 60 * 24),
-        itemsFetched: 56,
-        autoPublish: false,
-        error: 'Connection timeout',
-    },
-]
+import { RssFeed, getFeeds, addFeed, removeFeed } from '@/lib/feeds-store'
 
 const mockPendingItems = [
     { id: '1', feed: 'TechCrunch', title: 'OpenAI Announces New GPT-5 Model', publishedAt: new Date(Date.now() - 1000 * 60 * 30) },
@@ -102,6 +59,39 @@ const mockPendingItems = [
 
 export default function FeedsPage() {
     const [isAddOpen, setIsAddOpen] = useState(false)
+    const [feeds, setFeeds] = useState<RssFeed[]>([])
+    const [newFeedName, setNewFeedName] = useState('')
+    const [newFeedUrl, setNewFeedUrl] = useState('')
+    const [pollingInterval, setPollingInterval] = useState('15')
+
+    useEffect(() => {
+        setFeeds(getFeeds())
+    }, [])
+
+    const handleAddFeed = () => {
+        if (!newFeedName || !newFeedUrl) return
+
+        const newFeed: RssFeed = {
+            id: Math.random().toString(36).substring(7),
+            name: newFeedName,
+            url: newFeedUrl,
+            status: 'active',
+            pollingInterval: parseInt(pollingInterval),
+            itemsFetched: 0,
+            lastSynced: new Date().toISOString()
+        }
+
+        const updatedFeeds = addFeed(newFeed)
+        setFeeds(updatedFeeds)
+        setNewFeedName('')
+        setNewFeedUrl('')
+        setIsAddOpen(false)
+    }
+
+    const handleRemoveFeed = (id: string) => {
+        const updatedFeeds = removeFeed(id)
+        setFeeds(updatedFeeds)
+    }
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -116,7 +106,9 @@ export default function FeedsPage() {
         }
     }
 
-    const formatTimeAgo = (date: Date) => {
+    const formatTimeAgo = (dateStr?: string | Date) => {
+        if (!dateStr) return 'Never'
+        const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr
         const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
         if (seconds < 60) return `${seconds}s ago`
         const minutes = Math.floor(seconds / 60)
@@ -154,15 +146,25 @@ export default function FeedsPage() {
                         <div className="space-y-4 py-4">
                             <div className="space-y-2">
                                 <Label htmlFor="name">Feed Name</Label>
-                                <Input id="name" placeholder="e.g., TechCrunch" />
+                                <Input
+                                    id="name"
+                                    placeholder="e.g., TechCrunch"
+                                    value={newFeedName}
+                                    onChange={(e) => setNewFeedName(e.target.value)}
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="feedUrl">Feed URL</Label>
-                                <Input id="feedUrl" placeholder="https://example.com/rss" />
+                                <Input
+                                    id="feedUrl"
+                                    placeholder="https://example.com/rss"
+                                    value={newFeedUrl}
+                                    onChange={(e) => setNewFeedUrl(e.target.value)}
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="interval">Polling Interval</Label>
-                                <Select defaultValue="15">
+                                <Select value={pollingInterval} onValueChange={setPollingInterval}>
                                     <SelectTrigger>
                                         <SelectValue />
                                     </SelectTrigger>
@@ -174,22 +176,17 @@ export default function FeedsPage() {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="targetSite">Target WordPress Site</Label>
-                                <Select defaultValue="site1">
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="site1">myblog.com</SelectItem>
-                                        <SelectItem value="site2">techsite.wordpress.com</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                            {/* Target WordPress Site removed as per request */}
                         </div>
                         <DialogFooter>
                             <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancel</Button>
-                            <Button className="bg-gradient-to-r from-violet-600 to-indigo-600">Add Feed</Button>
+                            <Button
+                                className="bg-gradient-to-r from-violet-600 to-indigo-600"
+                                onClick={handleAddFeed}
+                                disabled={!newFeedName || !newFeedUrl}
+                            >
+                                Add Feed
+                            </Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
@@ -204,7 +201,7 @@ export default function FeedsPage() {
                                 <Rss className="h-6 w-6 text-violet-600" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">4</p>
+                                <p className="text-2xl font-bold">{feeds.length}</p>
                                 <p className="text-sm text-muted-foreground">Total Feeds</p>
                             </div>
                         </div>
@@ -217,7 +214,7 @@ export default function FeedsPage() {
                                 <CheckCircle2 className="h-6 w-6 text-green-600" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">2</p>
+                                <p className="text-2xl font-bold">{feeds.filter(f => f.status === 'active').length}</p>
                                 <p className="text-sm text-muted-foreground">Active</p>
                             </div>
                         </div>
@@ -243,7 +240,7 @@ export default function FeedsPage() {
                                 <RefreshCw className="h-6 w-6 text-blue-600" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">614</p>
+                                <p className="text-2xl font-bold">{feeds.reduce((acc, f) => acc + (f.itemsFetched || 0), 0)}</p>
                                 <p className="text-sm text-muted-foreground">Items Fetched</p>
                             </div>
                         </div>
@@ -270,7 +267,7 @@ export default function FeedsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {mockFeeds.map((feed) => (
+                            {feeds.map((feed) => (
                                 <TableRow key={feed.id}>
                                     <TableCell>
                                         <div>
@@ -278,10 +275,10 @@ export default function FeedsPage() {
                                             <p className="text-xs text-muted-foreground truncate max-w-[200px]">{feed.url}</p>
                                         </div>
                                     </TableCell>
-                                    <TableCell>{getStatusBadge(feed.status)}</TableCell>
-                                    <TableCell>{feed.pollingInterval}m</TableCell>
-                                    <TableCell>{formatTimeAgo(feed.lastPolled)}</TableCell>
-                                    <TableCell>{feed.itemsFetched}</TableCell>
+                                    <TableCell>{getStatusBadge(feed.status || 'active')}</TableCell>
+                                    <TableCell>{feed.pollingInterval || 15}m</TableCell>
+                                    <TableCell>{formatTimeAgo(feed.lastSynced)}</TableCell>
+                                    <TableCell>{feed.itemsFetched || 0}</TableCell>
                                     <TableCell className="text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
@@ -309,7 +306,10 @@ export default function FeedsPage() {
                                                         Resume
                                                     </DropdownMenuItem>
                                                 )}
-                                                <DropdownMenuItem className="text-red-600">
+                                                <DropdownMenuItem
+                                                    className="text-red-600"
+                                                    onClick={() => handleRemoveFeed(feed.id)}
+                                                >
                                                     <Trash2 className="h-4 w-4 mr-2" />
                                                     Delete
                                                 </DropdownMenuItem>

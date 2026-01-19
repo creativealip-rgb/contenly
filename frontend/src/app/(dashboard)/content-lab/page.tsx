@@ -37,88 +37,41 @@ import {
     Calendar,
     Clock,
     ExternalLink,
-    FileText
+    FileText,
+    Globe
 } from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
 
-// Mock RSS Feeds data (akan diganti dengan data dari API)
-const mockRssFeeds = [
-    { id: '1', name: 'TechCrunch', url: 'https://techcrunch.com' },
-    { id: '2', name: 'The Verge', url: 'https://theverge.com' },
-    { id: '3', name: 'Hacker News', url: 'https://news.ycombinator.com' },
-    { id: '4', name: 'Product Hunt', url: 'https://producthunt.com' },
-]
 
-// Mock articles per feed (akan diganti dengan data dari API)
-const mockFeedArticles: Record<string, Array<{
-    id: string
-    title: string
-    url: string
-    publishedAt: Date
-    excerpt: string
-}>> = {
-    '1': [
-        { id: 'tc1', title: 'OpenAI Announces GPT-5 with Revolutionary Capabilities', url: 'https://techcrunch.com/article1', publishedAt: new Date(Date.now() - 1000 * 60 * 30), excerpt: 'OpenAI has unveiled its latest language model...' },
-        { id: 'tc2', title: 'Startup Raises $100M to Build AI-Powered Developer Tools', url: 'https://techcrunch.com/article2', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 2), excerpt: 'A new startup is taking on traditional IDEs...' },
-        { id: 'tc3', title: 'Apple Vision Pro 2 Leaks Reveal Major Improvements', url: 'https://techcrunch.com/article3', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 4), excerpt: 'The next generation of Apple\'s spatial computing...' },
-        { id: 'tc4', title: 'Google Launches New Cloud AI Services for Enterprise', url: 'https://techcrunch.com/article4', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 6), excerpt: 'Google Cloud expands its AI offerings...' },
-        { id: 'tc5', title: 'Meta Reports Strong Q4 Results, AI Investments Pay Off', url: 'https://techcrunch.com/article5', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 8), excerpt: 'Meta Platforms has reported better than expected...' },
-        { id: 'tc6', title: 'Electric Vehicle Startup Unveils Affordable Long-Range Model', url: 'https://techcrunch.com/article6', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 12), excerpt: 'A new player in the EV market promises...' },
-        { id: 'tc7', title: 'Microsoft Integrates Copilot Deeper into Windows 12', url: 'https://techcrunch.com/article7', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 18), excerpt: 'The upcoming Windows release will feature...' },
-        { id: 'tc8', title: 'Cybersecurity Firm Discovers Critical Cloud Vulnerability', url: 'https://techcrunch.com/article8', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 24), excerpt: 'Security researchers have identified a flaw...' },
-        { id: 'tc9', title: 'Fintech Giant Expands Services to 20 New Countries', url: 'https://techcrunch.com/article9', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 30), excerpt: 'The payment processing company continues...' },
-        { id: 'tc10', title: 'Robotics Company Shows Off Advanced Humanoid Prototype', url: 'https://techcrunch.com/article10', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 36), excerpt: 'The latest humanoid robot can perform...' },
-    ],
-    '2': [
-        { id: 'tv1', title: 'Samsung Galaxy S26 Ultra: Everything We Know So Far', url: 'https://theverge.com/article1', publishedAt: new Date(Date.now() - 1000 * 60 * 45), excerpt: 'Samsung\'s next flagship is expected to...' },
-        { id: 'tv2', title: 'Netflix Gaming Expands with 50 New Titles', url: 'https://theverge.com/article2', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 3), excerpt: 'The streaming giant is doubling down on gaming...' },
-        { id: 'tv3', title: 'Sony Announces PS5 Pro with 8K Support', url: 'https://theverge.com/article3', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 5), excerpt: 'The upgraded PlayStation console brings...' },
-        { id: 'tv4', title: 'Twitter/X Launches New Creator Monetization Features', url: 'https://theverge.com/article4', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 7), excerpt: 'Content creators can now earn through...' },
-        { id: 'tv5', title: 'Amazon Prime Video Gets Major UI Overhaul', url: 'https://theverge.com/article5', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 10), excerpt: 'The streaming service introduces a cleaner...' },
-        { id: 'tv6', title: 'Intel Announces Next-Gen Desktop Processors', url: 'https://theverge.com/article6', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 14), excerpt: 'The new chip lineup promises significant...' },
-        { id: 'tv7', title: 'Spotify Raises Premium Prices in More Markets', url: 'https://theverge.com/article7', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 20), excerpt: 'Music streaming subscribers will see increases...' },
-        { id: 'tv8', title: 'VR Headset Sales Surge as Prices Drop', url: 'https://theverge.com/article8', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 26), excerpt: 'Virtual reality is becoming more accessible...' },
-        { id: 'tv9', title: 'Google Maps Adds AI-Powered Navigation Features', url: 'https://theverge.com/article9', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 32), excerpt: 'The mapping service now includes smarter...' },
-        { id: 'tv10', title: 'TikTok Introduces Long-Form Video Support', url: 'https://theverge.com/article10', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 40), excerpt: 'The short-form video platform is evolving...' },
-    ],
-    '3': [
-        { id: 'hn1', title: 'Show HN: I Built an Open Source Alternative to Notion', url: 'https://news.ycombinator.com/item1', publishedAt: new Date(Date.now() - 1000 * 60 * 20), excerpt: 'After years of using Notion, I decided to build...' },
-        { id: 'hn2', title: 'Why SQLite Is Perfect for Edge Computing', url: 'https://news.ycombinator.com/item2', publishedAt: new Date(Date.now() - 1000 * 60 * 60), excerpt: 'An exploration of SQLite\'s advantages in...' },
-        { id: 'hn3', title: 'The State of Rust in 2026: A Comprehensive Review', url: 'https://news.ycombinator.com/item3', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 3), excerpt: 'How Rust has evolved and where it\'s heading...' },
-        { id: 'hn4', title: 'Building a Compiler from Scratch in Go', url: 'https://news.ycombinator.com/item4', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 5), excerpt: 'A step-by-step guide to understanding compilers...' },
-        { id: 'hn5', title: 'How We Reduced Our Cloud Costs by 80%', url: 'https://news.ycombinator.com/item5', publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 8), excerpt: 'Our journey from $50k to $10k monthly spend...' },
-        { id: 'hn6', title: 'The Future of WebAssembly: Beyond the Browser', url: 'https://news.ycombinator.com/item6', publishedAt: new Date('2024-01-17T08:00:00Z'), excerpt: 'WASM is finding new homes in serverless...' },
-        { id: 'hn7', title: 'Understanding Zero-Knowledge Proofs Simply', url: 'https://news.ycombinator.com/item7', publishedAt: new Date('2024-01-17T05:00:00Z'), excerpt: 'A beginner-friendly explanation of ZK proofs...' },
-        { id: 'hn8', title: 'My Experience Running a Solo SaaS for 5 Years', url: 'https://news.ycombinator.com/item8', publishedAt: new Date('2024-01-16T22:00:00Z'), excerpt: 'Lessons learned from bootstrapping alone...' },
-        { id: 'hn9', title: 'A Deep Dive into Linux Kernel Networking', url: 'https://news.ycombinator.com/item9', publishedAt: new Date('2024-01-16T18:00:00Z'), excerpt: 'Understanding how packets flow through the kernel...' },
-        { id: 'hn10', title: 'Why I Switched from TypeScript Back to JavaScript', url: 'https://news.ycombinator.com/item10', publishedAt: new Date('2024-01-16T14:00:00Z'), excerpt: 'A controversial take on type systems in JS...' },
-    ],
-    '4': [
-        { id: 'ph1', title: 'AI Resume Builder - Generate Perfect Resumes in Minutes', url: 'https://producthunt.com/posts/1', publishedAt: new Date('2024-01-18T09:45:00Z'), excerpt: 'Use AI to create tailored resumes for any job...' },
-        { id: 'ph2', title: 'Focus Timer 3.0 - Pomodoro with AI Break Suggestions', url: 'https://producthunt.com/posts/2', publishedAt: new Date('2024-01-18T08:00:00Z'), excerpt: 'Stay productive with smart break recommendations...' },
-        { id: 'ph3', title: 'Design System Kit - Complete UI Component Library', url: 'https://producthunt.com/posts/3', publishedAt: new Date('2024-01-18T06:00:00Z'), excerpt: 'Everything you need to build beautiful interfaces...' },
-        { id: 'ph4', title: 'Email AI - Smart Email Responses in Seconds', url: 'https://producthunt.com/posts/4', publishedAt: new Date('2024-01-18T04:00:00Z'), excerpt: 'Never write a boring email again with AI...' },
-        { id: 'ph5', title: 'Code Review Bot - Automated PR Reviews', url: 'https://producthunt.com/posts/5', publishedAt: new Date('2024-01-18T01:00:00Z'), excerpt: 'Get instant feedback on your pull requests...' },
-        { id: 'ph6', title: 'Meeting Notes AI - Auto Transcribe & Summarize', url: 'https://producthunt.com/posts/6', publishedAt: new Date('2024-01-17T21:00:00Z'), excerpt: 'Turn meetings into actionable summaries...' },
-        { id: 'ph7', title: 'SEO Analyzer Pro - Complete Website Audit Tool', url: 'https://producthunt.com/posts/7', publishedAt: new Date('2024-01-17T16:00:00Z'), excerpt: 'Find and fix SEO issues automatically...' },
-        { id: 'ph8', title: 'Budget Tracker AI - Smart Financial Planning', url: 'https://producthunt.com/posts/8', publishedAt: new Date('2024-01-17T10:00:00Z'), excerpt: 'AI-powered insights for your spending habits...' },
-        { id: 'ph9', title: 'Social Media Scheduler - Multi-Platform Publishing', url: 'https://producthunt.com/posts/9', publishedAt: new Date('2024-01-17T04:00:00Z'), excerpt: 'Schedule posts across all platforms at once...' },
-        { id: 'ph10', title: 'Customer Support Bot - AI-Powered Help Desk', url: 'https://producthunt.com/posts/10', publishedAt: new Date('2024-01-16T20:00:00Z'), excerpt: 'Automate customer support with smart AI...' },
-    ],
-}
-
-import { WordPressSite, getSites } from '@/lib/sites-store'
+import { WordPressSite, getSites, getActiveSite } from '@/lib/sites-store'
+import { RssFeed, getFeeds, addFeed, removeFeed } from '@/lib/feeds-store'
+import { Plus, Trash2 } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 // ... (other imports)
 
 export default function ContentLabPage() {
     const [selectedFeed, setSelectedFeed] = useState('')
-    const [selectedArticle, setSelectedArticle] = useState<typeof mockFeedArticles['1'][0] | null>(null)
+    const [selectedArticle, setSelectedArticle] = useState<any>(null)
     const [isScanning, setIsScanning] = useState(false)
     const [isGenerating, setIsGenerating] = useState(false)
     const [sourceContent, setSourceContent] = useState('')
     const [generatedContent, setGeneratedContent] = useState('')
     const [generatedTitle, setGeneratedTitle] = useState('')
+    // Scraper state
+    const [scrapeUrl, setScrapeUrl] = useState('')
+    const [isScraping, setIsScraping] = useState(false)
+
+    // AI Rewrite state
+    const [aiTone, setAiTone] = useState<'professional' | 'casual' | 'creative' | 'technical'>('professional')
+    const [aiStyle, setAiStyle] = useState<'blog' | 'news' | 'tutorial' | 'review'>('blog')
+    const [aiLength, setAiLength] = useState<'shorter' | 'same' | 'longer'>('same')
+    const [isRewriting, setIsRewriting] = useState(false)
+
+    // SEO & Image state
+    const [slug, setSlug] = useState('')
+    const [featuredImage, setFeaturedImage] = useState('')
+    const [isGeneratingImage, setIsGeneratingImage] = useState(false)
+
     const [tone, setTone] = useState('professional')
     const [generateImage, setGenerateImage] = useState(true)
     const [copied, setCopied] = useState(false)
@@ -131,22 +84,60 @@ export default function ContentLabPage() {
     const [isScheduleOpen, setIsScheduleOpen] = useState(false)
     const [scheduleDate, setScheduleDate] = useState('')
     const [scheduleTime, setScheduleTime] = useState('')
-    const [selectedSite, setSelectedSite] = useState('')
     const [postStatus, setPostStatus] = useState('draft')
+
+    // WordPress categories
+    const [wpCategories, setWpCategories] = useState<Array<{ id: number; name: string }>>([])
+    const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
+    const [isFetchingCategories, setIsFetchingCategories] = useState(false)
 
     // Sites state
     const [sites, setSites] = useState<WordPressSite[]>([])
 
+    // RSS Feeds state
+    const [feeds, setFeeds] = useState<RssFeed[]>([])
+    const [articles, setArticles] = useState<any[]>([])
+    const [isFetchingRSS, setIsFetchingRSS] = useState(false)
+    const [isAddFeedOpen, setIsAddFeedOpen] = useState(false)
+    const [newFeedUrl, setNewFeedUrl] = useState('')
+    const [newFeedName, setNewFeedName] = useState('')
+
     useEffect(() => {
         setSites(getSites())
+        setFeeds(getFeeds())
+
+        // Fetch WordPress categories from active site
+        const fetchCategories = async () => {
+            const activeSite = getActiveSite()
+            if (!activeSite) return
+
+            setIsFetchingCategories(true)
+            try {
+                const params = new URLSearchParams({
+                    wpUrl: activeSite.url,
+                    username: activeSite.username,
+                    appPassword: activeSite.appPassword
+                })
+                const response = await fetch(`/api/wordpress/categories?${params.toString()}`)
+                const data = await response.json()
+
+                if (data.success && data.categories) {
+                    setWpCategories(data.categories)
+                }
+            } catch (error) {
+                console.error('Failed to fetch categories:', error)
+            } finally {
+                setIsFetchingCategories(false)
+            }
+        }
+
+        fetchCategories()
     }, [])
 
-    // Derived credentials from selected site
-    const getSelectedSiteCredentials = () => {
-        // Use selected site or fallback to first available site
-        const siteId = selectedSite || sites[0]?.id
-        const site = sites.find(s => s.id === siteId)
 
+    // Derived credentials from active site
+    const getSelectedSiteCredentials = () => {
+        const site = getActiveSite()
         if (!site) return null
 
         return {
@@ -156,36 +147,152 @@ export default function ContentLabPage() {
         }
     }
 
-    const feedArticles = selectedFeed ? mockFeedArticles[selectedFeed] || [] : []
+    // Fetch content from RSS
+    const handleFetchArticles = async (feedId: string) => {
+        const feed = feeds.find(f => f.id === feedId)
+        if (!feed) return
 
-    const handleSelectArticle = (article: typeof mockFeedArticles['1'][0]) => {
+        setIsFetchingRSS(true)
+        setArticles([])
+        setSelectedArticle(null)
+        setSourceContent('')
+
+        try {
+            const response = await fetch('/api/rss', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: feed.url }),
+            })
+
+            const data = await response.json()
+            if (data.success) {
+                setArticles(data.items)
+            } else {
+                console.error('Failed to fetch RSS:', data.error)
+                // Fallback or error notification
+            }
+        } catch (error) {
+            console.error('RSS Error:', error)
+        } finally {
+            setIsFetchingRSS(false)
+        }
+    }
+
+    const handleAddFeed = () => {
+        if (!newFeedName || !newFeedUrl) return
+
+        const newFeed: RssFeed = {
+            id: Math.random().toString(36).substring(7),
+            name: newFeedName,
+            url: newFeedUrl,
+            status: 'active',
+            lastSynced: new Date().toISOString()
+        }
+
+        const updatedFeeds = addFeed(newFeed)
+        setFeeds(updatedFeeds)
+        setNewFeedName('')
+        setNewFeedUrl('')
+        setIsAddFeedOpen(false)
+
+        // Auto select and fetch
+        setSelectedFeed(newFeed.id)
+        handleFetchArticles(newFeed.id)
+    }
+
+    const handleRemoveFeed = (e: React.MouseEvent, id: string) => {
+        e.stopPropagation()
+        const updatedFeeds = removeFeed(id)
+        setFeeds(updatedFeeds)
+        if (selectedFeed === id) {
+            setSelectedFeed('')
+            setArticles([])
+        }
+    }
+
+    // Effect to fetch when selectedFeed changes
+    useEffect(() => {
+        if (selectedFeed) {
+            handleFetchArticles(selectedFeed)
+        }
+    }, [selectedFeed])
+
+    const handleSelectArticle = async (article: any) => {
         setSelectedArticle(article)
         setIsScanning(true)
-        // Simulate scraping the selected article
-        setTimeout(() => {
-            setSourceContent(`# ${article.title}
 
-${article.excerpt}
+        try {
+            // Auto-scrape full article content from URL
+            const response = await fetch('/api/scraper', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: article.url })
+            })
 
-This is the original content scraped from the selected RSS article. It contains the main article text that will be transformed by AI.
+            const result = await response.json()
 
-## Key Points
+            if (result.success && result.data) {
+                // Use scraped full content
+                setSourceContent(result.data.content || '')
+            } else {
+                // Fallback to RSS excerpt if scraping fails
+                setSourceContent(`# ${article.title}
 
-- Point one about the topic
-- Another important detail
-- Technical specifications and data
-
-The article continues with more detailed information about the subject matter, including quotes, statistics, and relevant examples.
-
-> "This is an example quote from the original article that adds credibility and context to the content."
-
-## Conclusion
-
-The article wraps up with a summary of the key takeaways and a call to action for readers.
+${article.excerpt || article.description || ''}
 
 Source: ${article.url}`)
+            }
+        } catch (error) {
+            console.error('Scraping error:', error)
+            // Fallback to RSS excerpt
+            setSourceContent(`# ${article.title}
+
+${article.excerpt || article.description || ''}
+
+Source: ${article.url}`)
+        } finally {
             setIsScanning(false)
-        }, 1500)
+        }
+    }
+
+    const handleAIRewrite = async () => {
+        if (!sourceContent.trim()) {
+            alert('Please select an article first')
+            return
+        }
+
+        setIsRewriting(true)
+        setGeneratedContent('')
+        setGeneratedTitle('')
+
+        try {
+            const response = await fetch('/api/ai/rewrite', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    content: sourceContent,
+                    title: selectedArticle?.title,
+                    tone: aiTone,
+                    style: aiStyle,
+                    targetLength: aiLength,
+                    includeMetadata: true,
+                }),
+            })
+
+            const result = await response.json()
+
+            if (result.success && result.data) {
+                setGeneratedContent(result.data.content)
+                setGeneratedTitle(result.data.title)
+            } else {
+                alert(`AI Rewrite failed: ${result.error || 'Unknown error'}`)
+            }
+        } catch (error: any) {
+            console.error('AI Rewrite error:', error)
+            alert(`Failed to rewrite: ${error.message}`)
+        } finally {
+            setIsRewriting(false)
+        }
     }
 
     const handleGenerate = async () => {
@@ -234,6 +341,39 @@ Ready to transform your workflow? Start implementing these strategies today.`)
         }, 3000)
     }
 
+    const handleScrape = async () => {
+        if (!scrapeUrl) return
+        setIsScraping(true)
+        setSourceContent('')
+        setSelectedArticle(null)
+        try {
+            const response = await fetch('/api/scraper', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: scrapeUrl })
+            })
+            const result = await response.json()
+            if (result.success) {
+                const content = result.data.content || result.data.excerpt || ''
+                setSourceContent(content)
+                setSelectedArticle({
+                    id: 'scraped-' + Date.now(),
+                    title: result.data.title,
+                    url: result.data.url,
+                    excerpt: result.data.excerpt || content.substring(0, 150) + '...',
+                    publishedAt: result.data.publishedAt
+                })
+                setGeneratedTitle(result.data.title)
+            } else {
+                console.error("Scrape failed:", result.error)
+            }
+        } catch (error) {
+            console.error("Scrape error:", error)
+        } finally {
+            setIsScraping(false)
+        }
+    }
+
     const handleCopy = () => {
         navigator.clipboard.writeText(generatedContent)
         setCopied(true)
@@ -265,6 +405,7 @@ Ready to transform your workflow? Start implementing these strategies today.`)
                     title: generatedTitle,
                     content: generatedContent,
                     status,
+                    categories: selectedCategory ? [selectedCategory] : undefined,
                 }),
             })
 
@@ -320,6 +461,7 @@ Ready to transform your workflow? Start implementing these strategies today.`)
                     content: generatedContent,
                     status: 'future',
                     date: scheduledDateTime.toISOString(),
+                    categories: selectedCategory ? [selectedCategory] : undefined,
                 }),
             })
 
@@ -354,116 +496,223 @@ Ready to transform your workflow? Start implementing these strategies today.`)
             <div>
                 <h1 className="text-3xl font-bold">Content Lab</h1>
                 <p className="text-muted-foreground">
-                    Transform RSS feed articles into unique, SEO-optimized content.
+                    Transform RSS feed articles or any web content into unique, SEO-optimized articles.
                 </p>
             </div>
 
-            {/* RSS Feed & Article Selector */}
-            <Card>
-                <CardContent className="pt-6">
+            {/* Source Selection Card */}
+            <Card className="border-violet-100 dark:border-violet-900 shadow-sm">
+                <CardHeader>
+                    <CardTitle className="text-xl flex items-center gap-2">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400">
+                            1
+                        </span>
+                        Choose Source
+                    </CardTitle>
+                    <CardDescription>
+                        Select content to transform from RSS feeds
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
                     <div className="space-y-4">
-                        {/* Feed Selector */}
                         <div className="space-y-2">
-                            <Label htmlFor="feed-select" className="text-sm font-medium">
-                                Select RSS Feed Source
-                            </Label>
-                            <Select value={selectedFeed} onValueChange={(value) => {
-                                setSelectedFeed(value)
+                            <div className="flex items-center justify-between">
+                                <Label>Select RSS Feed Source</Label>
+                                <Dialog open={isAddFeedOpen} onOpenChange={setIsAddFeedOpen}>
+                                    <DialogTrigger asChild>
+                                        <Button variant="ghost" size="sm" className="text-violet-600 h-6 px-2 hover:bg-violet-50">
+                                            <Plus className="h-4 w-4 mr-1" /> Add Feed
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle>Add New RSS Feed</DialogTitle>
+                                            <DialogDescription>
+                                                Enter the URL of the RSS feed you want to follow.
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <div className="space-y-4 py-4">
+                                            <div className="space-y-2">
+                                                <Label>Feed Name</Label>
+                                                <Input
+                                                    placeholder="e.g. TechCrunch"
+                                                    value={newFeedName}
+                                                    onChange={(e) => setNewFeedName(e.target.value)}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Feed URL</Label>
+                                                <Input
+                                                    placeholder="https://example.com/feed"
+                                                    value={newFeedUrl}
+                                                    onChange={(e) => setNewFeedUrl(e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                        <DialogFooter>
+                                            <Button variant="outline" onClick={() => setIsAddFeedOpen(false)}>Cancel</Button>
+                                            <Button onClick={handleAddFeed} disabled={!newFeedName || !newFeedUrl}>Add Feed</Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
+                            </div>
+                            <Select value={selectedFeed || ''} onValueChange={(val) => {
+                                setSelectedFeed(val)
                                 setSelectedArticle(null)
                                 setSourceContent('')
-                                setGeneratedContent('')
                             }}>
-                                <SelectTrigger className="w-full">
-                                    <div className="flex items-center gap-2">
-                                        <Rss className="h-4 w-4 text-muted-foreground shrink-0" />
-                                        <SelectValue placeholder="Choose a feed source..." />
-                                    </div>
+                                <SelectTrigger className="border-violet-200 focus:ring-violet-500">
+                                    <SelectValue placeholder="Select a feed..." />
                                 </SelectTrigger>
-                                <SelectContent
-                                    position="popper"
-                                    side="bottom"
-                                    sideOffset={4}
-                                    className="w-[var(--radix-select-trigger-width)]"
-                                >
-                                    {mockRssFeeds.map((feed) => (
+                                <SelectContent>
+                                    {feeds.map((feed) => (
                                         <SelectItem key={feed.id} value={feed.id}>
-                                            <div className="flex flex-col items-start">
+                                            <div className="flex flex-col items-start text-left">
                                                 <span className="font-medium">{feed.name}</span>
-                                                <span className="text-xs text-muted-foreground">{feed.url}</span>
+                                                <span className="text-xs text-muted-foreground truncate max-w-[200px]">{feed.url}</span>
                                             </div>
+                                        </SelectItem>
+                                    ))}
+                                    {feeds.length === 0 && (
+                                        <div className="p-2 text-center text-sm text-muted-foreground">No feeds added</div>
+                                    )}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Select Article</Label>
+                            <Select value={selectedArticle?.id || ''} onValueChange={(val) => {
+                                const article = articles.find(a => a.id === val)
+                                if (article) handleSelectArticle(article)
+                            }}>
+                                <SelectTrigger disabled={!selectedFeed || isFetchingRSS}>
+                                    <SelectValue placeholder={isFetchingRSS ? "Fetching..." : "Choose an article..."} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {articles.map((article) => (
+                                        <SelectItem key={article.id} value={article.id}>
+                                            <span className="truncate block max-w-[400px]">{article.title}</span>
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
+                    </div>
+                </CardContent>
+            </Card>
 
-                        {/* Articles Selector */}
-                        {selectedFeed && (
-                            <div className="space-y-2">
-                                <Label className="text-sm font-medium">
-                                    Select Article from {mockRssFeeds.find(f => f.id === selectedFeed)?.name}
-                                </Label>
-                                <Select
-                                    value={selectedArticle?.id || ''}
-                                    onValueChange={(value) => {
-                                        const article = feedArticles.find(a => a.id === value)
-                                        if (article) handleSelectArticle(article)
-                                    }}
-                                >
-                                    <SelectTrigger className="w-full">
-                                        <div className="flex items-center gap-2">
-                                            <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                                            <SelectValue placeholder="Choose an article to transform..." />
-                                        </div>
-                                    </SelectTrigger>
-                                    <SelectContent
-                                        position="popper"
-                                        side="bottom"
-                                        sideOffset={4}
-                                        className="w-[var(--radix-select-trigger-width)] max-h-[300px]"
-                                    >
-                                        {feedArticles.map((article) => (
-                                            <SelectItem key={article.id} value={article.id}>
-                                                <div className="flex flex-col items-start py-1">
-                                                    <span className="font-medium line-clamp-1">{article.title}</span>
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        <span className="text-xs text-muted-foreground">
-                                                            {formatDistanceToNow(article.publishedAt, { addSuffix: true })}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        )}
+            {/* AI Configuration */}
+            <Card className="border-violet-100 dark:border-violet-900 shadow-sm">
+                <CardHeader>
+                    <CardTitle className="text-xl flex items-center gap-2">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400">
+                            2
+                        </span>
+                        AI Configuration
+                    </CardTitle>
+                    <CardDescription>
+                        Configure how AI will rewrite your content
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {/* First Row */}
+                    <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <Label className="text-sm font-medium">Tone</Label>
+                            <Select value={aiTone} onValueChange={(v: any) => setAiTone(v)}>
+                                <SelectTrigger className="h-10">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="professional">Professional</SelectItem>
+                                    <SelectItem value="casual">Casual</SelectItem>
+                                    <SelectItem value="creative">Creative</SelectItem>
+                                    <SelectItem value="technical">Technical</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground">Writing tone and personality</p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label className="text-sm font-medium">Style</Label>
+                            <Select value={aiStyle} onValueChange={(v: any) => setAiStyle(v)}>
+                                <SelectTrigger className="h-10">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="blog">Blog Post</SelectItem>
+                                    <SelectItem value="news">News Article</SelectItem>
+                                    <SelectItem value="tutorial">Tutorial/Guide</SelectItem>
+                                    <SelectItem value="review">Review</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground">Article format and structure</p>
+                        </div>
+                    </div>
+
+                    {/* Second Row */}
+                    <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <Label className="text-sm font-medium">Length</Label>
+                            <Select value={aiLength} onValueChange={(v: any) => setAiLength(v)}>
+                                <SelectTrigger className="h-10">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="shorter">Shorter (70%)</SelectItem>
+                                    <SelectItem value="same">Same Length</SelectItem>
+                                    <SelectItem value="longer">Longer (130%)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground">Target article length</p>
+                        </div>
+
+                        <div className="flex items-end">
+                            <Button
+                                className="w-full h-10 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700"
+                                onClick={handleAIRewrite}
+                                disabled={!sourceContent || isRewriting}
+                            >
+                                {isRewriting ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                        Rewriting...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Sparkles className="h-4 w-4 mr-2" />
+                                        Rewrite with AI
+                                    </>
+                                )}
+                            </Button>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
 
             {/* Split Screen Editor */}
             <div className="grid gap-6 lg:grid-cols-2">
-                {/* Source Content (Left) */}
+                {/* Source Content */}
                 <Card className="min-h-[500px]">
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
                             <div>
                                 <CardTitle className="text-lg">Original Content</CardTitle>
                                 <CardDescription>
-                                    {selectedArticle ? selectedArticle.title : 'Select an article from RSS feed'}
+                                    {selectedArticle ? selectedArticle.title : 'Select a source above'}
                                 </CardDescription>
                             </div>
                             <Badge variant="secondary">Read-only</Badge>
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="bg-muted rounded-lg p-4 min-h-[400px] overflow-auto">
-                            {isScanning ? (
+                        <div className="bg-muted rounded-lg p-4 min-h-[400px] max-h-[600px] overflow-auto">
+                            {isScanning || isScraping ? (
                                 <div className="flex items-center justify-center h-full">
                                     <div className="text-center">
                                         <Loader2 className="h-8 w-8 animate-spin mx-auto text-violet-600" />
-                                        <p className="mt-2 text-sm text-muted-foreground">Fetching article content...</p>
+                                        <p className="mt-2 text-sm text-muted-foreground">Fetching content...</p>
                                     </div>
                                 </div>
                             ) : sourceContent ? (
@@ -471,8 +720,8 @@ Ready to transform your workflow? Start implementing these strategies today.`)
                             ) : (
                                 <div className="flex items-center justify-center h-full text-muted-foreground">
                                     <div className="text-center">
-                                        <Rss className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                                        <p>Select an RSS feed and click on an article to load its content</p>
+                                        <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                                        <p>Content will appear here</p>
                                     </div>
                                 </div>
                             )}
@@ -480,7 +729,7 @@ Ready to transform your workflow? Start implementing these strategies today.`)
                     </CardContent>
                 </Card>
 
-                {/* Generated Content (Right) */}
+                {/* AI Generated Content */}
                 <Card className="min-h-[500px]">
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
@@ -513,58 +762,14 @@ Ready to transform your workflow? Start implementing these strategies today.`)
                             value={generatedContent}
                             onChange={(e) => setGeneratedContent(e.target.value)}
                             placeholder="AI-generated content will appear here..."
-                            className="min-h-[400px] resize-none font-mono text-sm"
+                            className="min-h-[400px] max-h-[600px] resize-none font-mono text-sm"
                         />
                     </CardContent>
                 </Card>
             </div>
 
             {/* Configuration & Actions */}
-            <div className="grid gap-6 lg:grid-cols-3">
-                {/* Settings */}
-                <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                            <Settings2 className="h-5 w-5" />
-                            Generation Settings
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                            <Label>Tone</Label>
-                            <Select value={tone} onValueChange={setTone}>
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent position="popper" side="bottom" sideOffset={4}>
-                                    <SelectItem value="professional">Professional</SelectItem>
-                                    <SelectItem value="casual">Casual</SelectItem>
-                                    <SelectItem value="academic">Academic</SelectItem>
-                                    <SelectItem value="conversational">Conversational</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Keywords (comma separated)</Label>
-                            <Input placeholder="SEO, content, automation" />
-                        </div>
-                        <Separator />
-                        <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                                <Label>Generate AI Image</Label>
-                                <p className="text-xs text-muted-foreground">Uses 2 tokens</p>
-                            </div>
-                            <Button
-                                variant={generateImage ? 'default' : 'outline'}
-                                size="sm"
-                                onClick={() => setGenerateImage(!generateImage)}
-                            >
-                                <ImageIcon className="h-4 w-4 mr-1" />
-                                {generateImage ? 'On' : 'Off'}
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
+            <div className="grid gap-6 lg:grid-cols-2">
 
                 {/* SEO Preview */}
                 <Card>
@@ -574,21 +779,70 @@ Ready to transform your workflow? Start implementing these strategies today.`)
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
                             <Label>Meta Title</Label>
-                            <Input defaultValue="Transform Your Workflow: A Complete Guide" />
-                            <p className="text-xs text-muted-foreground">52 / 60 characters</p>
+                            <Input value={generatedTitle || ""} onChange={(e) => setGeneratedTitle(e.target.value)} placeholder="Article Title" />
+                            <p className="text-xs text-muted-foreground">Characters: {(generatedTitle || "").length}/60</p>
                         </div>
+
+                        <div className="space-y-2">
+                            <Label>Slug (URL)</Label>
+                            <Input
+                                value={slug}
+                                onChange={(e) => setSlug(e.target.value)}
+                                placeholder="article-slug-url"
+                                className="font-mono text-sm"
+                            />
+                            <p className="text-xs text-muted-foreground">URL-friendly version of title</p>
+                        </div>
+
                         <div className="space-y-2">
                             <Label>Meta Description</Label>
                             <Textarea
-                                defaultValue="Discover how modern approaches are revolutionizing the way professionals work. Learn cutting-edge strategies for measurable results."
+                                defaultValue="AI generated description..."
                                 className="resize-none"
                                 rows={3}
                             />
-                            <p className="text-xs text-muted-foreground">138 / 160 characters</p>
+                            <p className="text-xs text-muted-foreground">Ideal: 150-160 characters</p>
                         </div>
+
                         <div className="space-y-2">
-                            <Label>Slug</Label>
-                            <Input defaultValue="transform-workflow-complete-guide" />
+                            <Label>Featured Image</Label>
+                            <div className="flex gap-2">
+                                <Input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0]
+                                        if (file) {
+                                            setFeaturedImage(URL.createObjectURL(file))
+                                        }
+                                    }}
+                                    className="flex-1"
+                                />
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setIsGeneratingImage(true)}
+                                    disabled={isGeneratingImage}
+                                    className="shrink-0"
+                                >
+                                    {isGeneratingImage ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                            Generating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Sparkles className="h-4 w-4 mr-2" />
+                                            AI Generate
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                            {featuredImage && (
+                                <div className="mt-2 rounded-lg border overflow-hidden">
+                                    <img src={featuredImage} alt="Featured" className="w-full h-32 object-cover" />
+                                </div>
+                            )}
+                            <p className="text-xs text-muted-foreground">Upload from local or generate with AI - Recommended: 1200x630px</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -599,47 +853,28 @@ Ready to transform your workflow? Start implementing these strategies today.`)
                         <CardTitle className="text-lg">Actions</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <Button
-                            className="w-full bg-gradient-to-r from-violet-600 to-indigo-600"
-                            onClick={handleGenerate}
-                            disabled={!sourceContent || isGenerating}
-                        >
-                            {isGenerating ? (
-                                <>
-                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                    Generating...
-                                </>
-                            ) : (
-                                <>
-                                    <Sparkles className="h-4 w-4 mr-2" />
-                                    Generate Content (1 Token)
-                                </>
-                            )}
-                        </Button>
 
-                        {/* Publish Now Button */}
                         <div className="space-y-2">
-                            <Label>Publish Destination</Label>
-                            <Select value={selectedSite} onValueChange={setSelectedSite}>
+                            <Label>Category</Label>
+                            <Select
+                                value={selectedCategory?.toString() || ''}
+                                onValueChange={(val) => setSelectedCategory(parseInt(val))}
+                                disabled={isFetchingCategories || wpCategories.length === 0}
+                            >
                                 <SelectTrigger>
-                                    <SelectValue placeholder={sites.length > 0 ? "Select site/account" : "No sites connected"} />
+                                    <SelectValue placeholder={isFetchingCategories ? "Loading categories..." : wpCategories.length > 0 ? "Select category" : "No categories found"} />
                                 </SelectTrigger>
-                                <SelectContent position="popper" side="bottom" sideOffset={4}>
-                                    {sites.length > 0 ? (
-                                        sites.map(site => (
-                                            <SelectItem key={site.id} value={site.id}>{site.name}</SelectItem>
-                                        ))
-                                    ) : (
-                                        <div className="p-2 text-center text-sm text-muted-foreground">
-                                            <p className="mb-2">No connected sites</p>
-                                            <a href="/integrations" className="text-violet-600 hover:underline block">Go to Integrations</a>
-                                        </div>
-                                    )}
+                                <SelectContent>
+                                    {wpCategories.map(category => (
+                                        <SelectItem key={category.id} value={category.id.toString()}>
+                                            {category.name}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
+                            <p className="text-xs text-muted-foreground">Post will be published to selected category</p>
                         </div>
 
-                        {/* Publish Status Feedback */}
                         {publishResult && (
                             <div className={`p-3 rounded-md text-sm ${publishResult.success ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
                                 <div className="flex items-center gap-2">
@@ -663,7 +898,6 @@ Ready to transform your workflow? Start implementing these strategies today.`)
                             >
                                 {isPublishing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Draft"}
                             </Button>
-
                             <Button
                                 className="w-full bg-gradient-to-r from-violet-600 to-indigo-600"
                                 onClick={() => handlePublishNow('publish')}
@@ -678,7 +912,6 @@ Ready to transform your workflow? Start implementing these strategies today.`)
                             </Button>
                         </div>
 
-                        {/* Schedule Publish Button */}
                         <Dialog open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
                             <DialogTrigger asChild>
                                 <Button
@@ -698,31 +931,6 @@ Ready to transform your workflow? Start implementing these strategies today.`)
                                     </DialogDescription>
                                 </DialogHeader>
                                 <div className="space-y-4 py-4">
-                                    <div className="space-y-2">
-                                        <Label>WordPress Site</Label>
-                                        <Select value={selectedSite} onValueChange={setSelectedSite}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder={sites.length > 0 ? "Select destination site" : "No sites connected"} />
-                                            </SelectTrigger>
-                                            <SelectContent position="popper" side="bottom" sideOffset={4}>
-                                                {sites.length > 0 ? (
-                                                    sites.map(site => (
-                                                        <SelectItem key={site.id} value={site.id}>{site.name}</SelectItem>
-                                                    ))
-                                                ) : (
-                                                    <div className="p-2 text-center text-sm text-muted-foreground">
-                                                        <p className="mb-2">No connected sites</p>
-                                                        <a href="/integrations" className="text-violet-600 hover:underline block">Go to Integrations</a>
-                                                    </div>
-                                                )}
-                                            </SelectContent>
-                                        </Select>
-                                        {sites.length === 0 && (
-                                            <p className="text-xs text-muted-foreground mt-1">
-                                                You need to connect a site in the <a href="/integrations" className="underline hover:text-foreground">Integrations page</a> first.
-                                            </p>
-                                        )}
-                                    </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <Label>Date</Label>
@@ -771,7 +979,7 @@ Ready to transform your workflow? Start implementing these strategies today.`)
                                     <Button
                                         className="bg-gradient-to-r from-violet-600 to-indigo-600"
                                         onClick={handleSchedulePublish}
-                                        disabled={!selectedSite || !scheduleDate || !scheduleTime || isPublishing}
+                                        disabled={!scheduleDate || !scheduleTime || isPublishing}
                                     >
                                         <Calendar className="h-4 w-4 mr-2" />
                                         Schedule
@@ -788,6 +996,6 @@ Ready to transform your workflow? Start implementing these strategies today.`)
                     </CardContent>
                 </Card>
             </div>
-        </div>
+        </div >
     )
 }

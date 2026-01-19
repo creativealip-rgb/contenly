@@ -3,7 +3,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { UpdateUserDto, CreateApiKeyDto } from './dto';
 import { AuthGuard } from '../../common/guards/auth.guard';
-import { Request } from 'express';
+import type { Request } from 'express';
 
 @ApiTags('users')
 @ApiBearerAuth()

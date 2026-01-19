@@ -142,7 +142,7 @@ export class BillingService {
     }
 
     async getSubscription(userId: string) {
-        const { subscription } = await import('../../db/schema');
+        const { subscription } = await import('../../db/schema.js');
 
         return this.db.query.subscription.findFirst({
             where: and(

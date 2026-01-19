@@ -20,10 +20,15 @@ export const getSites = (): WordPressSite[] => {
 }
 
 export const addSite = (site: WordPressSite) => {
-    const sites = getSites()
-    const newSites = [...sites, site]
+    // SINGLE SITE MODEL: Replace all existing sites with the new one
+    const newSites = [site]
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newSites))
     return newSites
+}
+
+export const getActiveSite = (): WordPressSite | null => {
+    const sites = getSites()
+    return sites.length > 0 ? sites[0] : null
 }
 
 export const removeSite = (id: string) => {

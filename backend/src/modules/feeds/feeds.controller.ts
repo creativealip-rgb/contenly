@@ -3,7 +3,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { FeedsService } from './feeds.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { User } from '@prisma/client';
+import type { User } from '../../db/types';
 
 @ApiTags('feeds')
 @ApiBearerAuth()
@@ -31,5 +31,12 @@ export class FeedsController {
     @ApiOperation({ summary: 'Remove RSS feed' })
     async delete(@CurrentUser() user: User, @Param('id') id: string) {
         return this.feedsService.delete(user.id, id);
+    }
+
+    @Post(':id/poll')
+    @ApiOperation({ summary: 'Manually trigger feed polling' })
+    async pollFeed(@Param('id') id: string) {
+        await this.feedsService.triggerPoll(id);
+        return { message: 'Feed polling initiated' };
     }
 }

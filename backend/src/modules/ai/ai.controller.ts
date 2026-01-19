@@ -4,7 +4,7 @@ import { AiService } from './ai.service';
 import { GenerateContentDto, GenerateSeoDto, GenerateImageDto } from './dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { User } from '@prisma/client';
+import type { User } from '../../db/types';
 
 @ApiTags('ai')
 @ApiBearerAuth()
