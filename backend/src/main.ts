@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+// Restart trigger: 6
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';

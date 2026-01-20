@@ -8,19 +8,34 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Sparkles, Eye, EyeOff } from 'lucide-react'
+import { api } from '@/lib/api'
+import { useAuthStore } from '@/stores'
 
 export default function LoginPage() {
+    const { setUser } = useAuthStore()
     const [showPassword, setShowPassword] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsLoading(true)
-        // Simulate login - replace with actual auth
-        setTimeout(() => {
-            setIsLoading(false)
+
+        const formData = new FormData(e.target as HTMLFormElement)
+        const email = formData.get('email') as string
+        const password = formData.get('password') as string
+
+        try {
+            const response = await api.auth.login({ email, password })
+            setUser(response.user)
+            // Ideally store token too if needed for authenticated requests
+            // useAuthStore.getState().setToken(response.session.token)
             window.location.href = '/dashboard'
-        }, 1500)
+        } catch (error: any) {
+            console.error('Login error:', error)
+            alert(error.message || 'Login failed')
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     return (
@@ -51,6 +66,7 @@ export default function LoginPage() {
                                 <Label htmlFor="email">Email</Label>
                                 <Input
                                     id="email"
+                                    name="email"
                                     type="email"
                                     placeholder="john@example.com"
                                     required
@@ -69,6 +85,7 @@ export default function LoginPage() {
                                 <div className="relative">
                                     <Input
                                         id="password"
+                                        name="password"
                                         type={showPassword ? 'text' : 'password'}
                                         placeholder="Enter your password"
                                         required
@@ -103,7 +120,14 @@ export default function LoginPage() {
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
-                            <Button variant="outline" className="w-full">
+                            <Button variant="outline" className="w-full" onClick={async () => {
+                                try {
+                                    const { authClient } = await import('@/lib/auth-client');
+                                    await authClient.signIn.social({ provider: 'google' });
+                                } catch (error) {
+                                    console.error('Google sign-in error:', error);
+                                }
+                            }}>
                                 <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24">
                                     <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                                     <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />

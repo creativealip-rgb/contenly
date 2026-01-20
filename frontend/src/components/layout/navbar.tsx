@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/stores'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -54,6 +55,13 @@ const icons = {
 export function Navbar() {
     const { user, logout } = useAuthStore()
     const { toggle } = useSidebarStore()
+    const router = useRouter()
+
+    const handleLogout = () => {
+        logout()
+        router.push('/login')
+        router.refresh()
+    }
 
     return (
         <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl">
@@ -142,7 +150,7 @@ export function Navbar() {
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="my-2" />
                             <DropdownMenuItem
-                                onClick={() => logout()}
+                                onClick={handleLogout}
                                 className="rounded-lg cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-500/10 px-3 py-2"
                             >
                                 <span className="flex items-center gap-3">

@@ -13,6 +13,18 @@ export const auth = betterAuth({
     // Base URL for the auth server
     baseURL: process.env.API_URL || 'http://localhost:3001',
 
+    // Debug logging
+    logger: {
+        level: 'debug',
+    },
+
+    // Trusted origins for CORS
+    trustedOrigins: [
+        'http://localhost:3000',  // Frontend dev server
+        'http://localhost:3001',  // Backend server
+        ...(process.env.FRONTEND_URL?.split(',') || []),  // Production/staging URLs
+    ],
+
     // Secret for signing tokens
     secret: process.env.BETTER_AUTH_SECRET,
 
@@ -27,14 +39,12 @@ export const auth = betterAuth({
     // OAuth providers
     socialProviders: {
         google: {
-            clientId: process.env.GOOGLE_CLIENT_ID || '',
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-            enabled: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
+            clientId: process.env.GOOGLE_CLIENT_ID as string,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
         },
         github: {
             clientId: process.env.GITHUB_CLIENT_ID || '',
             clientSecret: process.env.GITHUB_CLIENT_SECRET || '',
-            enabled: !!(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET),
         },
     },
 
@@ -89,6 +99,12 @@ export const auth = betterAuth({
             // This would be handled by the billing service
         },
     },
+});
+
+console.log('🔐 Better Auth initialized');
+console.log('📍 Google OAuth:', {
+    enabled: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
+    clientId: process.env.GOOGLE_CLIENT_ID ? `${process.env.GOOGLE_CLIENT_ID.substring(0, 10)}...` : 'MISSING'
 });
 
 export type Auth = typeof auth;
