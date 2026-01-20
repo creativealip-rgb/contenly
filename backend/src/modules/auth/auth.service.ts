@@ -1,5 +1,9 @@
 import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { auth } from '../../auth/auth.config';
+import { db, schema } from '../../db';
+import { eq, and, gt } from 'drizzle-orm';
+import * as crypto from 'crypto';
+import * as bcrypt from 'bcrypt';
 import { BillingService } from '../billing/billing.service';
 
 @Injectable()
@@ -76,23 +80,85 @@ export class AuthService {
 
     async forgotPassword(email: string) {
         try {
-            // Better Auth doesn't have forgotPassword built-in
-            // Return success without actual implementation for now
+            // Check if user exists
+            const existingUser = await db.query.user.findFirst({
+                where: eq(schema.user.email, email),
+            });
+
+            if (!existingUser) {
+                // Return success even if user doesn't exist for security
+                return { message: 'Password reset email sent' };
+            }
+
+            // Generate token
+            const token = crypto.randomBytes(32).toString('hex');
+            const expiresAt = new Date(Date.now() + 1000 * 60 * 60); // 1 hour
+
+            // Store in verification table
+            await db.insert(schema.verification).values({
+                id: crypto.randomUUID(),
+                identifier: email,
+                value: token,
+                expiresAt: expiresAt,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            });
+
+            // MOCK EMAIL SENDING
+            console.log('=================================================================');
+            console.log(`🔐 PASSWORD RESET LINK for ${email}:`);
+            console.log(`${process.env.FRONTEND_URL?.split(',')[0] || 'http://localhost:3000'}/reset-password?token=${token}`);
+            console.log('=================================================================');
+
             return { message: 'Password reset email sent' };
         } catch (error: any) {
-            // Don't reveal if email exists
+            console.error('Forgot password error:', error);
             return { message: 'Password reset email sent' };
         }
     }
 
     async resetPassword(token: string, newPassword: string) {
         try {
-            await auth.api.resetPassword({
-                body: { token, newPassword },
+            // Find valid token
+            const validToken = await db.query.verification.findFirst({
+                where: and(
+                    eq(schema.verification.value, token),
+                    gt(schema.verification.expiresAt, new Date())
+                ),
             });
+
+            if (!validToken) {
+                throw new BadRequestException('Invalid or expired reset token');
+            }
+
+            // Find user
+            const user = await db.query.user.findFirst({
+                where: eq(schema.user.email, validToken.identifier),
+            });
+
+            if (!user) {
+                throw new BadRequestException('User not found');
+            }
+
+            // Hash new password
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+            // Update account password
+            // Note: Better Auth stores password in the account table
+            await db.update(schema.account)
+                .set({ password: hashedPassword, updatedAt: new Date() })
+                .where(eq(schema.account.userId, user.id));
+
+            // Delete used token
+            await db.delete(schema.verification)
+                .where(eq(schema.verification.id, validToken.id));
+
             return { message: 'Password updated successfully' };
         } catch (error: any) {
-            throw new BadRequestException('Invalid or expired reset token');
+            console.error('Reset password error:', error);
+            if (error instanceof BadRequestException) throw error;
+            throw new BadRequestException('Failed to reset password');
         }
     }
 

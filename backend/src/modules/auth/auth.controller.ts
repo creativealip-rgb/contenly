@@ -12,12 +12,7 @@ export class AuthController {
     constructor(private authService: AuthService) { }
 
     // Handle all Better Auth routes (OAuth, callbacks, etc.)
-    @All('*')
-    async handleBetterAuth(@Req() req: Request, @Res() res: Response) {
-        // Let Better Auth handle OAuth and other built-in routes
-        const handler = toNodeHandler(auth);
-        return handler(req, res);
-    }
+
 
     @Post('register')
     @ApiOperation({ summary: 'Register a new user with email and password' })
@@ -70,5 +65,14 @@ export class AuthController {
     @ApiOperation({ summary: 'Reset password with token' })
     async resetPassword(@Body() dto: ResetPasswordDto) {
         return this.authService.resetPassword(dto.token, dto.password);
+    }
+
+    // Handle all Better Auth routes (OAuth, callbacks, etc.)
+    @All('*')
+    async handleBetterAuth(@Req() req: Request, @Res() res: Response) {
+        console.log('🔵 Better Auth wildcard handler called for:', req.method, req.url);
+        // Let Better Auth handle OAuth and other built-in routes
+        const handler = toNodeHandler(auth);
+        return handler(req, res);
     }
 }

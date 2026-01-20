@@ -8,21 +8,39 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Sparkles, Eye, EyeOff, Check } from 'lucide-react'
+import { api } from '@/lib/api'
+import { useAuthStore } from '@/stores'
 
 export default function RegisterPage() {
     const [showPassword, setShowPassword] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [agreeTerms, setAgreeTerms] = useState(false)
 
+    const { setUser } = useAuthStore()
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!agreeTerms) return
         setIsLoading(true)
-        // Simulate registration - replace with actual auth
-        setTimeout(() => {
-            setIsLoading(false)
+
+        const formData = new FormData(e.target as HTMLFormElement)
+        const email = formData.get('email') as string
+        const password = formData.get('password') as string
+        const firstName = formData.get('firstName') as string
+        const lastName = formData.get('lastName') as string
+        const fullName = `${firstName} ${lastName}`.trim()
+
+        try {
+            const response = await api.auth.register({ email, password, fullName })
+            setUser(response.user)
+            // useAuthStore.getState().setToken(response.session.token)
             window.location.href = '/dashboard'
-        }, 1500)
+        } catch (error: any) {
+            console.error('Registration error:', error)
+            alert(error.message || 'Registration failed')
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     return (
@@ -52,17 +70,18 @@ export default function RegisterPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="firstName">First name</Label>
-                                    <Input id="firstName" placeholder="John" required />
+                                    <Input id="firstName" name="firstName" placeholder="John" required />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="lastName">Last name</Label>
-                                    <Input id="lastName" placeholder="Doe" required />
+                                    <Input id="lastName" name="lastName" placeholder="Doe" required />
                                 </div>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="email">Email</Label>
                                 <Input
                                     id="email"
+                                    name="email"
                                     type="email"
                                     placeholder="john@example.com"
                                     required
@@ -73,6 +92,7 @@ export default function RegisterPage() {
                                 <div className="relative">
                                     <Input
                                         id="password"
+                                        name="password"
                                         type={showPassword ? 'text' : 'password'}
                                         placeholder="Create a password"
                                         required
