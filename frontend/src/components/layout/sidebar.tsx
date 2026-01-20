@@ -87,67 +87,117 @@ const navItems = [
 
 export function Sidebar() {
     const pathname = usePathname()
-    const { isCollapsed, setCollapsed } = useSidebarStore()
+    const { isCollapsed, setCollapsed, isOpen, setOpen } = useSidebarStore()
+
+    // Handle mobile close on navigation
+    const handleMobileLinkClick = () => {
+        if (window.innerWidth < 768) {
+            setOpen(false)
+        }
+    }
 
     return (
-        <aside
-            className={cn(
-                "fixed left-0 top-16 z-40 h-[calc(100vh-4rem)] border-r border-border bg-card/50 backdrop-blur-xl transition-all duration-300",
-                isCollapsed ? "w-[72px]" : "w-64"
-            )}
-        >
-            <div className="flex h-full flex-col">
-                {/* Navigation */}
-                <nav className="flex-1 space-y-1.5 p-4">
-                    {navItems.map((item) => {
-                        const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+        <>
+            {/* Mobile Overlay */}
+            <div
+                className={cn(
+                    "fixed inset-0 z-30 bg-background/80 backdrop-blur-sm transition-all duration-200 md:hidden",
+                    isOpen ? "opacity-100 visible" : "opacity-0 invisible"
+                )}
+                onClick={() => setOpen(false)}
+            />
 
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className={cn(
-                                    "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
-                                    isActive
-                                        ? "bg-gradient-to-r from-indigo-500/10 to-purple-500/10 text-foreground border border-indigo-500/20"
-                                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                                )}
-                            >
-                                <div className={cn(
-                                    "shrink-0 transition-colors duration-200",
-                                    isActive
-                                        ? "text-indigo-500"
-                                        : "text-muted-foreground group-hover:text-foreground"
-                                )}>
-                                    {item.icon}
-                                </div>
-                                {!isCollapsed && (
-                                    <span className="truncate">{item.label}</span>
-                                )}
-                                {isActive && !isCollapsed && (
-                                    <div className="ml-auto h-1.5 w-1.5 rounded-full bg-indigo-500" />
-                                )}
-                            </Link>
-                        )
-                    })}
-                </nav>
+            <aside
+                className={cn(
+                    "fixed left-0 top-16 z-40 h-[calc(100vh-4rem)] border-r border-border bg-card/50 backdrop-blur-xl transition-all duration-300",
+                    isCollapsed ? "md:w-[72px]" : "md:w-64",
+                    // Mobile behavior: fixed width, slide in/out
+                    "w-64",
+                    isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+                )}
+            >
+                <div className="flex h-full flex-col">
+                    {/* Navigation */}
+                    <nav className="flex-1 space-y-1.5 p-4">
+                        {navItems.map((item) => {
+                            const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
 
-                {/* Collapse Toggle */}
-                <div className="border-t border-border p-4">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setCollapsed(!isCollapsed)}
-                        className={cn(
-                            "w-full rounded-xl transition-all duration-200 text-muted-foreground hover:text-foreground",
-                            isCollapsed ? "justify-center px-2" : "justify-start"
-                        )}
-                    >
-                        {isCollapsed ? icons.chevronRight : icons.chevronLeft}
-                        {!isCollapsed && <span className="ml-2">Collapse</span>}
-                    </Button>
+                            return (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    onClick={handleMobileLinkClick}
+                                    className={cn(
+                                        "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                                        isActive
+                                            ? "bg-gradient-to-r from-indigo-500/10 to-purple-500/10 text-foreground border border-indigo-500/20"
+                                            : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                                    )}
+                                >
+                                    <div className={cn(
+                                        "shrink-0 transition-colors duration-200",
+                                        isActive
+                                            ? "text-indigo-500"
+                                            : "text-muted-foreground group-hover:text-foreground"
+                                    )}>
+                                        {item.icon}
+                                    </div>
+                                    {/* Show label if:
+                                        1. It's mobile (always w-64 when open)
+                                        2. OR it's desktop AND not collapsed
+                                    */}
+                                    <span className={cn(
+                                        "truncate transition-all duration-300",
+                                        isCollapsed ? "md:w-0 md:opacity-0" : "md:w-auto md:opacity-100"
+                                    )}>
+                                        {item.label}
+                                    </span>
+
+                                    {isActive && (
+                                        <div className={cn(
+                                            "ml-auto h-1.5 w-1.5 rounded-full bg-indigo-500",
+                                            isCollapsed ? "md:hidden" : "block"
+                                        )} />
+                                    )}
+                                </Link>
+                            )
+                        })}
+                    </nav>
+
+                    <div className="mt-auto border-t border-border p-4">
+                        {/* User Profile */}
+                        <div className={cn(
+                            "flex items-center gap-3 mb-4 transition-all duration-200",
+                            isCollapsed ? "md:justify-center" : "md:justify-start"
+                        )}>
+                            <div className="h-9 w-9 shrink-0 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold shadow-lg">
+                                N
+                            </div>
+                            <div className={cn(
+                                "flex flex-col overflow-hidden transition-all duration-300",
+                                isCollapsed ? "md:w-0 md:opacity-0" : "md:w-auto md:opacity-100"
+                            )}>
+                                <span className="text-sm font-medium truncate">New User</span>
+                                <span className="text-xs text-muted-foreground truncate">user@example.com</span>
+                            </div>
+                        </div>
+
+                        {/* Collapse Toggle (Desktop Only) */}
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setCollapsed(!isCollapsed)}
+                            className={cn(
+                                "hidden md:flex w-full rounded-xl transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-accent/50",
+                                isCollapsed ? "justify-center px-2" : "justify-start"
+                            )}
+                        >
+                            {isCollapsed ? icons.chevronRight : icons.chevronLeft}
+                            {!isCollapsed && <span className="ml-2">Collapse</span>}
+                        </Button>
+                    </div>
                 </div>
-            </div>
-        </aside>
+            </aside>
+        </>
     )
 }

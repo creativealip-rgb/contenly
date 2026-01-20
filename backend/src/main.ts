@@ -9,8 +9,14 @@ async function bootstrap() {
 
   // Security
   app.use(helmet());
+  // CORS Setup
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const origins = frontendUrl.includes(',')
+    ? frontendUrl.split(',').map(url => url.trim())
+    : frontendUrl;
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: origins,
     credentials: true,
   });
 

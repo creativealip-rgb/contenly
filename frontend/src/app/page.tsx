@@ -1,3 +1,6 @@
+'use client'
+
+import React from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -121,6 +124,8 @@ const stats = [
 ]
 
 export default function LandingPage() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
+
   return (
     <div className="min-h-screen bg-background overflow-hidden">
       {/* Navbar */}
@@ -142,6 +147,7 @@ export default function LandingPage() {
             </span>
           </Link>
 
+          {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-8">
             <Link href="#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               Features
@@ -154,7 +160,7 @@ export default function LandingPage() {
             </Link>
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-3">
             <Link href="/login">
               <Button variant="ghost" className="font-medium">Sign In</Button>
             </Link>
@@ -164,7 +170,56 @@ export default function LandingPage() {
               </Button>
             </Link>
           </div>
+
+          {/* Mobile Menu Toggle */}
+          <button className="md:hidden p-2 text-foreground" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+            {isMobileMenuOpen ? (
+              <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6" stroke="currentColor" strokeWidth="2">
+                <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6" stroke="currentColor" strokeWidth="2">
+                <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </button>
         </div>
+
+        {/* Mobile Menu Overlay */}
+        {isMobileMenuOpen && (
+          <div className="absolute top-16 left-0 right-0 bg-background/95 backdrop-blur-xl border-b border-border p-4 md:hidden flex flex-col gap-4 shadow-2xl animate-in slide-in-from-top-5">
+            <Link
+              href="#features"
+              className="px-4 py-3 text-sm font-medium hover:bg-accent rounded-lg transition-colors"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Features
+            </Link>
+            <Link
+              href="#testimonials"
+              className="px-4 py-3 text-sm font-medium hover:bg-accent rounded-lg transition-colors"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Testimonials
+            </Link>
+            <Link
+              href="#contact"
+              className="px-4 py-3 text-sm font-medium hover:bg-accent rounded-lg transition-colors"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Contact
+            </Link>
+            <div className="h-px bg-border my-2"></div>
+            <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
+              <Button variant="ghost" className="w-full justify-start font-medium h-12">Sign In</Button>
+            </Link>
+            <Link href="/register" onClick={() => setIsMobileMenuOpen(false)}>
+              <Button className="btn-premium w-full h-12">
+                Get Started
+              </Button>
+            </Link>
+          </div>
+        )}
       </header>
 
       {/* Hero Section */}
@@ -185,7 +240,7 @@ export default function LandingPage() {
             </div>
 
             {/* Headline */}
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight mb-8 animate-fade-up stagger-1 leading-tight" style={{ opacity: 0 }}>
+            <h1 className="text-4xl md:text-7xl lg:text-8xl font-black tracking-tight mb-8 animate-fade-up stagger-1 leading-tight" style={{ opacity: 0 }}>
               Create <span className="text-gradient">Viral-Ready</span><br />
               Content Instantly
             </h1>
