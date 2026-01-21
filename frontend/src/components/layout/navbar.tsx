@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/stores'
+import { authClient } from '@/lib/auth-client'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -57,10 +58,21 @@ export function Navbar() {
     const { toggle } = useSidebarStore()
     const router = useRouter()
 
-    const handleLogout = () => {
-        logout()
-        router.push('/login')
-        router.refresh()
+    const handleLogout = async () => {
+        try {
+            // Sign out from Better Auth
+            await authClient.signOut()
+            // Clear local store
+            logout()
+            // Redirect to login
+            router.push('/login')
+            router.refresh()
+        } catch (error) {
+            console.error('Logout error:', error)
+            // Still clear local state even if Better Auth fails
+            logout()
+            router.push('/login')
+        }
     }
 
     return (

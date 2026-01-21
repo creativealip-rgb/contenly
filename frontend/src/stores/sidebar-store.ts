@@ -9,7 +9,7 @@ interface SidebarState {
 }
 
 export const useSidebarStore = create<SidebarState>((set) => ({
-    isOpen: true,
+    isOpen: false, // Default closed for better mobile UX
     isCollapsed: false,
     toggle: () => set((state) => ({ isOpen: !state.isOpen })),
     setOpen: (isOpen) => set({ isOpen }),
