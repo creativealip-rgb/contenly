@@ -61,6 +61,9 @@ const mockMappings = [
 export default function IntegrationsPage() {
     const [isAddOpen, setIsAddOpen] = useState(false)
     const [sites, setSites] = useState<WordPressSite[]>([])
+    const [isRefreshingCategories, setIsRefreshingCategories] = useState(false)
+    const [categoryMappings, setCategoryMappings] = useState(mockMappings)
+    const [selectedSiteForCategories, setSelectedSiteForCategories] = useState<string>('all')
 
     // Form state
     const [formData, setFormData] = useState({
@@ -99,6 +102,52 @@ export default function IntegrationsPage() {
         if (hours < 24) return `${hours}h ago`
         const days = Math.floor(hours / 24)
         return `${days}d ago`
+    }
+
+    const handleRefreshCategories = async () => {
+        // Find the selected site
+        const targetSite = selectedSiteForCategories === 'all'
+            ? sites.find(s => s.status === 'connected')
+            : sites.find(s => s.id === selectedSiteForCategories)
+
+        if (!targetSite) {
+            alert('Please connect a WordPress site first')
+            return
+        }
+
+        setIsRefreshingCategories(true)
+
+        try {
+            const params = new URLSearchParams({
+                wpUrl: targetSite.url,
+                username: targetSite.username,
+                appPassword: targetSite.appPassword
+            })
+
+            const response = await fetch(`/api/wordpress/categories?${params.toString()}`)
+            const data = await response.json()
+
+            if (!response.ok || data.error) {
+                throw new Error(data.error || 'Failed to fetch categories')
+            }
+
+            // Auto-create mappings from WordPress categories
+            if (data.categories && Array.isArray(data.categories)) {
+                const newMappings = data.categories.map((cat: any) => ({
+                    source: cat.slug || cat.name,
+                    target: cat.name,
+                    wpCategoryId: cat.id
+                }))
+
+                setCategoryMappings(newMappings)
+                alert(`Successfully fetched ${newMappings.length} categories from ${targetSite.name}`)
+            }
+        } catch (error: any) {
+            console.error('Refresh categories error:', error)
+            alert(error.message || 'Failed to refresh categories')
+        } finally {
+            setIsRefreshingCategories(false)
+        }
     }
 
     const handleAddSite = async () => {
@@ -291,7 +340,7 @@ export default function IntegrationsPage() {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-4">
-                                        <div className="text-right text-sm">
+                                        <div className="text-right text- sm">
                                             <p className="font-medium">{site.articlesPublished} articles</p>
                                             <p className="text-muted-foreground">Last sync: {formatTimeAgo(site.lastSync)}</p>
                                         </div>
@@ -324,16 +373,21 @@ export default function IntegrationsPage() {
                 </CardContent>
             </Card>
 
-            {/* Category Mappings (Static Mock) */}
+            {/* Category Mappings */}
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
                         <CardTitle>Category Mapping</CardTitle>
                         <CardDescription>Map source categories to your WordPress categories</CardDescription>
                     </div>
-                    <Button variant="outline" size="sm">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Mapping
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRefreshCategories}
+                        disabled={isRefreshingCategories || sites.length === 0}
+                    >
+                        <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshingCategories ? 'animate-spin' : ''}`} />
+                        {isRefreshingCategories ? 'Refreshing...' : 'Refresh Categories'}
                     </Button>
                 </CardHeader>
                 <CardContent>
@@ -348,7 +402,7 @@ export default function IntegrationsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {mockMappings.map((mapping, index) => (
+                            {categoryMappings.map((mapping, index) => (
                                 <TableRow key={index}>
                                     <TableCell>
                                         <Badge variant="outline">{mapping.source}</Badge>
@@ -360,14 +414,19 @@ export default function IntegrationsPage() {
                                         <Badge className="bg-violet-500/10 text-violet-600">{mapping.target}</Badge>
                                     </TableCell>
                                     <TableCell>
-                                        <Select defaultValue="all">
+                                        <Select
+                                            defaultValue="all"
+                                            value={selectedSiteForCategories}
+                                            onValueChange={setSelectedSiteForCategories}
+                                        >
                                             <SelectTrigger className="w-[140px]">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent position="popper" side="bottom" sideOffset={4}>
                                                 <SelectItem value="all">All Sites</SelectItem>
-                                                <SelectItem value="myblog">myblog.com</SelectItem>
-                                                <SelectItem value="techsite">techsite.com</SelectItem>
+                                                {sites.map(site => (
+                                                    <SelectItem key={site.id} value={site.id}>{site.name}</SelectItem>
+                                                ))}
                                             </SelectContent>
                                         </Select>
                                     </TableCell>

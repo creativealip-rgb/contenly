@@ -595,13 +595,13 @@ Ready to transform your workflow? Start implementing these strategies today.`)
                                 const article = articles.find(a => a.id === val)
                                 if (article) handleSelectArticle(article)
                             }}>
-                                <SelectTrigger disabled={!selectedFeed || isFetchingRSS}>
-                                    <SelectValue placeholder={isFetchingRSS ? "Fetching..." : "Choose an article..."} />
+                                <SelectTrigger disabled={!selectedFeed || isFetchingRSS} className="w-full">
+                                    <SelectValue placeholder={isFetchingRSS ? "Fetching..." : "Choose an article..."} className="block truncate" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent position="popper" sideOffset={4} className="w-[--radix-select-trigger-width] max-w-full overflow-hidden">
                                     {articles.map((article) => (
-                                        <SelectItem key={article.id} value={article.id}>
-                                            <span className="truncate block max-w-[400px]">{article.title}</span>
+                                        <SelectItem key={article.id} value={article.id} className="overflow-hidden">
+                                            <div className="truncate min-w-0 flex-1 pr-8">{article.title}</div>
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -633,7 +633,7 @@ Ready to transform your workflow? Start implementing these strategies today.`)
                                 <SelectTrigger className="h-10">
                                     <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent position="popper" sideOffset={4}>
                                     <SelectItem value="professional">Professional</SelectItem>
                                     <SelectItem value="casual">Casual</SelectItem>
                                     <SelectItem value="creative">Creative</SelectItem>
@@ -649,7 +649,7 @@ Ready to transform your workflow? Start implementing these strategies today.`)
                                 <SelectTrigger className="h-10">
                                     <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent position="popper" sideOffset={4}>
                                     <SelectItem value="blog">Blog Post</SelectItem>
                                     <SelectItem value="news">News Article</SelectItem>
                                     <SelectItem value="tutorial">Tutorial/Guide</SelectItem>
@@ -668,7 +668,7 @@ Ready to transform your workflow? Start implementing these strategies today.`)
                                 <SelectTrigger className="h-10">
                                     <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent position="popper" sideOffset={4}>
                                     <SelectItem value="shorter">Shorter (70%)</SelectItem>
                                     <SelectItem value="same">Same Length</SelectItem>
                                     <SelectItem value="longer">Longer (130%)</SelectItem>
