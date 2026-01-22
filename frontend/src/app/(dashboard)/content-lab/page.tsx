@@ -373,7 +373,7 @@ Source: ${article.url}`)
                     title: generatedTitle,
                     content: generatedContent,
                     status,
-                    categories: selectedCategory ? [parseInt(selectedCategory)] : undefined,
+                    categories: selectedCategory ? [selectedCategory] : undefined,
                 }),
             })
 
@@ -424,7 +424,7 @@ Source: ${article.url}`)
                     title: generatedTitle,
                     content: generatedContent,
                     status: 'future',
-                    categories: selectedCategory ? [parseInt(selectedCategory)] : undefined,
+                    categories: selectedCategory ? [selectedCategory] : undefined,
                     date: scheduledDateTime,
                 }),
             })
