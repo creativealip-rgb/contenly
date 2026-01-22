@@ -65,12 +65,10 @@ export class AuthService {
         }
     }
 
-    async getSession(sessionToken: string) {
+    async getSession(options: { headers: Headers }) {
         try {
             const session = await auth.api.getSession({
-                headers: {
-                    Authorization: `Bearer ${sessionToken}`,
-                },
+                headers: options.headers,
             });
             return session;
         } catch {

@@ -53,8 +53,9 @@ export class OpenAiService {
 3. Target length: ${lengthGuide[options.length || 'medium']}
 4. ${options.keywords?.length ? `Naturally incorporate these keywords: ${options.keywords.join(', ')}` : ''}
 5. ${options.targetLanguage ? `Write in ${options.targetLanguage}` : ''}
-6. Maintain proper HTML formatting with paragraphs, headings where appropriate
-7. Make the content SEO-friendly with clear structure`;
+6. Return ONLY the HTML content (headings, paragraphs, lists) suitable for the body of an article.
+7. DO NOT include <!DOCTYPE html>, <html>, <head>, or <body> tags.
+8. Make the content SEO-friendly with clear structure`;
 
         const response = await this.openai.chat.completions.create({
             model: this.model,

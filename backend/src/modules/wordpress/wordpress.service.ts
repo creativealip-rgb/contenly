@@ -99,19 +99,29 @@ export class WordpressService {
     }
 
     async syncCategories(siteId: string) {
+        console.log('[syncCategories] Starting sync for site:', siteId);
         const site = await this.db.query.wpSite.findFirst({
             where: eq(wpSite.id, siteId),
         });
 
-        if (!site) throw new NotFoundException('Site not found');
+        if (!site) {
+            console.log('[syncCategories] Site not found');
+            throw new NotFoundException('Site not found');
+        }
+
+        console.log('[syncCategories] Site found:', { name: site.name, url: site.url });
 
         try {
             const appPassword = this.decrypt(site.appPasswordEncrypted);
+            console.log('[syncCategories] Password decrypted successfully');
             const auth = Buffer.from(`${site.username}:${appPassword}`).toString('base64');
 
+            console.log('[syncCategories] Calling WordPress API:', `${site.url}/wp-json/wp/v2/categories`);
             const response = await axios.get(`${site.url}/wp-json/wp/v2/categories?per_page=100`, {
                 headers: { Authorization: `Basic ${auth}` },
             });
+
+            console.log('[syncCategories] API response received:', response.data.length, 'categories');
 
             const categories = response.data.map((cat: any) => ({
                 id: cat.id,
@@ -124,8 +134,10 @@ export class WordpressService {
                 .set({ categoriesCache: categories })
                 .where(eq(wpSite.id, siteId));
 
+            console.log('[syncCategories] Categories cached successfully');
             return categories;
-        } catch {
+        } catch (error: any) {
+            console.error('[syncCategories] Error:', error.message);
             return [];
         }
     }
@@ -178,5 +190,70 @@ export class WordpressService {
 
         await this.db.delete(wpSite).where(eq(wpSite.id, siteId));
         return { message: 'Site disconnected' };
+    }
+
+    async publishArticle(
+        userId: string,
+        dto: { title: string; content: string; status: string; categories?: number[]; date?: string }
+    ) {
+        // Get user's active site (single-site model)
+        const site = await this.db.query.wpSite.findFirst({
+            where: eq(wpSite.userId, userId),
+        });
+
+        if (!site) {
+            throw new NotFoundException('No WordPress site connected. Please connect a site first.');
+        }
+
+        try {
+            const appPassword = this.decrypt(site.appPasswordEncrypted);
+            const auth = Buffer.from(`${site.username}:${appPassword}`).toString('base64');
+
+            const postData: any = {
+                title: dto.title,
+                content: dto.content,
+                status: dto.status || 'draft',
+            };
+
+            // Add categories if provided
+            if (dto.categories && dto.categories.length > 0) {
+                postData.categories = dto.categories;
+            }
+
+            // For scheduled posts
+            if (dto.status === 'future' && dto.date) {
+                postData.date = dto.date;
+                postData.status = 'future';
+            }
+
+            console.log('[publishArticle] Publishing to:', `${site.url}/wp-json/wp/v2/posts`);
+            console.log('[publishArticle] Post data:', { ...postData, content: '...' });
+
+            const response = await axios.post(
+                `${site.url}/wp-json/wp/v2/posts`,
+                postData,
+                {
+                    headers: { Authorization: `Basic ${auth}` },
+                }
+            );
+
+            console.log('[publishArticle] Success! Post ID:', response.data.id);
+
+            return {
+                success: true,
+                post: {
+                    id: response.data.id,
+                    title: response.data.title.rendered,
+                    status: response.data.status,
+                    link: response.data.link,
+                    date: response.data.date,
+                },
+            };
+        } catch (error: any) {
+            console.error('[publishArticle] Error:', error.response?.data || error.message);
+            throw new BadRequestException(
+                error.response?.data?.message || 'Failed to publish article to WordPress'
+            );
+        }
     }
 }

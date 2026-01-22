@@ -106,23 +106,30 @@ export default function ContentLabPage() {
         setSites(getSites())
         setFeeds(getFeeds())
 
-        // Fetch WordPress categories from active site
+        // Fetch WordPress categories from active site via backend
         const fetchCategories = async () => {
             const activeSite = getActiveSite()
             if (!activeSite) return
 
             setIsFetchingCategories(true)
             try {
-                const params = new URLSearchParams({
-                    wpUrl: activeSite.url,
-                    username: activeSite.username,
-                    appPassword: activeSite.appPassword
-                })
-                const response = await fetch(`/api/wordpress/categories?${params.toString()}`)
-                const data = await response.json()
+                // Use backend endpoint which already has stored credentials
+                const API_BASE_URL = typeof window === 'undefined'
+                    ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api')
+                    : '/api'
 
-                if (data.success && data.categories) {
-                    setWpCategories(data.categories)
+                const response = await fetch(`${API_BASE_URL}/wordpress/sites/${activeSite.id}/categories`, {
+                    credentials: 'include', // Send session cookies
+                })
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch categories')
+                }
+
+                const categories = await response.json()
+
+                if (Array.isArray(categories)) {
+                    setWpCategories(categories)
                 }
             } catch (error) {
                 console.error('Failed to fetch categories:', error)
@@ -304,51 +311,7 @@ Source: ${article.url}`)
         }
     }
 
-    const handleGenerate = async () => {
-        if (!sourceContent) return
-        setIsGenerating(true)
-        setPublishResult(null)
-        // Simulate AI generation
-        setTimeout(() => {
-            const title = 'Transform Your Workflow: A Complete Guide'
-            setGeneratedTitle(title)
-            setGeneratedContent(`# ${title}
 
-Discover how modern approaches are revolutionizing the way professionals work. This comprehensive guide explores cutting-edge strategies that deliver measurable results.
-
-## Why This Matters
-
-In today's fast-paced environment, staying ahead requires embracing innovation. Here's what you need to know:
-
-- **Efficiency gains** of up to 85% reported by early adopters
-- **Seamless integration** with existing workflows
-- **Scalable solutions** that grow with your needs
-
-## The Complete Breakdown
-
-Understanding the fundamentals is crucial for success. Let's dive into the core concepts that drive these improvements.
-
-### Getting Started
-
-Begin by assessing your current processes. Identify bottlenecks and areas where automation could make the biggest impact.
-
-### Implementation Best Practices
-
-Follow these proven strategies:
-1. Start small and iterate
-2. Measure results consistently
-3. Scale what works
-
-## Key Takeaways
-
-- Embrace change as an opportunity
-- Focus on measurable outcomes
-- Invest in the right tools
-
-Ready to transform your workflow? Start implementing these strategies today.`)
-            setIsGenerating(false)
-        }, 3000)
-    }
 
     const handleScrape = async () => {
         if (!scrapeUrl) return
@@ -393,28 +356,24 @@ Ready to transform your workflow? Start implementing these strategies today.`)
     const handlePublishNow = async (status: 'draft' | 'publish') => {
         if (!generatedContent || !generatedTitle) return
 
-        const credentials = getSelectedSiteCredentials()
-        if (!credentials) {
-            setPublishResult({
-                success: false,
-                message: 'Silakan hubungkan akun WordPress di halaman Integrations terlebih dahulu.',
-            })
-            return
-        }
-
         setIsPublishing(true)
         setPublishResult(null)
 
         try {
-            const response = await fetch('/api/wordpress', {
+            // Use relative path for client-side to leverage Next.js proxy
+            const API_BASE_URL = typeof window === 'undefined'
+                ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api')
+                : '/api'
+
+            const response = await fetch(`${API_BASE_URL}/wordpress/publish`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include', // Send session cookies
                 body: JSON.stringify({
-                    ...credentials,
                     title: generatedTitle,
                     content: generatedContent,
                     status,
-                    categories: selectedCategory ? [selectedCategory] : undefined,
+                    categories: selectedCategory ? [parseInt(selectedCategory)] : undefined,
                 }),
             })
 
@@ -446,31 +405,27 @@ Ready to transform your workflow? Start implementing these strategies today.`)
     const handleSchedulePublish = async () => {
         if (!generatedContent || !generatedTitle || !scheduleDate || !scheduleTime) return
 
-        const credentials = getSelectedSiteCredentials()
-        if (!credentials) {
-            setPublishResult({
-                success: false,
-                message: 'Silakan pilih situs WordPress.',
-            })
-            return
-        }
-
         setIsPublishing(true)
 
         try {
-            // Combine date and time for scheduled post
-            const scheduledDateTime = new Date(`${scheduleDate}T${scheduleTime}:00`)
+            // Combine date and time into ISO string
+            const scheduledDateTime = new Date(`${scheduleDate}T${scheduleTime}`).toISOString()
 
-            const response = await fetch('/api/wordpress', {
+            // Use relative path for client-side to leverage Next.js proxy
+            const API_BASE_URL = typeof window === 'undefined'
+                ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api')
+                : '/api'
+
+            const response = await fetch(`${API_BASE_URL}/wordpress/publish`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({
-                    ...credentials,
                     title: generatedTitle,
                     content: generatedContent,
                     status: 'future',
-                    date: scheduledDateTime.toISOString(),
-                    categories: selectedCategory ? [selectedCategory] : undefined,
+                    categories: selectedCategory ? [parseInt(selectedCategory)] : undefined,
+                    date: scheduledDateTime,
                 }),
             })
 
@@ -479,7 +434,7 @@ Ready to transform your workflow? Start implementing these strategies today.`)
             if (data.success) {
                 setPublishResult({
                     success: true,
-                    message: `Artikel dijadwalkan untuk ${scheduleDate} ${scheduleTime}`,
+                    message: `Artikel berhasil dijadwalkan untuk ${new Date(scheduledDateTime).toLocaleString('id-ID')}`,
                     link: data.post.link,
                 })
                 setIsScheduleOpen(false)
@@ -758,10 +713,10 @@ Ready to transform your workflow? Start implementing these strategies today.`)
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={handleGenerate}
-                                    disabled={!sourceContent || isGenerating}
+                                    onClick={handleAIRewrite}
+                                    disabled={!sourceContent || isRewriting}
                                 >
-                                    <RotateCcw className="h-4 w-4" />
+                                    <RotateCcw className={`h-4 w-4 ${isRewriting ? 'animate-spin' : ''}`} />
                                 </Button>
                             </div>
                         </div>

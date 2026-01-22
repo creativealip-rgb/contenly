@@ -1,32 +1,33 @@
-import { Controller, Post, Body } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AiService } from './ai.service';
 import { GenerateContentDto, GenerateSeoDto, GenerateImageDto } from './dto';
+import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import type { User } from '../../db/types';
 
 @ApiTags('ai')
+@ApiBearerAuth()
+@UseGuards(SessionAuthGuard)
 @Controller('ai')
 export class AiController {
     constructor(private aiService: AiService) { }
 
     @Post('generate')
     @ApiOperation({ summary: 'Generate rewritten content' })
-    async generate(@Body() dto: GenerateContentDto) {
-        // TODO: Get userId from session
-        const userId = 'temp-user-id'; // Temporary for testing
-        return this.aiService.generateContent(userId, dto);
+    async generate(@CurrentUser() user: User, @Body() dto: GenerateContentDto) {
+        return this.aiService.generateContent(user.id, dto);
     }
 
     @Post('generate-seo')
     @ApiOperation({ summary: 'Generate SEO metadata' })
-    async generateSeo(@Body() dto: GenerateSeoDto) {
-        const userId = 'temp-user-id';
-        return this.aiService.generateSeo(userId, dto);
+    async generateSeo(@CurrentUser() user: User, @Body() dto: GenerateSeoDto) {
+        return this.aiService.generateSeo(user.id, dto);
     }
 
     @Post('generate-image')
     @ApiOperation({ summary: 'Generate featured image with DALL-E' })
-    async generateImage(@Body() dto: GenerateImageDto) {
-        const userId = 'temp-user-id';
-        return this.aiService.generateImage(userId, dto);
+    async generateImage(@CurrentUser() user: User, @Body() dto: GenerateImageDto) {
+        return this.aiService.generateImage(user.id, dto);
     }
 }

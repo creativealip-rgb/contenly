@@ -1,13 +1,13 @@
 import { Controller, Get, Post, Delete, Body, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { WordpressService } from './wordpress.service';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { User } from '../../db/types';
 
 @ApiTags('wordpress')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(SessionAuthGuard)
 @Controller('wordpress')
 export class WordpressController {
     constructor(private wordpressService: WordpressService) { }
@@ -44,5 +44,14 @@ export class WordpressController {
     @ApiOperation({ summary: 'Disconnect WordPress site' })
     async deleteSite(@CurrentUser() user: User, @Param('id') siteId: string) {
         return this.wordpressService.deleteSite(user.id, siteId);
+    }
+
+    @Post('publish')
+    @ApiOperation({ summary: 'Publish article to WordPress' })
+    async publishArticle(
+        @CurrentUser() user: User,
+        @Body() dto: { title: string; content: string; status: string; categories?: number[]; date?: string }
+    ) {
+        return this.wordpressService.publishArticle(user.id, dto);
     }
 }

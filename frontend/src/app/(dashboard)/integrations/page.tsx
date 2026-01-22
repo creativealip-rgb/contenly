@@ -49,21 +49,44 @@ import {
     ArrowRight,
     Loader2
 } from 'lucide-react'
-import { WordPressSite, getSites, addSite, removeSite } from '@/lib/sites-store'
+import { WordPressSite } from '@/lib/sites-store'
+import { authClient } from '@/lib/auth-client'
 
-const mockMappings = [
-    { source: 'Technology', target: 'Tech News' },
-    { source: 'Business', target: 'Business & Finance' },
-    { source: 'Startups', target: 'Startup Stories' },
-    { source: 'AI', target: 'Artificial Intelligence' },
-]
+// Use relative path on client to leverage Next.js Proxy (cookies)
+// Server-side fetch (if any) would need absolute
+const API_BASE_URL = typeof window === 'undefined'
+    ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api')
+    : '/api'
+
+async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
+    const session = await authClient.getSession()
+    const token = session.data?.session.token // Adjust based on actual session structure
+
+    const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers,
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    }
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        ...options,
+        headers,
+        credentials: 'include' // Important: Send cookies (httpOnly session token)
+    })
+
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Request failed' }))
+        throw new Error(error.message || `Error ${response.status}`)
+    }
+
+    return response.json()
+}
 
 export default function IntegrationsPage() {
     const [isAddOpen, setIsAddOpen] = useState(false)
     const [sites, setSites] = useState<WordPressSite[]>([])
     const [isRefreshingCategories, setIsRefreshingCategories] = useState(false)
-    const [categoryMappings, setCategoryMappings] = useState(mockMappings)
-    const [selectedSiteForCategories, setSelectedSiteForCategories] = useState<string>('all')
+    const [categoryMappings, setCategoryMappings] = useState<Array<{ source: string; target: string; wpCategoryId?: number }>>([])
 
     // Form state
     const [formData, setFormData] = useState({
@@ -77,8 +100,61 @@ export default function IntegrationsPage() {
 
     // Load sites on mount
     useEffect(() => {
-        setSites(getSites())
+        fetchSites()
+        loadCategoryMappings()
     }, [])
+
+    const loadCategoryMappings = async () => {
+        try {
+            console.log('[loadCategoryMappings] Fetching from backend...')
+            const data = await fetchWithAuth('/category-mapping')
+            console.log('[loadCategoryMappings] Backend response:', data)
+
+            if (Array.isArray(data)) {
+                // Transform backend format to UI format
+                const mappings = data.map((m: any) => ({
+                    source: m.sourceCategory,
+                    target: m.targetCategoryName,
+                    wpCategoryId: parseInt(m.targetCategoryId)
+                }))
+                console.log('[loadCategoryMappings] Transformed mappings:', mappings)
+                setCategoryMappings(mappings)
+            } else {
+                console.warn('[loadCategoryMappings] Data is not an array:', data)
+            }
+        } catch (error) {
+            console.error('Failed to load category mappings:', error)
+        }
+    }
+
+    const fetchSites = async () => {
+        try {
+            const data = await fetchWithAuth('/wordpress/sites')
+            if (Array.isArray(data)) {
+                setSites(data)
+
+                // Sync to localStorage for Content Lab to access
+                // Transform backend site format to match WordPressSite interface
+                const sitesForLocalStorage = data.map((site: any) => ({
+                    id: site.id,
+                    name: site.name,
+                    url: site.url,
+                    username: site.username,
+                    appPassword: site.appPassword || '', // Backend might not return password for security
+                    status: site.status.toLowerCase() as 'connected' | 'error',
+                    lastSync: site.lastHealthCheck,
+                    articlesPublished: 0 // Not tracked in backend yet
+                }))
+
+                // Save to localStorage (sites-store uses 'contently_wp_sites' key)
+                if (sitesForLocalStorage.length > 0) {
+                    localStorage.setItem('contently_wp_sites', JSON.stringify(sitesForLocalStorage))
+                }
+            }
+        } catch (error) {
+            console.error('Failed to fetch sites:', error)
+        }
+    }
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -105,10 +181,8 @@ export default function IntegrationsPage() {
     }
 
     const handleRefreshCategories = async () => {
-        // Find the selected site
-        const targetSite = selectedSiteForCategories === 'all'
-            ? sites.find(s => s.status === 'connected')
-            : sites.find(s => s.id === selectedSiteForCategories)
+        // Get first connected site (single-site model)
+        const targetSite = sites.find(s => s.status === 'connected')
 
         if (!targetSite) {
             alert('Please connect a WordPress site first')
@@ -118,29 +192,30 @@ export default function IntegrationsPage() {
         setIsRefreshingCategories(true)
 
         try {
-            const params = new URLSearchParams({
-                wpUrl: targetSite.url,
-                username: targetSite.username,
-                appPassword: targetSite.appPassword
-            })
+            // Use backend endpoint to sync categories
+            const data = await fetchWithAuth(`/wordpress/sites/${targetSite.id}/categories`)
 
-            const response = await fetch(`/api/wordpress/categories?${params.toString()}`)
-            const data = await response.json()
-
-            if (!response.ok || data.error) {
-                throw new Error(data.error || 'Failed to fetch categories')
-            }
-
-            // Auto-create mappings from WordPress categories
-            if (data.categories && Array.isArray(data.categories)) {
-                const newMappings = data.categories.map((cat: any) => ({
+            if (data && Array.isArray(data)) {
+                const newMappings = data.map((cat: any) => ({
                     source: cat.slug || cat.name,
                     target: cat.name,
                     wpCategoryId: cat.id
                 }))
 
+                // Save mappings to backend
+                const mappingsToSave = newMappings.map(m => ({
+                    source: m.source,
+                    targetId: m.wpCategoryId.toString(),
+                    targetName: m.target
+                }))
+
+                await fetchWithAuth('/category-mapping', {
+                    method: 'POST',
+                    body: JSON.stringify({ mappings: mappingsToSave })
+                })
+
                 setCategoryMappings(newMappings)
-                alert(`Successfully fetched ${newMappings.length} categories from ${targetSite.name}`)
+                alert(`Successfully fetched and saved categories from ${targetSite.name}`)
             }
         } catch (error: any) {
             console.error('Refresh categories error:', error)
@@ -166,34 +241,27 @@ export default function IntegrationsPage() {
                 wpUrl = `https://${wpUrl}`
             }
 
-            const params = new URLSearchParams({
-                wpUrl,
-                username: formData.username,
-                appPassword: formData.appPassword
+            // 1. Test Connection first (using our Next.js API route as a proxy helper, or backend)
+            // Let's use backend directly if possible, or keep using the lightweight check
+            // For consistency, let's just send everything to backend 'connectSite' endpoint
+            // which likely does verification.
+
+            await fetchWithAuth('/wordpress/sites', {
+                method: 'POST',
+                body: JSON.stringify({
+                    name: formData.name,
+                    url: wpUrl,
+                    username: formData.username,
+                    appPassword: formData.appPassword
+                })
             })
 
-            const response = await fetch(`/api/wordpress?${params.toString()}`)
-            const data = await response.json()
-
-            if (!response.ok || data.error) {
-                throw new Error(data.error || 'Connection failed')
-            }
-
-            // Success - Add to store
-            const newSite: WordPressSite = {
-                id: Date.now().toString(),
-                name: formData.name,
-                url: wpUrl,
-                username: formData.username,
-                appPassword: formData.appPassword,
-                status: 'connected',
-                lastSync: new Date().toISOString(),
-                articlesPublished: 0
-            }
-
-            setSites(addSite(newSite))
+            // Success - Refresh list
+            await fetchSites()
             setIsAddOpen(false)
             setFormData({ name: '', url: '', username: '', appPassword: '' })
+            alert('Site connected successfully!')
+
         } catch (error: any) {
             setConnectionError(error.message || 'Failed to connect to WordPress site')
         } finally {
@@ -201,9 +269,42 @@ export default function IntegrationsPage() {
         }
     }
 
-    const handleRemoveSite = (id: string) => {
-        if (confirm('Are you sure you want to remove this site?')) {
-            setSites(removeSite(id))
+
+
+    const handleTestConnection = async (site: WordPressSite) => {
+        try {
+            const params = new URLSearchParams({
+                wpUrl: site.url,
+                username: site.username,
+                appPassword: site.appPassword
+            })
+            // Use categories endpoint as lightweight health check
+            const response = await fetch(`/api/wordpress/categories?${params.toString()}`)
+
+            if (response.ok) {
+                alert(`Connection to ${site.name} is working perfectly!`)
+            } else {
+                const data = await response.json()
+                alert(`Connection failed: ${data.error || 'Unknown error'}`)
+            }
+        } catch (error: any) {
+            alert(`Network error: ${error.message}`)
+        }
+    }
+
+    const handleRemoveSite = async (id: string) => {
+        if (!confirm('Are you sure you want to disconnect this site?')) return
+
+        try {
+            await fetchWithAuth(`/wordpress/sites/${id}`, {
+                method: 'DELETE'
+            })
+
+            // Refresh sites list
+            await fetchSites()
+            alert('Site disconnected successfully')
+        } catch (error: any) {
+            alert(`Failed to disconnect: ${error.message}`)
         }
     }
 
@@ -351,11 +452,11 @@ export default function IntegrationsPage() {
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => { }}>
+                                                <DropdownMenuItem onClick={() => handleTestConnection(site)}>
                                                     <RefreshCw className="h-4 w-4 mr-2" />
                                                     Test Connection
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => alert('Settings feature coming soon')}>
                                                     <Settings className="h-4 w-4 mr-2" />
                                                     Settings
                                                 </DropdownMenuItem>
@@ -397,7 +498,6 @@ export default function IntegrationsPage() {
                                 <TableHead>Source Category</TableHead>
                                 <TableHead></TableHead>
                                 <TableHead>WordPress Category</TableHead>
-                                <TableHead>Site</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -412,23 +512,6 @@ export default function IntegrationsPage() {
                                     </TableCell>
                                     <TableCell>
                                         <Badge className="bg-violet-500/10 text-violet-600">{mapping.target}</Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Select
-                                            defaultValue="all"
-                                            value={selectedSiteForCategories}
-                                            onValueChange={setSelectedSiteForCategories}
-                                        >
-                                            <SelectTrigger className="w-[140px]">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent position="popper" side="bottom" sideOffset={4}>
-                                                <SelectItem value="all">All Sites</SelectItem>
-                                                {sites.map(site => (
-                                                    <SelectItem key={site.id} value={site.id}>{site.name}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <Button variant="ghost" size="icon" className="text-red-600 hover:text-red-600">
