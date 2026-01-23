@@ -5,54 +5,91 @@ export interface RssFeed {
     lastSynced?: string
     status: 'active' | 'paused' | 'error'
     pollingInterval?: number
+    pollingIntervalMinutes?: number  // Backend uses this field
     itemsFetched?: number
     autoPublish?: boolean
     error?: string
+    userId?: string
+    createdAt?: string
+    updatedAt?: string
 }
 
-const STORAGE_KEY = 'contently_rss_feeds'
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
-// Default feeds to get started
-const DEFAULT_FEEDS: RssFeed[] = [
-    {
-        id: 'techcrunch',
-        name: 'TechCrunch',
-        url: 'https://techcrunch.com/feed/',
-        status: 'active',
-        pollingInterval: 15,
-        itemsFetched: 124
-    },
-    {
-        id: 'verge',
-        name: 'The Verge',
-        url: 'https://www.theverge.com/rss/index.xml',
-        status: 'active',
-        pollingInterval: 30,
-        itemsFetched: 85
+// Get all feeds from backend
+export const getFeeds = async (): Promise<RssFeed[]> => {
+    try {
+        const response = await fetch(`${API_BASE}/feeds`, {
+            credentials: 'include', // Send auth cookies
+        })
+
+        if (!response.ok) {
+            console.error('Failed to fetch feeds:', response.statusText)
+            return []
+        }
+
+        const feeds = await response.json()
+
+        // Transform backend format to match frontend interface
+        return feeds.map((feed: any) => ({
+            ...feed,
+            pollingInterval: feed.pollingIntervalMinutes, // Map backend field
+            status: feed.status || 'active',
+        }))
+    } catch (error) {
+        console.error('Error fetching feeds:', error)
+        return []
     }
-]
+}
 
-export const getFeeds = (): RssFeed[] => {
-    if (typeof window === 'undefined') return []
-    const feeds = localStorage.getItem(STORAGE_KEY)
-    if (!feeds) {
-        // Initialize with default feeds if empty
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_FEEDS))
-        return DEFAULT_FEEDS
+// Add a new feed
+export const addFeed = async (feed: Omit<RssFeed, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<RssFeed | null> => {
+    try {
+        const response = await fetch(`${API_BASE}/feeds`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                name: feed.name,
+                url: feed.url,
+                pollingIntervalMinutes: feed.pollingInterval || feed.pollingIntervalMinutes || 15,
+            }),
+        })
+
+        if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.message || 'Failed to add feed')
+        }
+
+        const newFeed = await response.json()
+        return {
+            ...newFeed,
+            pollingInterval: newFeed.pollingIntervalMinutes,
+            status: newFeed.status || 'active',
+        }
+    } catch (error) {
+        console.error('Error adding feed:', error)
+        throw error
     }
-    return JSON.parse(feeds)
 }
 
-export const addFeed = (feed: RssFeed) => {
-    const feeds = getFeeds()
-    const newFeeds = [...feeds, feed]
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newFeeds))
-    return newFeeds
+// Remove a feed
+export const removeFeed = async (id: string): Promise<void> => {
+    try {
+        const response = await fetch(`${API_BASE}/feeds/${id}`, {
+            method: 'DELETE',
+            credentials: 'include',
+        })
+
+        if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.message || 'Failed to remove feed')
+        }
+    } catch (error) {
+        console.error('Error removing feed:', error)
+        throw error
+    }
 }
 
-export const removeFeed = (id: string) => {
-    const feeds = getFeeds()
-    const newFeeds = feeds.filter(feed => feed.id !== id)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newFeeds))
-    return newFeeds
-}

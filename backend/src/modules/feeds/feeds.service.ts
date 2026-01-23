@@ -34,11 +34,19 @@ export class FeedsService {
             })
             .returning();
 
-        // Trigger immediate poll for new feed
-        await this.triggerPoll(newFeed.id);
+        // Trigger immediate poll for new feed (optional - depends on Redis/Bull)
+        try {
+            await this.triggerPoll(newFeed.id);
+        } catch (error) {
+            console.warn('[FeedsService] Could not trigger poll (Redis may not be running):', error.message);
+        }
 
-        // Schedule recurring polling
-        await this.scheduleFeedPolling(newFeed.id, newFeed.pollingIntervalMinutes);
+        // Schedule recurring polling (optional - depends on Redis/Bull)  
+        try {
+            await this.scheduleFeedPolling(newFeed.id, newFeed.pollingIntervalMinutes);
+        } catch (error) {
+            console.warn('[FeedsService] Could not schedule polling (Redis may not be running):', error.message);
+        }
 
         return newFeed;
     }

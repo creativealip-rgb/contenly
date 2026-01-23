@@ -65,10 +65,14 @@ export default function FeedsPage() {
     const [pollingInterval, setPollingInterval] = useState('15')
 
     useEffect(() => {
-        setFeeds(getFeeds())
+        const loadFeeds = async () => {
+            const fetchedFeeds = await getFeeds()
+            setFeeds(fetchedFeeds)
+        }
+        loadFeeds()
     }, [])
 
-    const handleAddFeed = () => {
+    const handleAddFeed = async () => {
         if (!newFeedName || !newFeedUrl) return
 
         const newFeed: RssFeed = {
@@ -81,16 +85,28 @@ export default function FeedsPage() {
             lastSynced: new Date().toISOString()
         }
 
-        const updatedFeeds = addFeed(newFeed)
-        setFeeds(updatedFeeds)
-        setNewFeedName('')
-        setNewFeedUrl('')
-        setIsAddOpen(false)
+        try {
+            await addFeed(newFeed)
+            const updatedFeeds = await getFeeds()
+            setFeeds(updatedFeeds)
+            setNewFeedName('')
+            setNewFeedUrl('')
+            setIsAddOpen(false)
+        } catch (error) {
+            console.error('Failed to add feed:', error)
+            alert('Failed to add feed. Please try again.')
+        }
     }
 
-    const handleRemoveFeed = (id: string) => {
-        const updatedFeeds = removeFeed(id)
-        setFeeds(updatedFeeds)
+    const handleRemoveFeed = async (id: string) => {
+        try {
+            await removeFeed(id)
+            const updatedFeeds = await getFeeds()
+            setFeeds(updatedFeeds)
+        } catch (error) {
+            console.error('Failed to remove feed:', error)
+            alert('Failed to remove feed. Please try again.')
+        }
     }
 
     const getStatusBadge = (status: string) => {

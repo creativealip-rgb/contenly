@@ -43,14 +43,14 @@ const quickActions = [
     {
         label: 'Add RSS Feed',
         description: 'Set up auto-fetching',
-        href: '/feeds/new',
+        href: '/feeds',  // Fixed: changed from /feeds/new to /feeds
         icon: icons.rss,
         gradient: 'from-cyan-500 to-blue-500',
     },
     {
         label: 'Connect Site',
         description: 'Add WordPress site',
-        href: '/integrations/new',
+        href: '/integrations',  // Fixed: changed from /integrations/new to /integrations
         icon: icons.plug,
         gradient: 'from-purple-500 to-pink-500',
     },

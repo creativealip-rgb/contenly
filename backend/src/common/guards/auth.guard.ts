@@ -6,19 +6,12 @@ import { auth } from '../../auth/auth.config';
 export class AuthGuard implements CanActivate {
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const request = context.switchToHttp().getRequest<Request>();
-        const authHeader = request.headers.authorization;
-
-        if (!authHeader) {
-            throw new UnauthorizedException('No authorization header');
-        }
-
-        const token = authHeader.replace('Bearer ', '');
 
         try {
+            // Better Auth uses cookies, so we pass the entire request headers
+            // This includes cookies which Better Auth will use for session validation
             const session = await auth.api.getSession({
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
+                headers: request.headers as any,
             });
 
             if (!session || !session.user) {
@@ -31,7 +24,7 @@ export class AuthGuard implements CanActivate {
 
             return true;
         } catch (error) {
-            throw new UnauthorizedException('Invalid or expired token');
+            throw new UnauthorizedException('Authentication required');
         }
     }
 }

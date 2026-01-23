@@ -81,8 +81,9 @@ const navItems = [
     { href: '/articles', label: 'Articles', icon: icons.articles },
     { href: '/integrations', label: 'Integrations', icon: icons.integrations },
     { href: '/billing', label: 'Billing', icon: icons.billing },
-    { href: '/analytics', label: 'Analytics', icon: icons.analytics },
-    { href: '/settings', label: 'Settings', icon: icons.settings },
+    // Temporarily disabled
+    // { href: '/analytics', label: 'Analytics', icon: icons.analytics },
+    // { href: '/settings', label: 'Settings', icon: icons.settings },
 ]
 
 export function Sidebar() {

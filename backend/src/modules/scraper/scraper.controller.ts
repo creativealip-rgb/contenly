@@ -1,11 +1,8 @@
-import { Controller, Post, Body, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Post, Body } from '@nestjs/common';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { AdvancedScraperService } from './advanced-scraper.service';
-import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
 
 @ApiTags('scraper')
-@ApiBearerAuth()
-@UseGuards(SessionAuthGuard)
 @Controller('scraper')
 export class ScraperController {
     constructor(private advancedScraperService: AdvancedScraperService) { }

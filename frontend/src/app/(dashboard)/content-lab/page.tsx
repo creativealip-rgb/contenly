@@ -46,6 +46,7 @@ import { WordPressSite, getSites, getActiveSite } from '@/lib/sites-store'
 import { RssFeed, getFeeds, addFeed, removeFeed } from '@/lib/feeds-store'
 import { Plus, Trash2 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { migrateLocalStorageFeeds } from '@/lib/migrate-feeds'
 
 // ... (other imports)
 
@@ -103,12 +104,19 @@ export default function ContentLabPage() {
     const [newFeedName, setNewFeedName] = useState('')
 
     useEffect(() => {
-        setSites(getSites())
-        setFeeds(getFeeds())
+        // Load sites and feeds
+        const loadData = async () => {
+            const fetchedSites = await getSites()
+            setSites(fetchedSites)
 
-        // Fetch WordPress categories from active site via backend
-        const fetchCategories = async () => {
-            const activeSite = getActiveSite()
+            // Migrate localStorage feeds to database (one-time)
+            await migrateLocalStorageFeeds()
+
+            const fetchedFeeds = await getFeeds()
+            setFeeds(fetchedFeeds)
+
+            // Fetch WordPress categories from active site via backend
+            const activeSite = await getActiveSite()
             if (!activeSite) return
 
             setIsFetchingCategories(true)
@@ -138,13 +146,13 @@ export default function ContentLabPage() {
             }
         }
 
-        fetchCategories()
+        loadData()
     }, [])
 
 
     // Derived credentials from active site
-    const getSelectedSiteCredentials = () => {
-        const site = getActiveSite()
+    const getSelectedSiteCredentials = async () => {
+        const site = await getActiveSite()
         if (!site) return null
 
         return {
@@ -185,7 +193,7 @@ export default function ContentLabPage() {
         }
     }
 
-    const handleAddFeed = () => {
+    const handleAddFeed = async () => {
         if (!newFeedName || !newFeedUrl) return
 
         const newFeed: RssFeed = {
@@ -196,24 +204,40 @@ export default function ContentLabPage() {
             lastSynced: new Date().toISOString()
         }
 
-        const updatedFeeds = addFeed(newFeed)
-        setFeeds(updatedFeeds)
-        setNewFeedName('')
-        setNewFeedUrl('')
-        setIsAddFeedOpen(false)
+        try {
+            const addedFeed = await addFeed(newFeed)
+            if (addedFeed) {
+                const updatedFeeds = await getFeeds()
+                setFeeds(updatedFeeds)
+                setNewFeedName('')
+                setNewFeedUrl('')
+                setIsAddFeedOpen(false)
 
-        // Auto select and fetch
-        setSelectedFeed(newFeed.id)
-        handleFetchArticles(newFeed.id)
+                // Auto select and fetch
+                setSelectedFeed(addedFeed.id)
+                handleFetchArticles(addedFeed.id)
+            }
+        } catch (error) {
+            console.error('Failed to add feed:', error)
+            alert('Failed to add feed. Please try again.')
+        }
     }
 
-    const handleRemoveFeed = (e: React.MouseEvent, id: string) => {
+    const handleRemoveFeed = async (e: React.MouseEvent, id: string) => {
         e.stopPropagation()
-        const updatedFeeds = removeFeed(id)
-        setFeeds(updatedFeeds)
-        if (selectedFeed === id) {
-            setSelectedFeed('')
-            setArticles([])
+
+        try {
+            await removeFeed(id)
+            const updatedFeeds = await getFeeds()
+            setFeeds(updatedFeeds)
+
+            if (selectedFeed === id) {
+                setSelectedFeed('')
+                setArticles([])
+            }
+        } catch (error) {
+            console.error('Failed to remove feed:', error)
+            alert('Failed to remove feed. Please try again.')
         }
     }
 
@@ -952,11 +976,7 @@ Source: ${article.url}`)
                             </DialogContent>
                         </Dialog>
 
-                        <Separator />
-                        <div className="text-center text-sm text-muted-foreground">
-                            <p>Token Cost: <span className="font-medium text-foreground">{generateImage ? 3 : 1}</span></p>
-                            <p>Balance: <span className="font-medium text-amber-600">50 tokens</span></p>
-                        </div>
+
                     </CardContent>
                 </Card>
             </div>

@@ -76,7 +76,7 @@ const mockArticles = [
     {
         id: '4',
         title: 'Startup Funding Trends: What Investors Look For',
-        status: 'failed',
+        status: 'scheduled',
         wordpressSite: 'myblog.com',
         wordpressPostId: null,
         tokensUsed: 1,
@@ -106,8 +106,8 @@ export default function ArticlesPage() {
                 return <Badge className="bg-green-500/10 text-green-600 hover:bg-green-500/20"><CheckCircle2 className="h-3 w-3 mr-1" />Published</Badge>
             case 'draft':
                 return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" />Draft</Badge>
-            case 'failed':
-                return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Failed</Badge>
+            case 'scheduled':
+                return <Badge className="bg-blue-500/10 text-blue-600 hover:bg-blue-500/20"><Clock className="h-3 w-3 mr-1" />Scheduled</Badge>
             default:
                 return <Badge variant="outline">{status}</Badge>
         }
@@ -179,12 +179,12 @@ export default function ArticlesPage() {
                 <Card>
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-red-500/10">
-                                <XCircle className="h-6 w-6 text-red-600" />
+                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/10">
+                                <Clock className="h-6 w-6 text-blue-600" />
                             </div>
                             <div>
                                 <p className="text-2xl font-bold">2</p>
-                                <p className="text-sm text-muted-foreground">Failed</p>
+                                <p className="text-sm text-muted-foreground">Scheduled</p>
                             </div>
                         </div>
                     </CardContent>
@@ -214,7 +214,7 @@ export default function ArticlesPage() {
                                     <SelectItem value="all">All Status</SelectItem>
                                     <SelectItem value="published">Published</SelectItem>
                                     <SelectItem value="draft">Draft</SelectItem>
-                                    <SelectItem value="failed">Failed</SelectItem>
+                                    <SelectItem value="scheduled">Scheduled</SelectItem>
                                 </SelectContent>
                             </Select>
                             <Select defaultValue="all">
@@ -286,11 +286,11 @@ export default function ArticlesPage() {
                                                     <Eye className="h-4 w-4 mr-2" />
                                                     View
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem>
+                                                <DropdownMenuItem disabled className="opacity-50">
                                                     <Edit className="h-4 w-4 mr-2" />
-                                                    Edit
+                                                    Edit (Coming Soon)
                                                 </DropdownMenuItem>
-                                                {article.status === 'failed' && (
+                                                {article.status === 'scheduled' && (
                                                     <DropdownMenuItem>
                                                         <RefreshCw className="h-4 w-4 mr-2" />
                                                         Retry

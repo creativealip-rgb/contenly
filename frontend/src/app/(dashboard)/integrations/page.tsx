@@ -131,17 +131,22 @@ export default function IntegrationsPage() {
         try {
             const data = await fetchWithAuth('/wordpress/sites')
             if (Array.isArray(data)) {
-                setSites(data)
+                // Transform backend site format to normalize status
+                const normalizedSites = data.map((site: any) => ({
+                    ...site,
+                    status: site.status.toLowerCase() as 'connected' | 'error'
+                }))
+
+                setSites(normalizedSites)
 
                 // Sync to localStorage for Content Lab to access
-                // Transform backend site format to match WordPressSite interface
-                const sitesForLocalStorage = data.map((site: any) => ({
+                const sitesForLocalStorage = normalizedSites.map((site: any) => ({
                     id: site.id,
                     name: site.name,
                     url: site.url,
                     username: site.username,
                     appPassword: site.appPassword || '', // Backend might not return password for security
-                    status: site.status.toLowerCase() as 'connected' | 'error',
+                    status: site.status,
                     lastSync: site.lastHealthCheck,
                     articlesPublished: 0 // Not tracked in backend yet
                 }))
@@ -181,8 +186,14 @@ export default function IntegrationsPage() {
     }
 
     const handleRefreshCategories = async () => {
+        console.log('[handleRefreshCategories] Starting...')
+        console.log('[handleRefreshCategories] Sites:', sites)
+        console.log('[handleRefreshCategories] Sites statuses:', sites.map(s => ({ name: s.name, status: s.status, statusType: typeof s.status })))
+
         // Get first connected site (single-site model)
-        const targetSite = sites.find(s => s.status === 'connected')
+        const targetSite = sites.find(s => s.status === 'connected' || s.status === 'CONNECTED')
+
+        console.log('[handleRefreshCategories] Target site found:', targetSite)
 
         if (!targetSite) {
             alert('Please connect a WordPress site first')
@@ -241,11 +252,7 @@ export default function IntegrationsPage() {
                 wpUrl = `https://${wpUrl}`
             }
 
-            // 1. Test Connection first (using our Next.js API route as a proxy helper, or backend)
-            // Let's use backend directly if possible, or keep using the lightweight check
-            // For consistency, let's just send everything to backend 'connectSite' endpoint
-            // which likely does verification.
-
+            // Add site via backend API
             await fetchWithAuth('/wordpress/sites', {
                 method: 'POST',
                 body: JSON.stringify({
@@ -261,7 +268,6 @@ export default function IntegrationsPage() {
             setIsAddOpen(false)
             setFormData({ name: '', url: '', username: '', appPassword: '' })
             alert('Site connected successfully!')
-
         } catch (error: any) {
             setConnectionError(error.message || 'Failed to connect to WordPress site')
         } finally {

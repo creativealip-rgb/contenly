@@ -1,46 +1,170 @@
-
 export interface WordPressSite {
     id: string
     name: string
     url: string
     username: string
-    appPassword: string
-    status: 'connected' | 'error'
+    appPassword?: string // Only used when creating
+    status: 'PENDING' | 'CONNECTED' | 'ERROR' | 'DISCONNECTED'
     lastSync?: string
-    articlesPublished: number
+    lastHealthCheck?: string
+    articlesPublished?: number
     error?: string
+    categoriesCache?: any[]
 }
 
-const STORAGE_KEY = 'contently_wp_sites'
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
-export const getSites = (): WordPressSite[] => {
-    if (typeof window === 'undefined') return []
-    const sites = localStorage.getItem(STORAGE_KEY)
-    return sites ? JSON.parse(sites) : []
+// Get all sites from backend
+export const getSites = async (): Promise<WordPressSite[]> => {
+    try {
+        const response = await fetch(`${API_BASE}/integrations/sites`, {
+            credentials: 'include', // Send auth cookies
+        })
+
+        if (!response.ok) {
+            console.error('Failed to fetch sites:', response.statusText)
+            return []
+        }
+
+        return await response.json()
+    } catch (error) {
+        console.error('Error fetching sites:', error)
+        return []
+    }
 }
 
-export const addSite = (site: WordPressSite) => {
-    // SINGLE SITE MODEL: Replace all existing sites with the new one
-    const newSites = [site]
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newSites))
-    return newSites
+// Add a new site
+export const addSite = async (site: Omit<WordPressSite, 'id'>): Promise<WordPressSite | null> => {
+    try {
+        const response = await fetch(`${API_BASE}/integrations/sites`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                name: site.name,
+                url: site.url,
+                username: site.username,
+                appPassword: site.appPassword,
+            }),
+        })
+
+        if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.message || 'Failed to add site')
+        }
+
+        return await response.json()
+    } catch (error) {
+        console.error('Error adding site:', error)
+        throw error
+    }
 }
 
-export const getActiveSite = (): WordPressSite | null => {
-    const sites = getSites()
-    return sites.length > 0 ? sites[0] : null
+// Get active site (first connected site)
+export const getActiveSite = async (): Promise<WordPressSite | null> => {
+    const sites = await getSites()
+    return sites.find(s => s.status === 'CONNECTED') || sites[0] || null
 }
 
-export const removeSite = (id: string) => {
-    const sites = getSites()
-    const newSites = sites.filter(s => s.id !== id)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newSites))
-    return newSites
+// Remove a site
+export const removeSite = async (id: string): Promise<void> => {
+    try {
+        const response = await fetch(`${API_BASE}/integrations/sites/${id}`, {
+            method: 'DELETE',
+            credentials: 'include',
+        })
+
+        if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.message || 'Failed to remove site')
+        }
+    } catch (error) {
+        console.error('Error removing site:', error)
+        throw error
+    }
 }
 
-export const updateSite = (id: string, updates: Partial<WordPressSite>) => {
-    const sites = getSites()
-    const newSites = sites.map(s => s.id === id ? { ...s, ...updates } : s)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newSites))
-    return newSites
+// Update a site
+export const updateSite = async (id: string, updates: Partial<WordPressSite>): Promise<WordPressSite | null> => {
+    try {
+        const response = await fetch(`${API_BASE}/integrations/sites/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify(updates),
+        })
+
+        if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.message || 'Failed to update site')
+        }
+
+        return await response.json()
+    } catch (error) {
+        console.error('Error updating site:', error)
+        throw error
+    }
+}
+
+// Test site connection
+export const testSiteConnection = async (id: string): Promise<{ success: boolean; message: string }> => {
+    try {
+        const response = await fetch(`${API_BASE}/integrations/sites/${id}/test`, {
+            method: 'POST',
+            credentials: 'include',
+        })
+
+        if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.message || 'Connection test failed')
+        }
+
+        return await response.json()
+    } catch (error) {
+        console.error('Error testing connection:', error)
+        throw error
+    }
+}
+
+// Refresh categories from WordPress
+export const refreshCategories = async (siteId: string): Promise<any> => {
+    try {
+        const response = await fetch(`${API_BASE}/integrations/sites/${siteId}/categories/refresh`, {
+            method: 'POST',
+            credentials: 'include',
+        })
+
+        if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.message || 'Failed to refresh categories')
+        }
+
+        return await response.json()
+    } catch (error) {
+        console.error('Error refreshing categories:', error)
+        throw error
+    }
+}
+
+// Get category mappings
+export const getCategoryMappings = async (siteId: string): Promise<any[]> => {
+    try {
+        const response = await fetch(`${API_BASE}/integrations/sites/${siteId}/categories`, {
+            credentials: 'include',
+        })
+
+        if (!response.ok) {
+            console.error('Failed to fetch categories')
+            return []
+        }
+
+        return await response.json()
+    } catch (error) {
+        console.error('Error fetching categories:', error)
+        return []
+    }
 }

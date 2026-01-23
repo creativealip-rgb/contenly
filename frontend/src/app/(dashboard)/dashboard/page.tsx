@@ -1,5 +1,10 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import { FileText, Rss, Sparkles, Plug } from 'lucide-react'
 import { KpiCard, RecentActivity, QuickActions } from '@/components/dashboard'
+import { getFeeds } from '@/lib/feeds-store'
+import { getSites } from '@/lib/sites-store'
 
 // Mock data - replace with API calls
 const mockActivities = [
@@ -34,6 +39,28 @@ const mockActivities = [
 ]
 
 export default function DashboardPage() {
+    const [feedsCount, setFeedsCount] = useState(0)
+    const [sitesCount, setSitesCount] = useState(0)
+    const [isLoading, setIsLoading] = useState(true)
+
+    useEffect(() => {
+        const loadDashboardData = async () => {
+            try {
+                const [feeds, sites] = await Promise.all([
+                    getFeeds(),
+                    getSites()
+                ])
+                setFeedsCount(feeds.length)
+                setSitesCount(sites.length)
+            } catch (error) {
+                console.error('Failed to load dashboard data:', error)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+        loadDashboardData()
+    }, [])
+
     return (
         <div className="space-y-6">
             {/* Page Header */}
@@ -48,27 +75,25 @@ export default function DashboardPage() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <KpiCard
                     title="Articles Published"
-                    value={127}
+                    value={0}
                     icon={FileText}
-                    trend={{ value: 12, isPositive: true }}
-                    description="this month"
+                    description="coming soon"
                 />
                 <KpiCard
                     title="Active RSS Feeds"
-                    value={8}
+                    value={isLoading ? '...' : feedsCount}
                     icon={Rss}
-                    description="polling every 15min"
+                    description={`${feedsCount} feeds configured`}
                 />
                 <KpiCard
                     title="Tokens Remaining"
-                    value={50}
+                    value="∞"
                     icon={Sparkles}
-                    trend={{ value: -23, isPositive: false }}
-                    description="of 100 monthly"
+                    description="unlimited for now"
                 />
                 <KpiCard
                     title="Connected Sites"
-                    value={3}
+                    value={isLoading ? '...' : sitesCount}
                     icon={Plug}
                     description="WordPress sites"
                 />
