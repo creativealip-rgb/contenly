@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/stores'
@@ -57,6 +58,35 @@ export function Navbar() {
     const { user, logout } = useAuthStore()
     const { toggle } = useSidebarStore()
     const router = useRouter()
+    const [tokenBalance, setTokenBalance] = useState<number | null>(null)
+
+    // Fetch token balance on mount and periodically
+    useEffect(() => {
+        const fetchBalance = async () => {
+            try {
+                const API_BASE_URL = typeof window === 'undefined'
+                    ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api')
+                    : '/api'
+
+                const response = await fetch(`${API_BASE_URL}/billing/balance`, {
+                    credentials: 'include',
+                })
+
+                if (response.ok) {
+                    const data = await response.json()
+                    setTokenBalance(data.balance || 0)
+                }
+            } catch (error) {
+                console.error('Failed to fetch token balance:', error)
+            }
+        }
+
+        fetchBalance()
+
+        // Refresh balance every 10 seconds to catch updates
+        const interval = setInterval(fetchBalance, 10000)
+        return () => clearInterval(interval)
+    }, [])
 
     const handleLogout = async () => {
         try {
@@ -111,7 +141,7 @@ export function Navbar() {
                     {/* Token Balance */}
                     <div className="hidden md:flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 px-4 py-2 text-sm font-medium text-amber-600">
                         {icons.tokens}
-                        <span>50 Tokens</span>
+                        <span>{tokenBalance !== null ? `${tokenBalance} Tokens` : 'Loading...'}</span>
                     </div>
 
                     {/* Notifications */}
