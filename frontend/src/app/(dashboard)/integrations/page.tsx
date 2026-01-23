@@ -191,7 +191,7 @@ export default function IntegrationsPage() {
         console.log('[handleRefreshCategories] Sites statuses:', sites.map(s => ({ name: s.name, status: s.status, statusType: typeof s.status })))
 
         // Get first connected site (single-site model)
-        const targetSite = sites.find(s => s.status === 'connected' || s.status === 'CONNECTED')
+        const targetSite = sites.find(s => s.status === 'CONNECTED')
 
         console.log('[handleRefreshCategories] Target site found:', targetSite)
 
@@ -282,7 +282,7 @@ export default function IntegrationsPage() {
             const params = new URLSearchParams({
                 wpUrl: site.url,
                 username: site.username,
-                appPassword: site.appPassword
+                appPassword: site.appPassword || ''
             })
             // Use categories endpoint as lightweight health check
             const response = await fetch(`/api/wordpress/categories?${params.toString()}`)
