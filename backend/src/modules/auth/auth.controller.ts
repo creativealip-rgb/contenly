@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Headers, Res, Req, All, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, Get, Headers as HttpHeaders, Res, Req, All, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
@@ -41,16 +41,23 @@ export class AuthController {
     @Post('logout')
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Logout user' })
-    async logout(@Headers('authorization') authHeader: string) {
+    async logout(@HttpHeaders('authorization') authHeader: string) {
         const token = authHeader?.replace('Bearer ', '');
         return this.authService.signOut(token);
     }
 
     @Get('session')
     @ApiOperation({ summary: 'Get current session' })
-    async getSession(@Headers('authorization') authHeader: string) {
-        const token = authHeader?.replace('Bearer ', '');
-        return this.authService.getSession(token);
+    async getSession(@Req() req: Request) {
+        const headers = new Headers();
+        for (const [key, value] of Object.entries(req.headers)) {
+            if (typeof value === 'string') {
+                headers.set(key, value);
+            } else if (Array.isArray(value)) {
+                value.forEach(v => headers.append(key, v));
+            }
+        }
+        return this.authService.getSession({ headers });
     }
 
     @Post('forgot-password')

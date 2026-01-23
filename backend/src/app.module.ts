@@ -20,6 +20,7 @@ import { BillingModule } from './modules/billing/billing.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
+import { CategoryMappingModule } from './modules/category-mapping/category-mapping.module';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { IntegrationsModule } from './modules/integrations/integrations.module';
     NotificationsModule,
     AnalyticsModule,
     IntegrationsModule,
+    CategoryMappingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

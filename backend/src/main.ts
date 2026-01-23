@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-// Restart trigger: 6
+// Restart trigger: 7
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
@@ -10,6 +10,13 @@ async function bootstrap() {
 
   // Security
   app.use(helmet());
+
+  // Global Logger
+  app.use((req, res, next) => {
+    console.log(`[GlobalLogger] ${req.method} ${req.url}`);
+    next();
+  });
+
   // CORS Setup
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
   const origins = frontendUrl.includes(',')

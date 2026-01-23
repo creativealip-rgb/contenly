@@ -12,20 +12,26 @@ export async function POST(request: Request) {
         }
 
         // Call the backend NestJS advanced scraper service
-        const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+        const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
         // Build headers object with proper typing
         const headers: HeadersInit = {
             'Content-Type': 'application/json',
         }
 
-        // Add authorization header if present
+        // Forward cookies from the incoming request to backend
+        const cookieHeader = request.headers.get('cookie')
+        if (cookieHeader) {
+            headers['Cookie'] = cookieHeader
+        }
+
+        // Add authorization header if present (fallback)
         const authHeader = request.headers.get('authorization')
         if (authHeader) {
             headers['Authorization'] = authHeader
         }
 
-        const response = await fetch(`${backendUrl}/api/scraper/scrape`, {
+        const response = await fetch(`${backendUrl}/scraper/scrape`, {
             method: 'POST',
             headers,
             body: JSON.stringify({ url }),
@@ -34,7 +40,7 @@ export async function POST(request: Request) {
         console.log('Backend scraper response:', {
             status: response.status,
             ok: response.ok,
-            url: `${backendUrl}/api/scraper/scrape`
+            url: `${backendUrl}/scraper/scrape`
         })
 
         if (!response.ok) {

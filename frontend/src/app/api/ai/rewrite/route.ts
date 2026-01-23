@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { AIRewriteRequest, AIRewriteResponse } from '@/types/ai'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
 export async function POST(request: Request) {
     try {
@@ -16,14 +16,28 @@ export async function POST(request: Request) {
 
         console.log('🔄 Frontend: Proxying AI rewrite request to backend...')
 
+        // Prepare headers and forward cookies for authentication
+        const headers: HeadersInit = {
+            'Content-Type': 'application/json',
+        }
+
+        // Forward cookies from the incoming request to backend
+        const cookieHeader = request.headers.get('cookie')
+        if (cookieHeader) {
+            headers['Cookie'] = cookieHeader
+        }
+
+        // Add authorization header if present (fallback)
+        const authHeader = request.headers.get('authorization')
+        if (authHeader) {
+            headers['Authorization'] = authHeader
+        }
+
         // Call backend AI generate endpoint
         // Note: Backend DTO expects flat structure, not nested options
-        const backendResponse = await fetch(`${API_URL}/api/ai/generate`, {
+        const backendResponse = await fetch(`${API_URL}/ai/generate`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            credentials: 'include',
+            headers,
             body: JSON.stringify({
                 originalContent: body.content,
                 // Backend expects options as optional nested object without validation decorators
