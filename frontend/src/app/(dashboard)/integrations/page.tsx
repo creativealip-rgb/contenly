@@ -284,11 +284,11 @@ export default function IntegrationsPage() {
                 alert(`Connection to ${site.name} is working perfectly!`)
 
                 // Update local status too
-                setSites(sites.map(s => s.id === site.id ? { ...s, status: 'connected' } : s))
+                setSites(sites.map(s => s.id === site.id ? { ...s, status: 'CONNECTED' } : s))
             } else {
                 alert(`Connection failed: ${response.message || 'Unknown error'}`)
                 // Update local status
-                setSites(sites.map(s => s.id === site.id ? { ...s, status: 'error', error: response.message } : s))
+                setSites(sites.map(s => s.id === site.id ? { ...s, status: 'ERROR', error: response.message } : s))
             }
         } catch (error: any) {
             console.error('[handleTestConnection] Error:', error)
