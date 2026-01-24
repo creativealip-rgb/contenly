@@ -1,8 +1,8 @@
 import { createAuthClient } from "better-auth/client";
 
-// Use frontend URL for consistency - all requests go through Next.js proxy
-const FRONTEND_URL = process.env.NEXT_PUBLIC_APP_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+// Direct backend URL for auth to ensure cookies are set on the correct domain
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 export const authClient = createAuthClient({
-    baseURL: `${FRONTEND_URL}/api/auth`, // Goes through Next.js proxy -> backend
+    baseURL: `${API_URL}/auth`, // Direct connection to backend
 });

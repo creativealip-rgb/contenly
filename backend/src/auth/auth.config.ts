@@ -100,6 +100,13 @@ export const auth = betterAuth({
             // This would be handled by the billing service
         },
     },
+    // Advanced configuration
+    advanced: {
+        defaultCookieAttributes: {
+            sameSite: "none",
+            secure: process.env.NODE_ENV === 'production',
+        },
+    },
 });
 
 console.log('🔐 Better Auth initialized');
