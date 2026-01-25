@@ -2,6 +2,7 @@
 
 import React from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Footer } from '@/components/layout'
@@ -132,15 +133,8 @@ export default function LandingPage() {
       <header className="fixed top-0 left-0 right-0 z-50 glass">
         <div className="max-w-7xl mx-auto flex h-16 items-center justify-between px-4 md:px-6">
           <Link href="/" className="flex items-center gap-3">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl blur-md opacity-70"></div>
-              <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600">
-                <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 text-white">
-                  <path d="M12 2L2 7l10 5 10-5-10-5z" fill="currentColor" opacity="0.8" />
-                  <path d="M2 17l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  <path d="M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden bg-white shadow-lg border">
+              <Image src="/logo.png" alt="Contently Logo" width={40} height={40} className="object-cover" />
             </div>
             <span className="font-bold text-xl tracking-tight">
               Contently

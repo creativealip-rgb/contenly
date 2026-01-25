@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { Sparkles, ArrowLeft, Mail } from 'lucide-react'
+import { ArrowLeft, Mail } from 'lucide-react'
+import Image from 'next/image'
 import { api } from '@/lib/api'
 
 export default function ForgotPasswordPage() {
@@ -38,8 +39,8 @@ export default function ForgotPasswordPage() {
                 {/* Logo */}
                 <div className="text-center mb-8">
                     <Link href="/" className="inline-flex items-center gap-2">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 shadow-lg">
-                            <Sparkles className="h-6 w-6 text-white" />
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl overflow-hidden bg-white shadow-lg border">
+                            <Image src="/logo.png" alt="Contently Logo" width={48} height={48} className="object-cover" />
                         </div>
                         <span className="font-bold text-2xl bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
                             Contently

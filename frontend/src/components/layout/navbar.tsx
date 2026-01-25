@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/stores'
 import { authClient } from '@/lib/auth-client'
@@ -118,19 +119,13 @@ export function Navbar() {
                         {icons.menu}
                     </Button>
 
+
                     <Link href="/dashboard" className="flex items-center gap-3">
-                        <div className="relative">
-                            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl blur-md opacity-50"></div>
-                            <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600">
-                                <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 text-white">
-                                    <path d="M12 2L2 7l10 5 10-5-10-5z" fill="currentColor" opacity="0.8" />
-                                    <path d="M2 17l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                    <path d="M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                </svg>
-                            </div>
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden bg-white shadow-lg border">
+                            <Image src="/logo.png" alt="Contently Logo" width={40} height={40} className="object-cover" />
                         </div>
                         <span className="hidden font-bold text-xl tracking-tight md:block">
-                            Contenly
+                            Contently
                         </span>
                     </Link>
                 </div>

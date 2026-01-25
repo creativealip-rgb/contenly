@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { Sparkles, Eye, EyeOff, Check } from 'lucide-react'
+import { Eye, EyeOff, Check } from 'lucide-react'
+import Image from 'next/image'
 import { authClient } from '@/lib/auth-client'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/stores'
@@ -69,11 +70,11 @@ export default function RegisterPage() {
                 {/* Logo */}
                 <div className="text-center mb-8">
                     <Link href="/" className="inline-flex items-center gap-2">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 shadow-lg">
-                            <Sparkles className="h-6 w-6 text-white" />
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl overflow-hidden bg-white shadow-lg border">
+                            <Image src="/logo.png" alt="Contently Logo" width={48} height={48} className="object-cover" />
                         </div>
                         <span className="font-bold text-2xl bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
-                            Contenly
+                            Contently
                         </span>
                     </Link>
                 </div>
@@ -87,7 +88,6 @@ export default function RegisterPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
-                            <Sparkles className="h-4 w-4 shrink-0" />
                             <p>Silahkan hubungi admin untuk dapatkan pembuatan akun</p>
                         </div>
 

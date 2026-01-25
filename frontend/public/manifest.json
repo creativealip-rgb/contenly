@@ -1,6 +1,6 @@
 {
-    "name": "Camedia - AI Content Platform",
-    "short_name": "Camedia",
+    "name": "Contently - AI Content Platform",
+    "short_name": "Contently",
     "description": "AI-powered content automation for WordPress",
     "id": "/",
     "start_url": "/",
@@ -11,10 +11,16 @@
     "orientation": "portrait",
     "icons": [
         {
-            "src": "/favicon.ico",
-            "sizes": "64x64 32x32 24x24 16x16",
-            "type": "image/x-icon",
+            "src": "/logo.png",
+            "sizes": "192x192",
+            "type": "image/png",
             "purpose": "any"
+        },
+        {
+            "src": "/logo.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
         }
     ]
 }

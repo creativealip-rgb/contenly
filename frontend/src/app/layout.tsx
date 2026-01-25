@@ -15,14 +15,18 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'Camedia - AI Content Automation Platform',
+  title: 'Contently - AI Content Automation Platform',
   description: 'Turn any URL into unique, SEO-optimized WordPress posts with AI-powered content automation.',
   keywords: 'AI content, WordPress automation, SEO, content generation, RSS feeds',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/favicon.png',
+    apple: '/favicon.png',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Camedia',
+    title: 'Contently',
   },
 }
 
