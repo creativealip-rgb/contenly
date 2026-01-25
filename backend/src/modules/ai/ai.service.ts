@@ -157,13 +157,18 @@ export class AiService {
             return result;
         }
 
-        let newContent = createLink(links[0]); // Position 1: Before 1st paragraph
+        let newContent = '';
 
         const total = actualChunks.length;
         const mid = Math.floor(total / 2);
 
         for (let i = 0; i < total; i++) {
             newContent += actualChunks[i] + (isHtml ? '</p>' : '\n\n');
+
+            // Position 1: After 1st paragraph (moved from before)
+            if (i === 0 && links[0]) {
+                newContent += createLink(links[0]);
+            }
 
             // Position 2: Middle of article (after middle paragraph chunk)
             if (i === mid - 1 && links[1]) {
