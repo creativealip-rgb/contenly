@@ -70,8 +70,8 @@ export default function RegisterPage() {
                 {/* Logo */}
                 <div className="text-center mb-8">
                     <Link href="/" className="inline-flex items-center gap-2">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl overflow-hidden bg-white shadow-lg border">
-                            <Image src="/logo.png" alt="Contently Logo" width={48} height={48} className="object-cover" />
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl overflow-hidden bg-indigo-50/50 shadow-sm border border-indigo-100">
+                            <Image src="/logo.png" alt="Contently Logo" width={48} height={48} className="w-full h-full object-contain p-1.5" />
                         </div>
                         <span className="font-bold text-2xl bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
                             Contently

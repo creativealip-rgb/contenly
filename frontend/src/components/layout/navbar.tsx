@@ -121,8 +121,8 @@ export function Navbar() {
 
 
                     <Link href="/dashboard" className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden bg-white shadow-lg border">
-                            <Image src="/logo.png" alt="Contently Logo" width={40} height={40} className="object-cover" />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden bg-indigo-50/50 shadow-sm border border-indigo-100">
+                            <Image src="/logo.png" alt="Contently Logo" width={32} height={32} className="object-contain" />
                         </div>
                         <span className="hidden font-bold text-xl tracking-tight md:block">
                             Contently
