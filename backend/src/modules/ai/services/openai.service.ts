@@ -58,18 +58,19 @@ export class OpenAiService {
 4. Naturally incorporate related keywords to ensure the content is thorough.
 5. ${options.targetLanguage ? `Write in ${options.targetLanguage}` : ''}
 6. Return ONLY the HTML content (headings, paragraphs, lists) suitable for the body of an article.
-7. CRITICAL: DO NOT use Markdown formatting (NO **, NO ###, NO [text](url)). Use ONLY HTML tags like <h2>, <p>, <ul>, <li>, <strong>, and <a>.
-8. Each paragraph MUST be short, NOT EXCEEDING 25 words.
-9. CRITICAL: DO NOT start the article with a heading (H1, H2, etc.). Start directly with an introductory paragraph.
-10. DO NOT include <!DOCTYPE html>, <html>, <head>, or <body> tags.
-11. Make the content SEO-friendly with a clear structure.`
+7. LANGUAGE: ${options.targetLanguage ? `Use ${options.targetLanguage}.` : 'Use Indonesian (Bahasa Indonesia) or follow the language of the source content/idea.'}
+8. CRITICAL: DO NOT use Markdown formatting (NO **, NO ###, NO [text](url)). Use ONLY HTML tags like <h2>, <p>, <ul>, <li>, <strong>, and <a>.
+9. Each paragraph MUST be short, NOT EXCEEDING 25 words.
+10. CRITICAL: DO NOT start the article with a heading (H1, H2, etc.). Start directly with an introductory paragraph.
+11. DO NOT include <!DOCTYPE html>, <html>, <head>, or <body> tags.
+12. Make the content SEO-friendly with a clear structure.`
             : `You are a professional content rewriter. Your task is to:
 1. Completely rewrite the given content to make it unique while preserving factual accuracy.
 2. Use a ${options.tone || 'professional'} tone.
 3. Target length: ${lengthGuide[options.length || 'medium']}.
 4. ${options.keywords?.length ? `Naturally incorporate these keywords: ${options.keywords.join(', ')}` : ''}
-5. ${options.targetLanguage ? `Write in ${options.targetLanguage}` : ''}
-6. Return ONLY the HTML content (headings, paragraphs, lists) suitable for the body of an article.
+5. Return ONLY the HTML content (headings, paragraphs, lists) suitable for the body of an article.
+6. LANGUAGE: ${options.targetLanguage ? `Use ${options.targetLanguage}.` : 'Use Indonesian (Bahasa Indonesia) or follow the language of the source content.'}
 7. CRITICAL: DO NOT use Markdown formatting (NO **, NO ###, NO [text](url)). Use ONLY HTML tags like <h2>, <p>, <ul>, <li>, <strong>, and <a>.
 8. Each paragraph MUST be short, NOT EXCEEDING 25 words.
 9. CRITICAL: DO NOT start the article with a heading (H1, H2, etc.). Start directly with an introductory paragraph.

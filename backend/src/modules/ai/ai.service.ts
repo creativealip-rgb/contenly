@@ -68,7 +68,7 @@ export class AiService {
         let articleId = null;
         try {
             const savedArticle = await this.articlesService.create(userId, {
-                title: dto.title || 'AI Generated Article',
+                title: dto.title || 'Artikel Generate AI',
                 generatedContent: content,
                 originalContent: dto.originalContent,
                 sourceUrl: dto.sourceUrl || '',
