@@ -1,5 +1,5 @@
 import './globals.css'
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Plus_Jakarta_Sans } from 'next/font/google'
 import { Toaster } from '@/components/ui/sonner'
 import { AuthProvider } from '@/components/providers'
@@ -10,12 +10,15 @@ const plusJakartaSans = Plus_Jakarta_Sans({
   variable: '--font-sans',
 })
 
+export const viewport: Viewport = {
+  themeColor: '#7c3aed',
+}
+
 export const metadata: Metadata = {
   title: 'Camedia - AI Content Automation Platform',
   description: 'Turn any URL into unique, SEO-optimized WordPress posts with AI-powered content automation.',
   keywords: 'AI content, WordPress automation, SEO, content generation, RSS feeds',
   manifest: '/manifest.json',
-  themeColor: '#7c3aed',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
