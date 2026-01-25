@@ -657,17 +657,36 @@ Source: ${article.url}`)
                         </TabsContent>
 
                         <TabsContent value="idea" className="space-y-4">
-                            <div className="space-y-2">
-                                <Label>What should the article be about?</Label>
-                                <Textarea
-                                    placeholder="e.g. 5 tips for morning productivity or The future of web development in 2024"
-                                    value={articleIdea}
-                                    onChange={(e) => setArticleIdea(e.target.value)}
-                                    className="min-h-[100px]"
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                    Write down your keywords, topics, or a brief outline. AI will generate a fresh article based on this.
-                                </p>
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label>What should the article be about?</Label>
+                                    <Textarea
+                                        placeholder="e.g. 5 tips for morning productivity or The future of web development in 2024"
+                                        value={articleIdea}
+                                        onChange={(e) => setArticleIdea(e.target.value)}
+                                        className="min-h-[100px]"
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        Write down your keywords, topics, or a brief outline. AI will generate a fresh article based on this.
+                                    </p>
+                                </div>
+                                <Button
+                                    onClick={handleAIRewrite}
+                                    disabled={isRewriting || !articleIdea.trim()}
+                                    className="w-full bg-violet-600 hover:bg-violet-700"
+                                >
+                                    {isRewriting ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Generating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Sparkles className="mr-2 h-4 w-4" />
+                                            Generate Article
+                                        </>
+                                    )}
+                                </Button>
                             </div>
                         </TabsContent>
                     </Tabs>
