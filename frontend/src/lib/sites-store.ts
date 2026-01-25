@@ -12,15 +12,14 @@ export interface WordPressSite {
     categoriesCache?: any[]
 }
 
-const API_BASE = typeof window === 'undefined'
-    ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api')
-    : '/api'
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
 // Get all sites from backend
 export const getSites = async (): Promise<WordPressSite[]> => {
     try {
         const response = await fetch(`${API_BASE}/integrations/sites`, {
             credentials: 'include', // Send auth cookies
+            headers: { 'ngrok-skip-browser-warning': 'true' }
         })
 
         if (!response.ok) {
@@ -42,6 +41,7 @@ export const addSite = async (site: Omit<WordPressSite, 'id'>): Promise<WordPres
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': 'true'
             },
             credentials: 'include',
             body: JSON.stringify({
@@ -76,6 +76,7 @@ export const removeSite = async (id: string): Promise<void> => {
         const response = await fetch(`${API_BASE}/integrations/sites/${id}`, {
             method: 'DELETE',
             credentials: 'include',
+            headers: { 'ngrok-skip-browser-warning': 'true' }
         })
 
         if (!response.ok) {
@@ -95,6 +96,7 @@ export const updateSite = async (id: string, updates: Partial<WordPressSite>): P
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': 'true'
             },
             credentials: 'include',
             body: JSON.stringify(updates),
@@ -118,6 +120,7 @@ export const testSiteConnection = async (id: string): Promise<{ success: boolean
         const response = await fetch(`${API_BASE}/integrations/sites/${id}/test`, {
             method: 'POST',
             credentials: 'include',
+            headers: { 'ngrok-skip-browser-warning': 'true' }
         })
 
         if (!response.ok) {
@@ -138,6 +141,7 @@ export const refreshCategories = async (siteId: string): Promise<any> => {
         const response = await fetch(`${API_BASE}/integrations/sites/${siteId}/categories/refresh`, {
             method: 'POST',
             credentials: 'include',
+            headers: { 'ngrok-skip-browser-warning': 'true' }
         })
 
         if (!response.ok) {
@@ -157,6 +161,7 @@ export const getCategoryMappings = async (siteId: string): Promise<any[]> => {
     try {
         const response = await fetch(`${API_BASE}/integrations/sites/${siteId}/categories`, {
             credentials: 'include',
+            headers: { 'ngrok-skip-browser-warning': 'true' }
         })
 
         if (!response.ok) {
