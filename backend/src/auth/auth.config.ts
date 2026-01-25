@@ -2,6 +2,15 @@ import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { db, schema } from '../db';
 
+console.log('🔐 Better Auth initializing...');
+console.log('📍 Base URL:', process.env.API_URL || 'http://localhost:3001');
+console.log('📍 Trusted Origins:', [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'https://contenly.vercel.app',
+    ...(process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',').map(url => url.trim()) : []),
+]);
+
 export const auth = betterAuth({
     database: drizzleAdapter(db, {
         provider: 'pg',
@@ -23,7 +32,7 @@ export const auth = betterAuth({
         'http://localhost:3000',  // Frontend dev server
         'http://localhost:3001',  // Backend server
         'https://contenly.vercel.app', // Explicitly add production URL
-        ...(process.env.FRONTEND_URL?.split(',') || []),  // Production/staging URLs
+        ...(process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',').map(url => url.trim()) : []),
     ],
 
     // Secret for signing tokens

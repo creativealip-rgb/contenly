@@ -1,11 +1,13 @@
+import 'dotenv/config'; // Load .env before everything else
 import { NestFactory } from '@nestjs/core';
-// Restart trigger: 7
-import { ValidationPipe } from '@nestjs/common';
+// Restart trigger: 8
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
+  const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
 
   // Security
@@ -13,7 +15,7 @@ async function bootstrap() {
 
   // Global Logger
   app.use((req, res, next) => {
-    console.log(`[GlobalLogger] ${req.method} ${req.url}`);
+    // console.log(`[GlobalLogger] ${req.method} ${req.url}`);
     next();
   });
 
@@ -21,11 +23,32 @@ async function bootstrap() {
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
   const origins = frontendUrl.includes(',')
     ? frontendUrl.split(',').map(url => url.trim())
-    : frontendUrl;
+    : [frontendUrl];
+
+  logger.log(`Setting up CORS with origins: ${JSON.stringify(origins)}`);
 
   app.enableCors({
-    origin: origins,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      const isAllowed = origins.some(allowedOrigin => {
+        if (allowedOrigin === '*') return true;
+        return origin === allowedOrigin || origin.startsWith(allowedOrigin);
+      });
+
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        logger.warn(`CORS blocked for origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Accept, Authorization, x-forwarded-proto',
   });
 
   // Global prefix

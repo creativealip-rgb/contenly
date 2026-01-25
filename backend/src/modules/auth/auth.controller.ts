@@ -77,7 +77,9 @@ export class AuthController {
     // Handle all Better Auth routes (OAuth, callbacks, etc.)
     @All('*')
     async handleBetterAuth(@Req() req: Request, @Res() res: Response) {
-        console.log('🔵 Better Auth wildcard handler called for:', req.method, req.url);
+        console.log(`🔵 Better Auth: ${req.method} ${req.url}`);
+        console.log(`📍 Origin: ${req.headers.origin}`);
+        console.log(`📍 X-Forwarded-Proto: ${req.headers['x-forwarded-proto']}`);
 
         // Fix for multiple proxies (Vercel -> Ngrok) causing "https, https" in protocol
         if (req.headers['x-forwarded-proto']) {
