@@ -64,9 +64,7 @@ export default function ArticlesPage() {
             if (statusFilter !== 'all') params.append('status', statusFilter.toUpperCase())
 
             // Use relative path to leverage Next.js proxy
-            const API_BASE_URL = typeof window === 'undefined'
-                ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api')
-                : '/api'
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
             const response = await fetch(`${API_BASE_URL}/articles?${params.toString()}`, {
                 credentials: 'include'

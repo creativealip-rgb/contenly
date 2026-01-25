@@ -54,9 +54,7 @@ import { authClient } from '@/lib/auth-client'
 
 // Use relative path on client to leverage Next.js Proxy (cookies)
 // Server-side fetch (if any) would need absolute
-const API_BASE_URL = typeof window === 'undefined'
-    ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api')
-    : '/api'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
 async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
     const session = await authClient.getSession()

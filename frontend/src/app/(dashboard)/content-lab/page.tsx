@@ -123,9 +123,7 @@ export default function ContentLabPage() {
             setIsFetchingCategories(true)
             try {
                 // Use backend endpoint which already has stored credentials
-                const API_BASE_URL = typeof window === 'undefined'
-                    ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api')
-                    : '/api'
+                const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
                 const response = await fetch(`${API_BASE_URL}/wordpress/sites/${activeSite.id}/categories`, {
                     credentials: 'include', // Send session cookies
@@ -175,7 +173,8 @@ export default function ContentLabPage() {
         setSourceContent('')
 
         try {
-            const response = await fetch('/api/rss', {
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+            const response = await fetch(`${API_BASE_URL}/rss`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ url: feed.url }),
@@ -255,8 +254,9 @@ export default function ContentLabPage() {
         setIsScanning(true)
 
         try {
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
             // Auto-scrape full article content from URL
-            const response = await fetch('/api/scraper', {
+            const response = await fetch(`${API_BASE_URL}/scraper`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ url: article.url })
@@ -308,7 +308,8 @@ Source: ${article.url}`)
         setGeneratedTitle('')
 
         try {
-            const response = await fetch('/api/ai/rewrite', {
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+            const response = await fetch(`${API_BASE_URL}/ai/rewrite`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -350,7 +351,8 @@ Source: ${article.url}`)
         setSourceContent('')
         setSelectedArticle(null)
         try {
-            const response = await fetch('/api/scraper', {
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+            const response = await fetch(`${API_BASE_URL}/scraper`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ url: scrapeUrl })
@@ -392,9 +394,7 @@ Source: ${article.url}`)
 
         try {
             // Use relative path for client-side to leverage Next.js proxy
-            const API_BASE_URL = typeof window === 'undefined'
-                ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api')
-                : '/api'
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
             const response = await fetch(`${API_BASE_URL}/wordpress/publish`, {
                 method: 'POST',
@@ -446,9 +446,7 @@ Source: ${article.url}`)
             const scheduledDateTime = new Date(`${scheduleDate}T${scheduleTime}`).toISOString()
 
             // Use relative path for client-side to leverage Next.js proxy
-            const API_BASE_URL = typeof window === 'undefined'
-                ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api')
-                : '/api'
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
             const response = await fetch(`${API_BASE_URL}/wordpress/publish`, {
                 method: 'POST',

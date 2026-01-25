@@ -64,9 +64,7 @@ export function Navbar() {
     useEffect(() => {
         const fetchBalance = async () => {
             try {
-                const API_BASE_URL = typeof window === 'undefined'
-                    ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api')
-                    : '/api'
+                const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
                 const response = await fetch(`${API_BASE_URL}/billing/balance`, {
                     credentials: 'include',
