@@ -91,60 +91,51 @@ export class AiService {
     }
 
     private injectInternalLinks(content: string, links: { title: string; link: string }[]): string {
-        // Detect content format
-        const isHtml = content.includes('</p>') || content.includes('</div>') || content.includes('<br');
-        const delimiter = isHtml ? '</p>' : '\n\n';
-        const paragraphs = content.split(delimiter);
+        if (!links || links.length === 0) return content;
 
-        console.log(`[AiService] Injecting into ${isHtml ? 'HTML' : 'Markdown/Text'} content with ${paragraphs.length} paragraphs`);
+        // Detect content format (HTML or Markdown/Text)
+        const isHtml = /<\/p>|<\/div>|<br\s*\/?>/i.test(content);
+        const delimiter = isHtml ? /<\/p>/i : /\n\s*\n/;
 
-        if (paragraphs.length < 2) {
-            // Fallback: just append if too short or not splittable
-            const linkList = links.map(l => isHtml
-                ? `<p><strong>Baca juga: <a href="${l.link}">${l.title}</a></strong></p>`
-                : `\n\n**Baca juga: [${l.title}](${l.link})**\n`).join('');
-            return content + linkList;
-        }
+        // Split content into paragraphs
+        const chunks = content.split(delimiter);
+        const actualChunks = chunks.filter(c => c.trim().length > 0);
 
-        const createLinkHtml = (item: { title: string; link: string }) =>
+        console.log(`[AiService] Injecting 3 links into ${isHtml ? 'HTML' : 'Markdown'} (${actualChunks.length} paragraphs)`);
+
+        const createLink = (item: { title: string; link: string }) =>
             isHtml
                 ? `<p><strong>Baca juga: <a href="${item.link}" target="_blank" rel="noopener noreferrer">${item.title}</a></strong></p>`
                 : `\n\n**Baca juga: [${item.title}](${item.link})**\n\n`;
 
-        let newContent = '';
-        const totalParas = paragraphs.filter(p => p.trim().length > 0).length;
-        const middleIndex = Math.floor(totalParas / 2);
-        const lastIndex = totalParas - 1;
+        // Case: Article too short or single block
+        if (actualChunks.length < 2) {
+            let result = createLink(links[0]) + content;
+            if (links[1]) result += createLink(links[1]);
+            if (links[2]) result += createLink(links[2]);
+            return result;
+        }
 
-        let activeIndex = 0;
-        for (let i = 0; i < paragraphs.length; i++) {
-            const p = paragraphs[i];
-            const trimmedP = p.trim();
-            const hasContent = trimmedP.length > 0;
+        let newContent = createLink(links[0]); // Position 1: Before 1st paragraph
 
-            // Link 1: Before first paragraph
-            if (hasContent && activeIndex === 0 && links[0]) {
-                newContent += createLinkHtml(links[0]);
+        const total = actualChunks.length;
+        const mid = Math.floor(total / 2);
+
+        for (let i = 0; i < total; i++) {
+            newContent += actualChunks[i] + (isHtml ? '</p>' : '\n\n');
+
+            // Position 2: Middle of article (after middle paragraph chunk)
+            if (i === mid - 1 && links[1]) {
+                newContent += createLink(links[1]);
             }
 
-            newContent += p + (isHtml && hasContent ? '</p>' : (hasContent && i < paragraphs.length - 1 ? '\n\n' : ''));
-
-            if (hasContent) {
-                // Link 2: Middle of article
-                if (activeIndex === middleIndex && links[1]) {
-                    newContent += createLinkHtml(links[1]);
-                }
-
-                // Link 3: Before last paragraph
-                if (activeIndex === lastIndex - 1 && links[2] && totalParas >= 3) {
-                    newContent += createLinkHtml(links[2]);
-                }
-
-                activeIndex++;
+            // Position 3: Before the very last paragraph
+            if (i === total - 2 && links[2]) {
+                newContent += createLink(links[2]);
             }
         }
 
-        return newContent;
+        return newContent.trim();
     }
 
     async generateSeo(userId: string, dto: GenerateSeoDto) {

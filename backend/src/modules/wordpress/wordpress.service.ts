@@ -339,19 +339,30 @@ export class WordpressService {
             const appPassword = this.decrypt(site.appPasswordEncrypted);
             const auth = Buffer.from(`${site.username}:${appPassword}`).toString('base64');
 
-            let url = `${site.url}/wp-json/wp/v2/posts?per_page=3&status=publish`;
-            if (categoryId) {
-                url += `&categories=${categoryId}`;
+            const fetchPosts = async (catId?: number) => {
+                let url = `${site.url}/wp-json/wp/v2/posts?per_page=3&status=publish`;
+                if (catId) {
+                    url += `&categories=${catId}`;
+                }
+                const response = await axios.get(url, {
+                    headers: { Authorization: `Basic ${auth}` },
+                    timeout: 5000
+                });
+                return response.data.map((post: any) => ({
+                    title: post.title.rendered,
+                    link: post.link,
+                }));
+            };
+
+            let posts = await fetchPosts(categoryId);
+
+            // Fallback: if category has no posts, fetch generic posts
+            if (posts.length === 0 && categoryId) {
+                console.log(`[WordpressService] No posts in category ${categoryId}, falling back to recent posts`);
+                posts = await fetchPosts();
             }
 
-            const response = await axios.get(url, {
-                headers: { Authorization: `Basic ${auth}` },
-            });
-
-            return response.data.map((post: any) => ({
-                title: post.title.rendered,
-                link: post.link,
-            }));
+            return posts;
         } catch (error: any) {
             console.error('[getRecentPosts] Error:', error.message);
             return [];
