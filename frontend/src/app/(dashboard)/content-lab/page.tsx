@@ -61,6 +61,8 @@ export default function ContentLabPage() {
     // Scraper state
     const [scrapeUrl, setScrapeUrl] = useState('')
     const [isScraping, setIsScraping] = useState(false)
+    const [activeTab, setActiveTab] = useState('rss')
+    const [articleIdea, setArticleIdea] = useState('')
 
     // AI Rewrite state
     const [aiTone, setAiTone] = useState<'professional' | 'casual' | 'creative' | 'technical'>('professional')
@@ -303,8 +305,10 @@ Source: ${article.url}`)
     }
 
     const handleAIRewrite = async () => {
-        if (!sourceContent.trim()) {
-            alert('Please select an article first')
+        const hasSource = activeTab === 'idea' ? articleIdea.trim() : sourceContent.trim();
+
+        if (!hasSource) {
+            alert(activeTab === 'idea' ? 'Please enter your idea or keywords first' : 'Please select an article first')
             return
         }
 
@@ -322,10 +326,12 @@ Source: ${article.url}`)
                 },
                 credentials: 'include',
                 body: JSON.stringify({
-                    originalContent: sourceContent,
+                    originalContent: activeTab === 'idea' ? articleIdea : sourceContent,
                     title: selectedArticle?.title || 'Rewritten Article',
                     sourceUrl: selectedArticle?.url || scrapeUrl || '',
                     feedItemId: selectedArticle?.id,
+                    mode: activeTab === 'idea' ? 'idea' : 'rewrite',
+                    categoryId: selectedCategory || undefined,
                     options: {
                         tone: aiTone,
                         length: aiLength === 'shorter' ? 'short' : aiLength === 'longer' ? 'long' : 'medium',
@@ -418,9 +424,11 @@ Source: ${article.url}`)
                     content: generatedContent,
                     status,
                     categories: selectedCategory ? [selectedCategory] : undefined,
-                    sourceUrl: selectedArticle?.url || sourceContent || '',
+                    sourceUrl: selectedArticle?.url || scrapeUrl || articleIdea || '',
                     originalContent: selectedArticle?.content || sourceContent || '',
                     feedItemId: selectedArticle?.id,
+                    featuredImageUrl: featuredImage, // This can be a URL or a base64 from local upload
+                    articleId: generatedArticleId,
                 }),
             })
 
@@ -448,6 +456,39 @@ Source: ${article.url}`)
         }
     }
 
+    const handleGenerateImage = async () => {
+        if (!generatedTitle) {
+            alert('Please generate content first to provide context for the image')
+            return
+        }
+
+        setIsGeneratingImage(true)
+        try {
+            // Check tokens (implicit in backend, but good to know)
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+            const response = await fetch(`${API_BASE_URL}/ai/generate-image`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    prompt: `Professional featured image for a news article titled: "${generatedTitle}". Style: high quality, clean, related to the topic.`,
+                }),
+            })
+
+            const result = await response.json()
+            if (result.success && result.data?.imageUrl) {
+                setFeaturedImage(result.data.imageUrl)
+            } else {
+                alert(`Image generation failed: ${result.error || 'Unknown error'}`)
+            }
+        } catch (error: any) {
+            console.error('Image Gen error:', error)
+            alert('Failed to generate image')
+        } finally {
+            setIsGeneratingImage(false)
+        }
+    }
+
     // Schedule publish
     const handleSchedulePublish = async () => {
         if (!generatedContent || !generatedTitle || !scheduleDate || !scheduleTime) return
@@ -470,9 +511,12 @@ Source: ${article.url}`)
                     content: generatedContent,
                     status: 'future',
                     categories: selectedCategory ? [selectedCategory] : undefined,
-                    sourceUrl: selectedArticle?.url || sourceContent || '',
+                    sourceUrl: selectedArticle?.url || scrapeUrl || articleIdea || '',
                     originalContent: selectedArticle?.content || sourceContent || '',
                     feedItemId: selectedArticle?.id,
+                    featuredImageUrl: featuredImage,
+                    articleId: generatedArticleId,
+                    date: scheduledDateTime,
                 }),
             })
 
@@ -525,91 +569,166 @@ Source: ${article.url}`)
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <Label>Select RSS Feed Source</Label>
-                                <Dialog open={isAddFeedOpen} onOpenChange={setIsAddFeedOpen}>
-                                    <DialogTrigger asChild>
-                                        <Button variant="ghost" size="sm" className="text-violet-600 h-6 px-2 hover:bg-violet-50">
-                                            <Plus className="h-4 w-4 mr-1" /> Add Feed
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                        <DialogHeader>
-                                            <DialogTitle>Add New RSS Feed</DialogTitle>
-                                            <DialogDescription>
-                                                Enter the URL of the RSS feed you want to follow.
-                                            </DialogDescription>
-                                        </DialogHeader>
-                                        <div className="space-y-4 py-4">
-                                            <div className="space-y-2">
-                                                <Label>Feed Name</Label>
-                                                <Input
-                                                    placeholder="e.g. TechCrunch"
-                                                    value={newFeedName}
-                                                    onChange={(e) => setNewFeedName(e.target.value)}
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label>Feed URL</Label>
-                                                <Input
-                                                    placeholder="https://example.com/feed"
-                                                    value={newFeedUrl}
-                                                    onChange={(e) => setNewFeedUrl(e.target.value)}
-                                                />
-                                            </div>
-                                        </div>
-                                        <DialogFooter>
-                                            <Button variant="outline" onClick={() => setIsAddFeedOpen(false)}>Cancel</Button>
-                                            <Button onClick={handleAddFeed} disabled={!newFeedName || !newFeedUrl}>Add Feed</Button>
-                                        </DialogFooter>
-                                    </DialogContent>
-                                </Dialog>
-                            </div>
-                            <Select value={selectedFeed || ''} onValueChange={(val) => {
-                                setSelectedFeed(val)
-                                setSelectedArticle(null)
-                                setSourceContent('')
-                            }}>
-                                <SelectTrigger className="border-violet-200 focus:ring-violet-500">
-                                    <SelectValue placeholder="Select a feed..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {feeds.map((feed) => (
-                                        <SelectItem key={feed.id} value={feed.id}>
-                                            <div className="flex flex-col items-start text-left">
-                                                <span className="font-medium">{feed.name}</span>
-                                                <span className="text-xs text-muted-foreground truncate max-w-[200px]">{feed.url}</span>
-                                            </div>
-                                        </SelectItem>
-                                    ))}
-                                    {feeds.length === 0 && (
-                                        <div className="p-2 text-center text-sm text-muted-foreground">No feeds added</div>
-                                    )}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                        <TabsList className="grid w-full grid-cols-3 mb-6">
+                            <TabsTrigger value="rss" className="flex items-center gap-2">
+                                <Rss className="h-4 w-4" />
+                                RSS Feed
+                            </TabsTrigger>
+                            <TabsTrigger value="url" className="flex items-center gap-2">
+                                <Globe className="h-4 w-4" />
+                                Direct URL
+                            </TabsTrigger>
+                            <TabsTrigger value="idea" className="flex items-center gap-2">
+                                <Sparkles className="h-4 w-4" />
+                                Idea / Keywords
+                            </TabsTrigger>
+                        </TabsList>
 
-                        <div className="space-y-2">
-                            <Label>Select Article</Label>
-                            <Select value={selectedArticle?.id || ''} onValueChange={(val) => {
-                                const article = articles.find(a => a.id === val)
-                                if (article) handleSelectArticle(article)
-                            }}>
-                                <SelectTrigger disabled={!selectedFeed || isFetchingRSS} className="w-full">
-                                    <SelectValue placeholder={isFetchingRSS ? "Fetching..." : "Choose an article..."} className="block truncate" />
-                                </SelectTrigger>
-                                <SelectContent position="popper" sideOffset={4} className="w-[--radix-select-trigger-width] max-w-full overflow-hidden">
-                                    {articles.map((article) => (
-                                        <SelectItem key={article.id} value={article.id} className="overflow-hidden">
-                                            <div className="truncate min-w-0 flex-1 pr-8">{article.title}</div>
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
+                        <TabsContent value="rss" className="space-y-4">
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <Label>Select RSS Feed Source</Label>
+                                    <Dialog open={isAddFeedOpen} onOpenChange={setIsAddFeedOpen}>
+                                        <DialogTrigger asChild>
+                                            <Button variant="ghost" size="sm" className="text-violet-600 h-6 px-2 hover:bg-violet-50">
+                                                <Plus className="h-4 w-4 mr-1" /> Add Feed
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent>
+                                            <DialogHeader>
+                                                <DialogTitle>Add New RSS Feed</DialogTitle>
+                                                <DialogDescription>
+                                                    Enter the URL of the RSS feed you want to follow.
+                                                </DialogDescription>
+                                            </DialogHeader>
+                                            <div className="space-y-4 py-4">
+                                                <div className="space-y-2">
+                                                    <Label>Feed Name</Label>
+                                                    <Input
+                                                        placeholder="e.g. TechCrunch"
+                                                        value={newFeedName}
+                                                        onChange={(e) => setNewFeedName(e.target.value)}
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label>Feed URL</Label>
+                                                    <Input
+                                                        placeholder="https://example.com/feed"
+                                                        value={newFeedUrl}
+                                                        onChange={(e) => setNewFeedUrl(e.target.value)}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <DialogFooter>
+                                                <Button variant="outline" onClick={() => setIsAddFeedOpen(false)}>Cancel</Button>
+                                                <Button onClick={handleAddFeed} disabled={!newFeedName || !newFeedUrl}>Add Feed</Button>
+                                            </DialogFooter>
+                                        </DialogContent>
+                                    </Dialog>
+                                </div>
+                                <Select value={selectedFeed || ''} onValueChange={(val) => {
+                                    setSelectedFeed(val)
+                                    setSelectedArticle(null)
+                                    setSourceContent('')
+                                }}>
+                                    <SelectTrigger className="border-violet-200 focus:ring-violet-500">
+                                        <SelectValue placeholder="Select a feed..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {feeds.map((feed) => (
+                                            <SelectItem key={feed.id} value={feed.id}>
+                                                <div className="flex flex-col items-start text-left">
+                                                    <span className="font-medium">{feed.name}</span>
+                                                    <span className="text-xs text-muted-foreground truncate max-w-[200px]">{feed.url}</span>
+                                                </div>
+                                            </SelectItem>
+                                        ))}
+                                        {feeds.length === 0 && (
+                                            <div className="p-2 text-center text-sm text-muted-foreground">No feeds added</div>
+                                        )}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Select Article</Label>
+                                <Select value={selectedArticle?.id || ''} onValueChange={(val) => {
+                                    const article = articles.find(a => a.id === val)
+                                    if (article) handleSelectArticle(article)
+                                }}>
+                                    <SelectTrigger disabled={!selectedFeed || isFetchingRSS} className="w-full">
+                                        <SelectValue placeholder={isFetchingRSS ? "Fetching articles..." : "Choose an article..."} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {articles.map((article) => (
+                                            <SelectItem key={article.id} value={article.id}>
+                                                {article.title}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="url" className="space-y-4">
+                            <div className="space-y-2">
+                                <Label>Article URL</Label>
+                                <div className="flex gap-2">
+                                    <Input
+                                        placeholder="https://example.com/blog-post"
+                                        value={scrapeUrl}
+                                        onChange={(e) => setScrapeUrl(e.target.value)}
+                                        className="flex-1"
+                                    />
+                                    <Button
+                                        onClick={handleScrape}
+                                        disabled={isScraping || !scrapeUrl}
+                                        className="bg-violet-600 hover:bg-violet-700"
+                                    >
+                                        {isScraping ? <Loader2 className="h-4 w-4 animate-spin" /> : "Scrape"}
+                                    </Button>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Enter a full article URL to scrape its content.
+                                </p>
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="idea" className="space-y-4">
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label>What should the article be about?</Label>
+                                    <Textarea
+                                        placeholder="e.g. 5 tips for morning productivity or The future of web development in 2024"
+                                        value={articleIdea}
+                                        onChange={(e) => setArticleIdea(e.target.value)}
+                                        className="min-h-[100px]"
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        Write down your keywords, topics, or a brief outline. AI will generate a fresh article based on this.
+                                    </p>
+                                </div>
+                                <Button
+                                    onClick={handleAIRewrite}
+                                    disabled={isRewriting || !articleIdea.trim()}
+                                    className="w-full bg-violet-600 hover:bg-violet-700"
+                                >
+                                    {isRewriting ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Generating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Sparkles className="mr-2 h-4 w-4" />
+                                            Generate Article
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                        </TabsContent>
+                    </Tabs>
                 </CardContent>
             </Card>
 
@@ -679,25 +798,47 @@ Source: ${article.url}`)
                             <p className="text-xs text-muted-foreground">Target article length</p>
                         </div>
 
-                        <div className="flex items-end">
-                            <Button
-                                className="w-full h-10 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700"
-                                onClick={handleAIRewrite}
-                                disabled={!sourceContent || isRewriting}
+                        {/* Category (Moved for internal links) */}
+                        <div className="space-y-2">
+                            <Label className="text-sm font-medium">Category & Internal Links</Label>
+                            <Select
+                                value={selectedCategory?.toString() || ''}
+                                onValueChange={(val) => setSelectedCategory(parseInt(val))}
+                                disabled={isFetchingCategories || wpCategories.length === 0}
                             >
-                                {isRewriting ? (
-                                    <>
-                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                        Rewriting...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Sparkles className="h-4 w-4 mr-2" />
-                                        Rewrite with AI
-                                    </>
-                                )}
-                            </Button>
+                                <SelectTrigger className="h-10">
+                                    <SelectValue placeholder={isFetchingCategories ? "Loading categories..." : wpCategories.length > 0 ? "Select category" : "No categories found"} />
+                                </SelectTrigger>
+                                <SelectContent position="popper" sideOffset={4}>
+                                    {wpCategories.map(category => (
+                                        <SelectItem key={category.id} value={category.id.toString()}>
+                                            {category.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground">AI will inject relevant "Baca Juga" links from this category.</p>
                         </div>
+                    </div>
+
+                    <div className="flex items-end">
+                        <Button
+                            className="w-full h-10 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700"
+                            onClick={handleAIRewrite}
+                            disabled={!sourceContent || isRewriting}
+                        >
+                            {isRewriting ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Rewriting...
+                                </>
+                            ) : (
+                                <>
+                                    <Sparkles className="h-4 w-4 mr-2" />
+                                    Rewrite with AI
+                                </>
+                            )}
+                        </Button>
                     </div>
                 </CardContent>
             </Card>
@@ -815,45 +956,96 @@ Source: ${article.url}`)
                             <p className="text-xs text-muted-foreground">Ideal: 150-160 characters</p>
                         </div>
 
-                        <div className="space-y-2">
-                            <Label>Featured Image</Label>
-                            <div className="flex gap-2">
-                                <Input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) => {
-                                        const file = e.target.files?.[0]
-                                        if (file) {
-                                            setFeaturedImage(URL.createObjectURL(file))
-                                        }
-                                    }}
-                                    className="flex-1"
-                                />
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setIsGeneratingImage(true)}
-                                    disabled={isGeneratingImage}
-                                    className="shrink-0"
-                                >
-                                    {isGeneratingImage ? (
-                                        <>
-                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                            Generating...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Sparkles className="h-4 w-4 mr-2" />
-                                            AI Generate
-                                        </>
-                                    )}
-                                </Button>
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-sm font-medium">Featured Image (Gambar Utama)</Label>
+                                {featuredImage && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setFeaturedImage('')}
+                                        className="h-7 text-xs text-red-500 hover:text-red-600 hover:bg-red-50"
+                                    >
+                                        <Trash2 className="h-3 w-3 mr-1" /> Remove
+                                    </Button>
+                                )}
                             </div>
-                            {featuredImage && (
-                                <div className="mt-2 rounded-lg border overflow-hidden">
-                                    <img src={featuredImage} alt="Featured" className="w-full h-32 object-cover" />
+
+                            {!featuredImage ? (
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="relative">
+                                        <Button
+                                            variant="outline"
+                                            className="w-full h-24 flex flex-col items-center justify-center gap-2 border-dashed border-2"
+                                            onClick={() => document.getElementById('featured-image-upload')?.click()}
+                                        >
+                                            <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                                            <span className="text-xs">Upload dari Komputer</span>
+                                        </Button>
+                                        <input
+                                            id="featured-image-upload"
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0]
+                                                if (file) {
+                                                    const reader = new FileReader();
+                                                    reader.onloadend = () => {
+                                                        setFeaturedImage(reader.result as string);
+                                                    };
+                                                    reader.readAsDataURL(file);
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        className="h-24 flex flex-col items-center justify-center gap-2 border-dashed border-2"
+                                        onClick={handleGenerateImage}
+                                        disabled={isGeneratingImage || !generatedTitle}
+                                    >
+                                        {isGeneratingImage ? (
+                                            <Loader2 className="h-6 w-6 animate-spin text-violet-600" />
+                                        ) : (
+                                            <Sparkles className="h-6 w-6 text-violet-600" />
+                                        )}
+                                        <span className="text-xs">{isGeneratingImage ? "Generating..." : "AI Generate"}</span>
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="relative rounded-lg border-2 border-violet-100 overflow-hidden group aspect-video">
+                                    <img src={featuredImage} alt="Featured" className="w-full h-full object-cover" />
+                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                        <Button
+                                            variant="secondary"
+                                            size="sm"
+                                            onClick={() => document.getElementById('featured-image-upload-change')?.click()}
+                                        >
+                                            Ganti Gambar
+                                        </Button>
+                                        <input
+                                            id="featured-image-upload-change"
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0]
+                                                if (file) {
+                                                    const reader = new FileReader();
+                                                    reader.onloadend = () => {
+                                                        setFeaturedImage(reader.result as string);
+                                                    };
+                                                    reader.readAsDataURL(file);
+                                                }
+                                            }}
+                                        />
+                                    </div>
                                 </div>
                             )}
-                            <p className="text-xs text-muted-foreground">Upload from local or generate with AI - Recommended: 1200x630px</p>
+                            <p className="text-[10px] text-center text-muted-foreground uppercase tracking-wider font-semibold">
+                                Recommended: 1200x630px · JPG, PNG, or WEBP
+                            </p>
                         </div>
                     </CardContent>
                 </Card>
@@ -865,26 +1057,7 @@ Source: ${article.url}`)
                     </CardHeader>
                     <CardContent className="space-y-4">
 
-                        <div className="space-y-2">
-                            <Label>Category</Label>
-                            <Select
-                                value={selectedCategory?.toString() || ''}
-                                onValueChange={(val) => setSelectedCategory(parseInt(val))}
-                                disabled={isFetchingCategories || wpCategories.length === 0}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder={isFetchingCategories ? "Loading categories..." : wpCategories.length > 0 ? "Select category" : "No categories found"} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {wpCategories.map(category => (
-                                        <SelectItem key={category.id} value={category.id.toString()}>
-                                            {category.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <p className="text-xs text-muted-foreground">Post will be published to selected category</p>
-                        </div>
+                        {/* Category moved to AI Config */}
 
                         {publishResult && (
                             <div className={`p-3 rounded-md text-sm ${publishResult.success ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>

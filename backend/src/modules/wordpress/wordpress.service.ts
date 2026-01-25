@@ -6,6 +6,7 @@ import { wpSite, categoryMapping } from '../../db/schema';
 import { ArticlesService } from '../articles/articles.service';
 import axios from 'axios';
 import * as crypto from 'crypto';
+import sharp from 'sharp';
 
 @Injectable()
 export class WordpressService {
@@ -225,6 +226,102 @@ export class WordpressService {
         return { message: 'Site disconnected' };
     }
 
+    async uploadMediaFromUrl(siteId: string, imageUrl: string): Promise<number> {
+        const site = await this.db.query.wpSite.findFirst({ where: eq(wpSite.id, siteId) });
+        if (!site) throw new NotFoundException('Site not found');
+
+        const appPassword = this.decrypt(site.appPasswordEncrypted);
+        const auth = Buffer.from(`${site.username}:${appPassword}`).toString('base64');
+
+        try {
+            let buffer: Buffer;
+            let mimeType: string;
+            let filename: string;
+
+            if (imageUrl.startsWith('data:')) {
+                // Handle Base64 Data URL
+                const [header, base64Data] = imageUrl.split(',');
+                mimeType = header.split(':')[1].split(';')[0];
+                buffer = Buffer.from(base64Data, 'base64');
+                const extension = mimeType.split('/')[1] || 'png';
+                filename = `upload-${Date.now()}.${extension}`;
+            } else {
+                // Fetch external image
+                const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+                buffer = Buffer.from(imageResponse.data, 'binary');
+                mimeType = imageResponse.headers['content-type'] || 'image/png';
+                filename = `ai-gen-${Date.now()}.png`;
+            }
+
+            // Automatic Cropping to 1200x628
+            console.log('[WordpressService] Cropping image to 1200x628...');
+            const croppedBuffer = await sharp(buffer)
+                .resize({
+                    width: 1200,
+                    height: 628,
+                    fit: 'cover',
+                    position: 'center'
+                })
+                .toBuffer();
+
+            // Upload to WP Media
+            const uploadResponse = await axios.post(
+                `${site.url}/wp-json/wp/v2/media`,
+                croppedBuffer,
+                {
+                    headers: {
+                        Authorization: `Basic ${auth}`,
+                        'Content-Type': mimeType,
+                        'Content-Disposition': `attachment; filename="${filename}"`,
+                    },
+                }
+            );
+
+            return uploadResponse.data.id;
+        } catch (error: any) {
+            console.error('[uploadMediaFromUrl] Error:', error.response?.data || error.message);
+            throw new BadRequestException('Failed to process and upload image to WordPress');
+        }
+    }
+
+    async uploadMediaFromFile(siteId: string, fileBuffer: Buffer, filename: string, mimeType: string): Promise<number> {
+        const site = await this.db.query.wpSite.findFirst({ where: eq(wpSite.id, siteId) });
+        if (!site) throw new NotFoundException('Site not found');
+
+        const appPassword = this.decrypt(site.appPasswordEncrypted);
+        const auth = Buffer.from(`${site.username}:${appPassword}`).toString('base64');
+
+        try {
+            // Automatic Cropping to 1200x628
+            console.log('[WordpressService] Cropping file to 1200x628...');
+            const croppedBuffer = await sharp(fileBuffer)
+                .resize({
+                    width: 1200,
+                    height: 628,
+                    fit: 'cover',
+                    position: 'center'
+                })
+                .toBuffer();
+
+            const uploadResponse = await axios.post(
+                `${site.url}/wp-json/wp/v2/media`,
+                croppedBuffer,
+                {
+                    headers: {
+                        Authorization: `Basic ${auth}`,
+                        'Content-Type': mimeType,
+                        'Content-Disposition': `attachment; filename="${filename}"`,
+                    },
+                }
+            );
+
+            return uploadResponse.data.id;
+        } catch (error: any) {
+            console.error('[uploadMediaFromFile] Error:', error.response?.data || error.message);
+            throw new BadRequestException('Failed to process and upload image to WordPress');
+        }
+    }
+
     async publishArticle(
         userId: string,
         dto: {
@@ -237,6 +334,7 @@ export class WordpressService {
             originalContent?: string;
             feedItemId?: string;
             articleId?: string;
+            featuredImageUrl?: string;
         }
     ) {
         // Get user's active site (single-site model)
@@ -252,11 +350,27 @@ export class WordpressService {
             const appPassword = this.decrypt(site.appPasswordEncrypted);
             const auth = Buffer.from(`${site.username}:${appPassword}`).toString('base64');
 
+            // Handle featured image if provided as URL (from AI generation or external source)
+            let featuredMediaId: number | undefined;
+            if (dto.featuredImageUrl && (dto.featuredImageUrl.startsWith('http') || dto.featuredImageUrl.startsWith('data:'))) {
+                try {
+                    console.log('[publishArticle] Uploading featured image...');
+                    featuredMediaId = await this.uploadMediaFromUrl(site.id, dto.featuredImageUrl);
+                    console.log('[publishArticle] Featured image uploaded, ID:', featuredMediaId);
+                } catch (imgError) {
+                    console.error('[publishArticle] Failed to upload featured image, continuing without it:', imgError);
+                }
+            }
+
             const postData: any = {
                 title: dto.title,
                 content: dto.content,
                 status: dto.status || 'draft',
             };
+
+            if (featuredMediaId) {
+                postData.featured_media = featuredMediaId;
+            }
 
             // Add categories if provided
             if (dto.categories && dto.categories.length > 0) {
@@ -283,12 +397,12 @@ export class WordpressService {
 
             // Save to local database
             try {
-                const articleData = {
+                const articleData: any = {
                     title: dto.title,
                     generatedContent: dto.content,
                     originalContent: dto.originalContent || '',
                     sourceUrl: dto.sourceUrl || '',
-                    status: (dto.status === 'publish' ? 'PUBLISHED' : dto.status === 'future' ? 'PUBLISHED' : 'DRAFT') as any,
+                    status: (dto.status === 'publish' ? 'PUBLISHED' : dto.status === 'future' ? 'PUBLISHED' : 'DRAFT'),
                     wpPostId: String(response.data.id),
                     wpPostUrl: response.data.link,
                     wpSiteId: site.id,
@@ -296,6 +410,10 @@ export class WordpressService {
                     metaTitle: dto.title, // Default to title
                     slug: response.data.slug,
                 };
+
+                if (dto.featuredImageUrl) {
+                    articleData.featuredImageUrl = dto.featuredImageUrl;
+                }
 
                 if (dto.articleId) {
                     // Update existing draft
@@ -326,6 +444,46 @@ export class WordpressService {
             throw new BadRequestException(
                 error.response?.data?.message || 'Failed to publish article to WordPress'
             );
+        }
+    }
+    async getRecentPosts(siteId: string, categoryId?: number): Promise<{ title: string; link: string }[]> {
+        const site = await this.db.query.wpSite.findFirst({
+            where: eq(wpSite.id, siteId),
+        });
+
+        if (!site) return [];
+
+        try {
+            const appPassword = this.decrypt(site.appPasswordEncrypted);
+            const auth = Buffer.from(`${site.username}:${appPassword}`).toString('base64');
+
+            const fetchPosts = async (catId?: number) => {
+                let url = `${site.url}/wp-json/wp/v2/posts?per_page=3&status=publish`;
+                if (catId) {
+                    url += `&categories=${catId}`;
+                }
+                const response = await axios.get(url, {
+                    headers: { Authorization: `Basic ${auth}` },
+                    timeout: 5000
+                });
+                return response.data.map((post: any) => ({
+                    title: post.title.rendered,
+                    link: post.link,
+                }));
+            };
+
+            let posts = await fetchPosts(categoryId);
+
+            // Fallback: if category has no posts, fetch generic posts
+            if (posts.length === 0 && categoryId) {
+                console.log(`[WordpressService] No posts in category ${categoryId}, falling back to recent posts`);
+                posts = await fetchPosts();
+            }
+
+            return posts;
+        } catch (error: any) {
+            console.error('[getRecentPosts] Error:', error.message);
+            return [];
         }
     }
 }

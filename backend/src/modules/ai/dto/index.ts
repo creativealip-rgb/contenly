@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsArray, IsEnum, ValidateNested } from 'class-validator';
+import { IsString, IsOptional, IsArray, IsEnum, IsNumber, ValidateNested } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -38,6 +38,16 @@ export class GenerateContentDto {
     @IsOptional()
     @IsString()
     sourceUrl?: string;
+
+    @ApiPropertyOptional({ enum: ['rewrite', 'idea'], default: 'rewrite' })
+    @IsOptional()
+    @IsEnum(['rewrite', 'idea'])
+    mode?: 'rewrite' | 'idea';
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    @IsNumber()
+    categoryId?: number;
 
     @ApiPropertyOptional()
     @IsOptional()

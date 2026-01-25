@@ -39,6 +39,7 @@ export class OpenAiService {
             length?: 'short' | 'medium' | 'long';
             keywords?: string[];
             targetLanguage?: string;
+            mode?: 'rewrite' | 'idea';
         }
     ): Promise<string> {
         const lengthGuide = {
@@ -47,21 +48,44 @@ export class OpenAiService {
             long: '1000-1500 words',
         };
 
-        const systemPrompt = `You are a professional content rewriter. Your task is to:
-1. Completely rewrite the given content to make it unique while preserving factual accuracy
-2. Use a ${options.tone || 'professional'} tone
-3. Target length: ${lengthGuide[options.length || 'medium']}
-4. ${options.keywords?.length ? `Naturally incorporate these keywords: ${options.keywords.join(', ')}` : ''}
+        const isIdeaMode = options.mode === 'idea';
+
+        const systemPrompt = isIdeaMode
+            ? `You are an expert article writer. Your task is to:
+1. Generate a high-quality, comprehensive article based on the provided ideas/keywords.
+2. Use a ${options.tone || 'professional'} tone.
+3. Target length: ${lengthGuide[options.length || 'medium']}.
+4. Naturally incorporate related keywords to ensure the content is thorough.
 5. ${options.targetLanguage ? `Write in ${options.targetLanguage}` : ''}
 6. Return ONLY the HTML content (headings, paragraphs, lists) suitable for the body of an article.
-7. DO NOT include <!DOCTYPE html>, <html>, <head>, or <body> tags.
-8. Make the content SEO-friendly with clear structure`;
+7. LANGUAGE: ${options.targetLanguage ? `Use ${options.targetLanguage}.` : 'Use Indonesian (Bahasa Indonesia) or follow the language of the source content/idea.'}
+8. CRITICAL: DO NOT use Markdown formatting (NO **, NO ###, NO [text](url)). Use ONLY HTML tags like <h2>, <p>, <ul>, <li>, <strong>, and <a>.
+9. Each paragraph MUST be short, NOT EXCEEDING 25 words.
+10. CRITICAL: DO NOT start the article with a heading (H1, H2, etc.). Start directly with an introductory paragraph.
+11. DO NOT include <!DOCTYPE html>, <html>, <head>, or <body> tags.
+12. Make the content SEO-friendly with a clear structure.`
+            : `You are a professional content rewriter. Your task is to:
+1. Completely rewrite the given content to make it unique while preserving factual accuracy.
+2. Use a ${options.tone || 'professional'} tone.
+3. Target length: ${lengthGuide[options.length || 'medium']}.
+4. ${options.keywords?.length ? `Naturally incorporate these keywords: ${options.keywords.join(', ')}` : ''}
+5. Return ONLY the HTML content (headings, paragraphs, lists) suitable for the body of an article.
+6. LANGUAGE: ${options.targetLanguage ? `Use ${options.targetLanguage}.` : 'Use Indonesian (Bahasa Indonesia) or follow the language of the source content.'}
+7. CRITICAL: DO NOT use Markdown formatting (NO **, NO ###, NO [text](url)). Use ONLY HTML tags like <h2>, <p>, <ul>, <li>, <strong>, and <a>.
+8. Each paragraph MUST be short, NOT EXCEEDING 25 words.
+9. CRITICAL: DO NOT start the article with a heading (H1, H2, etc.). Start directly with an introductory paragraph.
+10. DO NOT include <!DOCTYPE html>, <html>, <head>, or <body> tags.
+11. Make the content SEO-friendly with a clear structure.`;
+
+        const userPrompt = isIdeaMode
+            ? `Generate an article based on these ideas/keywords:\n\n${originalContent}`
+            : `Rewrite this content:\n\n${originalContent}`;
 
         const response = await this.openai.chat.completions.create({
             model: this.model,
             messages: [
                 { role: 'system', content: systemPrompt },
-                { role: 'user', content: `Rewrite this content:\n\n${originalContent}` },
+                { role: 'user', content: userPrompt },
             ],
             temperature: 0.7,
             max_tokens: 2000,
