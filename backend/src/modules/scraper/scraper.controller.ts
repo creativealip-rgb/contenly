@@ -10,6 +10,7 @@ export class ScraperController {
     @Post('scrape')
     @ApiOperation({ summary: 'Scrape article content from URL (3-tier extraction)' })
     async scrape(@Body() dto: { url: string }) {
-        return this.advancedScraperService.scrapeArticle(dto.url);
+        const data = await this.advancedScraperService.scrapeArticle(dto.url);
+        return { success: true, data };
     }
 }

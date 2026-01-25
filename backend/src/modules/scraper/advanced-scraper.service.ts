@@ -178,8 +178,9 @@ export class AdvancedScraperService {
             const articleSelectors = [
                 'article .entry-content',
                 'article .post-content',
-                '.entry-content',
+                '.td-post-content', // WordPress Newspaper theme
                 '.post-content',
+                '.entry-content',
                 'article',
                 '.content',
                 'main',
@@ -319,12 +320,21 @@ export class AdvancedScraperService {
     }
 
     /**
-     * Clean text content
+     * Clean text content and decode HTML entities
      */
     private cleanText(text: string): string {
+        if (!text) return '';
+
         return text
-            .replace(/\s+/g, ' ') // Replace multiple spaces with single
-            .replace(/\n\s*\n/g, '\n\n') // Clean up newlines
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&amp;/g, '&')
+            .replace(/&quot;/g, '"')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&#(\d+);/g, (match, dec) => String.fromCharCode(dec))
+            .replace(/&#x([0-9a-f]+);/gi, (match, hex) => String.fromCharCode(parseInt(hex, 16)))
+            .replace(/\s+/g, ' ')
+            .replace(/\n\s*\n/g, '\n\n')
             .trim();
     }
 

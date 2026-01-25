@@ -16,7 +16,14 @@ export class AiController {
     @Post('generate')
     @ApiOperation({ summary: 'Generate rewritten content' })
     async generate(@CurrentUser() user: User, @Body() dto: GenerateContentDto) {
-        return this.aiService.generateContent(user.id, dto);
+        const data = await this.aiService.generateContent(user.id, dto);
+        return {
+            success: true,
+            data: {
+                ...data,
+                title: dto.title || 'Rewritten Article' // Ensure title is returned for frontend
+            }
+        };
     }
 
     @Post('generate-seo')
