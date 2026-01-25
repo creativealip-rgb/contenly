@@ -61,6 +61,8 @@ export default function ContentLabPage() {
     // Scraper state
     const [scrapeUrl, setScrapeUrl] = useState('')
     const [isScraping, setIsScraping] = useState(false)
+    const [activeTab, setActiveTab] = useState('rss')
+    const [articleIdea, setArticleIdea] = useState('')
 
     // AI Rewrite state
     const [aiTone, setAiTone] = useState<'professional' | 'casual' | 'creative' | 'technical'>('professional')
@@ -303,8 +305,10 @@ Source: ${article.url}`)
     }
 
     const handleAIRewrite = async () => {
-        if (!sourceContent.trim()) {
-            alert('Please select an article first')
+        const hasSource = activeTab === 'idea' ? articleIdea.trim() : sourceContent.trim();
+
+        if (!hasSource) {
+            alert(activeTab === 'idea' ? 'Please enter your idea or keywords first' : 'Please select an article first')
             return
         }
 
@@ -322,10 +326,11 @@ Source: ${article.url}`)
                 },
                 credentials: 'include',
                 body: JSON.stringify({
-                    originalContent: sourceContent,
+                    originalContent: activeTab === 'idea' ? articleIdea : sourceContent,
                     title: selectedArticle?.title || 'Rewritten Article',
                     sourceUrl: selectedArticle?.url || scrapeUrl || '',
                     feedItemId: selectedArticle?.id,
+                    mode: activeTab === 'idea' ? 'idea' : 'rewrite',
                     options: {
                         tone: aiTone,
                         length: aiLength === 'shorter' ? 'short' : aiLength === 'longer' ? 'long' : 'medium',
@@ -525,91 +530,147 @@ Source: ${article.url}`)
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <Label>Select RSS Feed Source</Label>
-                                <Dialog open={isAddFeedOpen} onOpenChange={setIsAddFeedOpen}>
-                                    <DialogTrigger asChild>
-                                        <Button variant="ghost" size="sm" className="text-violet-600 h-6 px-2 hover:bg-violet-50">
-                                            <Plus className="h-4 w-4 mr-1" /> Add Feed
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                        <DialogHeader>
-                                            <DialogTitle>Add New RSS Feed</DialogTitle>
-                                            <DialogDescription>
-                                                Enter the URL of the RSS feed you want to follow.
-                                            </DialogDescription>
-                                        </DialogHeader>
-                                        <div className="space-y-4 py-4">
-                                            <div className="space-y-2">
-                                                <Label>Feed Name</Label>
-                                                <Input
-                                                    placeholder="e.g. TechCrunch"
-                                                    value={newFeedName}
-                                                    onChange={(e) => setNewFeedName(e.target.value)}
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label>Feed URL</Label>
-                                                <Input
-                                                    placeholder="https://example.com/feed"
-                                                    value={newFeedUrl}
-                                                    onChange={(e) => setNewFeedUrl(e.target.value)}
-                                                />
-                                            </div>
-                                        </div>
-                                        <DialogFooter>
-                                            <Button variant="outline" onClick={() => setIsAddFeedOpen(false)}>Cancel</Button>
-                                            <Button onClick={handleAddFeed} disabled={!newFeedName || !newFeedUrl}>Add Feed</Button>
-                                        </DialogFooter>
-                                    </DialogContent>
-                                </Dialog>
-                            </div>
-                            <Select value={selectedFeed || ''} onValueChange={(val) => {
-                                setSelectedFeed(val)
-                                setSelectedArticle(null)
-                                setSourceContent('')
-                            }}>
-                                <SelectTrigger className="border-violet-200 focus:ring-violet-500">
-                                    <SelectValue placeholder="Select a feed..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {feeds.map((feed) => (
-                                        <SelectItem key={feed.id} value={feed.id}>
-                                            <div className="flex flex-col items-start text-left">
-                                                <span className="font-medium">{feed.name}</span>
-                                                <span className="text-xs text-muted-foreground truncate max-w-[200px]">{feed.url}</span>
-                                            </div>
-                                        </SelectItem>
-                                    ))}
-                                    {feeds.length === 0 && (
-                                        <div className="p-2 text-center text-sm text-muted-foreground">No feeds added</div>
-                                    )}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                        <TabsList className="grid w-full grid-cols-3 mb-6">
+                            <TabsTrigger value="rss" className="flex items-center gap-2">
+                                <Rss className="h-4 w-4" />
+                                RSS Feed
+                            </TabsTrigger>
+                            <TabsTrigger value="url" className="flex items-center gap-2">
+                                <Globe className="h-4 w-4" />
+                                Direct URL
+                            </TabsTrigger>
+                            <TabsTrigger value="idea" className="flex items-center gap-2">
+                                <Sparkles className="h-4 w-4" />
+                                Idea / Keywords
+                            </TabsTrigger>
+                        </TabsList>
 
-                        <div className="space-y-2">
-                            <Label>Select Article</Label>
-                            <Select value={selectedArticle?.id || ''} onValueChange={(val) => {
-                                const article = articles.find(a => a.id === val)
-                                if (article) handleSelectArticle(article)
-                            }}>
-                                <SelectTrigger disabled={!selectedFeed || isFetchingRSS} className="w-full">
-                                    <SelectValue placeholder={isFetchingRSS ? "Fetching..." : "Choose an article..."} className="block truncate" />
-                                </SelectTrigger>
-                                <SelectContent position="popper" sideOffset={4} className="w-[--radix-select-trigger-width] max-w-full overflow-hidden">
-                                    {articles.map((article) => (
-                                        <SelectItem key={article.id} value={article.id} className="overflow-hidden">
-                                            <div className="truncate min-w-0 flex-1 pr-8">{article.title}</div>
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
+                        <TabsContent value="rss" className="space-y-4">
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <Label>Select RSS Feed Source</Label>
+                                    <Dialog open={isAddFeedOpen} onOpenChange={setIsAddFeedOpen}>
+                                        <DialogTrigger asChild>
+                                            <Button variant="ghost" size="sm" className="text-violet-600 h-6 px-2 hover:bg-violet-50">
+                                                <Plus className="h-4 w-4 mr-1" /> Add Feed
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent>
+                                            <DialogHeader>
+                                                <DialogTitle>Add New RSS Feed</DialogTitle>
+                                                <DialogDescription>
+                                                    Enter the URL of the RSS feed you want to follow.
+                                                </DialogDescription>
+                                            </DialogHeader>
+                                            <div className="space-y-4 py-4">
+                                                <div className="space-y-2">
+                                                    <Label>Feed Name</Label>
+                                                    <Input
+                                                        placeholder="e.g. TechCrunch"
+                                                        value={newFeedName}
+                                                        onChange={(e) => setNewFeedName(e.target.value)}
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label>Feed URL</Label>
+                                                    <Input
+                                                        placeholder="https://example.com/feed"
+                                                        value={newFeedUrl}
+                                                        onChange={(e) => setNewFeedUrl(e.target.value)}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <DialogFooter>
+                                                <Button variant="outline" onClick={() => setIsAddFeedOpen(false)}>Cancel</Button>
+                                                <Button onClick={handleAddFeed} disabled={!newFeedName || !newFeedUrl}>Add Feed</Button>
+                                            </DialogFooter>
+                                        </DialogContent>
+                                    </Dialog>
+                                </div>
+                                <Select value={selectedFeed || ''} onValueChange={(val) => {
+                                    setSelectedFeed(val)
+                                    setSelectedArticle(null)
+                                    setSourceContent('')
+                                }}>
+                                    <SelectTrigger className="border-violet-200 focus:ring-violet-500">
+                                        <SelectValue placeholder="Select a feed..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {feeds.map((feed) => (
+                                            <SelectItem key={feed.id} value={feed.id}>
+                                                <div className="flex flex-col items-start text-left">
+                                                    <span className="font-medium">{feed.name}</span>
+                                                    <span className="text-xs text-muted-foreground truncate max-w-[200px]">{feed.url}</span>
+                                                </div>
+                                            </SelectItem>
+                                        ))}
+                                        {feeds.length === 0 && (
+                                            <div className="p-2 text-center text-sm text-muted-foreground">No feeds added</div>
+                                        )}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Select Article</Label>
+                                <Select value={selectedArticle?.id || ''} onValueChange={(val) => {
+                                    const article = articles.find(a => a.id === val)
+                                    if (article) handleSelectArticle(article)
+                                }}>
+                                    <SelectTrigger disabled={!selectedFeed || isFetchingRSS} className="w-full">
+                                        <SelectValue placeholder={isFetchingRSS ? "Fetching articles..." : "Choose an article..."} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {articles.map((article) => (
+                                            <SelectItem key={article.id} value={article.id}>
+                                                {article.title}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="url" className="space-y-4">
+                            <div className="space-y-2">
+                                <Label>Article URL</Label>
+                                <div className="flex gap-2">
+                                    <Input
+                                        placeholder="https://example.com/blog-post"
+                                        value={scrapeUrl}
+                                        onChange={(e) => setScrapeUrl(e.target.value)}
+                                        className="flex-1"
+                                    />
+                                    <Button
+                                        onClick={handleScrape}
+                                        disabled={isScraping || !scrapeUrl}
+                                        className="bg-violet-600 hover:bg-violet-700"
+                                    >
+                                        {isScraping ? <Loader2 className="h-4 w-4 animate-spin" /> : "Scrape"}
+                                    </Button>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Enter a full article URL to scrape its content.
+                                </p>
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="idea" className="space-y-4">
+                            <div className="space-y-2">
+                                <Label>What should the article be about?</Label>
+                                <Textarea
+                                    placeholder="e.g. 5 tips for morning productivity or The future of web development in 2024"
+                                    value={articleIdea}
+                                    onChange={(e) => setArticleIdea(e.target.value)}
+                                    className="min-h-[100px]"
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    Write down your keywords, topics, or a brief outline. AI will generate a fresh article based on this.
+                                </p>
+                            </div>
+                        </TabsContent>
+                    </Tabs>
                 </CardContent>
             </Card>
 

@@ -39,6 +39,11 @@ export class GenerateContentDto {
     @IsString()
     sourceUrl?: string;
 
+    @ApiPropertyOptional({ enum: ['rewrite', 'idea'], default: 'rewrite' })
+    @IsOptional()
+    @IsEnum(['rewrite', 'idea'])
+    mode?: 'rewrite' | 'idea';
+
     @ApiPropertyOptional()
     @IsOptional()
     @IsString()

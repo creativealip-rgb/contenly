@@ -25,7 +25,10 @@ export class AiService {
         // Generate content
         const content = await this.openAiService.generateContent(
             dto.originalContent,
-            dto.options as any,
+            {
+                ...dto.options,
+                mode: dto.mode,
+            } as any,
         );
 
         // Deduct tokens (skip for temp user)
