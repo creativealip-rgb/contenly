@@ -58,8 +58,10 @@ export class OpenAiService {
 4. Naturally incorporate related keywords to ensure the content is thorough.
 5. ${options.targetLanguage ? `Write in ${options.targetLanguage}` : ''}
 6. Return ONLY the HTML content (headings, paragraphs, lists) suitable for the body of an article.
-7. DO NOT include <!DOCTYPE html>, <html>, <head>, or <body> tags.
-8. Make the content SEO-friendly with a clear structure.`
+7. CRITICAL: DO NOT use Markdown formatting (NO **, NO ###, NO [text](url)). Use ONLY HTML tags like <h2>, <p>, <ul>, <li>, <strong>, and <a>.
+8. Each paragraph MUST be extremely short, NOT EXCEEDING 25 characters.
+9. DO NOT include <!DOCTYPE html>, <html>, <head>, or <body> tags.
+10. Make the content SEO-friendly with a clear structure.`
             : `You are a professional content rewriter. Your task is to:
 1. Completely rewrite the given content to make it unique while preserving factual accuracy.
 2. Use a ${options.tone || 'professional'} tone.
@@ -67,8 +69,10 @@ export class OpenAiService {
 4. ${options.keywords?.length ? `Naturally incorporate these keywords: ${options.keywords.join(', ')}` : ''}
 5. ${options.targetLanguage ? `Write in ${options.targetLanguage}` : ''}
 6. Return ONLY the HTML content (headings, paragraphs, lists) suitable for the body of an article.
-7. DO NOT include <!DOCTYPE html>, <html>, <head>, or <body> tags.
-8. Make the content SEO-friendly with a clear structure.`;
+7. CRITICAL: DO NOT use Markdown formatting (NO **, NO ###, NO [text](url)). Use ONLY HTML tags like <h2>, <p>, <ul>, <li>, <strong>, and <a>.
+8. Each paragraph MUST be extremely short, NOT EXCEEDING 25 characters.
+9. DO NOT include <!DOCTYPE html>, <html>, <head>, or <body> tags.
+10. Make the content SEO-friendly with a clear structure.`;
 
         const userPrompt = isIdeaMode
             ? `Generate an article based on these ideas/keywords:\n\n${originalContent}`

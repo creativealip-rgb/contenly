@@ -34,6 +34,9 @@ export class AiService {
             } as any,
         );
 
+        // Convert potential Markdown to HTML as a fallback
+        content = this.convertMarkdownToHtml(content);
+
         // Fetch and inject "Baca Juga" links if we have a site and category
         try {
             console.log(`[AiService] Attempting to inject links for user: ${userId}, category: ${dto.categoryId}`);
@@ -88,6 +91,44 @@ export class AiService {
             wordCount: content.split(/\s+/).length,
             articleId,
         };
+    }
+
+    private convertMarkdownToHtml(md: string): string {
+        // If it already looks like HTML, do a lighter pass
+        const seemsHtml = /<\/[a-z]+>/i.test(md);
+
+        let html = md;
+
+        // Basic Markdown to HTML conversion
+        html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+        html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+        html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+        html = html.replace(/\*\*(.*)\*\*/gm, '<strong>$1</strong>');
+        html = html.replace(/\*(.*)\*/gm, '<em>$1</em>');
+        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/gm, '<a href="$2" target="_blank">$1</a>');
+
+        // Lists
+        html = html.replace(/^\s*-\s+(.*$)/gim, '<li>$1</li>');
+        html = html.replace(/^\s*\*\s+(.*$)/gim, '<li>$1</li>');
+        // Simple <ul> wrapper for adjacent <li>
+        html = html.replace(/(<li>.*<\/li>)+/gim, '<ul>$&</ul>');
+
+        // Paragraphs: Wrap lines that aren't tags in <p> if not already HTML
+        if (!seemsHtml) {
+            html = html.split('\n\n')
+                .map(p => {
+                    const trimmed = p.trim();
+                    if (!trimmed) return '';
+                    if (trimmed.startsWith('<h') || trimmed.startsWith('<ul') || trimmed.startsWith('<li')) return trimmed;
+                    return `<p>${trimmed}</p>`;
+                })
+                .join('');
+        }
+
+        // Cleanup: AI sometimes leaves stray Markdown bold marks even in HTML
+        html = html.replace(/\*\*/g, '').replace(/__/g, '');
+
+        return html;
     }
 
     private injectInternalLinks(content: string, links: { title: string; link: string }[]): string {
