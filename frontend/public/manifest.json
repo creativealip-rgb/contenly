@@ -1,0 +1,20 @@
+{
+    "name": "Camedia - AI Content Platform",
+    "short_name": "Camedia",
+    "description": "AI-powered content automation for WordPress",
+    "id": "/",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#7c3aed",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "/favicon.ico",
+            "sizes": "64x64 32x32 24x24 16x16",
+            "type": "image/x-icon",
+            "purpose": "any"
+        }
+    ]
+}

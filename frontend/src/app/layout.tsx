@@ -11,9 +11,16 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 })
 
 export const metadata: Metadata = {
-  title: 'Contenly - AI Content Automation Platform',
+  title: 'Camedia - AI Content Automation Platform',
   description: 'Turn any URL into unique, SEO-optimized WordPress posts with AI-powered content automation.',
   keywords: 'AI content, WordPress automation, SEO, content generation, RSS feeds',
+  manifest: '/manifest.json',
+  themeColor: '#7c3aed',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Camedia',
+  },
 }
 
 export default function RootLayout({
