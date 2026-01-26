@@ -2,17 +2,13 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Debug: Check project structure
-RUN ls -la ..
+# Copy package files from the backend directory
+COPY backend/package*.json ./
 
-# Copy package files explicitly
-COPY package.json ./
-COPY package-lock.json* ./
+RUN npm install
 
-RUN ls -la && npm install
-
-# Copy the rest of the application code
-COPY . .
+# Copy the rest of the backend code
+COPY backend/ .
 
 # Build the application
 RUN npm run build
