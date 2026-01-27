@@ -3,7 +3,11 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { db, schema } from '../db';
 
 console.log('🔐 Better Auth initializing...');
-console.log('📍 Base URL:', process.env.API_URL || 'http://localhost:3001');
+const rawBaseUrl = process.env.API_URL || 'http://localhost:3001';
+const API_BASE_URL = rawBaseUrl.endsWith('/') ? rawBaseUrl.slice(0, -1) : rawBaseUrl;
+const BETTER_AUTH_URL = API_BASE_URL.endsWith('/auth') ? API_BASE_URL : `${API_BASE_URL}/auth`;
+
+console.log('📍 Better Auth URL:', BETTER_AUTH_URL);
 console.log('📍 Trusted Origins:', [
     'http://localhost:3000',
     'http://localhost:3001',
@@ -20,7 +24,7 @@ export const auth = betterAuth({
     }),
 
     // Base URL for the auth server
-    baseURL: process.env.API_URL || 'http://localhost:3001',
+    baseURL: BETTER_AUTH_URL,
 
     // Debug logging
     logger: {
