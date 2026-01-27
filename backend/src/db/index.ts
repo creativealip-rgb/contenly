@@ -12,14 +12,16 @@ if (!connectionString) {
 
 const url = new URL(connectionString);
 
-// Force SSL for Supabase connection (postgres-js defaults to non-SSL)
+// Use SSL only if the hostname suggests a cloud provider or if explicitly requested
+const useSSL = url.hostname.includes('supabase') || url.hostname.includes('aiven') || process.env.DB_SSL === 'true';
+
 const queryClient = postgres({
     host: url.hostname,
     port: parseInt(url.port || '5432'),
     user: url.username,
     password: decodeURIComponent(url.password),
     database: url.pathname.slice(1),
-    ssl: 'require',
+    ssl: useSSL ? 'require' : false,
 });
 export const db = drizzle(queryClient, { schema });
 
