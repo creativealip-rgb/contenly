@@ -26,6 +26,7 @@ export class AiService {
         }
 
         // Generate content
+        console.log(`[AiService] Generating content for mode: ${dto.mode}, content length: ${dto.originalContent?.length}`);
         let content = await this.openAiService.generateContent(
             dto.originalContent,
             {
@@ -35,7 +36,9 @@ export class AiService {
         );
 
         // Convert potential Markdown to HTML as a fallback
+        console.log(`[AiService] Raw content generated, length: ${content?.length}`);
         content = this.convertMarkdownToHtml(content);
+        console.log(`[AiService] Content converted to HTML, length: ${content?.length}`);
 
         // Fetch and inject "Baca Juga" links if we have a site and category
         try {

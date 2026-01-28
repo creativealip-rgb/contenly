@@ -81,17 +81,27 @@ export class OpenAiService {
             ? `Generate an article based on these ideas/keywords:\n\n${originalContent}`
             : `Rewrite this content:\n\n${originalContent}`;
 
-        const response = await this.openai.chat.completions.create({
-            model: this.model,
-            messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: userPrompt },
-            ],
-            temperature: 0.7,
-            max_tokens: 2000,
-        });
+        try {
+            const response = await this.openai.chat.completions.create({
+                model: this.model,
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userPrompt },
+                ],
+                temperature: 0.7,
+                max_tokens: 2000,
+            });
 
-        return response.choices[0]?.message?.content || '';
+            return response.choices[0]?.message?.content || '';
+        } catch (error: any) {
+            console.error('[OpenAiService] Generation failed:', {
+                status: error.status,
+                message: error.message,
+                data: error.response?.data,
+                model: this.model,
+            });
+            throw error;
+        }
     }
 
     async generateSeoMetadata(
