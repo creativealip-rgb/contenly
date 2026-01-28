@@ -17,7 +17,7 @@ export class WordpressService {
         private configService: ConfigService,
         private articlesService: ArticlesService,
     ) {
-        this.encryptionKey = this.configService.get('ENCRYPTION_KEY') || 'default-encryption-key-32bytes!';
+        this.encryptionKey = this.configService.get('ENCRYPTION_KEY') || 'default-encryption-key-32-bytes!!';
     }
 
     get db() {
