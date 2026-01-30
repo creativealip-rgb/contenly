@@ -68,12 +68,9 @@ export function Footer() {
                     {/* Brand */}
                     <div className="col-span-2 md:col-span-4 lg:col-span-5">
                         <Link href="/" className="flex items-center gap-3 mb-6">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden bg-indigo-50/50 shadow-sm border border-indigo-100">
-                                <Image src="/logo.png" alt="Contently Logo" width={32} height={32} className="object-contain" />
+                            <div className="flex items-center justify-center overflow-hidden">
+                                <Image src="/logo-full.png" alt="Contently Logo" width={140} height={40} className="object-contain h-10 w-auto" />
                             </div>
-                            <span className="font-bold text-xl tracking-tight">
-                                Contently
-                            </span>
                         </Link>
                         <p className="text-muted-foreground max-w-xs leading-relaxed">
                             Transform any URL into unique, SEO-optimized WordPress posts with the power of AI.

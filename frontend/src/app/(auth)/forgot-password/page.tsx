@@ -38,13 +38,10 @@ export default function ForgotPasswordPage() {
             <div className="w-full max-w-md">
                 {/* Logo */}
                 <div className="text-center mb-8">
-                    <Link href="/" className="inline-flex items-center gap-2">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl overflow-hidden bg-white shadow-lg border">
-                            <Image src="/logo.png" alt="Contently Logo" width={48} height={48} className="object-cover" />
+                    <Link href="/" className="inline-flex items-center">
+                        <div className="flex items-center justify-center overflow-hidden">
+                            <Image src="/logo-full.png" alt="Contently Logo" width={180} height={50} className="object-contain h-12 w-auto" />
                         </div>
-                        <span className="font-bold text-2xl bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
-                            Contently
-                        </span>
                     </Link>
                 </div>
 
