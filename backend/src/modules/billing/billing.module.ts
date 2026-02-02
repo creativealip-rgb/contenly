@@ -4,9 +4,9 @@ import { BillingController } from './billing.controller';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
-    imports: [forwardRef(() => AuthModule)],
-    controllers: [BillingController],
-    providers: [BillingService],
-    exports: [BillingService],
+  imports: [forwardRef(() => AuthModule)],
+  controllers: [BillingController],
+  providers: [BillingService],
+  exports: [BillingService],
 })
-export class BillingModule { }
+export class BillingModule {}

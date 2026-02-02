@@ -10,23 +10,23 @@ import type { User } from '../../db/types';
 @UseGuards(JwtAuthGuard)
 @Controller('notifications')
 export class NotificationsController {
-    constructor(private notificationsService: NotificationsService) { }
+  constructor(private notificationsService: NotificationsService) {}
 
-    @Get()
-    @ApiOperation({ summary: 'List notifications' })
-    async findAll(@CurrentUser() user: User) {
-        return this.notificationsService.findAll(user.id);
-    }
+  @Get()
+  @ApiOperation({ summary: 'List notifications' })
+  async findAll(@CurrentUser() user: User) {
+    return this.notificationsService.findAll(user.id);
+  }
 
-    @Patch(':id/read')
-    @ApiOperation({ summary: 'Mark as read' })
-    async markAsRead(@CurrentUser() user: User, @Param('id') id: string) {
-        return this.notificationsService.markAsRead(user.id, id);
-    }
+  @Patch(':id/read')
+  @ApiOperation({ summary: 'Mark as read' })
+  async markAsRead(@CurrentUser() user: User, @Param('id') id: string) {
+    return this.notificationsService.markAsRead(user.id, id);
+  }
 
-    @Patch('read-all')
-    @ApiOperation({ summary: 'Mark all as read' })
-    async markAllAsRead(@CurrentUser() user: User) {
-        return this.notificationsService.markAllAsRead(user.id);
-    }
+  @Patch('read-all')
+  @ApiOperation({ summary: 'Mark all as read' })
+  async markAllAsRead(@CurrentUser() user: User) {
+    return this.notificationsService.markAllAsRead(user.id);
+  }
 }

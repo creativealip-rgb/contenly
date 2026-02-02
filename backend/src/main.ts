@@ -28,7 +28,7 @@ async function bootstrap() {
   // CORS Setup
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
   const origins = frontendUrl.includes(',')
-    ? frontendUrl.split(',').map(url => url.trim())
+    ? frontendUrl.split(',').map((url) => url.trim())
     : [frontendUrl];
 
   logger.log(`Setting up CORS with origins: ${JSON.stringify(origins)}`);
@@ -40,7 +40,7 @@ async function bootstrap() {
         return callback(null, true);
       }
 
-      const isAllowed = origins.some(allowedOrigin => {
+      const isAllowed = origins.some((allowedOrigin) => {
         if (allowedOrigin === '*') return true;
         // Exact match or matches the start (for subdomains/paths)
         return origin === allowedOrigin || origin.startsWith(allowedOrigin);
@@ -56,7 +56,8 @@ async function bootstrap() {
     },
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: 'Content-Type, Accept, Authorization, x-forwarded-proto, cookie, ngrok-skip-browser-warning',
+    allowedHeaders:
+      'Content-Type, Accept, Authorization, x-forwarded-proto, cookie, ngrok-skip-browser-warning',
     exposedHeaders: 'set-cookie',
   });
 

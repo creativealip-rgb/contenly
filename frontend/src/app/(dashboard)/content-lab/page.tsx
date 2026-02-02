@@ -48,8 +48,6 @@ import { Plus, Trash2 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { migrateLocalStorageFeeds } from '@/lib/migrate-feeds'
 
-// ... (other imports)
-
 export default function ContentLabPage() {
     const [selectedFeed, setSelectedFeed] = useState('')
     const [selectedArticle, setSelectedArticle] = useState<any>(null)
@@ -70,13 +68,11 @@ export default function ContentLabPage() {
     const [aiLength, setAiLength] = useState<'shorter' | 'same' | 'longer'>('same')
     const [isRewriting, setIsRewriting] = useState(false)
 
-    // SEO & Image state
+    // SEO state
     const [slug, setSlug] = useState('')
     const [featuredImage, setFeaturedImage] = useState('')
-    const [isGeneratingImage, setIsGeneratingImage] = useState(false)
 
     const [tone, setTone] = useState('professional')
-    const [generateImage, setGenerateImage] = useState(true)
     const [copied, setCopied] = useState(false)
 
     // Publishing state
@@ -254,6 +250,7 @@ export default function ContentLabPage() {
 
     const handleSelectArticle = async (article: any) => {
         setSelectedArticle(article)
+        setGeneratedArticleId(null)
         setIsScanning(true)
 
         try {
@@ -315,6 +312,7 @@ Source: ${article.url}`)
         setIsRewriting(true)
         setGeneratedContent('')
         setGeneratedTitle('')
+        setGeneratedArticleId(null)
 
         try {
             const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
@@ -365,6 +363,7 @@ Source: ${article.url}`)
         setIsScraping(true)
         setSourceContent('')
         setSelectedArticle(null)
+        setGeneratedArticleId(null)
         try {
             const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
             const response = await fetch(`${API_BASE_URL}/scraper/scrape`, {
@@ -453,39 +452,6 @@ Source: ${article.url}`)
             })
         } finally {
             setIsPublishing(false)
-        }
-    }
-
-    const handleGenerateImage = async () => {
-        if (!generatedTitle) {
-            alert('Please generate content first to provide context for the image')
-            return
-        }
-
-        setIsGeneratingImage(true)
-        try {
-            // Check tokens (implicit in backend, but good to know)
-            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
-            const response = await fetch(`${API_BASE_URL}/ai/generate-image`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({
-                    prompt: `Professional featured image for a news article titled: "${generatedTitle}". Style: high quality, clean, related to the topic.`,
-                }),
-            })
-
-            const result = await response.json()
-            if (result.success && result.data?.imageUrl) {
-                setFeaturedImage(result.data.imageUrl)
-            } else {
-                alert(`Image generation failed: ${result.error || 'Unknown error'}`)
-            }
-        } catch (error: any) {
-            console.error('Image Gen error:', error)
-            alert('Failed to generate image')
-        } finally {
-            setIsGeneratingImage(false)
         }
     }
 
@@ -972,46 +938,31 @@ Source: ${article.url}`)
                             </div>
 
                             {!featuredImage ? (
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="relative">
-                                        <Button
-                                            variant="outline"
-                                            className="w-full h-24 flex flex-col items-center justify-center gap-2 border-dashed border-2"
-                                            onClick={() => document.getElementById('featured-image-upload')?.click()}
-                                        >
-                                            <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                                            <span className="text-xs">Upload Image</span>
-                                        </Button>
-                                        <input
-                                            id="featured-image-upload"
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={(e) => {
-                                                const file = e.target.files?.[0]
-                                                if (file) {
-                                                    const reader = new FileReader();
-                                                    reader.onloadend = () => {
-                                                        setFeaturedImage(reader.result as string);
-                                                    };
-                                                    reader.readAsDataURL(file);
-                                                }
-                                            }}
-                                        />
-                                    </div>
+                                <div className="relative">
                                     <Button
                                         variant="outline"
-                                        className="h-24 flex flex-col items-center justify-center gap-2 border-dashed border-2"
-                                        onClick={handleGenerateImage}
-                                        disabled={isGeneratingImage || !generatedTitle}
+                                        className="w-full h-24 flex flex-col items-center justify-center gap-2 border-dashed border-2"
+                                        onClick={() => document.getElementById('featured-image-upload')?.click()}
                                     >
-                                        {isGeneratingImage ? (
-                                            <Loader2 className="h-6 w-6 animate-spin text-violet-600" />
-                                        ) : (
-                                            <Sparkles className="h-6 w-6 text-violet-600" />
-                                        )}
-                                        <span className="text-xs">{isGeneratingImage ? "Generating..." : "AI Generate"}</span>
+                                        <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                                        <span className="text-xs">Upload Image</span>
                                     </Button>
+                                    <input
+                                        id="featured-image-upload"
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0]
+                                            if (file) {
+                                                const reader = new FileReader();
+                                                reader.onloadend = () => {
+                                                    setFeaturedImage(reader.result as string);
+                                                };
+                                                reader.readAsDataURL(file);
+                                            }
+                                        }}
+                                    />
                                 </div>
                             ) : (
                                 <div className="relative rounded-lg border-2 border-violet-100 overflow-hidden group aspect-video">

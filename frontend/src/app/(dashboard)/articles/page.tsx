@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -27,6 +27,14 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog'
+import {
     Search,
     Filter,
     MoreHorizontal,
@@ -37,9 +45,11 @@ import {
     FileText,
     CheckCircle2,
     Clock,
-    XCircle,
+    Calendar,
     Download,
-    Loader2
+    Loader2,
+    Send,
+    ExternalLink
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
@@ -50,10 +60,16 @@ export default function ArticlesPage() {
     const [isLoading, setIsLoading] = useState(true)
     const [stats, setStats] = useState({
         total: 0,
+        generated: 0,
         published: 0,
         draft: 0,
         scheduled: 0
     })
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+    const [articleToDelete, setArticleToDelete] = useState<any>(null)
+    const [isDeleting, setIsDeleting] = useState(false)
+    const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+    const [isPublishing, setIsPublishing] = useState(false)
 
     const fetchArticles = async () => {
         setIsLoading(true)
@@ -78,9 +94,10 @@ export default function ArticlesPage() {
                 const allItems = data.data || []
                 setStats({
                     total: data.meta?.total || allItems.length,
+                    generated: allItems.filter((a: any) => a.status === 'GENERATED').length,
                     published: allItems.filter((a: any) => a.status === 'PUBLISHED').length,
                     draft: allItems.filter((a: any) => a.status === 'DRAFT').length,
-                    scheduled: allItems.filter((a: any) => a.status === 'FUTURE' || a.status === 'SCHEDULED').length
+                    scheduled: allItems.filter((a: any) => a.status === 'SCHEDULED').length
                 })
             }
         } catch (error) {
@@ -94,17 +111,78 @@ export default function ArticlesPage() {
         fetchArticles()
     }, [search, statusFilter])
 
+    const handleDeleteClick = (article: any) => {
+        setArticleToDelete(article)
+        setDeleteDialogOpen(true)
+    }
+
+    const handleDeleteConfirm = async () => {
+        if (!articleToDelete) return
+
+        setIsDeleting(true)
+        try {
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+            const response = await fetch(`${API_BASE_URL}/articles/${articleToDelete.id}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            })
+
+            if (response.ok) {
+                setAlert({ type: 'success', message: 'Article deleted successfully' })
+                setDeleteDialogOpen(false)
+                setArticleToDelete(null)
+                await fetchArticles()
+            } else {
+                const data = await response.json()
+                setAlert({ type: 'error', message: data.message || 'Failed to delete article' })
+            }
+        } catch (error) {
+            console.error('Failed to delete article:', error)
+            setAlert({ type: 'error', message: 'Failed to delete article' })
+        } finally {
+            setIsDeleting(false)
+        }
+    }
+
+    const handlePublishClick = async (article: any) => {
+        if (article.status === 'PUBLISHED') {
+            setAlert({ type: 'error', message: 'Article is already published' })
+            return
+        }
+
+        setIsPublishing(true)
+        try {
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+            const response = await fetch(`${API_BASE_URL}/articles/${article.id}/publish`, {
+                method: 'PATCH',
+                credentials: 'include'
+            })
+
+            if (response.ok) {
+                setAlert({ type: 'success', message: 'Article published successfully' })
+                await fetchArticles()
+            } else {
+                const data = await response.json()
+                setAlert({ type: 'error', message: data.message || 'Failed to publish article' })
+            }
+        } catch (error) {
+            console.error('Failed to publish article:', error)
+            setAlert({ type: 'error', message: 'Failed to publish article' })
+        } finally {
+            setIsPublishing(false)
+        }
+    }
+
     const getStatusBadge = (status: string) => {
         switch (status) {
+            case 'GENERATED':
+                return <Badge className="bg-purple-500/10 text-purple-600 hover:bg-purple-500/20"><FileText className="h-3 w-3 mr-1" />Generated</Badge>
             case 'PUBLISHED':
                 return <Badge className="bg-green-500/10 text-green-600 hover:bg-green-500/20"><CheckCircle2 className="h-3 w-3 mr-1" />Published</Badge>
             case 'DRAFT':
                 return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" />Draft</Badge>
-            case 'FUTURE':
             case 'SCHEDULED':
-                return <Badge className="bg-blue-500/10 text-blue-600 hover:bg-blue-500/20"><Clock className="h-3 w-3 mr-1" />Scheduled</Badge>
-            case 'FAILED':
-                return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Failed</Badge>
+                return <Badge className="bg-blue-500/10 text-blue-600 hover:bg-blue-500/20"><Calendar className="h-3 w-3 mr-1" />Scheduled</Badge>
             default:
                 return <Badge variant="outline">{status}</Badge>
         }
@@ -127,7 +205,7 @@ export default function ArticlesPage() {
             </div>
 
             {/* Stats */}
-            <div className="grid gap-4 md:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
                 <Card>
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
@@ -137,6 +215,19 @@ export default function ArticlesPage() {
                             <div>
                                 <p className="text-2xl font-bold">{stats.total}</p>
                                 <p className="text-sm text-muted-foreground">Total Articles</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardContent className="pt-6">
+                        <div className="flex items-center gap-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-500/10">
+                                <FileText className="h-6 w-6 text-purple-600" />
+                            </div>
+                            <div>
+                                <p className="text-2xl font-bold">{stats.generated}</p>
+                                <p className="text-sm text-muted-foreground">Generated</p>
                             </div>
                         </div>
                     </CardContent>
@@ -171,7 +262,7 @@ export default function ArticlesPage() {
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
                             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/10">
-                                <Clock className="h-6 w-6 text-blue-600" />
+                                <Calendar className="h-6 w-6 text-blue-600" />
                             </div>
                             <div>
                                 <p className="text-2xl font-bold">{stats.scheduled}</p>
@@ -201,11 +292,12 @@ export default function ArticlesPage() {
                                     <Filter className="h-4 w-4 mr-2" />
                                     <SelectValue placeholder="Status" />
                                 </SelectTrigger>
-                                <SelectContent>
+                            <SelectContent>
                                     <SelectItem value="all">All Status</SelectItem>
-                                    <SelectItem value="published">Published</SelectItem>
+                                    <SelectItem value="generated">Generated</SelectItem>
                                     <SelectItem value="draft">Draft</SelectItem>
                                     <SelectItem value="scheduled">Scheduled</SelectItem>
+                                    <SelectItem value="published">Published</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -268,7 +360,7 @@ export default function ArticlesPage() {
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem>
+                                                    <DropdownMenuItem disabled className="opacity-50">
                                                         <Eye className="h-4 w-4 mr-2" />
                                                         View
                                                     </DropdownMenuItem>
@@ -276,7 +368,19 @@ export default function ArticlesPage() {
                                                         <Edit className="h-4 w-4 mr-2" />
                                                         Edit
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem className="text-red-600">
+                                                    {(article.status === 'GENERATED' || article.status === 'DRAFT') && (
+                                                        <DropdownMenuItem onClick={() => handlePublishClick(article)} disabled={isPublishing}>
+                                                            <Send className="h-4 w-4 mr-2" />
+                                                            {isPublishing ? 'Publishing...' : 'Publish'}
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                    {article.status === 'PUBLISHED' && article.wpPostUrl && (
+                                                        <DropdownMenuItem onClick={() => window.open(article.wpPostUrl, '_blank')}>
+                                                            <ExternalLink className="h-4 w-4 mr-2" />
+                                                            View on WordPress
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                    <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteClick(article)}>
                                                         <Trash2 className="h-4 w-4 mr-2" />
                                                         Delete
                                                     </DropdownMenuItem>
@@ -290,6 +394,43 @@ export default function ArticlesPage() {
                     )}
                 </CardContent>
             </Card>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Delete Article</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete "{articleToDelete?.title}"? This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={isDeleting}>
+                            Cancel
+                        </Button>
+                        <Button variant="destructive" onClick={handleDeleteConfirm} disabled={isDeleting}>
+                            {isDeleting ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Deleting...
+                                </>
+                            ) : (
+                                'Delete'
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Alert Toast */}
+            {alert && (
+                <div className={`fixed bottom-4 right-4 p-4 rounded-md shadow-lg ${alert.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'} animate-in slide-in-from-right duration-300`}>
+                    <div className="flex items-center gap-2">
+                        {alert.type === 'success' ? <CheckCircle2 className="h-5 w-5" /> : <Trash2 className="h-5 w-5" />}
+                        <p>{alert.message}</p>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

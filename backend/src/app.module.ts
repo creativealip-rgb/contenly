@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { BullModule } from '@nestjs/bull';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -38,14 +39,17 @@ import { CategoryMappingModule } from './modules/category-mapping/category-mappi
       },
     ]),
 
-    // Redis Queue (BullMQ) - Optional, comment out if not using Redis
-    // BullModule.forRoot({
-    //   redis: {
-    //     host: process.env.REDIS_HOST || 'localhost',
-    //     port: parseInt(process.env.REDIS_PORT || '6379'),
-    //     password: process.env.REDIS_PASSWORD || undefined,
-    //   },
-    // }),
+    // Scheduling (Cron Jobs)
+    ScheduleModule.forRoot(),
+
+    // Redis Queue (BullMQ)
+    BullModule.forRoot({
+      redis: {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '6379'),
+        password: process.env.REDIS_PASSWORD || undefined,
+      },
+    }),
 
     // Database (Drizzle)
     DrizzleModule,
@@ -67,4 +71,4 @@ import { CategoryMappingModule } from './modules/category-mapping/category-mappi
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

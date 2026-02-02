@@ -1,71 +1,64 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table'
-import {
-    Sparkles,
-    CreditCard,
-    Check,
-    TrendingUp,
-    TrendingDown,
-    Download,
-    Zap
-} from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
-
-const mockTransactions = [
-    { id: '1', type: 'purchase', description: 'Pro Plan Subscription', amount: 100, date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2) },
-    { id: '2', type: 'usage', description: 'Article Generation', amount: -1, date: new Date(Date.now() - 1000 * 60 * 60 * 2) },
-    { id: '3', type: 'usage', description: 'AI Image Generation', amount: -2, date: new Date(Date.now() - 1000 * 60 * 60 * 4) },
-    { id: '4', type: 'usage', description: 'Article Generation', amount: -1, date: new Date(Date.now() - 1000 * 60 * 60 * 24) },
-    { id: '5', type: 'usage', description: 'Bulk Publish (10 articles)', amount: -8, date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3) },
-]
-
-const plans = [
-    {
-        name: 'Free Trial',
-        price: '$0',
-        period: '/7 days',
-        tokens: 10,
-        features: ['10 tokens', '1 WordPress site', 'Basic AI rewriting', 'Email support'],
-        current: false,
-    },
-    {
-        name: 'Pro',
-        price: '$29',
-        period: '/month',
-        tokens: 100,
-        features: ['100 tokens/month', '5 WordPress sites', 'Advanced AI + Image Gen', 'RSS Auto-fetch', 'Priority support'],
-        current: true,
-        popular: true,
-    },
-    {
-        name: 'Enterprise',
-        price: '$99',
-        period: '/month',
-        tokens: 500,
-        features: ['500 tokens/month', 'Unlimited WordPress sites', 'API access', 'Bulk publishing', 'Dedicated support'],
-        current: false,
-    },
-]
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog'
+import { Sparkles, CreditCard, Plus, MessageCircle, Loader2 } from 'lucide-react'
 
 export default function BillingPage() {
+    const [showContactModal, setShowContactModal] = useState(false)
+    const [balance, setBalance] = useState<number | null>(null)
+    const [totalPurchased, setTotalPurchased] = useState<number | null>(null)
+    const [totalUsed, setTotalUsed] = useState<number | null>(null)
+    const [isLoading, setIsLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+
+    useEffect(() => {
+        const fetchBalance = async () => {
+            try {
+                const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+                const response = await fetch(`${API_BASE_URL}/billing/balance`, {
+                    credentials: 'include',
+                    headers: { 'ngrok-skip-browser-warning': 'true' }
+                })
+
+                if (response.ok) {
+                    const data = await response.json()
+                    setBalance(data.balance || 0)
+                    setTotalPurchased(data.totalPurchased || 0)
+                    setTotalUsed(data.totalUsed || 0)
+                } else {
+                    throw new Error('Failed to fetch balance')
+                }
+            } catch (err) {
+                console.error('Failed to fetch token balance:', err)
+                setError('Failed to load token balance')
+            } finally {
+                setIsLoading(false)
+            }
+        }
+
+        fetchBalance()
+
+        const interval = setInterval(fetchBalance, 10000)
+        return () => clearInterval(interval)
+    }, [])
+
     return (
         <div className="space-y-6">
             {/* Page Header */}
             <div>
                 <h1 className="text-3xl font-bold">Billing & Tokens</h1>
                 <p className="text-muted-foreground">
-                    Manage your subscription and token balance.
+                    Manage your token balance.
                 </p>
             </div>
 
@@ -77,40 +70,43 @@ export default function BillingPage() {
                         <CardDescription>Your current token status</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="flex items-center gap-8">
-                            <div className="flex items-center gap-4">
-                                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20">
-                                    <Sparkles className="h-8 w-8 text-amber-600" />
+                        {isLoading ? (
+                            <div className="flex items-center justify-center py-12">
+                                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                            </div>
+                        ) : error ? (
+                            <div className="text-center py-12 text-muted-foreground">
+                                {error}
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex items-center gap-8">
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20">
+                                            <Sparkles className="h-8 w-8 text-amber-600" />
+                                        </div>
+                                        <div>
+                                            <p className="text-4xl font-bold">{balance}</p>
+                                            <p className="text-muted-foreground">tokens remaining</p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-4xl font-bold">50</p>
-                                    <p className="text-muted-foreground">tokens remaining</p>
+                                <div className="grid gap-4 mt-6 md:grid-cols-3">
+                                    <div className="p-4 rounded-lg bg-muted/50">
+                                        <p className="text-sm text-muted-foreground">Used This Month</p>
+                                        <p className="text-2xl font-bold">{totalUsed}</p>
+                                    </div>
+                                    <div className="p-4 rounded-lg bg-muted/50">
+                                        <p className="text-sm text-muted-foreground">Total Purchased</p>
+                                        <p className="text-2xl font-bold">{totalPurchased}</p>
+                                    </div>
+                                    <div className="p-4 rounded-lg bg-muted/50">
+                                        <p className="text-sm text-muted-foreground">Total Used</p>
+                                        <p className="text-2xl font-bold">{totalUsed}</p>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="flex-1">
-                                <div className="h-4 w-full rounded-full bg-muted overflow-hidden">
-                                    <div
-                                        className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all"
-                                        style={{ width: '50%' }}
-                                    />
-                                </div>
-                                <p className="text-sm text-muted-foreground mt-2">50 of 100 tokens used this month</p>
-                            </div>
-                        </div>
-                        <div className="grid gap-4 mt-6 md:grid-cols-3">
-                            <div className="p-4 rounded-lg bg-muted/50">
-                                <p className="text-sm text-muted-foreground">Used This Month</p>
-                                <p className="text-2xl font-bold">50</p>
-                            </div>
-                            <div className="p-4 rounded-lg bg-muted/50">
-                                <p className="text-sm text-muted-foreground">Renewal Date</p>
-                                <p className="text-2xl font-bold">Feb 1</p>
-                            </div>
-                            <div className="p-4 rounded-lg bg-muted/50">
-                                <p className="text-sm text-muted-foreground">Current Plan</p>
-                                <p className="text-2xl font-bold">Pro</p>
-                            </div>
-                        </div>
+                            </>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -119,127 +115,55 @@ export default function BillingPage() {
                         <CardTitle>Quick Actions</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <Button className="w-full bg-gradient-to-r from-violet-600 to-indigo-600">
-                            <Zap className="h-4 w-4 mr-2" />
-                            Buy Extra Tokens
-                        </Button>
-                        <Button variant="outline" className="w-full">
-                            <CreditCard className="h-4 w-4 mr-2" />
-                            Manage Payment
-                        </Button>
-                        <Button variant="outline" className="w-full">
-                            <Download className="h-4 w-4 mr-2" />
-                            Download Invoices
-                        </Button>
+                        <Dialog open={showContactModal} onOpenChange={setShowContactModal}>
+                            <DialogTrigger asChild>
+                                <Button className="w-full bg-gradient-to-r from-violet-600 to-indigo-600">
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Buy Extra Tokens
+                                </Button>
+                            </DialogTrigger>
+                        </Dialog>
+                        <Dialog open={showContactModal} onOpenChange={setShowContactModal}>
+                            <DialogTrigger asChild>
+                                <Button variant="outline" className="w-full">
+                                    <CreditCard className="h-4 w-4 mr-2" />
+                                    Manage Payment
+                                </Button>
+                            </DialogTrigger>
+                        </Dialog>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* Subscription Plans */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Subscription Plans</CardTitle>
-                    <CardDescription>Choose the plan that fits your needs</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid gap-6 md:grid-cols-3">
-                        {plans.map((plan, index) => (
-                            <div
-                                key={index}
-                                className={`relative p-6 rounded-xl border-2 ${plan.current
-                                        ? 'border-violet-600 bg-violet-600/5'
-                                        : 'border-border'
-                                    }`}
-                            >
-                                {plan.popular && (
-                                    <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-violet-600 to-indigo-600">
-                                        Current Plan
-                                    </Badge>
-                                )}
-                                <div className="text-center mb-6">
-                                    <h3 className="text-lg font-semibold">{plan.name}</h3>
-                                    <div className="mt-2">
-                                        <span className="text-3xl font-bold">{plan.price}</span>
-                                        <span className="text-muted-foreground">{plan.period}</span>
-                                    </div>
-                                    <p className="text-sm text-muted-foreground mt-1">
-                                        {plan.tokens} tokens/month
-                                    </p>
-                                </div>
-                                <ul className="space-y-2 mb-6">
-                                    {plan.features.map((feature, i) => (
-                                        <li key={i} className="flex items-center gap-2 text-sm">
-                                            <Check className="h-4 w-4 text-green-600 shrink-0" />
-                                            {feature}
-                                        </li>
-                                    ))}
-                                </ul>
-                                <Button
-                                    className={`w-full ${plan.current ? '' : 'bg-gradient-to-r from-violet-600 to-indigo-600'}`}
-                                    variant={plan.current ? 'outline' : 'default'}
-                                    disabled={plan.current}
-                                >
-                                    {plan.current ? 'Current Plan' : 'Upgrade'}
-                                </Button>
+            {/* Contact Modal */}
+            <Dialog open={showContactModal} onOpenChange={setShowContactModal}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Contact Admin</DialogTitle>
+                        <DialogDescription>
+                            To purchase extra tokens or manage your payment, please contact our admin directly via WhatsApp
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-4">
+                        <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-500/20">
+                                <MessageCircle className="h-6 w-6 text-green-600" />
                             </div>
-                        ))}
+                            <div className="flex-1">
+                                <p className="font-semibold">WhatsApp</p>
+                                <p className="text-sm text-muted-foreground">089322348554</p>
+                            </div>
+                        </div>
+                        <Button 
+                            className="w-full bg-green-600 hover:bg-green-700"
+                            onClick={() => window.open('https://wa.me/6289322348554', '_blank')}
+                        >
+                            <MessageCircle className="h-4 w-4 mr-2" />
+                            Open WhatsApp
+                        </Button>
                     </div>
-                </CardContent>
-            </Card>
-
-            {/* Transaction History */}
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                        <CardTitle>Transaction History</CardTitle>
-                        <CardDescription>Your recent token transactions</CardDescription>
-                    </div>
-                    <Button variant="outline" size="sm">
-                        <Download className="h-4 w-4 mr-2" />
-                        Export
-                    </Button>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Description</TableHead>
-                                <TableHead>Type</TableHead>
-                                <TableHead>Amount</TableHead>
-                                <TableHead>Date</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {mockTransactions.map((tx) => (
-                                <TableRow key={tx.id}>
-                                    <TableCell className="font-medium">{tx.description}</TableCell>
-                                    <TableCell>
-                                        {tx.type === 'purchase' ? (
-                                            <Badge className="bg-green-500/10 text-green-600">Purchase</Badge>
-                                        ) : (
-                                            <Badge variant="secondary">Usage</Badge>
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        <span className={`flex items-center gap-1 font-medium ${tx.amount > 0 ? 'text-green-600' : 'text-muted-foreground'
-                                            }`}>
-                                            {tx.amount > 0 ? (
-                                                <TrendingUp className="h-4 w-4" />
-                                            ) : (
-                                                <TrendingDown className="h-4 w-4" />
-                                            )}
-                                            {tx.amount > 0 ? '+' : ''}{tx.amount}
-                                        </span>
-                                    </TableCell>
-                                    <TableCell className="text-muted-foreground">
-                                        {formatDistanceToNow(tx.date, { addSuffix: true })}
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

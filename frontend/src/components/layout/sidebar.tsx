@@ -4,9 +4,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { useSidebarStore, useAuthStore } from '@/stores'
+import { useSidebarStore } from '@/stores'
 
-// Custom SVG icons for a unique look
 const icons = {
     dashboard: (
         <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth="1.5">
@@ -50,18 +49,6 @@ const icons = {
             <path d="M6 15h4" />
         </svg>
     ),
-    analytics: (
-        <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth="1.5">
-            <path d="M3 3v18h18" strokeLinecap="round" />
-            <path d="M7 14l4-4 4 4 5-7" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-    ),
-    settings: (
-        <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth="1.5">
-            <circle cx="12" cy="12" r="3" />
-            <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
-        </svg>
-    ),
     chevronLeft: (
         <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4" stroke="currentColor" strokeWidth="2">
             <path d="M15 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" />
@@ -70,6 +57,16 @@ const icons = {
     chevronRight: (
         <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4" stroke="currentColor" strokeWidth="2">
             <path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+    ),
+    menu: (
+        <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth="2">
+            <path d="M3 12h18M3 6h18M3 18h18" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+    ),
+    close: (
+        <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth="2">
+            <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
     ),
 }
@@ -81,19 +78,14 @@ const navItems = [
     { href: '/articles', label: 'Articles', icon: icons.articles },
     { href: '/integrations', label: 'Integrations', icon: icons.integrations },
     { href: '/billing', label: 'Billing', icon: icons.billing },
-    // Temporarily disabled
-    // { href: '/analytics', label: 'Analytics', icon: icons.analytics },
-    // { href: '/settings', label: 'Settings', icon: icons.settings },
 ]
 
 export function Sidebar() {
     const pathname = usePathname()
-    const { isCollapsed, setCollapsed, isOpen, setOpen } = useSidebarStore()
-    const { user } = useAuthStore()
+    const { isCollapsed, setCollapsed, isOpen, setOpen, toggle } = useSidebarStore()
 
-    // Handle mobile close on navigation
     const handleMobileLinkClick = () => {
-        if (window.innerWidth < 768) {
+        if (typeof window !== 'undefined' && window.innerWidth < 768) {
             setOpen(false)
         }
     }
@@ -103,7 +95,7 @@ export function Sidebar() {
             {/* Mobile Overlay */}
             <div
                 className={cn(
-                    "fixed inset-0 z-30 bg-background/80 backdrop-blur-sm transition-all duration-200 md:hidden",
+                    "fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-all duration-200 md:hidden",
                     isOpen ? "opacity-100 visible" : "opacity-0 invisible"
                 )}
                 onClick={() => setOpen(false)}
@@ -111,14 +103,27 @@ export function Sidebar() {
 
             <aside
                 className={cn(
-                    "fixed left-0 top-16 z-40 h-[calc(100vh-4rem)] border-r border-border bg-card/50 backdrop-blur-xl transition-all duration-300",
+                    "fixed left-0 top-16 z-50 border-r border-border bg-card backdrop-blur-xl transition-all duration-300 ease-in-out",
                     isCollapsed ? "md:w-[72px]" : "md:w-64",
-                    // Mobile behavior: fixed width, slide in/out
-                    "w-64",
+                    "w-64 h-[calc(100vh-4rem)]",
                     isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
                 )}
             >
                 <div className="flex h-full flex-col">
+                    {/* Mobile Close Button - More prominent */}
+                    <div className="flex items-center justify-between p-4 border-b border-border md:hidden">
+                        <span className="font-semibold text-sm">Menu</span>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setOpen(false)}
+                            className="h-9 w-9 rounded-lg hover:bg-accent"
+                            aria-label="Close sidebar"
+                        >
+                            {icons.close}
+                        </Button>
+                    </div>
+
                     {/* Navigation */}
                     <nav className="flex-1 space-y-1.5 p-4">
                         {navItems.map((item) => {
@@ -144,10 +149,6 @@ export function Sidebar() {
                                     )}>
                                         {item.icon}
                                     </div>
-                                    {/* Show label if:
-                                        1. It's mobile (always w-64 when open)
-                                        2. OR it's desktop AND not collapsed
-                                    */}
                                     <span className={cn(
                                         "truncate transition-all duration-300",
                                         isCollapsed ? "md:w-0 md:opacity-0" : "md:w-auto md:opacity-100"
@@ -167,23 +168,6 @@ export function Sidebar() {
                     </nav>
 
                     <div className="mt-auto border-t border-border p-4">
-                        {/* User Profile */}
-                        <div className={cn(
-                            "flex items-center gap-3 mb-4 transition-all duration-200",
-                            isCollapsed ? "md:justify-center" : "md:justify-start"
-                        )}>
-                            <div className="h-9 w-9 shrink-0 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold shadow-lg">
-                                {user?.fullName?.charAt(0)?.toUpperCase() || 'U'}
-                            </div>
-                            <div className={cn(
-                                "flex flex-col overflow-hidden transition-all duration-300",
-                                isCollapsed ? "md:w-0 md:opacity-0" : "md:w-auto md:opacity-100"
-                            )}>
-                                <span className="text-sm font-medium truncate">{user?.fullName || 'User'}</span>
-                                <span className="text-xs text-muted-foreground truncate">{user?.email || 'user@example.com'}</span>
-                            </div>
-                        </div>
-
                         {/* Collapse Toggle (Desktop Only) */}
                         <Button
                             variant="ghost"

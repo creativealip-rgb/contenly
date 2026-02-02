@@ -1,4 +1,14 @@
-import { Controller, Get, Patch, Body, Delete, Param, Post, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Body,
+  Delete,
+  Param,
+  Post,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { UpdateUserDto, CreateApiKeyDto } from './dto';
@@ -10,58 +20,58 @@ import type { Request } from 'express';
 @UseGuards(AuthGuard)
 @Controller('users')
 export class UsersController {
-    constructor(private usersService: UsersService) { }
+  constructor(private usersService: UsersService) {}
 
-    @Get('me')
-    @ApiOperation({ summary: 'Get current user profile' })
-    async getProfile(@Req() req: Request) {
-        const userId = (req as any).user?.id;
-        return this.usersService.findById(userId);
-    }
+  @Get('me')
+  @ApiOperation({ summary: 'Get current user profile' })
+  async getProfile(@Req() req: Request) {
+    const userId = (req as any).user?.id;
+    return this.usersService.findById(userId);
+  }
 
-    @Patch('me')
-    @ApiOperation({ summary: 'Update profile' })
-    async updateProfile(@Req() req: Request, @Body() dto: UpdateUserDto) {
-        const userId = (req as any).user?.id;
-        return this.usersService.update(userId, dto);
-    }
+  @Patch('me')
+  @ApiOperation({ summary: 'Update profile' })
+  async updateProfile(@Req() req: Request, @Body() dto: UpdateUserDto) {
+    const userId = (req as any).user?.id;
+    return this.usersService.update(userId, dto);
+  }
 
-    @Get('me/preferences')
-    @ApiOperation({ summary: 'Get notification preferences' })
-    async getPreferences(@Req() req: Request) {
-        const userId = (req as any).user?.id;
-        const userData = await this.usersService.findById(userId);
-        return userData?.preferences || {};
-    }
+  @Get('me/preferences')
+  @ApiOperation({ summary: 'Get notification preferences' })
+  async getPreferences(@Req() req: Request) {
+    const userId = (req as any).user?.id;
+    const userData = await this.usersService.findById(userId);
+    return userData?.preferences || {};
+  }
 
-    @Patch('me/preferences')
-    @ApiOperation({ summary: 'Update preferences' })
-    async updatePreferences(
-        @Req() req: Request,
-        @Body() preferences: Record<string, unknown>,
-    ) {
-        const userId = (req as any).user?.id;
-        return this.usersService.updatePreferences(userId, preferences);
-    }
+  @Patch('me/preferences')
+  @ApiOperation({ summary: 'Update preferences' })
+  async updatePreferences(
+    @Req() req: Request,
+    @Body() preferences: Record<string, unknown>,
+  ) {
+    const userId = (req as any).user?.id;
+    return this.usersService.updatePreferences(userId, preferences);
+  }
 
-    @Get('me/api-keys')
-    @ApiOperation({ summary: 'List API keys' })
-    async getApiKeys(@Req() req: Request) {
-        const userId = (req as any).user?.id;
-        return this.usersService.getApiKeys(userId);
-    }
+  @Get('me/api-keys')
+  @ApiOperation({ summary: 'List API keys' })
+  async getApiKeys(@Req() req: Request) {
+    const userId = (req as any).user?.id;
+    return this.usersService.getApiKeys(userId);
+  }
 
-    @Post('me/api-keys')
-    @ApiOperation({ summary: 'Generate new API key' })
-    async createApiKey(@Req() req: Request, @Body() dto: CreateApiKeyDto) {
-        const userId = (req as any).user?.id;
-        return this.usersService.createApiKey(userId, dto.name);
-    }
+  @Post('me/api-keys')
+  @ApiOperation({ summary: 'Generate new API key' })
+  async createApiKey(@Req() req: Request, @Body() dto: CreateApiKeyDto) {
+    const userId = (req as any).user?.id;
+    return this.usersService.createApiKey(userId, dto.name);
+  }
 
-    @Delete('me/api-keys/:id')
-    @ApiOperation({ summary: 'Revoke API key' })
-    async revokeApiKey(@Req() req: Request, @Param('id') keyId: string) {
-        const userId = (req as any).user?.id;
-        return this.usersService.revokeApiKey(userId, keyId);
-    }
+  @Delete('me/api-keys/:id')
+  @ApiOperation({ summary: 'Revoke API key' })
+  async revokeApiKey(@Req() req: Request, @Param('id') keyId: string) {
+    const userId = (req as any).user?.id;
+    return this.usersService.revokeApiKey(userId, keyId);
+  }
 }

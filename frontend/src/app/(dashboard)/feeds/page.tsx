@@ -37,11 +37,12 @@ import {
     Play,
     Pause,
     Trash2,
-    Edit,
+    Edit as EditIcon,
     RefreshCw,
     CheckCircle2,
     XCircle,
-    Clock
+    Clock,
+    Loader2
 } from 'lucide-react'
 import {
     DropdownMenu,
@@ -51,18 +52,35 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { RssFeed, getFeeds, addFeed, removeFeed } from '@/lib/feeds-store'
 
-const mockPendingItems = [
-    { id: '1', feed: 'TechCrunch', title: 'OpenAI Announces New GPT-5 Model', publishedAt: new Date(Date.now() - 1000 * 60 * 30) },
-    { id: '2', feed: 'The Verge', title: 'Apple Vision Pro Gets Major Update', publishedAt: new Date(Date.now() - 1000 * 60 * 45) },
-    { id: '3', feed: 'TechCrunch', title: 'Startup Raises $50M in Series B', publishedAt: new Date(Date.now() - 1000 * 60 * 60) },
-]
+interface PendingItem {
+    id: string
+    title: string
+    url: string
+    publishedAt: Date | string | null
+    fetchedAt: Date | string
+    status: string
+    feed: {
+        name: string
+    }
+}
 
 export default function FeedsPage() {
     const [isAddOpen, setIsAddOpen] = useState(false)
+    const [isEditOpen, setIsEditOpen] = useState(false)
+    const [editingFeed, setEditingFeed] = useState<RssFeed | null>(null)
     const [feeds, setFeeds] = useState<RssFeed[]>([])
+    const [pendingItems, setPendingItems] = useState<PendingItem[]>([])
+    const [isLoadingPending, setIsLoadingPending] = useState(false)
+    const [processingItem, setProcessingItem] = useState<string | null>(null)
     const [newFeedName, setNewFeedName] = useState('')
     const [newFeedUrl, setNewFeedUrl] = useState('')
     const [pollingInterval, setPollingInterval] = useState('15')
+    const [editFeedName, setEditFeedName] = useState('')
+    const [editFeedUrl, setEditFeedUrl] = useState('')
+    const [editPollingInterval, setEditPollingInterval] = useState('15')
+    const [isPolling, setIsPolling] = useState<string | null>(null)
+
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
     useEffect(() => {
         const loadFeeds = async () => {
@@ -71,6 +89,31 @@ export default function FeedsPage() {
         }
         loadFeeds()
     }, [])
+
+    useEffect(() => {
+        const loadPendingItems = async () => {
+            try {
+                setIsLoadingPending(true)
+                const response = await fetch(`${API_BASE_URL}/feeds/pending-items`, {
+                    credentials: 'include',
+                    headers: { 'ngrok-skip-browser-warning': 'true' }
+                })
+
+                if (response.ok) {
+                    const data = await response.json()
+                    setPendingItems(data)
+                }
+            } catch (error) {
+                console.error('Failed to load pending items:', error)
+            } finally {
+                setIsLoadingPending(false)
+            }
+        }
+
+        loadPendingItems()
+        const interval = setInterval(loadPendingItems, 15000)
+        return () => clearInterval(interval)
+    }, [API_BASE_URL])
 
     const handleAddFeed = async () => {
         if (!newFeedName || !newFeedUrl) return
@@ -98,6 +141,43 @@ export default function FeedsPage() {
         }
     }
 
+    const handleEditFeed = (feed: RssFeed) => {
+        setEditingFeed(feed)
+        setEditFeedName(feed.name)
+        setEditFeedUrl(feed.url)
+        setEditPollingInterval((feed.pollingInterval || 15).toString())
+        setIsEditOpen(true)
+    }
+
+    const handleUpdateFeed = async () => {
+        if (!editingFeed || !editFeedName || !editFeedUrl) return
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/feeds/${editingFeed.id}`, {
+                method: 'PATCH',
+                credentials: 'include',
+                headers: { 'ngrok-skip-browser-warning': 'true', 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: editFeedName,
+                    url: editFeedUrl,
+                    pollingIntervalMinutes: parseInt(editPollingInterval),
+                }),
+            })
+
+            if (response.ok) {
+                const updatedFeeds = await getFeeds()
+                setFeeds(updatedFeeds)
+                setIsEditOpen(false)
+                setEditingFeed(null)
+            } else {
+                alert('Failed to update feed. Please try again.')
+            }
+        } catch (error) {
+            console.error('Failed to update feed:', error)
+            alert('Failed to update feed. Please try again.')
+        }
+    }
+
     const handleRemoveFeed = async (id: string) => {
         try {
             await removeFeed(id)
@@ -109,13 +189,101 @@ export default function FeedsPage() {
         }
     }
 
+    const handlePollFeed = async (id: string) => {
+        try {
+            setIsPolling(id)
+            const response = await fetch(`${API_BASE_URL}/feeds/${id}/poll`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'ngrok-skip-browser-warning': 'true' },
+            })
+
+            if (response.ok) {
+                const updatedFeeds = await getFeeds()
+                setFeeds(updatedFeeds)
+                alert('Feed polling initiated successfully')
+            } else {
+                alert('Failed to poll feed. Please try again.')
+            }
+        } catch (error) {
+            console.error('Failed to poll feed:', error)
+            alert('Failed to poll feed. Please try again.')
+        } finally {
+            setIsPolling(null)
+        }
+    }
+
+    const handlePauseFeed = async (id: string) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/feeds/${id}/status`, {
+                method: 'PATCH',
+                credentials: 'include',
+                headers: { 'ngrok-skip-browser-warning': 'true', 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'PAUSED' }),
+            })
+
+            if (response.ok) {
+                const updatedFeeds = await getFeeds()
+                setFeeds(updatedFeeds)
+            } else {
+                alert('Failed to pause feed. Please try again.')
+            }
+        } catch (error) {
+            console.error('Failed to pause feed:', error)
+            alert('Failed to pause feed. Please try again.')
+        }
+    }
+
+    const handleResumeFeed = async (id: string) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/feeds/${id}/status`, {
+                method: 'PATCH',
+                credentials: 'include',
+                headers: { 'ngrok-skip-browser-warning': 'true', 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'ACTIVE' }),
+            })
+
+            if (response.ok) {
+                const updatedFeeds = await getFeeds()
+                setFeeds(updatedFeeds)
+            } else {
+                alert('Failed to resume feed. Please try again.')
+            }
+        } catch (error) {
+            console.error('Failed to resume feed:', error)
+            alert('Failed to resume feed. Please try again.')
+        }
+    }
+
+    const handleProcessItem = async (itemId: string) => {
+        try {
+            setProcessingItem(itemId)
+            const response = await fetch(`${API_BASE_URL}/feeds/pending-items/${itemId}/process`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'ngrok-skip-browser-warning': 'true' }
+            })
+
+            if (response.ok) {
+                setPendingItems(prev => prev.filter(item => item.id !== itemId))
+            } else {
+                alert('Failed to process item. Please try again.')
+            }
+        } catch (error) {
+            console.error('Failed to process item:', error)
+            alert('Failed to process item. Please try again.')
+        } finally {
+            setProcessingItem(null)
+        }
+    }
+
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case 'active':
+            case 'ACTIVE':
                 return <Badge className="bg-green-500/10 text-green-600 hover:bg-green-500/20"><CheckCircle2 className="h-3 w-3 mr-1" />Active</Badge>
-            case 'paused':
+            case 'PAUSED':
                 return <Badge variant="secondary"><Pause className="h-3 w-3 mr-1" />Paused</Badge>
-            case 'error':
+            case 'ERROR':
                 return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Error</Badge>
             default:
                 return <Badge variant="outline">{status}</Badge>
@@ -229,10 +397,10 @@ export default function FeedsPage() {
                             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-500/10">
                                 <CheckCircle2 className="h-6 w-6 text-green-600" />
                             </div>
-                            <div>
-                                <p className="text-2xl font-bold">{feeds.filter(f => f.status === 'active').length}</p>
-                                <p className="text-sm text-muted-foreground">Active</p>
-                            </div>
+                             <div>
+                                 <p className="text-2xl font-bold">{feeds.filter(f => f.status === 'ACTIVE').length}</p>
+                                 <p className="text-sm text-muted-foreground">Active</p>
+                             </div>
                         </div>
                     </CardContent>
                 </Card>
@@ -243,7 +411,7 @@ export default function FeedsPage() {
                                 <Clock className="h-6 w-6 text-amber-600" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">3</p>
+                                <p className="text-2xl font-bold">{pendingItems.length}</p>
                                 <p className="text-sm text-muted-foreground">Pending Items</p>
                             </div>
                         </div>
@@ -291,47 +459,51 @@ export default function FeedsPage() {
                                             <p className="text-xs text-muted-foreground truncate max-w-[200px]">{feed.url}</p>
                                         </div>
                                     </TableCell>
-                                    <TableCell>{getStatusBadge(feed.status || 'active')}</TableCell>
+                                     <TableCell>{getStatusBadge(feed.status || 'ACTIVE')}</TableCell>
                                     <TableCell>{feed.pollingInterval || 15}m</TableCell>
                                     <TableCell>{formatTimeAgo(feed.lastSynced)}</TableCell>
                                     <TableCell>{feed.itemsFetched || 0}</TableCell>
-                                    <TableCell className="text-right">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon">
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem>
-                                                    <RefreshCw className="h-4 w-4 mr-2" />
-                                                    Poll Now
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem>
-                                                    <Edit className="h-4 w-4 mr-2" />
-                                                    Edit
-                                                </DropdownMenuItem>
-                                                {feed.status === 'active' ? (
-                                                    <DropdownMenuItem>
-                                                        <Pause className="h-4 w-4 mr-2" />
-                                                        Pause
-                                                    </DropdownMenuItem>
-                                                ) : (
-                                                    <DropdownMenuItem>
-                                                        <Play className="h-4 w-4 mr-2" />
-                                                        Resume
-                                                    </DropdownMenuItem>
-                                                )}
-                                                <DropdownMenuItem
-                                                    className="text-red-600"
-                                                    onClick={() => handleRemoveFeed(feed.id)}
-                                                >
-                                                    <Trash2 className="h-4 w-4 mr-2" />
-                                                    Delete
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </TableCell>
+                                     <TableCell className="text-right">
+                                         <DropdownMenu>
+                                             <DropdownMenuTrigger asChild>
+                                                 <Button variant="ghost" size="icon">
+                                                     <MoreHorizontal className="h-4 w-4" />
+                                                 </Button>
+                                             </DropdownMenuTrigger>
+                                             <DropdownMenuContent align="end">
+                                                 <DropdownMenuItem onClick={() => handlePollFeed(feed.id)} disabled={isPolling === feed.id}>
+                                                     {isPolling === feed.id ? (
+                                                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                     ) : (
+                                                         <RefreshCw className="h-4 w-4 mr-2" />
+                                                     )}
+                                                     Poll Now
+                                                 </DropdownMenuItem>
+                                                 <DropdownMenuItem onClick={() => handleEditFeed(feed)}>
+                                                     <EditIcon className="h-4 w-4 mr-2" />
+                                                     Edit
+                                                 </DropdownMenuItem>
+                                                 {feed.status === 'ACTIVE' ? (
+                                                     <DropdownMenuItem onClick={() => handlePauseFeed(feed.id)}>
+                                                         <Pause className="h-4 w-4 mr-2" />
+                                                         Pause
+                                                     </DropdownMenuItem>
+                                                 ) : (
+                                                     <DropdownMenuItem onClick={() => handleResumeFeed(feed.id)}>
+                                                         <Play className="h-4 w-4 mr-2" />
+                                                         Resume
+                                                     </DropdownMenuItem>
+                                                 )}
+                                                 <DropdownMenuItem
+                                                     className="text-red-600"
+                                                     onClick={() => handleRemoveFeed(feed.id)}
+                                                 >
+                                                     <Trash2 className="h-4 w-4 mr-2" />
+                                                     Delete
+                                                 </DropdownMenuItem>
+                                             </DropdownMenuContent>
+                                         </DropdownMenu>
+                                     </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
@@ -346,36 +518,110 @@ export default function FeedsPage() {
                     <CardDescription>Items fetched but not yet processed</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Title</TableHead>
-                                <TableHead>Source</TableHead>
-                                <TableHead>Published</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {mockPendingItems.map((item) => (
-                                <TableRow key={item.id}>
-                                    <TableCell className="font-medium max-w-[400px] truncate">
-                                        {item.title}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline">{item.feed}</Badge>
-                                    </TableCell>
-                                    <TableCell>{formatTimeAgo(item.publishedAt)}</TableCell>
-                                    <TableCell className="text-right">
-                                        <Button size="sm" className="bg-gradient-to-r from-violet-600 to-indigo-600">
-                                            Process
-                                        </Button>
-                                    </TableCell>
+                    {isLoadingPending ? (
+                        <div className="flex items-center justify-center py-12">
+                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                        </div>
+                    ) : pendingItems.length === 0 ? (
+                        <div className="text-center py-12 text-muted-foreground">
+                            No pending items found
+                        </div>
+                    ) : (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Title</TableHead>
+                                    <TableHead>Source</TableHead>
+                                    <TableHead>Published</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {pendingItems.map((item) => (
+                                    <TableRow key={item.id}>
+                                        <TableCell className="font-medium max-w-[400px] truncate">
+                                            {item.title}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant="outline">{item.feed.name}</Badge>
+                                        </TableCell>
+                                        <TableCell>{formatTimeAgo(item.publishedAt)}</TableCell>
+                                        <TableCell className="text-right">
+                                            <Button
+                                                size="sm"
+                                                className="bg-gradient-to-r from-violet-600 to-indigo-600"
+                                                onClick={() => handleProcessItem(item.id)}
+                                                disabled={processingItem === item.id}
+                                            >
+                                                {processingItem === item.id ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                ) : null}
+                                                Process
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                     )}
                 </CardContent>
             </Card>
+
+            {/* Edit Feed Dialog */}
+            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Edit RSS Feed</DialogTitle>
+                        <DialogDescription>
+                            Update your RSS feed settings.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="editName">Feed Name</Label>
+                            <Input
+                                id="editName"
+                                placeholder="e.g., TechCrunch"
+                                value={editFeedName}
+                                onChange={(e) => setEditFeedName(e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="editFeedUrl">Feed URL</Label>
+                            <Input
+                                id="editFeedUrl"
+                                placeholder="https://example.com/rss"
+                                value={editFeedUrl}
+                                onChange={(e) => setEditFeedUrl(e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="editInterval">Polling Interval</Label>
+                            <Select value={editPollingInterval} onValueChange={setEditPollingInterval}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="5">Every 5 minutes</SelectItem>
+                                    <SelectItem value="15">Every 15 minutes</SelectItem>
+                                    <SelectItem value="30">Every 30 minutes</SelectItem>
+                                    <SelectItem value="60">Every hour</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>
+                        <Button
+                            className="bg-gradient-to-r from-violet-600 to-indigo-600"
+                            onClick={handleUpdateFeed}
+                            disabled={!editFeedName || !editFeedUrl}
+                        >
+                            Save Changes
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

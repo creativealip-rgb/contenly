@@ -31,11 +31,6 @@ const icons = {
             <path d="M12 6v12M9 9l3-3 3 3M9 15l3 3 3-3" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
     ),
-    bell: (
-        <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth="1.5">
-            <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-    ),
     user: (
         <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4" stroke="currentColor" strokeWidth="1.5">
             <circle cx="12" cy="8" r="4" />
@@ -106,9 +101,9 @@ export function Navbar() {
     }
 
     return (
-        <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl">
-            <div className="flex h-16 items-center justify-between px-4 md:px-6">
-                {/* Left: Logo & Menu Toggle */}
+        <header className="sticky top-0 z-[60] w-full border-b border-border/50 bg-background/95 backdrop-blur-xl">
+            <div className="flex h-16 items-center justify-between px-4 md:px-6 relative">
+                {/* Left: Menu Toggle (Mobile Only) */}
                 <div className="flex items-center gap-4">
                     <Button
                         variant="ghost"
@@ -119,8 +114,15 @@ export function Navbar() {
                         {icons.menu}
                     </Button>
 
+                    {/* Center: Logo (Mobile Only) */}
+                    <Link href="/dashboard" className="md:hidden absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                        <div className="flex items-center justify-center overflow-hidden">
+                            <Image src="/logo-full.png" alt="Contently Logo" width={140} height={40} className="object-contain h-9 w-auto" />
+                        </div>
+                    </Link>
 
-                    <Link href="/dashboard" className="flex items-center gap-3">
+                    {/* Desktop Logo (Left) */}
+                    <Link href="/dashboard" className="hidden md:flex items-center gap-3">
                         <div className="flex items-center justify-center overflow-hidden">
                             <Image src="/logo-full.png" alt="Contently Logo" width={140} height={40} className="object-contain h-9 w-auto" />
                         </div>
@@ -134,18 +136,6 @@ export function Navbar() {
                         {icons.tokens}
                         <span>{tokenBalance !== null ? `${tokenBalance} Tokens` : 'Loading...'}</span>
                     </div>
-
-                    {/* Notifications */}
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="relative rounded-xl hover:bg-accent"
-                    >
-                        {icons.bell}
-                        <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-red-500 to-rose-500 text-[10px] font-medium text-white shadow-lg">
-                            3
-                        </span>
-                    </Button>
 
                     {/* User Menu */}
                     <DropdownMenu>
