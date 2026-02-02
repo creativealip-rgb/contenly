@@ -7,8 +7,10 @@ export class PublishArticleDto {
   @IsString()
   content: string;
 
-  @IsEnum(['draft', 'publish', 'private', 'future'])
-  status: 'draft' | 'publish' | 'private' | 'future';
+  @IsEnum(['draft', 'publish', 'private', 'future', 'DRAFT', 'PUBLISHED', 'SCHEDULED'], {
+    message: 'Status must be draft, publish, private, future, DRAFT, PUBLISHED, or SCHEDULED',
+  })
+  status: 'draft' | 'publish' | 'private' | 'future' | 'DRAFT' | 'PUBLISHED' | 'SCHEDULED';
 
   @IsOptional()
   @IsArray()
