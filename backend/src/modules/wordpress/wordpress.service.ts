@@ -494,32 +494,28 @@ export class WordpressService {
         .post(`${site.url}/wp-json/wp/v2/posts`, postData, {
           headers: { Authorization: `Basic ${auth}` },
         })
-        .catch((error: any) => {
-          console.error('[publishArticle] WordPress API error:', error.message);
-          console.error(
-            '[publishArticle] WordPress response:',
-            error.response?.data,
-          );
-          throw error;
-        });
-
-      console.log('[publishArticle] Success! Post ID:', response.data.id);
-      console.log(
-        '[publishArticle] WordPress response:',
-        JSON.stringify(response.data, null, 2),
-      );
+      .catch((error: any) => {
+        console.error('[publishArticle] WordPress API error:', error.message);
+        console.error('[publishArticle] WordPress response:', error.response?.data);
+        throw error;
+      });
 
       // Save to local database
       try {
-        // Determine the article status based on WordPress status
+        // Normalize status to uppercase
+        const normalizedStatus = dto.status?.toUpperCase();
+
+        // Determine article status based on WordPress status
         // 'future' in WP means scheduled -> SCHEDULED in our system
         // 'publish' in WP means published -> PUBLISHED in our system
         // 'draft' in WP means draft -> DRAFT in our system
         let articleStatus: 'DRAFT' | 'PUBLISHED' | 'SCHEDULED' = 'DRAFT';
-        if (dto.status === 'publish') {
+        if (normalizedStatus === 'PUBLISH') {
           articleStatus = 'PUBLISHED';
-        } else if (dto.status === 'future') {
+        } else if (normalizedStatus === 'FUTURE') {
           articleStatus = 'SCHEDULED';
+        } else if (normalizedStatus === 'DRAFT') {
+          articleStatus = 'DRAFT';
         }
         console.log(
           '[publishArticle] Determined article status:',

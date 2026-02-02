@@ -58,19 +58,10 @@ export class WordpressController {
   @ApiOperation({ summary: 'Publish article to WordPress' })
   async publishArticle(
     @CurrentUser() user: User,
-    @Body()
-    dto: {
-      title: string;
-      content: string;
-      status: string;
-      categories?: number[];
-      date?: string;
-      sourceUrl?: string;
-      originalContent?: string;
-      feedItemId?: string;
-      articleId?: string;
-    },
+    @Body(new PublishArticleDto())
+    dto: PublishArticleDto,
   ) {
     return this.wordpressService.publishArticle(user.id, dto);
   }
+}
 }
