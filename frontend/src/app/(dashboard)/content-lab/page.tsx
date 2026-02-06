@@ -357,6 +357,12 @@ Source: ${article.url}`)
             if (result.success && result.data) {
                 setGeneratedContent(result.data.content)
                 setGeneratedTitle(result.data.title)
+
+                // Update SEO fields with AI generated values
+                if (result.data.metaDescription) setMetaDescription(result.data.metaDescription)
+                if (result.data.slug) setSlug(result.data.slug)
+                if (result.data.title) setMetaTitle(result.data.title)
+
                 if (result.data.articleId) {
                     setGeneratedArticleId(result.data.articleId)
                 }

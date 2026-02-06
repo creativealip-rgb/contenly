@@ -27,13 +27,18 @@ export class AiService {
 
         // Generate content
         console.log(`[AiService] Generating content for mode: ${dto.mode}, content length: ${dto.originalContent?.length}`);
-        let content = await this.openAiService.generateContent(
+        const aiResponse = await this.openAiService.generateContent(
             dto.originalContent,
             {
                 ...dto.options,
                 mode: dto.mode,
             } as any,
         );
+
+        let content = aiResponse.content;
+        const generatedTitle = aiResponse.title;
+        const metaDescription = aiResponse.metaDescription;
+        const slug = aiResponse.slug;
 
         // Convert potential Markdown to HTML as a fallback
         console.log(`[AiService] Raw content generated, length: ${content?.length}`);
@@ -71,13 +76,13 @@ export class AiService {
         let articleId = null;
         try {
             const savedArticle = await this.articlesService.create(userId, {
-                title: dto.title || 'Artikel Generate AI',
+                title: generatedTitle || dto.title || 'Artikel Generate AI',
                 generatedContent: content,
                 originalContent: dto.originalContent,
                 sourceUrl: dto.sourceUrl || '',
                 status: 'DRAFT',
                 // Only pass feedItemId if it's a valid UUID
-                feedItemId: (dto.feedItemId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(dto.feedItemId))
+                feedItemId: (dto.feedItemId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(dto.feedItemId))
                     ? dto.feedItemId
                     : undefined,
                 tokensUsed: 1,
@@ -89,7 +94,10 @@ export class AiService {
         }
 
         return {
+            title: generatedTitle,
             content,
+            metaDescription,
+            slug,
             tokensUsed: 1,
             wordCount: content.split(/\s+/).length,
             articleId,

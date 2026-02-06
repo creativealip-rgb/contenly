@@ -43,7 +43,7 @@ export class OpenAiService {
             targetLanguage?: string;
             mode?: 'rewrite' | 'idea';
         }
-    ): Promise<string> {
+    ): Promise<{ title: string; content: string; metaDescription: string; slug: string }> {
         const lengthGuide = {
             short: '300-500 words',
             medium: '600-900 words',
@@ -52,36 +52,25 @@ export class OpenAiService {
 
         const isIdeaMode = options.mode === 'idea';
 
-        const systemPrompt = isIdeaMode
-            ? `You are an expert article writer. Your task is to:
-1. Generate a high-quality, comprehensive article based on the provided ideas/keywords.
+        const systemPrompt = `You are an expert article writer and SEO professional. Your task is to:
+1. ${isIdeaMode ? 'Generate a high-quality, comprehensive article based on the provided ideas/keywords.' : 'Completely rewrite the given content to make it unique while preserving factual accuracy.'}
 2. Use a ${options.tone || 'professional'} tone.
 3. Target length: ${lengthGuide[options.length || 'medium']}.
 4. Naturally incorporate related keywords to ensure the content is thorough.
-5. ${options.targetLanguage ? `Write in ${options.targetLanguage}` : ''}
-6. Return ONLY the HTML content (headings, paragraphs, lists) suitable for the body of an article.
-7. LANGUAGE: ${options.targetLanguage ? `Use ${options.targetLanguage}.` : 'Use Indonesian (Bahasa Indonesia) or follow the language of the source content/idea.'}
-8. CRITICAL: DO NOT use Markdown formatting (NO **, NO ###, NO [text](url)). Use ONLY HTML tags like <h2>, <p>, <ul>, <li>, <strong>, and <a>.
-9. Each paragraph MUST be short, NOT EXCEEDING 25 words.
-10. CRITICAL: DO NOT start the article with a heading (H1, H2, etc.). Start directly with an introductory paragraph.
-11. DO NOT include <!DOCTYPE html>, <html>, <head>, or <body> tags.
-12. Make the content SEO-friendly with a clear structure.`
-            : `You are a professional content rewriter. Your task is to:
-1. Completely rewrite the given content to make it unique while preserving factual accuracy.
-2. Use a ${options.tone || 'professional'} tone.
-3. Target length: ${lengthGuide[options.length || 'medium']}.
-4. ${options.keywords?.length ? `Naturally incorporate these keywords: ${options.keywords.join(', ')}` : ''}
-5. Return ONLY the HTML content (headings, paragraphs, lists) suitable for the body of an article.
-6. LANGUAGE: ${options.targetLanguage ? `Use ${options.targetLanguage}.` : 'Use Indonesian (Bahasa Indonesia) or follow the language of the source content.'}
-7. CRITICAL: DO NOT use Markdown formatting (NO **, NO ###, NO [text](url)). Use ONLY HTML tags like <h2>, <p>, <ul>, <li>, <strong>, and <a>.
-8. Each paragraph MUST be short, NOT EXCEEDING 25 words.
-9. CRITICAL: DO NOT start the article with a heading (H1, H2, etc.). Start directly with an introductory paragraph.
-10. DO NOT include <!DOCTYPE html>, <html>, <head>, or <body> tags.
-11. Make the content SEO-friendly with a clear structure.`;
+5. LANGUAGE: Indonesian (Bahasa Indonesia).
+6. Return a VALID JSON object containing:
+   - "title": An engaging, unique, and SEO-friendly title. It MUST be different and more catchy than any source title provided.
+   - "content": The rewrite/generated article body in HTML format. Use ONLY <h2>, <p>, <ul>, <li>, <strong>, and <a> tags. DO NOT use <h1>. Start directly with an introductory paragraph.
+   - "metaDescription": A compelling SEO meta description (150-160 characters).
+   - "slug": A URL-friendly slug based on the new title.
+7. CRITICAL: DO NOT use Markdown formatting.
+8. Each paragraph MUST be short and concise.
+9. Ensure the article reaches a natural and complete conclusion. DO NOT cut off.
+10. Return ONLY the JSON object.`;
 
         const userPrompt = isIdeaMode
             ? `Generate an article based on these ideas/keywords:\n\n${originalContent}`
-            : `Rewrite this content:\n\n${originalContent}`;
+            : `Rewrite this content and provide a new title and SEO metadata:\n\n${originalContent}`;
 
         try {
             const response = await this.openai.chat.completions.create({
@@ -91,15 +80,21 @@ export class OpenAiService {
                     { role: 'user', content: userPrompt },
                 ],
                 temperature: 0.7,
-                max_tokens: 2000,
+                max_tokens: 4000,
+                response_format: { type: 'json_object' },
             });
 
-            return response.choices[0]?.message?.content || '';
+            const result = JSON.parse(response.choices[0]?.message?.content || '{}');
+            return {
+                title: result.title || '',
+                content: result.content || '',
+                metaDescription: result.metaDescription || '',
+                slug: result.slug || '',
+            };
         } catch (error: any) {
             console.error('[OpenAiService] Generation failed:', {
                 status: error.status,
                 message: error.message,
-                data: error.response?.data,
                 model: this.model,
             });
             throw error;

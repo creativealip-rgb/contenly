@@ -19,10 +19,7 @@ export class AiController {
         const data = await this.aiService.generateContent(user.id, dto);
         return {
             success: true,
-            data: {
-                ...data,
-                title: dto.title || 'Rewritten Article' // Ensure title is returned for frontend
-            }
+            data
         };
     }
 
