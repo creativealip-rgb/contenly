@@ -127,16 +127,16 @@ export default function ArticlesPage() {
             </div>
 
             {/* Stats */}
-            <div className="grid gap-4 md:grid-cols-4">
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <Card>
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-violet-500/10">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-violet-500/10">
                                 <FileText className="h-6 w-6 text-violet-600" />
                             </div>
-                            <div>
-                                <p className="text-2xl font-bold">{stats.total}</p>
-                                <p className="text-sm text-muted-foreground">Total Articles</p>
+                            <div className="min-w-0">
+                                <p className="text-2xl font-bold truncate">{stats.total}</p>
+                                <p className="text-sm text-muted-foreground truncate" title="Total Articles">Total Articles</p>
                             </div>
                         </div>
                     </CardContent>
@@ -144,12 +144,12 @@ export default function ArticlesPage() {
                 <Card>
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-500/10">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-green-500/10">
                                 <CheckCircle2 className="h-6 w-6 text-green-600" />
                             </div>
-                            <div>
-                                <p className="text-2xl font-bold">{stats.published}</p>
-                                <p className="text-sm text-muted-foreground">Published</p>
+                            <div className="min-w-0">
+                                <p className="text-2xl font-bold truncate">{stats.published}</p>
+                                <p className="text-sm text-muted-foreground truncate" title="Published">Published</p>
                             </div>
                         </div>
                     </CardContent>
@@ -157,12 +157,12 @@ export default function ArticlesPage() {
                 <Card>
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-500/10">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-amber-500/10">
                                 <Clock className="h-6 w-6 text-amber-600" />
                             </div>
-                            <div>
-                                <p className="text-2xl font-bold">{stats.draft}</p>
-                                <p className="text-sm text-muted-foreground">Drafts</p>
+                            <div className="min-w-0">
+                                <p className="text-2xl font-bold truncate">{stats.draft}</p>
+                                <p className="text-sm text-muted-foreground truncate" title="Drafts">Drafts</p>
                             </div>
                         </div>
                     </CardContent>
@@ -170,12 +170,12 @@ export default function ArticlesPage() {
                 <Card>
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/10">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-blue-500/10">
                                 <Clock className="h-6 w-6 text-blue-600" />
                             </div>
-                            <div>
-                                <p className="text-2xl font-bold">{stats.scheduled}</p>
-                                <p className="text-sm text-muted-foreground">Scheduled</p>
+                            <div className="min-w-0">
+                                <p className="text-2xl font-bold truncate">{stats.scheduled}</p>
+                                <p className="text-sm text-muted-foreground truncate" title="Scheduled">Scheduled</p>
                             </div>
                         </div>
                     </CardContent>

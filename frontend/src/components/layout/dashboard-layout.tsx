@@ -13,12 +13,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     const { isCollapsed } = useSidebarStore()
 
     return (
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-background overflow-x-hidden">
             <Navbar />
             <Sidebar />
             <main
                 className={cn(
-                    "min-h-[calc(100vh-4rem)] pt-4 transition-all duration-300",
+                    "min-h-[calc(100vh-4rem)] pt-4 transition-all duration-300 max-w-full overflow-x-hidden",
                     isCollapsed ? "md:ml-16" : "md:ml-64"
                 )}
             >

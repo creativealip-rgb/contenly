@@ -108,7 +108,7 @@ export function Navbar() {
     return (
         <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl">
             <div className="flex h-16 items-center justify-between px-4 md:px-6">
-                {/* Left: Logo & Menu Toggle */}
+                {/* Left: Menu Toggle && Logo (Desktop) */}
                 <div className="flex items-center gap-4">
                     <Button
                         variant="ghost"
@@ -119,11 +119,18 @@ export function Navbar() {
                         {icons.menu}
                     </Button>
 
-
-                    <Link href="/dashboard" className="flex items-center gap-3">
+                    {/* Desktop Logo - visible on md+, hidden on mobile */}
+                    <Link href="/dashboard" className="hidden md:flex items-center gap-3">
                         <div className="flex items-center justify-center overflow-hidden">
                             <Image src="/logo-full.png" alt="Contently Logo" width={140} height={40} className="object-contain h-9 w-auto" />
                         </div>
+                    </Link>
+                </div>
+
+                {/* Center: Logo (Mobile Only) */}
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 md:hidden flex items-center gap-3">
+                    <Link href="/dashboard" className="flex items-center justify-center overflow-hidden">
+                        <Image src="/logo-full.png" alt="Contently Logo" width={140} height={40} className="object-contain h-8 w-auto" />
                     </Link>
                 </div>
 
@@ -185,6 +192,6 @@ export function Navbar() {
                     </DropdownMenu>
                 </div>
             </div>
-        </header>
+        </header >
     )
 }

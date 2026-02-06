@@ -443,10 +443,10 @@ export default function IntegrationsPage() {
                                             )}
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-4">
-                                        <div className="text-right text- sm">
+                                    <div className="flex sm:flex-col md:flex-row items-center gap-2 md:gap-4 shrink-0 mt-4 sm:mt-0">
+                                        <div className="text-right sm:text-left md:text-right hidden sm:block">
                                             <p className="font-medium">{site.articlesPublished} articles</p>
-                                            <p className="text-muted-foreground">Last sync: {formatTimeAgo(site.lastSync)}</p>
+                                            <p className="text-muted-foreground text-xs md:text-sm whitespace-nowrap">Last sync: {formatTimeAgo(site.lastSync)}</p>
                                         </div>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>

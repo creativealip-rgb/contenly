@@ -911,9 +911,9 @@ Source: ${article.url}`)
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="bg-muted rounded-lg p-4 min-h-[400px] max-h-[600px] overflow-auto">
+                        <div className="relative bg-muted rounded-lg p-4 min-h-[400px] max-h-[600px] overflow-auto flex flex-col">
                             {isScanning || isScraping ? (
-                                <div className="flex flex-col items-center justify-center h-full py-12">
+                                <div className="flex-1 flex flex-col items-center justify-center py-12">
                                     <div className="relative">
                                         <div className="h-12 w-12 rounded-full border-4 border-violet-100 dark:border-violet-900/30"></div>
                                         <div className="absolute top-0 left-0 h-12 w-12 rounded-full border-4 border-violet-600 border-t-transparent animate-spin"></div>
@@ -923,7 +923,7 @@ Source: ${article.url}`)
                             ) : sourceContent ? (
                                 <pre className="whitespace-pre-wrap text-sm font-mono">{sourceContent}</pre>
                             ) : (
-                                <div className="flex items-center justify-center h-full text-muted-foreground">
+                                <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
                                     <div className="text-center">
                                         <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
                                         <p>Content will appear here</p>

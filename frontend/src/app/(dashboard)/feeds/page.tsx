@@ -209,16 +209,16 @@ export default function FeedsPage() {
             </div>
 
             {/* Stats */}
-            <div className="grid gap-4 md:grid-cols-4">
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <Card>
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-violet-500/10">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-violet-500/10">
                                 <Rss className="h-6 w-6 text-violet-600" />
                             </div>
-                            <div>
-                                <p className="text-2xl font-bold">{feeds.length}</p>
-                                <p className="text-sm text-muted-foreground">Total Feeds</p>
+                            <div className="min-w-0">
+                                <p className="text-2xl font-bold truncate">{feeds.length}</p>
+                                <p className="text-sm text-muted-foreground truncate" title="Total Feeds">Total Feeds</p>
                             </div>
                         </div>
                     </CardContent>
@@ -226,12 +226,12 @@ export default function FeedsPage() {
                 <Card>
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-500/10">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-green-500/10">
                                 <CheckCircle2 className="h-6 w-6 text-green-600" />
                             </div>
-                            <div>
-                                <p className="text-2xl font-bold">{feeds.filter(f => f.status === 'active').length}</p>
-                                <p className="text-sm text-muted-foreground">Active</p>
+                            <div className="min-w-0">
+                                <p className="text-2xl font-bold truncate">{feeds.filter(f => f.status === 'active').length}</p>
+                                <p className="text-sm text-muted-foreground truncate" title="Active">Active</p>
                             </div>
                         </div>
                     </CardContent>
@@ -239,12 +239,12 @@ export default function FeedsPage() {
                 <Card>
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-500/10">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-amber-500/10">
                                 <Clock className="h-6 w-6 text-amber-600" />
                             </div>
-                            <div>
-                                <p className="text-2xl font-bold">3</p>
-                                <p className="text-sm text-muted-foreground">Pending Items</p>
+                            <div className="min-w-0">
+                                <p className="text-2xl font-bold truncate">3</p>
+                                <p className="text-sm text-muted-foreground truncate" title="Pending Items">Pending Items</p>
                             </div>
                         </div>
                     </CardContent>
@@ -252,12 +252,12 @@ export default function FeedsPage() {
                 <Card>
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/10">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-blue-500/10">
                                 <RefreshCw className="h-6 w-6 text-blue-600" />
                             </div>
-                            <div>
-                                <p className="text-2xl font-bold">{feeds.reduce((acc, f) => acc + (f.itemsFetched || 0), 0)}</p>
-                                <p className="text-sm text-muted-foreground">Items Fetched</p>
+                            <div className="min-w-0">
+                                <p className="text-2xl font-bold truncate">{feeds.reduce((acc, f) => acc + (f.itemsFetched || 0), 0)}</p>
+                                <p className="text-sm text-muted-foreground truncate" title="Items Fetched">Items Fetched</p>
                             </div>
                         </div>
                     </CardContent>

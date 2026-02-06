@@ -43,7 +43,7 @@ export default function DashboardPage() {
     }, [])
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 max-w-full overflow-hidden">
             {/* Page Header */}
             <div>
                 <h1 className="text-3xl font-bold">Dashboard</h1>
@@ -77,10 +77,10 @@ export default function DashboardPage() {
             {/* Activity & Quick Actions */}
             <div className="grid gap-6 lg:grid-cols-3">
                 <div className="lg:col-span-2">
-                    <RecentActivity activities={stats.recentActivity} />
+                    <RecentActivity activities={stats.recentActivity} isLoading={isLoading} />
                 </div>
                 <div>
-                    <QuickActions />
+                    <QuickActions isLoading={isLoading} />
                 </div>
             </div>
         </div>

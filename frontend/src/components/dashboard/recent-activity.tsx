@@ -11,6 +11,7 @@ interface Activity {
 
 interface RecentActivityProps {
     activities: Activity[]
+    isLoading?: boolean
 }
 
 // Custom SVG icons for activities
@@ -68,19 +69,32 @@ const activityStyles = {
     },
 }
 
-export function RecentActivity({ activities }: RecentActivityProps) {
+export function RecentActivity({ activities, isLoading }: RecentActivityProps) {
     return (
-        <Card className="border-border/50 h-full min-h-[360px]">
+        <Card className="border-border/50 h-full min-h-[360px] overflow-hidden">
             <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-lg font-semibold">Recent Activity</CardTitle>
-                    <span className="text-xs text-muted-foreground">{activities.length} activities</span>
+                    <span className="text-xs text-muted-foreground">{isLoading ? 'Loading...' : `${activities.length} activities`}</span>
                 </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-                {activities.length === 0 ? (
+            <CardContent className="space-y-4 px-3 sm:px-6">
+                {isLoading ? (
+                    <div className="space-y-6">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                            <div key={i} className="flex items-start gap-3 animate-pulse">
+                                <div className="h-8 w-8 rounded-xl bg-muted shrink-0" />
+                                <div className="flex-1 space-y-2 py-1">
+                                    <div className="h-3 w-3/4 rounded bg-muted" />
+                                    <div className="h-2 w-1/2 rounded bg-muted" />
+                                </div>
+                                <div className="h-2 w-12 rounded bg-muted shrink-0 pt-1" />
+                            </div>
+                        ))}
+                    </div>
+                ) : activities.length === 0 ? (
                     <div className="text-center py-12">
-                        <div className="icon-container mx-auto mb-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted mx-auto mb-4 animate-float">
                             <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6 text-muted-foreground" stroke="currentColor" strokeWidth="1.5">
                                 <circle cx="12" cy="12" r="10" />
                                 <path d="M12 6v6l4 2" strokeLinecap="round" />
@@ -96,34 +110,38 @@ export function RecentActivity({ activities }: RecentActivityProps) {
                 ) : (
                     <div className="relative">
                         {/* Timeline line */}
-                        <div className="absolute left-[18px] top-3 bottom-3 w-px bg-border" />
+                        <div className="absolute left-[15px] top-3 bottom-3 w-px bg-border/50" />
 
                         <div className="space-y-4">
                             {activities.map((activity, index) => {
-                                const styles = activityStyles[activity.type]
-                                const icon = activityIcons[activity.type]
+                                const styles = activityStyles[activity.type] || activityStyles.article_published
+                                const icon = activityIcons[activity.type] || activityIcons.article_published
 
                                 return (
                                     <div
                                         key={activity.id}
-                                        className="relative flex items-start gap-4 animate-fade-up"
+                                        className="relative flex items-start gap-3 md:gap-4 animate-fade-up w-full overflow-hidden"
                                         style={{ animationDelay: `${index * 0.1}s`, opacity: 0 }}
                                     >
                                         {/* Icon */}
-                                        <div className={`relative z-10 flex h-9 w-9 items-center justify-center rounded-xl ${styles.bg} ${styles.text} border ${styles.border}`}>
+                                        <div className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${styles.bg} ${styles.text} border ${styles.border}`}>
                                             {icon}
                                         </div>
 
-                                        {/* Content */}
-                                        <div className="flex-1 min-w-0 pt-1">
-                                            <p className="text-sm font-medium truncate">{activity.title}</p>
-                                            <p className="text-xs text-muted-foreground mt-0.5">{activity.description}</p>
+                                        {/* Content - Using Grid for reliable truncation next to shrinking time */}
+                                        <div className="flex-1 min-w-0 grid grid-cols-[1fr_auto] gap-2 items-start">
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-medium truncate leading-tight pr-1" title={activity.title}>
+                                                    {activity.title}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground mt-1 truncate" title={activity.description}>
+                                                    {activity.description}
+                                                </p>
+                                            </div>
+                                            <span className="shrink-0 text-[10px] text-muted-foreground pt-1 whitespace-nowrap">
+                                                {formatDistanceToNow(activity.timestamp, { addSuffix: true })}
+                                            </span>
                                         </div>
-
-                                        {/* Time */}
-                                        <span className="text-xs text-muted-foreground shrink-0 pt-1">
-                                            {formatDistanceToNow(activity.timestamp, { addSuffix: true })}
-                                        </span>
                                     </div>
                                 )
                             })}
