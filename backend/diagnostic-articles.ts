@@ -1,0 +1,22 @@
+
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './src/app.module';
+import { ArticlesService } from './src/modules/articles/articles.service';
+
+async function bootstrap() {
+    const app = await NestFactory.createApplicationContext(AppModule);
+    const articlesService = app.get(ArticlesService);
+
+    console.log('--- DIAGNOSTIC: LAST 10 ARTICLES ---');
+    const articles = await articlesService.db.query.article.findMany({
+        limit: 10,
+        orderBy: (article, { desc }) => [desc(article.createdAt)],
+    });
+
+    articles.forEach(a => {
+        console.log(`ID: ${a.id} | Title: ${a.title.substring(0, 30)}... | Status: ${a.status} | WP ID: ${a.wpPostId} | Created: ${a.createdAt}`);
+    });
+
+    await app.close();
+}
+bootstrap();

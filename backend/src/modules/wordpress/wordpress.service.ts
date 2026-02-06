@@ -403,6 +403,8 @@ export class WordpressService {
                 if (dto.status === 'future') localStatus = 'SCHEDULED';
                 if (dto.status === 'draft') localStatus = 'DRAFT';
 
+                console.log(`[publishArticle] Preparing to update local DB. ArticleId: ${dto.articleId}, Target Status: ${localStatus}, UserId: ${userId}`);
+
                 const articleData: any = {
                     title: dto.title,
                     generatedContent: dto.content,
@@ -413,28 +415,30 @@ export class WordpressService {
                     wpPostUrl: response.data.link,
                     wpSiteId: site.id,
                     feedItemId: dto.feedItemId,
-                    metaTitle: dto.title, // Default to title
+                    metaTitle: dto.title,
                     slug: response.data.slug,
-                    publishedAt: (localStatus === 'PUBLISHED' ? new Date() : undefined),
+                    publishedAt: (localStatus === 'PUBLISHED' ? new Date() : null),
                 };
 
                 if (dto.featuredImageUrl) {
                     articleData.featuredImageUrl = dto.featuredImageUrl;
                 }
 
+                // Log keys to avoid cluttering but see enough
+                console.log('[publishArticle] Article Data keys:', Object.keys(articleData));
+
                 if (dto.articleId) {
-                    // Update existing draft
-                    console.log(`[publishArticle] Updating existing article ${dto.articleId} with status ${localStatus}`);
-                    await this.articlesService.update(userId, dto.articleId, articleData);
+                    console.log(`[publishArticle] Updating existing article ${dto.articleId}`);
+                    const updated = await this.articlesService.update(userId, dto.articleId, articleData);
+                    console.log(`[publishArticle] Update result: ${updated ? 'Success (Status: ' + updated.status + ')' : 'No record updated'}`);
                 } else {
-                    // Create new article
-                    console.log(`[publishArticle] Creating new article with status ${localStatus}`);
-                    await this.articlesService.create(userId, articleData);
+                    console.log('[publishArticle] Creating new article record');
+                    const created = await this.articlesService.create(userId, articleData);
+                    console.log(`[publishArticle] Create result: ${created ? 'Success (ID: ' + created.id + ')' : 'Failed'}`);
                 }
             } catch (dbError: any) {
-                console.error('[publishArticle] Failed to save/update local DB:', dbError.message || dbError);
-                // We don't throw here because the WP publish succeeded, 
-                // but this explains why the user might see the wrong status if DB update fails.
+                console.error('[publishArticle] DATABASE UPDATE FAILED CRITICALLY:', dbError.message || dbError);
+                if (dbError.stack) console.error(dbError.stack);
             }
 
             return {

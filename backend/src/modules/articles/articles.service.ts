@@ -110,19 +110,39 @@ export class ArticlesService {
     }
 
     async update(userId: string, id: string, dto: UpdateArticleDto) {
+        console.log(`[ArticlesService] Attempting update for article ${id} (User: ${userId})`);
         await this.findById(userId, id);
 
-        const [updated] = await this.db
-            .update(article)
-            .set({
-                ...dto,
-                status: dto.status ? (dto.status as any) : undefined,
-                updatedAt: new Date(),
-            })
-            .where(eq(article.id, id))
-            .returning();
+        const updateData: any = {
+            ...dto,
+            updatedAt: new Date(),
+        };
 
-        return updated;
+        // Ensure status is correctly typed for enum
+        if (dto.status) {
+            updateData.status = dto.status as any;
+        }
+
+        console.log(`[ArticlesService] Fields to update:`, Object.keys(updateData));
+
+        try {
+            const [updated] = await this.db
+                .update(article)
+                .set(updateData)
+                .where(and(eq(article.id, id), eq(article.userId, userId)))
+                .returning();
+
+            if (!updated) {
+                console.error(`[ArticlesService] Update successful but no record returned for ID ${id}`);
+            } else {
+                console.log(`[ArticlesService] Update successful. New Status: ${updated.status}`);
+            }
+
+            return updated;
+        } catch (error: any) {
+            console.error(`[ArticlesService] Update query failed:`, error.message || error);
+            throw error;
+        }
     }
 
     async delete(userId: string, id: string) {
