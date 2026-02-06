@@ -51,11 +51,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { RssFeed, getFeeds, addFeed, removeFeed } from '@/lib/feeds-store'
 
-const mockPendingItems = [
-    { id: '1', feed: 'TechCrunch', title: 'OpenAI Announces New GPT-5 Model', publishedAt: new Date(Date.now() - 1000 * 60 * 30) },
-    { id: '2', feed: 'The Verge', title: 'Apple Vision Pro Gets Major Update', publishedAt: new Date(Date.now() - 1000 * 60 * 45) },
-    { id: '3', feed: 'TechCrunch', title: 'Startup Raises $50M in Series B', publishedAt: new Date(Date.now() - 1000 * 60 * 60) },
-]
+
 
 export default function FeedsPage() {
     const [isAddOpen, setIsAddOpen] = useState(false)
@@ -142,7 +138,7 @@ export default function FeedsPage() {
                 <div>
                     <h1 className="text-3xl font-bold">RSS Feeds</h1>
                     <p className="text-muted-foreground">
-                        Manage your RSS feed sources and pending items.
+                        Manage your RSS feed sources.
                     </p>
                 </div>
                 <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
@@ -209,7 +205,7 @@ export default function FeedsPage() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                 <Card>
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
@@ -236,19 +232,7 @@ export default function FeedsPage() {
                         </div>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-amber-500/10">
-                                <Clock className="h-6 w-6 text-amber-600" />
-                            </div>
-                            <div className="min-w-0">
-                                <p className="text-2xl font-bold truncate">3</p>
-                                <p className="text-sm text-muted-foreground truncate" title="Pending Items">Pending Items</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+
                 <Card>
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
@@ -339,43 +323,7 @@ export default function FeedsPage() {
                 </CardContent>
             </Card>
 
-            {/* Pending Items */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Pending Items</CardTitle>
-                    <CardDescription>Items fetched but not yet processed</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Title</TableHead>
-                                <TableHead>Source</TableHead>
-                                <TableHead>Published</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {mockPendingItems.map((item) => (
-                                <TableRow key={item.id}>
-                                    <TableCell className="font-medium max-w-[400px] truncate">
-                                        {item.title}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline">{item.feed}</Badge>
-                                    </TableCell>
-                                    <TableCell>{formatTimeAgo(item.publishedAt)}</TableCell>
-                                    <TableCell className="text-right">
-                                        <Button size="sm" className="bg-gradient-to-r from-violet-600 to-indigo-600">
-                                            Process
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+
         </div>
     )
 }
