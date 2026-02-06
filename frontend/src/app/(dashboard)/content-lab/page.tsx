@@ -914,7 +914,7 @@ Source: ${article.url}`)
                         <Button
                             className="w-full h-10 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700"
                             onClick={handleAIRewrite}
-                            disabled={!sourceContent || isRewriting}
+                            disabled={(activeTab === 'idea' ? !articleIdea.trim() : !sourceContent) || isRewriting}
                         >
                             {isRewriting ? (
                                 <>
@@ -924,7 +924,7 @@ Source: ${article.url}`)
                             ) : (
                                 <>
                                     <Sparkles className="h-4 w-4 mr-2" />
-                                    Rewrite with AI
+                                    Generate Article
                                 </>
                             )}
                         </Button>
