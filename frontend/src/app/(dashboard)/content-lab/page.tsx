@@ -320,6 +320,11 @@ Source: ${article.url}`)
             return
         }
 
+        if (!selectedCategory) {
+            alert('Silakan pilih kategori terlebih dahulu agar AI dapat menyisipkan internal link yang relevan.')
+            return
+        }
+
         setIsRewriting(true)
         setGeneratedContent('')
         setGeneratedTitle('')
@@ -852,13 +857,15 @@ Source: ${article.url}`)
 
                         {/* Category (Moved for internal links) */}
                         <div className="space-y-2">
-                            <Label className="text-sm font-medium">Category</Label>
+                            <Label className="text-sm font-medium flex items-center gap-1">
+                                Category <span className="text-red-500">*</span>
+                            </Label>
                             <Select
                                 value={selectedCategory?.toString() || ''}
                                 onValueChange={(val) => setSelectedCategory(parseInt(val))}
                                 disabled={isFetchingCategories || wpCategories.length === 0}
                             >
-                                <SelectTrigger className="h-10">
+                                <SelectTrigger className={`h-10 ${!selectedCategory ? 'border-amber-200 bg-amber-50/10' : ''}`}>
                                     <SelectValue placeholder={isFetchingCategories ? "Loading categories..." : wpCategories.length > 0 ? "Select category" : "No categories found"} />
                                 </SelectTrigger>
                                 <SelectContent position="popper" sideOffset={4}>
@@ -869,7 +876,7 @@ Source: ${article.url}`)
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <p className="text-xs text-muted-foreground">AI will inject relevant "Baca Juga" links from this category.</p>
+                            <p className="text-[10px] text-muted-foreground leading-tight">Wajib dipilih agar AI bisa menyisipkan internal link "Baca Juga" yang relevan.</p>
                         </div>
                     </div>
 
