@@ -31,6 +31,7 @@ import {
     Image as ImageIcon,
     Send,
     RotateCcw,
+    RefreshCw,
     Copy,
     Check,
     Settings2,
@@ -50,38 +51,46 @@ import { migrateLocalStorageFeeds } from '@/lib/migrate-feeds'
 
 // ... (other imports)
 
+import { useContentLabStore } from '@/stores/content-lab-store'
+
+// ... imports
+
 export default function ContentLabPage() {
+    // Global Store State
+    const {
+        generatedContent, setGeneratedContent,
+        generatedTitle, setGeneratedTitle,
+        sourceContent, setSourceContent,
+        selectedArticle, setSelectedArticle,
+        generatedArticleId, setGeneratedArticleId,
+        featuredImage, setFeaturedImage,
+        activeTab, setActiveTab,
+        scrapeUrl, setScrapeUrl,
+        articleIdea, setArticleIdea,
+        aiTone, setAiTone,
+        aiStyle, setAiStyle,
+        aiLength, setAiLength,
+        publishResult, setPublishResult,
+        slug, setSlug,
+        metaTitle, setMetaTitle,
+        metaDescription, setMetaDescription,
+    } = useContentLabStore()
+
+    // Local UI State (Not persisted)
     const [selectedFeed, setSelectedFeed] = useState('')
-    const [selectedArticle, setSelectedArticle] = useState<any>(null)
     const [isScanning, setIsScanning] = useState(false)
     const [isGenerating, setIsGenerating] = useState(false)
-    const [sourceContent, setSourceContent] = useState('')
-    const [generatedContent, setGeneratedContent] = useState('')
-    const [generatedTitle, setGeneratedTitle] = useState('')
-    // Scraper state
-    const [scrapeUrl, setScrapeUrl] = useState('')
     const [isScraping, setIsScraping] = useState(false)
-    const [activeTab, setActiveTab] = useState('rss')
-    const [articleIdea, setArticleIdea] = useState('')
-
-    // AI Rewrite state
-    const [aiTone, setAiTone] = useState<'professional' | 'casual' | 'creative' | 'technical'>('professional')
-    const [aiStyle, setAiStyle] = useState<'blog' | 'news' | 'tutorial' | 'review'>('blog')
-    const [aiLength, setAiLength] = useState<'shorter' | 'same' | 'longer'>('same')
     const [isRewriting, setIsRewriting] = useState(false)
 
-    // SEO & Image state
-    const [slug, setSlug] = useState('')
-    const [featuredImage, setFeaturedImage] = useState('')
+    // SEO & Image state (Local for now, unless extended)
     const [isGeneratingImage, setIsGeneratingImage] = useState(false)
-
-    const [tone, setTone] = useState('professional')
+    /* const [tone, setTone] = useState('professional') */ // Unused duplicate?
     const [generateImage, setGenerateImage] = useState(true)
     const [copied, setCopied] = useState(false)
 
     // Publishing state
     const [isPublishing, setIsPublishing] = useState(false)
-    const [publishResult, setPublishResult] = useState<{ success: boolean; message: string; link?: string } | null>(null)
 
     // Scheduling state
     const [isScheduleOpen, setIsScheduleOpen] = useState(false)
@@ -92,7 +101,6 @@ export default function ContentLabPage() {
     // WordPress categories
     const [wpCategories, setWpCategories] = useState<Array<{ id: number; name: string }>>([])
     const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
-    const [generatedArticleId, setGeneratedArticleId] = useState<string | null>(null)
     const [isFetchingCategories, setIsFetchingCategories] = useState(false)
 
     // Sites state
@@ -488,6 +496,50 @@ Source: ${article.url}`)
             setIsGeneratingImage(false)
         }
     }
+
+    // SEO Helpers
+    const slugify = (text: string) => {
+        return text
+            .toString()
+            .toLowerCase()
+            .trim()
+            .replace(/\s+/g, '-')
+            .replace(/[^\w\-]+/g, '')
+            .replace(/\-\-+/g, '-')
+    }
+
+    const handleRefreshSEO = () => {
+        if (generatedTitle) {
+            setMetaTitle(generatedTitle)
+            setSlug(slugify(generatedTitle))
+        }
+        if (generatedContent) {
+            // Take first 160 chars, attempt to cut at last space
+            let desc = generatedContent.substring(0, 160)
+            const lastSpace = desc.lastIndexOf(' ')
+            if (lastSpace > 0) desc = desc.substring(0, lastSpace)
+            setMetaDescription(desc + '...')
+        }
+    }
+
+    // Auto-update SEO fields when content generates (only if empty)
+    useEffect(() => {
+        if (generatedTitle && !metaTitle) {
+            setMetaTitle(generatedTitle)
+        }
+        if (generatedTitle && !slug) {
+            setSlug(slugify(generatedTitle))
+        }
+    }, [generatedTitle, metaTitle, slug, setMetaTitle, setSlug])
+
+    useEffect(() => {
+        if (generatedContent && !metaDescription) {
+            let desc = generatedContent.substring(0, 160)
+            const lastSpace = desc.lastIndexOf(' ')
+            if (lastSpace > 0) desc = desc.substring(0, lastSpace)
+            setMetaDescription(desc + '...')
+        }
+    }, [generatedContent, metaDescription, setMetaDescription])
 
     // Schedule publish
     const handleSchedulePublish = async () => {
@@ -925,14 +977,21 @@ Source: ${article.url}`)
 
                 {/* SEO Preview */}
                 <Card>
-                    <CardHeader className="pb-3">
+                    <CardHeader className="pb-3 flex flex-row items-center justify-between">
                         <CardTitle className="text-lg">SEO Preview</CardTitle>
+                        <Button variant="ghost" size="sm" onClick={handleRefreshSEO} title="Refresh SEO Fields">
+                            <RefreshCw className="h-4 w-4" />
+                        </Button>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
                             <Label>Meta Title</Label>
-                            <Input value={generatedTitle || ""} onChange={(e) => setGeneratedTitle(e.target.value)} placeholder="Article Title" />
-                            <p className="text-xs text-muted-foreground">Characters: {(generatedTitle || "").length}/60</p>
+                            <Input
+                                value={metaTitle || generatedTitle || ""}
+                                onChange={(e) => setMetaTitle(e.target.value)}
+                                placeholder="Article Title"
+                            />
+                            <p className="text-xs text-muted-foreground">Characters: {(metaTitle || generatedTitle || "").length}/60</p>
                         </div>
 
                         <div className="space-y-2">
@@ -949,7 +1008,9 @@ Source: ${article.url}`)
                         <div className="space-y-2">
                             <Label>Meta Description</Label>
                             <Textarea
-                                defaultValue="AI generated description..."
+                                value={metaDescription}
+                                onChange={(e) => setMetaDescription(e.target.value)}
+                                placeholder="AI generated description..."
                                 className="resize-none"
                                 rows={3}
                             />
@@ -972,15 +1033,20 @@ Source: ${article.url}`)
                             </div>
 
                             {!featuredImage ? (
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 gap-3">
                                     <div className="relative">
                                         <Button
                                             variant="outline"
-                                            className="w-full h-24 flex flex-col items-center justify-center gap-2 border-dashed border-2"
+                                            className="w-full h-32 flex flex-col items-center justify-center gap-3 border-dashed border-2 hover:bg-violet-50 hover:border-violet-200 transition-all"
                                             onClick={() => document.getElementById('featured-image-upload')?.click()}
                                         >
-                                            <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                                            <span className="text-xs">Upload Image</span>
+                                            <div className="p-3 bg-violet-100 rounded-full text-violet-600">
+                                                <ImageIcon className="h-6 w-6" />
+                                            </div>
+                                            <div className="text-center">
+                                                <span className="text-sm font-medium block">Click to upload image</span>
+                                                <span className="text-xs text-muted-foreground">SVG, PNG, JPG or GIF (max. 800x400px)</span>
+                                            </div>
                                         </Button>
                                         <input
                                             id="featured-image-upload"
@@ -999,19 +1065,6 @@ Source: ${article.url}`)
                                             }}
                                         />
                                     </div>
-                                    <Button
-                                        variant="outline"
-                                        className="h-24 flex flex-col items-center justify-center gap-2 border-dashed border-2"
-                                        onClick={handleGenerateImage}
-                                        disabled={isGeneratingImage || !generatedTitle}
-                                    >
-                                        {isGeneratingImage ? (
-                                            <Loader2 className="h-6 w-6 animate-spin text-violet-600" />
-                                        ) : (
-                                            <Sparkles className="h-6 w-6 text-violet-600" />
-                                        )}
-                                        <span className="text-xs">{isGeneratingImage ? "Generating..." : "AI Generate"}</span>
-                                    </Button>
                                 </div>
                             ) : (
                                 <div className="relative rounded-lg border-2 border-violet-100 overflow-hidden group aspect-video">
