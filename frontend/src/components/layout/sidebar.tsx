@@ -167,22 +167,7 @@ export function Sidebar() {
                     </nav>
 
                     <div className="mt-auto border-t border-border p-4">
-                        {/* User Profile */}
-                        <div className={cn(
-                            "flex items-center gap-3 mb-4 transition-all duration-200",
-                            isCollapsed ? "md:justify-center" : "md:justify-start"
-                        )}>
-                            <div className="h-9 w-9 shrink-0 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold shadow-lg">
-                                {user?.fullName?.charAt(0)?.toUpperCase() || 'U'}
-                            </div>
-                            <div className={cn(
-                                "flex flex-col overflow-hidden transition-all duration-300",
-                                isCollapsed ? "md:w-0 md:opacity-0" : "md:w-auto md:opacity-100"
-                            )}>
-                                <span className="text-sm font-medium truncate">{user?.fullName || 'User'}</span>
-                                <span className="text-xs text-muted-foreground truncate">{user?.email || 'user@example.com'}</span>
-                            </div>
-                        </div>
+                        {/* User Profile Removed per user request */}
 
                         {/* Collapse Toggle (Desktop Only) */}
                         <Button

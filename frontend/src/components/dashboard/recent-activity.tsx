@@ -70,7 +70,7 @@ const activityStyles = {
 
 export function RecentActivity({ activities }: RecentActivityProps) {
     return (
-        <Card className="border-border/50">
+        <Card className="border-border/50 h-full min-h-[360px]">
             <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-lg font-semibold">Recent Activity</CardTitle>

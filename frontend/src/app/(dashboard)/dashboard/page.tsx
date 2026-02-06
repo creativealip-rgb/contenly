@@ -7,51 +7,32 @@ import { getFeeds } from '@/lib/feeds-store'
 import { getSites } from '@/lib/sites-store'
 
 // Mock data - replace with API calls
-const mockActivities = [
-    {
-        id: '1',
-        type: 'article_published' as const,
-        title: '10 Best Productivity Apps in 2026',
-        description: 'Published to techblog.com',
-        timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 mins ago
-    },
-    {
-        id: '2',
-        type: 'feed_added' as const,
-        title: 'TechCrunch RSS Feed',
-        description: 'Auto-polling every 15 minutes',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-    },
-    {
-        id: '3',
-        type: 'site_connected' as const,
-        title: 'myblog.wordpress.com',
-        description: 'WordPress site connected',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-    },
-    {
-        id: '4',
-        type: 'tokens_purchased' as const,
-        title: '100 Tokens purchased',
-        description: 'Pro plan subscription',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2), // 2 days ago
-    },
-]
+// Mock data deleted
 
 export default function DashboardPage() {
-    const [feedsCount, setFeedsCount] = useState(0)
-    const [sitesCount, setSitesCount] = useState(0)
+    const [stats, setStats] = useState({
+        totalArticles: 0,
+        publishedArticles: 0,
+        activeFeeds: 0,
+        connectedSites: 0,
+        tokenBalance: 0,
+        recentActivity: [] as any[]
+    })
     const [isLoading, setIsLoading] = useState(true)
 
     useEffect(() => {
         const loadDashboardData = async () => {
             try {
-                const [feeds, sites] = await Promise.all([
-                    getFeeds(),
-                    getSites()
-                ])
-                setFeedsCount(feeds.length)
-                setSitesCount(sites.length)
+                // Use relative path so it uses the proxy or full URL if env is set
+                const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+                const res = await fetch(`${API_BASE_URL}/analytics/dashboard`, {
+                    credentials: 'include',
+                    headers: { 'ngrok-skip-browser-warning': 'true' }
+                })
+                if (res.ok) {
+                    const data = await res.json()
+                    setStats(data)
+                }
             } catch (error) {
                 console.error('Failed to load dashboard data:', error)
             } finally {
@@ -72,28 +53,22 @@ export default function DashboardPage() {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <KpiCard
-                    title="Articles Published"
-                    value={0}
-                    icon={FileText}
-                    description="coming soon"
-                />
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <KpiCard
                     title="Active RSS Feeds"
-                    value={isLoading ? '...' : feedsCount}
+                    value={isLoading ? '...' : stats.activeFeeds}
                     icon={Rss}
-                    description={`${feedsCount} feeds configured`}
+                    description={`${stats.activeFeeds} feeds configured`}
                 />
                 <KpiCard
                     title="Tokens Remaining"
-                    value="∞"
+                    value={isLoading ? '...' : stats.tokenBalance}
                     icon={Sparkles}
-                    description="unlimited for now"
+                    description="Available tokens"
                 />
                 <KpiCard
                     title="Connected Sites"
-                    value={isLoading ? '...' : sitesCount}
+                    value={isLoading ? '...' : stats.connectedSites}
                     icon={Plug}
                     description="WordPress sites"
                 />
@@ -102,7 +77,7 @@ export default function DashboardPage() {
             {/* Activity & Quick Actions */}
             <div className="grid gap-6 lg:grid-cols-3">
                 <div className="lg:col-span-2">
-                    <RecentActivity activities={mockActivities} />
+                    <RecentActivity activities={stats.recentActivity} />
                 </div>
                 <div>
                     <QuickActions />

@@ -135,17 +135,7 @@ export function Navbar() {
                         <span>{tokenBalance !== null ? `${tokenBalance} Tokens` : 'Loading...'}</span>
                     </div>
 
-                    {/* Notifications */}
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="relative rounded-xl hover:bg-accent"
-                    >
-                        {icons.bell}
-                        <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-red-500 to-rose-500 text-[10px] font-medium text-white shadow-lg">
-                            3
-                        </span>
-                    </Button>
+
 
                     {/* User Menu */}
                     <DropdownMenu>

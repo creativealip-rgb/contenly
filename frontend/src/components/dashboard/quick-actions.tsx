@@ -64,21 +64,23 @@ export function QuickActions() {
             </CardHeader>
             <CardContent className="grid gap-3">
                 {quickActions.map((action) => (
-                    <Link key={action.href} href={action.href}>
+                    <Link key={action.href} href={action.href} className="block min-w-0">
                         <Button
                             variant="outline"
-                            className="group w-full h-auto p-4 justify-between gap-4 hover:bg-accent hover:border-indigo-500/30 transition-all duration-200 rounded-xl"
+                            className="group w-full h-auto p-3 justify-between gap-3 hover:bg-accent hover:border-indigo-500/30 transition-all duration-200 rounded-xl"
                         >
-                            <div className="flex items-center gap-4">
-                                <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${action.gradient} text-white shadow-lg`}>
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                                <div className={`flex-shrink-0 flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br ${action.gradient} text-white shadow-md`}>
                                     {action.icon}
                                 </div>
-                                <div className="text-left">
-                                    <div className="font-semibold">{action.label}</div>
-                                    <div className="text-xs text-muted-foreground">{action.description}</div>
+                                <div className="text-left min-w-0 flex-1">
+                                    <div className="font-semibold truncate text-sm">{action.label}</div>
+                                    <div className="text-xs text-muted-foreground truncate">{action.description}</div>
                                 </div>
                             </div>
-                            {icons.arrow}
+                            <div className="flex-shrink-0 text-muted-foreground/50 group-hover:text-foreground transition-colors">
+                                {icons.arrow}
+                            </div>
                         </Button>
                     </Link>
                 ))}

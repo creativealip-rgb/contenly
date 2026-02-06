@@ -913,11 +913,12 @@ Source: ${article.url}`)
                     <CardContent>
                         <div className="bg-muted rounded-lg p-4 min-h-[400px] max-h-[600px] overflow-auto">
                             {isScanning || isScraping ? (
-                                <div className="flex items-center justify-center h-full">
-                                    <div className="text-center">
-                                        <Loader2 className="h-8 w-8 animate-spin mx-auto text-violet-600" />
-                                        <p className="mt-2 text-sm text-muted-foreground">Fetching content...</p>
+                                <div className="flex flex-col items-center justify-center h-full py-12">
+                                    <div className="relative">
+                                        <div className="h-12 w-12 rounded-full border-4 border-violet-100 dark:border-violet-900/30"></div>
+                                        <div className="absolute top-0 left-0 h-12 w-12 rounded-full border-4 border-violet-600 border-t-transparent animate-spin"></div>
                                     </div>
+                                    <p className="mt-4 text-sm font-medium text-muted-foreground animate-pulse">Fetching content...</p>
                                 </div>
                             ) : sourceContent ? (
                                 <pre className="whitespace-pre-wrap text-sm font-mono">{sourceContent}</pre>
