@@ -396,94 +396,101 @@ export class WordpressService {
             console.log('[publishArticle] Success! Post ID:', response.data.id);
 
             // Save to local database
-            try {
-                const articleData: any = {
-                    title: dto.title,
-                    generatedContent: dto.content,
-                    originalContent: dto.originalContent || '',
-                    sourceUrl: dto.sourceUrl || '',
-                    status: (dto.status === 'publish' ? 'PUBLISHED' : dto.status === 'future' ? 'PUBLISHED' : 'DRAFT'),
-                    wpPostId: String(response.data.id),
-                    wpPostUrl: response.data.link,
-                    wpSiteId: site.id,
-                    feedItemId: dto.feedItemId,
-                    metaTitle: dto.title, // Default to title
-                    slug: response.data.slug,
-                };
+            // Map WordPress status to our internal Article status
+            let localStatus: 'PUBLISHED' | 'SCHEDULED' | 'DRAFT' = 'DRAFT';
+            if (dto.status === 'publish') localStatus = 'PUBLISHED';
+            if (dto.status === 'future') localStatus = 'SCHEDULED';
+            if (dto.status === 'draft') localStatus = 'DRAFT';
 
-                if (dto.featuredImageUrl) {
-                    articleData.featuredImageUrl = dto.featuredImageUrl;
-                }
+            const articleData: any = {
+                title: dto.title,
+                generatedContent: dto.content,
+                originalContent: dto.originalContent || '',
+                sourceUrl: dto.sourceUrl || '',
+                status: localStatus,
+                wpPostId: String(response.data.id),
+                wpPostUrl: response.data.link,
+                wpSiteId: site.id,
+                feedItemId: dto.feedItemId,
+                metaTitle: dto.title, // Default to title
+                slug: response.data.slug,
+                publishedAt: (localStatus === 'PUBLISHED' ? new Date() : undefined),
+            };
 
-                if (dto.articleId) {
-                    // Update existing draft
-                    await this.articlesService.update(userId, dto.articleId, articleData);
-                    console.log('[publishArticle] Updated existing article:', dto.articleId);
-                } else {
-                    // Create new article
-                    await this.articlesService.create(userId, articleData);
-                    console.log('[publishArticle] Created new article');
-                }
-            } catch (dbError) {
-                console.error('[publishArticle] Failed to save/update local DB:', dbError);
-                // Don't fail the request if WP publish succeeded, but log it
+            if (dto.featuredImageUrl) {
+                articleData.featuredImageUrl = dto.featuredImageUrl;
             }
 
-            return {
-                success: true,
-                post: {
-                    id: response.data.id,
-                    title: response.data.title.rendered,
-                    status: response.data.status,
-                    link: response.data.link,
-                    date: response.data.date,
-                },
-            };
-        } catch (error: any) {
-            console.error('[publishArticle] Error:', error.response?.data || error.message);
-            throw new BadRequestException(
-                error.response?.data?.message || 'Failed to publish article to WordPress'
-            );
+            if (dto.articleId) {
+                // Update existing draft
+                console.log(`[publishArticle] Updating existing article ${dto.articleId} with status ${localStatus}`);
+                await this.articlesService.update(userId, dto.articleId, articleData);
+            } else {
+                // Create new article
+                console.log(`[publishArticle] Creating new article with status ${localStatus}`);
+                await this.articlesService.create(userId, articleData);
+            }
+        } catch (dbError: any) {
+            console.error('[publishArticle] Failed to save/update local DB:', dbError.message || dbError);
+            // We don't throw here because the WP publish succeeded, 
+            // but this explains why the user might see the wrong status if DB update fails.
         }
+
+        return {
+            success: true,
+            post: {
+                id: response.data.id,
+                title: response.data.title.rendered,
+                status: response.data.status,
+                link: response.data.link,
+                date: response.data.date,
+            },
+        };
+    } catch(error: any) {
+        console.error('[publishArticle] Error:', error.response?.data || error.message);
+        throw new BadRequestException(
+            error.response?.data?.message || 'Failed to publish article to WordPress'
+        );
     }
-    async getRecentPosts(siteId: string, categoryId?: number): Promise<{ title: string; link: string }[]> {
-        const site = await this.db.query.wpSite.findFirst({
-            where: eq(wpSite.id, siteId),
-        });
+}
+    async getRecentPosts(siteId: string, categoryId ?: number): Promise < { title: string; link: string }[] > {
+    const site = await this.db.query.wpSite.findFirst({
+        where: eq(wpSite.id, siteId),
+    });
 
-        if (!site) return [];
+    if(!site) return [];
 
-        try {
-            const appPassword = this.decrypt(site.appPasswordEncrypted);
-            const auth = Buffer.from(`${site.username}:${appPassword}`).toString('base64');
+    try {
+        const appPassword = this.decrypt(site.appPasswordEncrypted);
+        const auth = Buffer.from(`${site.username}:${appPassword}`).toString('base64');
 
-            const fetchPosts = async (catId?: number) => {
-                let url = `${site.url}/wp-json/wp/v2/posts?per_page=3&status=publish`;
-                if (catId) {
-                    url += `&categories=${catId}`;
-                }
-                const response = await axios.get(url, {
-                    headers: { Authorization: `Basic ${auth}` },
-                    timeout: 5000
-                });
-                return response.data.map((post: any) => ({
-                    title: post.title.rendered,
-                    link: post.link,
-                }));
-            };
-
-            let posts = await fetchPosts(categoryId);
-
-            // Fallback: if category has no posts, fetch generic posts
-            if (posts.length === 0 && categoryId) {
-                console.log(`[WordpressService] No posts in category ${categoryId}, falling back to recent posts`);
-                posts = await fetchPosts();
+        const fetchPosts = async (catId?: number) => {
+            let url = `${site.url}/wp-json/wp/v2/posts?per_page=3&status=publish`;
+            if (catId) {
+                url += `&categories=${catId}`;
             }
+            const response = await axios.get(url, {
+                headers: { Authorization: `Basic ${auth}` },
+                timeout: 5000
+            });
+            return response.data.map((post: any) => ({
+                title: post.title.rendered,
+                link: post.link,
+            }));
+        };
 
-            return posts;
+        let posts = await fetchPosts(categoryId);
+
+        // Fallback: if category has no posts, fetch generic posts
+        if(posts.length === 0 && categoryId) {
+    console.log(`[WordpressService] No posts in category ${categoryId}, falling back to recent posts`);
+    posts = await fetchPosts();
+}
+
+return posts;
         } catch (error: any) {
-            console.error('[getRecentPosts] Error:', error.message);
-            return [];
-        }
+    console.error('[getRecentPosts] Error:', error.message);
+    return [];
+}
     }
 }
