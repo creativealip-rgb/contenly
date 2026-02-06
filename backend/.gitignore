@@ -3,3 +3,9 @@ node_modules
 .env
 
 /generated/prisma
+dist
+dist-prod
+error*.txt
+*.log
+test-moonshot.ts
+check-connection.ts

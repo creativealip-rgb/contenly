@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
-import { DrizzleService } from 'src/db/drizzle.service';
-import { wpSite, categoryMapping } from 'src/db/schema';
+import { DrizzleService } from '../../db/drizzle.service';
+import { wpSite, categoryMapping } from '../../db/schema';
 import { eq, and } from 'drizzle-orm';
 import { CreateSiteDto } from './dto/create-site.dto';
 import { UpdateSiteDto } from './dto/update-site.dto';
