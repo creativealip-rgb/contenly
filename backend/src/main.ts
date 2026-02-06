@@ -1,6 +1,6 @@
 import 'dotenv/config'; // Load .env before everything else
 import { NestFactory } from '@nestjs/core';
-// Restart trigger: 8
+// Restart trigger: 9
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';

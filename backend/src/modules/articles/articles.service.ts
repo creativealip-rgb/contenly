@@ -3,6 +3,7 @@ import { eq, and, ilike, or, sql, desc } from 'drizzle-orm';
 import { DrizzleService } from '../../db/drizzle.service';
 import { article, wpSite } from '../../db/schema';
 import { CreateArticleDto, UpdateArticleDto } from './dto';
+import { validate as uuidValidate } from 'uuid';
 
 @Injectable()
 export class ArticlesService {
@@ -117,6 +118,16 @@ export class ArticlesService {
             ...dto,
             updatedAt: new Date(),
         };
+
+        // Validate feedItemId is a proper UUID if provided
+        if (dto.feedItemId !== undefined) {
+            if (dto.feedItemId === null || dto.feedItemId === '' || !uuidValidate(dto.feedItemId)) {
+                if (dto.feedItemId) {
+                    console.warn(`[ArticlesService] Ignoring invalid feedItemId UUID: ${dto.feedItemId}`);
+                }
+                delete updateData.feedItemId;
+            }
+        }
 
         // Ensure status is correctly typed for enum
         if (dto.status) {

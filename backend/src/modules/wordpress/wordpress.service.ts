@@ -7,6 +7,9 @@ import { ArticlesService } from '../articles/articles.service';
 import axios from 'axios';
 import * as crypto from 'crypto';
 import sharp from 'sharp';
+import * as fs from 'fs';
+import * as path from 'path';
+import { validate as uuidValidate } from 'uuid';
 
 @Injectable()
 export class WordpressService {
@@ -346,6 +349,15 @@ export class WordpressService {
             throw new NotFoundException('No WordPress site connected. Please connect a site first.');
         }
 
+        const logToFile = (msg: string) => {
+            const logPath = path.join(process.cwd(), 'debug_publish.log');
+            const timestamp = new Date().toISOString();
+            fs.appendFileSync(logPath, `[${timestamp}] ${msg}\n`);
+        };
+
+        logToFile(`--- NEW PUBLISH REQUEST ---`);
+        logToFile(`User: ${userId}, ArticleId: ${dto.articleId}, Title: ${dto.title}`);
+
         try {
             const appPassword = this.decrypt(site.appPasswordEncrypted);
             const auth = Buffer.from(`${site.username}:${appPassword}`).toString('base64');
@@ -403,42 +415,36 @@ export class WordpressService {
                 if (dto.status === 'future') localStatus = 'SCHEDULED';
                 if (dto.status === 'draft') localStatus = 'DRAFT';
 
-                console.log(`[publishArticle] Preparing to update local DB. ArticleId: ${dto.articleId}, Target Status: ${localStatus}, UserId: ${userId}`);
-
                 const articleData: any = {
                     title: dto.title,
                     generatedContent: dto.content,
-                    originalContent: dto.originalContent || '',
-                    sourceUrl: dto.sourceUrl || '',
                     status: localStatus,
                     wpPostId: String(response.data.id),
                     wpPostUrl: response.data.link,
                     wpSiteId: site.id,
-                    feedItemId: dto.feedItemId,
                     metaTitle: dto.title,
                     slug: response.data.slug,
                     publishedAt: (localStatus === 'PUBLISHED' ? new Date() : null),
                 };
 
+                // Only include storage fields if we are creating a new record
+                if (!dto.articleId) {
+                    articleData.originalContent = dto.originalContent || '';
+                    articleData.sourceUrl = dto.sourceUrl || '';
+                    articleData.feedItemId = (dto.feedItemId && uuidValidate(dto.feedItemId)) ? dto.feedItemId : null;
+                }
+
                 if (dto.featuredImageUrl) {
                     articleData.featuredImageUrl = dto.featuredImageUrl;
                 }
 
-                // Log keys to avoid cluttering but see enough
-                console.log('[publishArticle] Article Data keys:', Object.keys(articleData));
-
                 if (dto.articleId) {
-                    console.log(`[publishArticle] Updating existing article ${dto.articleId}`);
-                    const updated = await this.articlesService.update(userId, dto.articleId, articleData);
-                    console.log(`[publishArticle] Update result: ${updated ? 'Success (Status: ' + updated.status + ')' : 'No record updated'}`);
+                    await this.articlesService.update(userId, dto.articleId, articleData);
                 } else {
-                    console.log('[publishArticle] Creating new article record');
-                    const created = await this.articlesService.create(userId, articleData);
-                    console.log(`[publishArticle] Create result: ${created ? 'Success (ID: ' + created.id + ')' : 'Failed'}`);
+                    await this.articlesService.create(userId, articleData);
                 }
             } catch (dbError: any) {
-                console.error('[publishArticle] DATABASE UPDATE FAILED CRITICALLY:', dbError.message || dbError);
-                if (dbError.stack) console.error(dbError.stack);
+                console.error('[publishArticle] Local DB update failed:', dbError.message || dbError);
             }
 
             return {
