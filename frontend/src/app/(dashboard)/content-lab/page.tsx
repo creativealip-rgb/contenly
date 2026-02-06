@@ -796,24 +796,6 @@ Source: ${article.url}`)
                                         Write down your keywords, topics, or a brief outline. AI will generate a fresh article based on this.
                                     </p>
                                 </div>
-                                <Button
-                                    onClick={handleAIRewrite}
-                                    disabled={isRewriting || !articleIdea.trim()}
-                                    className="w-full bg-violet-600 hover:bg-violet-700"
-                                >
-                                    {isRewriting ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Generating...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Sparkles className="mr-2 h-4 w-4" />
-                                            Generate Article
-                                        </>
-                                    )}
-                                </Button>
-                            </div>
                         </TabsContent>
                     </Tabs>
                 </CardContent>
@@ -919,7 +901,7 @@ Source: ${article.url}`)
                             {isRewriting ? (
                                 <>
                                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                    Rewriting...
+                                    Generating...
                                 </>
                             ) : (
                                 <>
