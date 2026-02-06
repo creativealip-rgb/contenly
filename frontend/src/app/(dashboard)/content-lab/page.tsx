@@ -91,6 +91,7 @@ export default function ContentLabPage() {
 
     // Publishing state
     const [isPublishing, setIsPublishing] = useState(false)
+    const [isRefreshingSEO, setIsRefreshingSEO] = useState(false)
 
     // Scheduling state
     const [isScheduleOpen, setIsScheduleOpen] = useState(false)
@@ -519,17 +520,40 @@ Source: ${article.url}`)
             .replace(/\-\-+/g, '-')
     }
 
-    const handleRefreshSEO = () => {
-        if (generatedTitle) {
+    const handleRefreshSEO = async () => {
+        if (!generatedContent || !generatedTitle) {
+            alert('Please generate content first')
+            return
+        }
+
+        setIsRefreshingSEO(true)
+        try {
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+            const response = await fetch(`${API_BASE_URL}/ai/generate-seo`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    title: generatedTitle,
+                    content: generatedContent,
+                }),
+            })
+
+            const result = await response.json()
+            if (result.metaTitle) setMetaTitle(result.metaTitle)
+            if (result.metaDescription) setMetaDescription(result.metaDescription)
+            if (result.slug) setSlug(result.slug)
+        } catch (error) {
+            console.error('SEO Refresh error:', error)
+            // Fallback to local if AI fails
             setMetaTitle(generatedTitle)
             setSlug(slugify(generatedTitle))
-        }
-        if (generatedContent) {
-            // Take first 160 chars, attempt to cut at last space
             let desc = generatedContent.substring(0, 160)
             const lastSpace = desc.lastIndexOf(' ')
             if (lastSpace > 0) desc = desc.substring(0, lastSpace)
             setMetaDescription(desc + '...')
+        } finally {
+            setIsRefreshingSEO(false)
         }
     }
 
@@ -993,8 +1017,14 @@ Source: ${article.url}`)
                 <Card>
                     <CardHeader className="pb-3 flex flex-row items-center justify-between">
                         <CardTitle className="text-lg">SEO Preview</CardTitle>
-                        <Button variant="ghost" size="sm" onClick={handleRefreshSEO} title="Refresh SEO Fields">
-                            <RefreshCw className="h-4 w-4" />
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleRefreshSEO}
+                            disabled={isRefreshingSEO || !generatedContent}
+                            title="Regenerate SEO with AI"
+                        >
+                            <RefreshCw className={`h-4 w-4 ${isRefreshingSEO ? 'animate-spin' : ''}`} />
                         </Button>
                     </CardHeader>
                     <CardContent className="space-y-4">

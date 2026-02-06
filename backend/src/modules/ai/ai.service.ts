@@ -82,7 +82,7 @@ export class AiService {
                 sourceUrl: dto.sourceUrl || '',
                 status: 'DRAFT',
                 // Only pass feedItemId if it's a valid UUID
-                feedItemId: (dto.feedItemId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(dto.feedItemId))
+                feedItemId: (dto.feedItemId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(dto.feedItemId))
                     ? dto.feedItemId
                     : undefined,
                 tokensUsed: 1,
