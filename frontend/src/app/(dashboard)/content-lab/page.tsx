@@ -796,6 +796,7 @@ Source: ${article.url}`)
                                         Write down your keywords, topics, or a brief outline. AI will generate a fresh article based on this.
                                     </p>
                                 </div>
+                            </div>
                         </TabsContent>
                     </Tabs>
                 </CardContent>
