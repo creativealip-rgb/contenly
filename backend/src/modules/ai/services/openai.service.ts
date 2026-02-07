@@ -85,9 +85,16 @@ export class OpenAiService {
             });
 
             const result = JSON.parse(response.choices[0]?.message?.content || '{}');
+            
+            // Fix nested <ul> structure
+            let fixedContent = result.content || '';
+            fixedContent = fixedContent.replace(/<ul>\s*<ul>/g, '<ul>');
+            fixedContent = fixedContent.replace(/<\/ul>\s*<\/ul>/g, '</ul>');
+            fixedContent = fixedContent.replace(/<ul>\s*<li>(.*?)<\/li>\s*<\/ul>/g, '<li>$1</li>');
+            
             return {
                 title: result.title || '',
-                content: result.content || '',
+                content: fixedContent,
                 metaDescription: result.metaDescription || '',
                 slug: result.slug || '',
             };
