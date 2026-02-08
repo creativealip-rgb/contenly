@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import { HttpsProxyAgent } from 'https-proxy-agent';
-import { CreateViewBoostJobDto, UpdateViewBoostJobDto } from './dto/view-boost-job.dto';
-import { db } from '../../db/drizzle';
+import { CreateViewBoostJobDto } from './dto/view-boost-job.dto';
+import { DrizzleService } from '../../db/drizzle.service';
 import { viewBoostJobs } from '../../db/schema';
 import { eq, and } from 'drizzle-orm';
 
@@ -13,8 +13,14 @@ export class ViewBoostService {
   private readonly logger = new Logger(ViewBoostService.name);
   private activeJobs = new Map<string, boolean>();
 
+  constructor(private readonly drizzleService: DrizzleService) {}
+
+  private get db() {
+    return this.drizzleService.db;
+  }
+
   async createJob(userId: string, dto: CreateViewBoostJobDto) {
-    const [job] = await db
+    const [job] = await this.db
       .insert(viewBoostJobs)
       .values({
         userId,
@@ -32,7 +38,7 @@ export class ViewBoostService {
   }
 
   async getJobs(userId: string) {
-    return db
+    return this.db
       .select()
       .from(viewBoostJobs)
       .where(eq(viewBoostJobs.userId, userId))
@@ -40,7 +46,7 @@ export class ViewBoostService {
   }
 
   async getJobById(id: string, userId: string) {
-    const [job] = await db
+    const [job] = await this.db
       .select()
       .from(viewBoostJobs)
       .where(and(eq(viewBoostJobs.id, id), eq(viewBoostJobs.userId, userId)))
@@ -58,7 +64,7 @@ export class ViewBoostService {
       throw new Error('Job already running');
     }
 
-    await db
+    await this.db
       .update(viewBoostJobs)
       .set({ status: 'running', startedAt: new Date() })
       .where(eq(viewBoostJobs.id, jobId));
@@ -74,7 +80,7 @@ export class ViewBoostService {
     }
 
     this.activeJobs.set(jobId, false);
-    await db
+    await this.db
       .update(viewBoostJobs)
       .set({ status: 'paused' })
       .where(eq(viewBoostJobs.id, jobId));
@@ -87,7 +93,7 @@ export class ViewBoostService {
     }
 
     this.activeJobs.set(jobId, false);
-    await db
+    await this.db
       .delete(viewBoostJobs)
       .where(eq(viewBoostJobs.id, jobId));
   }
@@ -137,7 +143,7 @@ export class ViewBoostService {
         await axios(config);
 
         currentViews++;
-        await db
+        await this.db
           .update(viewBoostJobs)
           .set({ currentViews })
           .where(eq(viewBoostJobs.id, job.id));
@@ -157,7 +163,7 @@ export class ViewBoostService {
     }
 
     if (currentViews >= job.targetViews) {
-      await db
+      await this.db
         .update(viewBoostJobs)
         .set({ status: 'completed', completedAt: new Date() })
         .where(eq(viewBoostJobs.id, job.id));
