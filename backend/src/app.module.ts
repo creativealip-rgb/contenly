@@ -21,6 +21,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { CategoryMappingModule } from './modules/category-mapping/category-mapping.module';
+import { ViewBoostModule } from './modules/view-boost/view-boost.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { CategoryMappingModule } from './modules/category-mapping/category-mappi
     AnalyticsModule,
     IntegrationsModule,
     CategoryMappingModule,
+    ViewBoostModule,
   ],
   controllers: [AppController],
   providers: [AppService],
