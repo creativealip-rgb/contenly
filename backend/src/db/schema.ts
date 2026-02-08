@@ -15,6 +15,7 @@ export const transactionStatusEnum = pgEnum('transaction_status', ['PENDING', 'C
 export const subscriptionPlanEnum = pgEnum('subscription_plan', ['FREE_TRIAL', 'PRO', 'ENTERPRISE']);
 export const subscriptionStatusEnum = pgEnum('subscription_status', ['ACTIVE', 'PAST_DUE', 'CANCELED', 'EXPIRED']);
 export const notificationTypeEnum = pgEnum('notification_type', ['JOB_SUCCESS', 'JOB_FAILED', 'LOW_TOKENS', 'SUBSCRIPTION_EXPIRING', 'SYSTEM']);
+export const viewBoostStatusEnum = pgEnum('view_boost_status', ['pending', 'running', 'completed', 'failed', 'paused']);
 
 // ==========================================
 // BETTER AUTH TABLES (Required)
@@ -224,6 +225,27 @@ export const notification = pgTable('notification', {
 });
 
 // ==========================================
+// VIEW BOOST TABLE
+// ==========================================
+
+export const viewBoostJobs = pgTable('view_boost_jobs', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+    url: text('url').notNull(),
+    targetViews: integer('target_views').notNull(),
+    currentViews: integer('current_views').default(0),
+    status: viewBoostStatusEnum('status').default('pending'),
+    proxyList: text('proxy_list'),
+    delayMin: integer('delay_min').default(5),
+    delayMax: integer('delay_max').default(30),
+    errorMessage: text('error_message'),
+    startedAt: timestamp('started_at'),
+    completedAt: timestamp('completed_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// ==========================================
 // RELATIONS
 // ==========================================
 
@@ -279,4 +301,5 @@ export const schema = {
     transaction,
     subscription,
     notification,
+    viewBoostJobs,
 };

@@ -1,46 +1,51 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import axios from 'axios';
 import { HttpsProxyAgent } from 'https-proxy-agent';
-import { ViewBoostJob, ViewBoostStatus } from './entities/view-boost-job.entity';
 import { CreateViewBoostJobDto, UpdateViewBoostJobDto } from './dto/view-boost-job.dto';
+import { db } from '../../db/drizzle';
+import { viewBoostJobs } from '../../db/schema';
+import { eq, and } from 'drizzle-orm';
+
+export type ViewBoostStatus = 'pending' | 'running' | 'completed' | 'failed' | 'paused';
 
 @Injectable()
 export class ViewBoostService {
   private readonly logger = new Logger(ViewBoostService.name);
   private activeJobs = new Map<string, boolean>();
 
-  constructor(
-    @InjectRepository(ViewBoostJob)
-    private viewBoostJobRepository: Repository<ViewBoostJob>,
-  ) {}
+  async createJob(userId: string, dto: CreateViewBoostJobDto) {
+    const [job] = await db
+      .insert(viewBoostJobs)
+      .values({
+        userId,
+        url: dto.url,
+        targetViews: dto.targetViews,
+        proxyList: dto.proxyList || '',
+        delayMin: dto.delayMin || 5,
+        delayMax: dto.delayMax || 30,
+        status: 'pending',
+        currentViews: 0,
+      })
+      .returning();
 
-  async createJob(userId: string, dto: CreateViewBoostJobDto): Promise<ViewBoostJob> {
-    const job = this.viewBoostJobRepository.create({
-      userId,
-      url: dto.url,
-      targetViews: dto.targetViews,
-      proxyList: dto.proxyList || '',
-      delayMin: dto.delayMin || 5,
-      delayMax: dto.delayMax || 30,
-      status: ViewBoostStatus.PENDING,
-    });
-
-    return this.viewBoostJobRepository.save(job);
+    return job;
   }
 
-  async getJobs(userId: string): Promise<ViewBoostJob[]> {
-    return this.viewBoostJobRepository.find({
-      where: { userId },
-      order: { createdAt: 'DESC' },
-    });
+  async getJobs(userId: string) {
+    return db
+      .select()
+      .from(viewBoostJobs)
+      .where(eq(viewBoostJobs.userId, userId))
+      .orderBy(viewBoostJobs.createdAt);
   }
 
-  async getJobById(id: string, userId: string): Promise<ViewBoostJob> {
-    return this.viewBoostJobRepository.findOne({
-      where: { id, userId },
-    });
+  async getJobById(id: string, userId: string) {
+    const [job] = await db
+      .select()
+      .from(viewBoostJobs)
+      .where(and(eq(viewBoostJobs.id, id), eq(viewBoostJobs.userId, userId)))
+      .limit(1);
+    return job;
   }
 
   async startJob(jobId: string, userId: string): Promise<void> {
@@ -49,14 +54,14 @@ export class ViewBoostService {
       throw new Error('Job not found');
     }
 
-    if (job.status === ViewBoostStatus.RUNNING) {
+    if (job.status === 'running') {
       throw new Error('Job already running');
     }
 
-    await this.viewBoostJobRepository.update(jobId, {
-      status: ViewBoostStatus.RUNNING,
-      startedAt: new Date(),
-    });
+    await db
+      .update(viewBoostJobs)
+      .set({ status: 'running', startedAt: new Date() })
+      .where(eq(viewBoostJobs.id, jobId));
 
     this.activeJobs.set(jobId, true);
     this.runJob(job);
@@ -69,9 +74,10 @@ export class ViewBoostService {
     }
 
     this.activeJobs.set(jobId, false);
-    await this.viewBoostJobRepository.update(jobId, {
-      status: ViewBoostStatus.PAUSED,
-    });
+    await db
+      .update(viewBoostJobs)
+      .set({ status: 'paused' })
+      .where(eq(viewBoostJobs.id, jobId));
   }
 
   async deleteJob(jobId: string, userId: string): Promise<void> {
@@ -81,10 +87,12 @@ export class ViewBoostService {
     }
 
     this.activeJobs.set(jobId, false);
-    await this.viewBoostJobRepository.delete(jobId);
+    await db
+      .delete(viewBoostJobs)
+      .where(eq(viewBoostJobs.id, jobId));
   }
 
-  private async runJob(job: ViewBoostJob): Promise<void> {
+  private async runJob(job: any): Promise<void> {
     const proxies = job.proxyList
       ? job.proxyList.split('\n').filter(p => p.trim())
       : [];
@@ -97,7 +105,9 @@ export class ViewBoostService {
       'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     ];
 
-    while (this.activeJobs.get(job.id) && job.currentViews < job.targetViews) {
+    let currentViews = job.currentViews;
+
+    while (this.activeJobs.get(job.id) && currentViews < job.targetViews) {
       try {
         const userAgent = userAgents[Math.floor(Math.random() * userAgents.length)];
         const proxy = proxies.length > 0
@@ -126,12 +136,13 @@ export class ViewBoostService {
 
         await axios(config);
 
-        job.currentViews++;
-        await this.viewBoostJobRepository.update(job.id, {
-          currentViews: job.currentViews,
-        });
+        currentViews++;
+        await db
+          .update(viewBoostJobs)
+          .set({ currentViews })
+          .where(eq(viewBoostJobs.id, job.id));
 
-        this.logger.log(`Job ${job.id}: View ${job.currentViews}/${job.targetViews}`);
+        this.logger.log(`Job ${job.id}: View ${currentViews}/${job.targetViews}`);
 
         // Random delay between requests
         const delay = Math.floor(
@@ -141,16 +152,15 @@ export class ViewBoostService {
 
       } catch (error) {
         this.logger.error(`Job ${job.id} error: ${error.message}`);
-        // Continue to next attempt
         await this.sleep(5000);
       }
     }
 
-    if (job.currentViews >= job.targetViews) {
-      await this.viewBoostJobRepository.update(job.id, {
-        status: ViewBoostStatus.COMPLETED,
-        completedAt: new Date(),
-      });
+    if (currentViews >= job.targetViews) {
+      await db
+        .update(viewBoostJobs)
+        .set({ status: 'completed', completedAt: new Date() })
+        .where(eq(viewBoostJobs.id, job.id));
     }
 
     this.activeJobs.delete(job.id);
