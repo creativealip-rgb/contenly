@@ -14,7 +14,7 @@ import { CreateViewBoostJobDto } from './dto/view-boost-job.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 @ApiTags('View Boost')
-@Controller('api/view-boost')
+@Controller('view-boost')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class ViewBoostController {
