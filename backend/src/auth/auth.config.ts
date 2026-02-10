@@ -122,8 +122,13 @@ export const auth = betterAuth({
     // Advanced configuration
     advanced: {
         defaultCookieAttributes: {
-            sameSite: "none",
-            secure: true, // Required for SameSite: None, works on localhost too
+            sameSite: "lax", // Changed from "none" to "lax" for proxy compatibility
+            secure: true,
+        },
+        useSecureCookies: true,
+        // Trust proxy headers from Traefik
+        crossSubdomainCookies: {
+            enabled: false,
         },
     },
     plugins: [
