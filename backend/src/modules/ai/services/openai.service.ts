@@ -60,7 +60,7 @@ export class OpenAiService {
 5. LANGUAGE: Indonesian (Bahasa Indonesia).
 6. Return a VALID JSON object containing:
    - "title": An engaging, unique, and SEO-friendly title. It MUST be different and more catchy than any source title provided.
-   - "content": The rewrite/generated article body in HTML format. Use ONLY <h2>, <p>, <ul>, <li>, <strong>, and <a> tags. DO NOT use <h1>. Start directly with an introductory paragraph.
+   - "content": The rewrite/generated article body in HTML format. Use ONLY <h2>, <p>, <ul>, <li>, <strong>, and <a> tags. DO NOT use <h1>. Start directly with an introductory paragraph. IMPORTANT: Use <ul><li>item1</li><li>item2</li></ul> format. DO NOT nest <ul> inside <li> or use multiple nested <ul> tags.
    - "metaDescription": A compelling SEO meta description (150-160 characters).
    - "slug": A URL-friendly slug based on the new title.
 7. CRITICAL: DO NOT use Markdown formatting.
@@ -85,9 +85,16 @@ export class OpenAiService {
             });
 
             const result = JSON.parse(response.choices[0]?.message?.content || '{}');
+            
+            // Fix nested <ul> structure
+            let fixedContent = result.content || '';
+            fixedContent = fixedContent.replace(/<ul>\s*<ul>/g, '<ul>');
+            fixedContent = fixedContent.replace(/<\/ul>\s*<\/ul>/g, '</ul>');
+            fixedContent = fixedContent.replace(/<ul>\s*<li>(.*?)<\/li>\s*<\/ul>/g, '<li>$1</li>');
+            
             return {
                 title: result.title || '',
-                content: result.content || '',
+                content: fixedContent,
                 metaDescription: result.metaDescription || '',
                 slug: result.slug || '',
             };

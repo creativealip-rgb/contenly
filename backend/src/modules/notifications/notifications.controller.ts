@@ -1,13 +1,10 @@
-import { Controller, Get, Patch, Param, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Patch, Param } from '@nestjs/common';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
-import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { User } from '../../db/types';
 
 @ApiTags('notifications')
-@ApiBearerAuth()
-@UseGuards(SessionAuthGuard)
 @Controller('notifications')
 export class NotificationsController {
     constructor(private notificationsService: NotificationsService) { }
