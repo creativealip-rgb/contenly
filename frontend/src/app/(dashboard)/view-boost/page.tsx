@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Play, Pause, Trash2, Plus, Zap, ShieldCheck } from 'lucide-react';
+import { Play, Pause, Trash2, Plus, Zap, ShieldCheck, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AdminGuard } from '@/components/guards';
@@ -27,6 +27,7 @@ interface ViewBoostJob {
 export default function ViewBoostPage() {
   const [jobs, setJobs] = useState<ViewBoostJob[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isTableLoading, setIsTableLoading] = useState(true);
   const [formData, setFormData] = useState({
     url: '',
     targetViews: 100,
@@ -48,6 +49,8 @@ export default function ViewBoostPage() {
       setJobs(response.data);
     } catch (error) {
       console.error('Failed to fetch jobs:', error);
+    } finally {
+      setIsTableLoading(false);
     }
   };
 
@@ -243,7 +246,15 @@ export default function ViewBoostPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {jobs.length === 0 ? (
+                {isTableLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-12 text-center">
+                      <div className="flex justify-center">
+                        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : jobs.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center text-muted-foreground">
                       No jobs yet. Create one above!

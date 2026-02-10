@@ -13,7 +13,11 @@ export class FeedPollerService {
         this.parser = new Parser({
             timeout: 30000,
             headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache',
             },
         });
     }
@@ -35,8 +39,35 @@ export class FeedPollerService {
                 throw new Error(`Feed not found: ${feedId}`);
             }
 
-            // Parse RSS feed
-            const rssFeed = await this.parser.parseURL(feedData.url);
+            // Parse RSS feed with simple discovery
+            let rssFeed;
+            const urlsToTry = [
+                feedData.url,
+                feedData.url.endsWith('/') ? `${feedData.url}feed/` : `${feedData.url}/feed/`,
+                feedData.url.endsWith('/') ? `${feedData.url}rss/` : `${feedData.url}/rss/`,
+                feedData.url.endsWith('/') ? `${feedData.url}feed.xml` : `${feedData.url}/feed.xml`,
+            ];
+
+            let lastError;
+            for (const url of urlsToTry) {
+                try {
+                    this.logger.log(`Trying to parse RSS from: ${url}`);
+                    rssFeed = await this.parser.parseURL(url);
+                    if (rssFeed) {
+                        this.logger.log(`Successfully found feed at: ${url}`);
+                        // If we found it at a different URL, we could optionally update the feed record
+                        break;
+                    }
+                } catch (err) {
+                    lastError = err;
+                    continue;
+                }
+            }
+
+            if (!rssFeed) {
+                throw lastError || new Error('Could not find a valid RSS feed at this URL');
+            }
+
             this.logger.log(`Fetched ${rssFeed.items.length} items from ${feedData.url}`);
 
             let newItemCount = 0;

@@ -84,8 +84,10 @@ async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
 export default function IntegrationsPage() {
     const [isAddOpen, setIsAddOpen] = useState(false)
     const [sites, setSites] = useState<WordPressSite[]>([])
+    const [isLoadingSites, setIsLoadingSites] = useState(true)
     const [isRefreshingCategories, setIsRefreshingCategories] = useState(false)
     const [categoryMappings, setCategoryMappings] = useState<Array<{ source: string; target: string; wpCategoryId?: number }>>([])
+    const [isLoadingMappings, setIsLoadingMappings] = useState(true)
 
     // Form state
     const [formData, setFormData] = useState({
@@ -104,6 +106,7 @@ export default function IntegrationsPage() {
     }, [])
 
     const loadCategoryMappings = async () => {
+        setIsLoadingMappings(true)
         try {
             console.log('[loadCategoryMappings] Fetching from backend...')
             const data = await fetchWithAuth('/category-mapping')
@@ -121,12 +124,13 @@ export default function IntegrationsPage() {
             } else {
                 console.warn('[loadCategoryMappings] Data is not an array:', data)
             }
-        } catch (error) {
-            console.error('Failed to load category mappings:', error)
+        } finally {
+            setIsLoadingMappings(false)
         }
     }
 
     const fetchSites = async () => {
+        setIsLoadingSites(true)
         try {
             const data = await fetchWithAuth('/wordpress/sites')
             if (Array.isArray(data)) {
@@ -149,8 +153,8 @@ export default function IntegrationsPage() {
                     localStorage.setItem('contently_wp_sites', JSON.stringify(sitesForLocalStorage))
                 }
             }
-        } catch (error) {
-            console.error('Failed to fetch sites:', error)
+        } finally {
+            setIsLoadingSites(false)
         }
     }
 
@@ -411,7 +415,11 @@ export default function IntegrationsPage() {
                     <CardDescription>Your WordPress integrations</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {sites.length === 0 ? (
+                    {isLoadingSites ? (
+                        <div className="flex justify-center py-12">
+                            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                        </div>
+                    ) : sites.length === 0 ? (
                         <div className="text-center py-8 text-muted-foreground">
                             <Plug className="h-12 w-12 mx-auto mb-3 opacity-20" />
                             <p>No sites connected yet. Click "Add Site" to start.</p>
@@ -505,24 +513,40 @@ export default function IntegrationsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {categoryMappings.map((mapping, index) => (
-                                <TableRow key={index}>
-                                    <TableCell>
-                                        <Badge variant="outline">{mapping.source}</Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge className="bg-blue-500/10 text-blue-600">{mapping.target}</Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <Button variant="ghost" size="icon" className="text-red-600 hover:text-red-600">
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
+                            {isLoadingMappings ? (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="py-12">
+                                        <div className="flex justify-center">
+                                            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                                        </div>
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            ) : categoryMappings.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                                        No category mappings found. Refresh categories to start.
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                categoryMappings.map((mapping, index) => (
+                                    <TableRow key={index}>
+                                        <TableCell>
+                                            <Badge variant="outline">{mapping.source}</Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge className="bg-blue-500/10 text-blue-600">{mapping.target}</Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <Button variant="ghost" size="icon" className="text-red-600 hover:text-red-600">
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
                         </TableBody>
                     </Table>
                 </CardContent>

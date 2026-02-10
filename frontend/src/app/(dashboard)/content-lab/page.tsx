@@ -773,7 +773,7 @@ Source: ${article.url}`)
                                         disabled={isScraping || !scrapeUrl}
                                         className="bg-blue-600 hover:bg-blue-700"
                                     >
-                                        {isScraping ? <Loader2 className="h-4 w-4 animate-spin" /> : "Scrape"}
+                                        {isScraping ? <Loader2 className="h-4 w-4 animate-spin text-blue-600" /> : "Scrape"}
                                     </Button>
                                 </div>
                                 <p className="text-xs text-muted-foreground">
@@ -901,7 +901,7 @@ Source: ${article.url}`)
                         >
                             {isRewriting ? (
                                 <>
-                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin text-blue-600" />
                                     Generating...
                                 </>
                             ) : (
@@ -1160,7 +1160,7 @@ Source: ${article.url}`)
                                 onClick={() => handlePublishNow('draft')}
                                 disabled={!generatedContent || isPublishing}
                             >
-                                {isPublishing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Draft"}
+                                {isPublishing ? <Loader2 className="h-4 w-4 animate-spin text-blue-600" /> : "Save Draft"}
                             </Button>
                             <Button
                                 className="w-full bg-gradient-to-r from-blue-600 to-blue-700"
@@ -1168,7 +1168,7 @@ Source: ${article.url}`)
                                 disabled={!generatedContent || isPublishing}
                             >
                                 {isPublishing ? (
-                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin text-blue-600" />
                                 ) : (
                                     <Send className="h-4 w-4 mr-2" />
                                 )}

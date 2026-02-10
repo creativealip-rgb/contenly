@@ -33,10 +33,23 @@ export class FeedsController {
         return this.feedsService.delete(user.id, id);
     }
 
+    @Post(':id')
+    @ApiOperation({ summary: 'Update RSS feed' })
+    async update(
+        @CurrentUser() user: User,
+        @Param('id') id: string,
+        @Body() dto: { name?: string; url?: string; pollingIntervalMinutes?: number; status?: string },
+    ) {
+        return this.feedsService.update(user.id, id, dto);
+    }
+
     @Post(':id/poll')
     @ApiOperation({ summary: 'Manually trigger feed polling' })
     async pollFeed(@Param('id') id: string) {
-        await this.feedsService.triggerPoll(id);
-        return { message: 'Feed polling initiated' };
+        const result = await this.feedsService.triggerPoll(id);
+        return {
+            message: 'Feed polling completed',
+            data: result
+        };
     }
 }
