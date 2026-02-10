@@ -11,7 +11,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 })
 
 export const viewport: Viewport = {
-  themeColor: '#7c3aed',
+  themeColor: '#2563eb',
 }
 
 export const metadata: Metadata = {
