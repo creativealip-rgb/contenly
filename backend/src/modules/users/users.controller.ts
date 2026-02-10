@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { UpdateUserDto, CreateApiKeyDto } from './dto';
 import { AuthGuard } from '../../common/guards/auth.guard';
+import { SuperAdminGuard } from '../../common/guards/super-admin.guard';
 import type { Request } from 'express';
 
 @ApiTags('users')
@@ -63,5 +64,47 @@ export class UsersController {
     async revokeApiKey(@Req() req: Request, @Param('id') keyId: string) {
         const userId = (req as any).user?.id;
         return this.usersService.revokeApiKey(userId, keyId);
+    }
+
+    // ==========================================
+    // SUPER ADMIN ENDPOINTS
+    // ==========================================
+
+    @Get('admin/list')
+    @UseGuards(SuperAdminGuard)
+    @ApiOperation({ summary: 'List all users (Super Admin only)' })
+    async listUsers() {
+        console.log('[UsersController] listUsers requested');
+        const users = await this.usersService.findAll();
+        console.log(`[UsersController] Returning ${users?.length || 0} users`);
+        return users;
+    }
+
+    @Post('admin/users')
+    @UseGuards(SuperAdminGuard)
+    @ApiOperation({ summary: 'Create new user (Super Admin only)' })
+    async createUser(@Body() dto: { name: string; email: string; role: string; password?: string }) {
+        return this.usersService.createUser(dto);
+    }
+
+    @Patch('admin/:id/role')
+    @UseGuards(SuperAdminGuard)
+    @ApiOperation({ summary: 'Update user role (Super Admin only)' })
+    async updateRole(@Param('id') id: string, @Body('role') role: string) {
+        return this.usersService.updateRole(id, role);
+    }
+
+    @Patch('admin/:id/tokens')
+    @UseGuards(SuperAdminGuard)
+    @ApiOperation({ summary: 'Add tokens to user (Super Admin only)' })
+    async addTokens(@Param('id') id: string, @Body('amount') amount: number) {
+        return this.usersService.addTokens(id, amount);
+    }
+
+    @Delete('admin/:id')
+    @UseGuards(SuperAdminGuard)
+    @ApiOperation({ summary: 'Delete user (Super Admin only)' })
+    async deleteUser(@Param('id') id: string) {
+        return this.usersService.delete(id);
     }
 }

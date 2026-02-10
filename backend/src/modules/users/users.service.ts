@@ -5,6 +5,7 @@ import { user, apiKey, tokenBalance } from '../../db/schema';
 import { UpdateUserDto } from './dto';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
+import { auth } from '../../auth/auth.config';
 
 @Injectable()
 export class UsersService {
@@ -104,5 +105,83 @@ export class UsersService {
 
         await this.db.delete(apiKey).where(eq(apiKey.id, keyId));
         return { message: 'API key revoked' };
+    }
+
+    // ==========================================
+    // SUPER ADMIN METHODS
+    // ==========================================
+
+    async findAll() {
+        console.log('[UsersService] Fetching all users from DB...');
+        const users = await this.db.query.user.findMany({
+            with: {
+                tokenBalance: true,
+            },
+            orderBy: (user, { desc }) => [desc(user.createdAt)],
+        });
+        console.log(`[UsersService] Found ${users.length} users`);
+        return users;
+    }
+
+    async createUser(dto: { name: string; email: string; role: string; password?: string }) {
+        console.log(`[UsersService] Creating user: ${dto.email} with role ${dto.role}`);
+
+        // Better Auth admin API to create user
+        const result = await auth.api.createUser({
+            body: {
+                email: dto.email,
+                password: dto.password || 'TemporaryPassword123!',
+                name: dto.name,
+                role: dto.role,
+            }
+        });
+
+        if (!result) {
+            throw new Error('Failed to create user via Better Auth');
+        }
+
+        return result;
+    }
+
+    async updateRole(id: string, role: string) {
+        const [updated] = await this.db
+            .update(user)
+            .set({
+                role: role as any,
+                updatedAt: new Date(),
+            })
+            .where(eq(user.id, id))
+            .returning();
+        return updated;
+    }
+
+    async addTokens(userId: string, amount: number) {
+        const balance = await this.db.query.tokenBalance.findFirst({
+            where: eq(tokenBalance.userId, userId),
+        });
+
+        if (!balance) {
+            // Create balance if it doesn't exist
+            const [newBalance] = await this.db.insert(tokenBalance).values({
+                userId,
+                balance: amount,
+            }).returning();
+            return newBalance;
+        }
+
+        const [updated] = await this.db
+            .update(tokenBalance)
+            .set({
+                balance: (balance.balance || 0) + amount,
+                updatedAt: new Date(),
+            })
+            .where(eq(tokenBalance.userId, userId))
+            .returning();
+        return updated;
+    }
+
+    async delete(id: string) {
+        await this.db.delete(user).where(eq(user.id, id));
+        return { message: 'User deleted successfully' };
     }
 }

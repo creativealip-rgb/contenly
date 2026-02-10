@@ -5,11 +5,11 @@ import { relations } from 'drizzle-orm';
 // ENUMS
 // ==========================================
 
-export const userRoleEnum = pgEnum('user_role', ['USER', 'ADMIN']);
+export const userRoleEnum = pgEnum('user_role', ['USER', 'ADMIN', 'SUPER_ADMIN']);
 export const wpSiteStatusEnum = pgEnum('wp_site_status', ['PENDING', 'CONNECTED', 'ERROR', 'DISCONNECTED']);
 export const feedStatusEnum = pgEnum('feed_status', ['ACTIVE', 'PAUSED', 'ERROR']);
 export const feedItemStatusEnum = pgEnum('feed_item_status', ['PENDING', 'PROCESSING', 'PROCESSED', 'SKIPPED', 'ERROR']);
-export const articleStatusEnum = pgEnum('article_status', ['DRAFT', 'GENERATING', 'READY', 'PUBLISHING', 'PUBLISHED', 'SCHEDULED', 'FAILED']);
+export const articleStatusEnum = pgEnum('article_status', ['DRAFT', 'GENERATING', 'GENERATED', 'READY', 'PUBLISHING', 'PUBLISHED', 'SCHEDULED', 'FAILED']);
 export const transactionTypeEnum = pgEnum('transaction_type', ['PURCHASE', 'USAGE', 'REFUND', 'SUBSCRIPTION_CREDIT']);
 export const transactionStatusEnum = pgEnum('transaction_status', ['PENDING', 'COMPLETED', 'FAILED', 'REFUNDED']);
 export const subscriptionPlanEnum = pgEnum('subscription_plan', ['FREE_TRIAL', 'PRO', 'ENTERPRISE']);
@@ -285,6 +285,22 @@ export const articleRelations = relations(article, ({ one }) => ({
     user: one(user, { fields: [article.userId], references: [user.id] }),
     feedItem: one(feedItem, { fields: [article.feedItemId], references: [feedItem.id] }),
     wpSite: one(wpSite, { fields: [article.wpSiteId], references: [wpSite.id] }),
+}));
+
+export const tokenBalanceRelations = relations(tokenBalance, ({ one }) => ({
+    user: one(user, { fields: [tokenBalance.userId], references: [user.id] }),
+}));
+
+export const transactionRelations = relations(transaction, ({ one }) => ({
+    user: one(user, { fields: [transaction.userId], references: [user.id] }),
+}));
+
+export const subscriptionRelations = relations(subscription, ({ one }) => ({
+    user: one(user, { fields: [subscription.userId], references: [user.id] }),
+}));
+
+export const notificationRelations = relations(notification, ({ one }) => ({
+    user: one(user, { fields: [notification.userId], references: [user.id] }),
 }));
 
 // Export all schemas for Better Auth

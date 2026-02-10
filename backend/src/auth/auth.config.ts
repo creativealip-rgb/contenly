@@ -125,6 +125,18 @@ export const auth = betterAuth({
             secure: true, // Required for SameSite: None, works on localhost too
         },
     },
+    plugins: [
+        /**
+         * The admin plugin allows you to manage users, sessions, and other 
+         * administrative tasks.
+         */
+        {
+            id: "admin",
+            options: {
+                // We'll define who is admin in the guard, but plugin needs to be enabled
+            }
+        }
+    ]
 });
 
 console.log('🔐 Better Auth initialized');
