@@ -143,7 +143,7 @@ export default function FeedsPage() {
                 </div>
                 <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
                     <DialogTrigger asChild>
-                        <Button className="bg-gradient-to-r from-violet-600 to-indigo-600">
+                        <Button className="bg-gradient-to-r from-blue-600 to-blue-700">
                             <Plus className="h-4 w-4 mr-2" />
                             Add Feed
                         </Button>
@@ -193,7 +193,7 @@ export default function FeedsPage() {
                         <DialogFooter>
                             <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancel</Button>
                             <Button
-                                className="bg-gradient-to-r from-violet-600 to-indigo-600"
+                                className="bg-gradient-to-r from-blue-600 to-blue-700"
                                 onClick={handleAddFeed}
                                 disabled={!newFeedName || !newFeedUrl}
                             >
@@ -209,8 +209,8 @@ export default function FeedsPage() {
                 <Card>
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-violet-500/10">
-                                <Rss className="h-6 w-6 text-violet-600" />
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-blue-500/10">
+                                <Rss className="h-6 w-6 text-blue-600" />
                             </div>
                             <div className="min-w-0">
                                 <p className="text-2xl font-bold truncate">{feeds.length}</p>

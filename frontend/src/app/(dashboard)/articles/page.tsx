@@ -131,8 +131,8 @@ export default function ArticlesPage() {
                 <Card>
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-violet-500/10">
-                                <FileText className="h-6 w-6 text-violet-600" />
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-blue-500/10">
+                                <FileText className="h-6 w-6 text-blue-600" />
                             </div>
                             <div className="min-w-0">
                                 <p className="text-2xl font-bold truncate">{stats.total}</p>

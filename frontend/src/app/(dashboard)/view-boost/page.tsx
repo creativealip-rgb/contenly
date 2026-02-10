@@ -218,7 +218,7 @@ export default function ViewBoostPage() {
                 </div>
               </div>
 
-              <Button type="submit" disabled={loading} className="w-full">
+              <Button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700">
                 <Plus className="w-4 h-4 mr-2" />
                 {loading ? 'Creating...' : 'Create Job'}
               </Button>

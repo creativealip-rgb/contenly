@@ -323,7 +323,7 @@ export default function IntegrationsPage() {
                 </div>
                 <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
                     <DialogTrigger asChild>
-                        <Button className="bg-gradient-to-r from-violet-600 to-indigo-600">
+                        <Button className="bg-gradient-to-r from-blue-600 to-blue-700">
                             <Plus className="h-4 w-4 mr-2" />
                             Add Site
                         </Button>
@@ -386,7 +386,7 @@ export default function IntegrationsPage() {
                         <DialogFooter>
                             <Button variant="outline" onClick={() => setIsAddOpen(false)} disabled={isTesting}>Cancel</Button>
                             <Button
-                                className="bg-gradient-to-r from-violet-600 to-indigo-600"
+                                className="bg-gradient-to-r from-blue-600 to-blue-700"
                                 onClick={handleAddSite}
                                 disabled={isTesting}
                             >
@@ -514,7 +514,7 @@ export default function IntegrationsPage() {
                                         <ArrowRight className="h-4 w-4 text-muted-foreground" />
                                     </TableCell>
                                     <TableCell>
-                                        <Badge className="bg-violet-500/10 text-violet-600">{mapping.target}</Badge>
+                                        <Badge className="bg-blue-500/10 text-blue-600">{mapping.target}</Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <Button variant="ghost" size="icon" className="text-red-600 hover:text-red-600">

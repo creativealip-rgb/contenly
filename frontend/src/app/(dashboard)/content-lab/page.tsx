@@ -643,10 +643,10 @@ Source: ${article.url}`)
             </div>
 
             {/* Source Selection Card */}
-            <Card className="border-violet-100 dark:border-violet-900 shadow-sm">
+            <Card className="border-blue-100 dark:border-blue-900 shadow-sm">
                 <CardHeader>
                     <CardTitle className="text-xl flex items-center gap-2">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
                             1
                         </span>
                         Choose Source
@@ -678,7 +678,7 @@ Source: ${article.url}`)
                                     <Label>Select Source</Label>
                                     <Dialog open={isAddFeedOpen} onOpenChange={setIsAddFeedOpen}>
                                         <DialogTrigger asChild>
-                                            <Button variant="ghost" size="sm" className="text-violet-600 h-6 px-2 hover:bg-violet-50">
+                                            <Button variant="ghost" size="sm" className="text-blue-600 h-6 px-2 hover:bg-blue-50">
                                                 <Plus className="h-4 w-4 mr-1" /> Add Source
                                             </Button>
                                         </DialogTrigger>
@@ -719,7 +719,7 @@ Source: ${article.url}`)
                                     setSelectedArticle(null)
                                     setSourceContent('')
                                 }}>
-                                    <SelectTrigger className="border-violet-200 focus:ring-violet-500">
+                                    <SelectTrigger className="border-blue-200 focus:ring-blue-500">
                                         <SelectValue placeholder="Select a feed..." />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -771,7 +771,7 @@ Source: ${article.url}`)
                                     <Button
                                         onClick={handleScrape}
                                         disabled={isScraping || !scrapeUrl}
-                                        className="bg-violet-600 hover:bg-violet-700"
+                                        className="bg-blue-600 hover:bg-blue-700"
                                     >
                                         {isScraping ? <Loader2 className="h-4 w-4 animate-spin" /> : "Scrape"}
                                     </Button>
@@ -803,10 +803,10 @@ Source: ${article.url}`)
             </Card>
 
             {/* AI Configuration */}
-            <Card className="border-violet-100 dark:border-violet-900 shadow-sm">
+            <Card className="border-blue-100 dark:border-blue-900 shadow-sm">
                 <CardHeader>
                     <CardTitle className="text-xl flex items-center gap-2">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
                             2
                         </span>
                         AI Configuration
@@ -895,7 +895,7 @@ Source: ${article.url}`)
 
                     <div className="flex items-end">
                         <Button
-                            className="w-full h-10 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700"
+                            className="w-full h-10 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
                             onClick={handleAIRewrite}
                             disabled={(activeTab === 'idea' ? !articleIdea.trim() : !sourceContent) || isRewriting}
                         >
@@ -935,8 +935,8 @@ Source: ${article.url}`)
                             {isScanning || isScraping ? (
                                 <div className="flex-1 flex flex-col items-center justify-center py-12">
                                     <div className="relative">
-                                        <div className="h-12 w-12 rounded-full border-4 border-violet-100 dark:border-violet-900/30"></div>
-                                        <div className="absolute top-0 left-0 h-12 w-12 rounded-full border-4 border-violet-600 border-t-transparent animate-spin"></div>
+                                        <div className="h-12 w-12 rounded-full border-4 border-blue-100 dark:border-blue-900/30"></div>
+                                        <div className="absolute top-0 left-0 h-12 w-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
                                     </div>
                                     <p className="mt-4 text-sm font-medium text-muted-foreground animate-pulse">Fetching content...</p>
                                 </div>
@@ -1064,10 +1064,10 @@ Source: ${article.url}`)
                                     <div className="relative">
                                         <Button
                                             variant="outline"
-                                            className="w-full h-32 flex flex-col items-center justify-center gap-3 border-dashed border-2 hover:bg-violet-50 hover:border-violet-200 transition-all"
+                                            className="w-full h-32 flex flex-col items-center justify-center gap-3 border-dashed border-2 hover:bg-blue-50 hover:border-blue-200 transition-all"
                                             onClick={() => document.getElementById('featured-image-upload')?.click()}
                                         >
-                                            <div className="p-3 bg-violet-100 rounded-full text-violet-600">
+                                            <div className="p-3 bg-blue-100 rounded-full text-blue-600">
                                                 <ImageIcon className="h-6 w-6" />
                                             </div>
                                             <div className="text-center">
@@ -1094,7 +1094,7 @@ Source: ${article.url}`)
                                     </div>
                                 </div>
                             ) : (
-                                <div className="relative rounded-lg border-2 border-violet-100 overflow-hidden group aspect-video">
+                                <div className="relative rounded-lg border-2 border-blue-100 overflow-hidden group aspect-video">
                                     <img src={featuredImage} alt="Featured" className="w-full h-full object-cover" />
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                         <Button
@@ -1163,7 +1163,7 @@ Source: ${article.url}`)
                                 {isPublishing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Draft"}
                             </Button>
                             <Button
-                                className="w-full bg-gradient-to-r from-violet-600 to-indigo-600"
+                                className="w-full bg-gradient-to-r from-blue-600 to-blue-700"
                                 onClick={() => handlePublishNow('publish')}
                                 disabled={!generatedContent || isPublishing}
                             >
@@ -1241,7 +1241,7 @@ Source: ${article.url}`)
                                         Cancel
                                     </Button>
                                     <Button
-                                        className="bg-gradient-to-r from-violet-600 to-indigo-600"
+                                        className="bg-gradient-to-r from-blue-600 to-blue-700"
                                         onClick={handleSchedulePublish}
                                         disabled={!scheduleDate || !scheduleTime || isPublishing}
                                     >
