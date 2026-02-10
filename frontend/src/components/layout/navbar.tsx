@@ -150,7 +150,7 @@ export function Navbar() {
                             <Button variant="ghost" className="relative h-10 w-10 rounded-xl hover:bg-accent p-0">
                                 <Avatar className="h-10 w-10 rounded-xl">
                                     <AvatarImage src={user?.avatarUrl} alt={user?.fullName || 'User'} />
-                                    <AvatarFallback className="rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-semibold">
+                                    <AvatarFallback className="rounded-xl bg-gradient-to-br from-blue-600 to-cyan-600 text-white font-semibold">
                                         {user?.fullName?.charAt(0) || 'U'}
                                     </AvatarFallback>
                                 </Avatar>
@@ -166,17 +166,17 @@ export function Navbar() {
                                 </div>
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator className="my-2" />
-                            <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
-                                <Link href="/settings" className="flex items-center gap-3 px-3 py-2">
+                            <DropdownMenuItem disabled className="rounded-lg opacity-50 cursor-not-allowed">
+                                <div className="flex items-center gap-3 px-3 py-2">
                                     {icons.user}
-                                    Profile
-                                </Link>
+                                    Profile (Soon)
+                                </div>
                             </DropdownMenuItem>
-                            <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
-                                <Link href="/settings" className="flex items-center gap-3 px-3 py-2">
+                            <DropdownMenuItem disabled className="rounded-lg opacity-50 cursor-not-allowed">
+                                <div className="flex items-center gap-3 px-3 py-2">
                                     {icons.settings}
-                                    Settings
-                                </Link>
+                                    Settings (Soon)
+                                </div>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="my-2" />
                             <DropdownMenuItem

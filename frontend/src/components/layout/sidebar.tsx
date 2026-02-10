@@ -123,7 +123,48 @@ export function Sidebar() {
                     {/* Navigation */}
                     <nav className="flex-1 space-y-1.5 p-4">
                         {navItems.map((item) => {
-                            const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+                            const isViewBoost = item.href === '/view-boost'
+                            const isDisabled = isViewBoost && user?.role !== 'ADMIN'
+                            const isActive = !isDisabled && (pathname === item.href || pathname.startsWith(item.href + '/'))
+
+                            const content = (
+                                <>
+                                    <div className={cn(
+                                        "shrink-0 transition-colors duration-200",
+                                        isActive
+                                            ? "text-blue-600"
+                                            : "text-muted-foreground group-hover:text-foreground",
+                                        isDisabled && "opacity-50"
+                                    )}>
+                                        {item.icon}
+                                    </div>
+                                    <span className={cn(
+                                        "truncate transition-all duration-300",
+                                        isCollapsed ? "md:w-0 md:opacity-0" : "md:w-auto md:opacity-100",
+                                        isDisabled && "opacity-50"
+                                    )}>
+                                        {item.label} {isDisabled && '(Soon)'}
+                                    </span>
+
+                                    {isActive && (
+                                        <div className={cn(
+                                            "ml-auto h-1.5 w-1.5 rounded-full bg-blue-600",
+                                            isCollapsed ? "md:hidden" : "block"
+                                        )} />
+                                    )}
+                                </>
+                            )
+
+                            if (isDisabled) {
+                                return (
+                                    <div
+                                        key={item.href}
+                                        className="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 text-muted-foreground cursor-not-allowed opacity-70"
+                                    >
+                                        {content}
+                                    </div>
+                                )
+                            }
 
                             return (
                                 <Link
@@ -133,35 +174,11 @@ export function Sidebar() {
                                     className={cn(
                                         "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
                                         isActive
-                                            ? "bg-gradient-to-r from-indigo-500/10 to-purple-500/10 text-foreground border border-indigo-500/20"
+                                            ? "bg-gradient-to-r from-blue-500/10 to-cyan-500/10 text-foreground border border-blue-500/20"
                                             : "text-muted-foreground hover:bg-accent hover:text-foreground"
                                     )}
                                 >
-                                    <div className={cn(
-                                        "shrink-0 transition-colors duration-200",
-                                        isActive
-                                            ? "text-indigo-500"
-                                            : "text-muted-foreground group-hover:text-foreground"
-                                    )}>
-                                        {item.icon}
-                                    </div>
-                                    {/* Show label if:
-                                        1. It's mobile (always w-64 when open)
-                                        2. OR it's desktop AND not collapsed
-                                    */}
-                                    <span className={cn(
-                                        "truncate transition-all duration-300",
-                                        isCollapsed ? "md:w-0 md:opacity-0" : "md:w-auto md:opacity-100"
-                                    )}>
-                                        {item.label}
-                                    </span>
-
-                                    {isActive && (
-                                        <div className={cn(
-                                            "ml-auto h-1.5 w-1.5 rounded-full bg-indigo-500",
-                                            isCollapsed ? "md:hidden" : "block"
-                                        )} />
-                                    )}
+                                    {content}
                                 </Link>
                             )
                         })}

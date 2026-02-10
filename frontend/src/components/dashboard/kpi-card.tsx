@@ -22,7 +22,7 @@ export function KpiCard({ title, value, description, icon: Icon, trend, classNam
                     {title}
                 </CardTitle>
                 <div className="icon-container !w-10 !h-10 group-hover:scale-110 transition-transform duration-300">
-                    <Icon className="h-5 w-5 text-indigo-500" />
+                    <Icon className="h-5 w-5 text-blue-500" />
                 </div>
             </CardHeader>
             <CardContent>

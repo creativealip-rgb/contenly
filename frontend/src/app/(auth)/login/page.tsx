@@ -46,6 +46,7 @@ export default function LoginPage() {
                     id: data.user.id,
                     email: data.user.email,
                     fullName: data.user.name || data.user.email.split('@')[0],
+                    role: (data.user as any).role,
                     avatarUrl: data.user.image || undefined,
                 })
                 router.push('/dashboard')
@@ -59,7 +60,7 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-violet-50 via-white to-indigo-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 p-4">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 p-4">
             <div className="w-full max-w-md">
                 {/* Logo */}
                 <div className="text-center mb-8">
@@ -105,7 +106,7 @@ export default function LoginPage() {
                                     <Label htmlFor="password">Password</Label>
                                     <Link
                                         href="/forgot-password"
-                                        className="text-sm text-violet-600 hover:underline"
+                                        className="text-sm text-blue-600 hover:underline font-medium"
                                     >
                                         Forgot password?
                                     </Link>
@@ -132,7 +133,7 @@ export default function LoginPage() {
                             </div>
                             <Button
                                 type="submit"
-                                className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700"
+                                className="w-full btn-premium"
                                 disabled={isLoading}
                             >
                                 {isLoading ? 'Signing in...' : 'Sign In'}
@@ -140,10 +141,15 @@ export default function LoginPage() {
                         </form>
 
                         <div className="space-y-4 pt-2">
-                            <Button 
-                                variant="outline" 
+                            <Button
+                                variant="outline"
                                 className="w-full"
-                                onClick={() => window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/api/auth/google`}
+                                onClick={async () => {
+                                    await authClient.signIn.social({
+                                        provider: 'google',
+                                        callbackURL: `${window.location.origin}/dashboard`
+                                    })
+                                }}
                             >
                                 <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24">
                                     <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />

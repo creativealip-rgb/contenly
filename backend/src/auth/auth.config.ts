@@ -5,7 +5,12 @@ import { db, schema } from '../db';
 console.log('🔐 Better Auth initializing...');
 const rawBaseUrl = process.env.API_URL || 'http://localhost:3001';
 const API_BASE_URL = rawBaseUrl.endsWith('/') ? rawBaseUrl.slice(0, -1) : rawBaseUrl;
-const BETTER_AUTH_URL = API_BASE_URL.endsWith('/auth') ? API_BASE_URL : `${API_BASE_URL}/auth`;
+// Since NestJS has a global prefix 'api', Better Auth needs to know it's served under /api/auth
+const BETTER_AUTH_URL = API_BASE_URL.includes('/api/auth')
+    ? API_BASE_URL
+    : API_BASE_URL.endsWith('/api')
+        ? `${API_BASE_URL}/auth`
+        : `${API_BASE_URL}/api/auth`;
 
 console.log('📍 Better Auth URL:', BETTER_AUTH_URL);
 console.log('📍 Trusted Origins:', [

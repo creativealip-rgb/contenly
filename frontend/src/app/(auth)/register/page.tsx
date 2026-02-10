@@ -4,10 +4,11 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Image from 'next/image'
+import { authClient } from '@/lib/auth-client'
 
 export default function RegisterPage() {
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-violet-50 via-white to-indigo-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 p-4">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 p-4">
             <div className="w-full max-w-md">
                 {/* Logo */}
                 <div className="text-center mb-8">
@@ -26,10 +27,15 @@ export default function RegisterPage() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                        <Button 
-                            variant="outline" 
+                        <Button
+                            variant="outline"
                             className="w-full h-12 text-base"
-                            onClick={() => window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/api/auth/google`}
+                            onClick={async () => {
+                                await authClient.signIn.social({
+                                    provider: 'google',
+                                    callbackURL: `${window.location.origin}/dashboard`
+                                })
+                            }}
                         >
                             <svg className="h-5 w-5 mr-3" viewBox="0 0 24 24">
                                 <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -42,7 +48,7 @@ export default function RegisterPage() {
 
                         <p className="text-center text-sm text-muted-foreground">
                             Sudah punya akun?{' '}
-                            <Link href="/login" className="text-violet-600 hover:underline font-medium">
+                            <Link href="/login" className="text-blue-600 hover:underline font-medium">
                                 Sign in
                             </Link>
                         </p>

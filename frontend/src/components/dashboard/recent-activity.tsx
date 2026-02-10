@@ -58,9 +58,9 @@ const activityStyles = {
         border: 'border-blue-500/20',
     },
     site_connected: {
-        bg: 'bg-purple-500/10',
-        text: 'text-purple-600',
-        border: 'border-purple-500/20',
+        bg: 'bg-blue-500/10',
+        text: 'text-blue-600',
+        border: 'border-blue-500/20',
     },
     tokens_purchased: {
         bg: 'bg-amber-500/10',
