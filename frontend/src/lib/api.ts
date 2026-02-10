@@ -18,71 +18,59 @@ interface AuthResponse {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
+type RequestMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+
+async function request<T>(endpoint: string, method: RequestMethod, body?: any): Promise<T> {
+    const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+    };
+
+    const config: RequestInit = {
+        method,
+        headers,
+        credentials: 'include', // Important for Better Auth session cookies
+    };
+
+    if (body) {
+        config.body = JSON.stringify(body);
+    }
+
+    const response = await fetch(`${API_URL}${endpoint}`, config);
+
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'An unknown error occurred' }));
+        throw new Error(error.message || `Request failed: ${response.statusText}`);
+    }
+
+    // Handle 204 No Content
+    if (response.status === 204) {
+        return {} as T;
+    }
+
+    return response.json();
+}
+
 export const api = {
+    // Generic HTTP methods
+    get: <T>(endpoint: string) => request<T>(endpoint, 'GET'),
+    post: <T>(endpoint: string, body?: any) => request<T>(endpoint, 'POST', body),
+    put: <T>(endpoint: string, body?: any) => request<T>(endpoint, 'PUT', body),
+    patch: <T>(endpoint: string, body?: any) => request<T>(endpoint, 'PATCH', body),
+    delete: <T>(endpoint: string) => request<T>(endpoint, 'DELETE'),
+
+    // Auth specific methods
     auth: {
-        register: async (data: { email: string; password: string; fullName: string }): Promise<AuthResponse> => {
-            const response = await fetch(`${API_URL}/auth/register`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data),
-            });
+        register: (data: { email: string; password: string; fullName: string }) =>
+            request<AuthResponse>('/auth/register', 'POST', data),
 
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || 'Registration failed');
-            }
+        login: (data: { email: string; password: string }) =>
+            request<AuthResponse>('/auth/login', 'POST', data),
 
-            return response.json();
-        },
+        forgotPassword: (data: { email: string }) =>
+            request<void>('/auth/forgot-password', 'POST', data),
 
-        login: async (data: { email: string; password: string }): Promise<AuthResponse> => {
-            const response = await fetch(`${API_URL}/auth/login`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data),
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || 'Login failed');
-            }
-
-            return response.json();
-        },
-
-        forgotPassword: async (data: { email: string }): Promise<void> => {
-            const response = await fetch(`${API_URL}/auth/forgot-password`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data),
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || 'Failed to send reset email');
-            }
-        },
-
-        resetPassword: async (data: { token: string; password: string }): Promise<void> => {
-            const response = await fetch(`${API_URL}/auth/reset-password`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data),
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || 'Failed to reset password');
-            }
-        },
+        resetPassword: (data: { token: string; password: string }) =>
+            request<void>('/auth/reset-password', 'POST', data),
 
         signInSocial: (provider: 'google' | 'github') => {
             window.location.href = `${API_URL}/auth/${provider}`;

@@ -8,8 +8,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Play, Pause, Trash2, Plus } from 'lucide-react';
+import { Play, Pause, Trash2, Plus, Zap, ShieldCheck } from 'lucide-react';
 import { api } from '@/lib/api';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface ViewBoostJob {
   id: string;
@@ -17,6 +18,7 @@ interface ViewBoostJob {
   targetViews: number;
   currentViews: number;
   status: 'pending' | 'running' | 'completed' | 'failed' | 'paused';
+  serviceType: 'standard' | 'premium';
   progress: number;
   createdAt: string;
 }
@@ -28,6 +30,7 @@ export default function ViewBoostPage() {
     url: '',
     targetViews: 100,
     proxyList: '',
+    serviceType: 'standard' as 'standard' | 'premium',
     delayMin: 5,
     delayMax: 30,
   });
@@ -40,8 +43,8 @@ export default function ViewBoostPage() {
 
   const fetchJobs = async () => {
     try {
-      const response = await api.get('/view-boost/jobs');
-      setJobs(response.data.data);
+      const response = await api.get<{ data: ViewBoostJob[] }>('/view-boost/jobs');
+      setJobs(response.data);
     } catch (error) {
       console.error('Failed to fetch jobs:', error);
     }
@@ -56,6 +59,7 @@ export default function ViewBoostPage() {
         url: '',
         targetViews: 100,
         proxyList: '',
+        serviceType: 'standard',
         delayMin: 5,
         delayMax: 30,
       });
@@ -138,25 +142,53 @@ export default function ViewBoostPage() {
                   min={1}
                   max={10000}
                   value={formData.targetViews}
-                  onChange={(e) => setFormData({ ...formData, targetViews: parseInt(e.target.value) })}
+                  onChange={(e) => setFormData({ ...formData, targetViews: parseInt(e.target.value) || 0 })}
                   required
                 />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="serviceType">Service Type *</Label>
+                <Select
+                  value={formData.serviceType}
+                  onValueChange={(value: 'standard' | 'premium') => setFormData({ ...formData, serviceType: value })}
+                >
+                  <SelectTrigger id="serviceType">
+                    <SelectValue placeholder="Select service type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="standard">
+                      <div className="flex items-center gap-2">
+                        <Zap className="w-4 h-4 text-yellow-500" />
+                        <span>Standard</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="premium">
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-blue-500" />
+                        <span>Premium</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="proxyList">Proxy List (optional)</Label>
-              <Textarea
-                id="proxyList"
-                placeholder="http://user:pass@proxy1:8080&#10;http://proxy2:8080&#10;socks5://proxy3:1080"
-                value={formData.proxyList}
-                onChange={(e) => setFormData({ ...formData, proxyList: e.target.value })}
-                rows={4}
-              />
-              <p className="text-sm text-muted-foreground">
-                One proxy per line. Format: http://host:port or socks5://host:port
-              </p>
-            </div>
+            {formData.serviceType === 'premium' && (
+              <div className="space-y-2">
+                <Label htmlFor="proxyList">Proxy List (optional)</Label>
+                <Textarea
+                  id="proxyList"
+                  placeholder="http://user:pass@proxy1:8080&#10;http://proxy2:8080&#10;socks5://proxy3:1080"
+                  value={formData.proxyList}
+                  onChange={(e) => setFormData({ ...formData, proxyList: e.target.value })}
+                  rows={4}
+                />
+                <p className="text-sm text-muted-foreground">
+                  One proxy per line. Format: http://host:port or socks5://host:port
+                </p>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -201,6 +233,7 @@ export default function ViewBoostPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>URL</TableHead>
+                <TableHead>Service</TableHead>
                 <TableHead>Progress</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Created</TableHead>
@@ -210,7 +243,7 @@ export default function ViewBoostPage() {
             <TableBody>
               {jobs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
                     No jobs yet. Create one above!
                   </TableCell>
                 </TableRow>
@@ -218,6 +251,19 @@ export default function ViewBoostPage() {
                 jobs.map((job) => (
                   <TableRow key={job.id}>
                     <TableCell className="max-w-xs truncate">{job.url}</TableCell>
+                    <TableCell>
+                      {job.serviceType === 'premium' ? (
+                        <div className="flex items-center gap-1 text-blue-500 font-medium">
+                          <ShieldCheck className="w-4 h-4" />
+                          <span>Premium</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 text-yellow-500 font-medium">
+                          <Zap className="w-4 h-4" />
+                          <span>Standard</span>
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">

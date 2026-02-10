@@ -6,24 +6,24 @@ import {
   Body,
   Param,
   UseGuards,
-  Request,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ViewBoostService } from './view-boost.service';
 import { CreateViewBoostJobDto } from './dto/view-boost-job.dto';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import type { User } from '../../db/types';
 
 @ApiTags('View Boost')
 @Controller('view-boost')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
+@UseGuards(SessionAuthGuard)
 export class ViewBoostController {
-  constructor(private readonly viewBoostService: ViewBoostService) {}
+  constructor(private readonly viewBoostService: ViewBoostService) { }
 
   @Post('jobs')
   @ApiOperation({ summary: 'Create a new view boost job' })
-  async createJob(@Body() dto: CreateViewBoostJobDto, @Request() req) {
-    const job = await this.viewBoostService.createJob(req.user.userId, dto);
+  async createJob(@Body() dto: CreateViewBoostJobDto, @CurrentUser() user: User) {
+    const job = await this.viewBoostService.createJob(user.id, dto);
     return {
       success: true,
       data: job,
@@ -32,8 +32,8 @@ export class ViewBoostController {
 
   @Get('jobs')
   @ApiOperation({ summary: 'Get all view boost jobs' })
-  async getJobs(@Request() req) {
-    const jobs = await this.viewBoostService.getJobs(req.user.userId);
+  async getJobs(@CurrentUser() user: User) {
+    const jobs = await this.viewBoostService.getJobs(user.id);
     return {
       success: true,
       data: jobs.map(job => ({
@@ -45,8 +45,8 @@ export class ViewBoostController {
 
   @Post('jobs/:id/start')
   @ApiOperation({ summary: 'Start a view boost job' })
-  async startJob(@Param('id') id: string, @Request() req) {
-    await this.viewBoostService.startJob(id, req.user.userId);
+  async startJob(@Param('id') id: string, @CurrentUser() user: User) {
+    await this.viewBoostService.startJob(id, user.id);
     return {
       success: true,
       message: 'Job started successfully',
@@ -55,8 +55,8 @@ export class ViewBoostController {
 
   @Post('jobs/:id/pause')
   @ApiOperation({ summary: 'Pause a view boost job' })
-  async pauseJob(@Param('id') id: string, @Request() req) {
-    await this.viewBoostService.pauseJob(id, req.user.userId);
+  async pauseJob(@Param('id') id: string, @CurrentUser() user: User) {
+    await this.viewBoostService.pauseJob(id, user.id);
     return {
       success: true,
       message: 'Job paused successfully',
@@ -65,11 +65,12 @@ export class ViewBoostController {
 
   @Delete('jobs/:id')
   @ApiOperation({ summary: 'Delete a view boost job' })
-  async deleteJob(@Param('id') id: string, @Request() req) {
-    await this.viewBoostService.deleteJob(id, req.user.userId);
+  async deleteJob(@Param('id') id: string, @CurrentUser() user: User) {
+    await this.viewBoostService.deleteJob(id, user.id);
     return {
       success: true,
       message: 'Job deleted successfully',
     };
   }
 }
+

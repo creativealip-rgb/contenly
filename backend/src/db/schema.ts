@@ -16,6 +16,7 @@ export const subscriptionPlanEnum = pgEnum('subscription_plan', ['FREE_TRIAL', '
 export const subscriptionStatusEnum = pgEnum('subscription_status', ['ACTIVE', 'PAST_DUE', 'CANCELED', 'EXPIRED']);
 export const notificationTypeEnum = pgEnum('notification_type', ['JOB_SUCCESS', 'JOB_FAILED', 'LOW_TOKENS', 'SUBSCRIPTION_EXPIRING', 'SYSTEM']);
 export const viewBoostStatusEnum = pgEnum('view_boost_status', ['pending', 'running', 'completed', 'failed', 'paused']);
+export const viewBoostServiceTypeEnum = pgEnum('view_boost_service_type', ['standard', 'premium']);
 
 // ==========================================
 // BETTER AUTH TABLES (Required)
@@ -236,6 +237,7 @@ export const viewBoostJobs = pgTable('view_boost_jobs', {
     currentViews: integer('current_views').default(0),
     status: viewBoostStatusEnum('status').default('pending'),
     proxyList: text('proxy_list'),
+    serviceType: viewBoostServiceTypeEnum('service_type').default('standard'),
     delayMin: integer('delay_min').default(5),
     delayMax: integer('delay_max').default(30),
     errorMessage: text('error_message'),
