@@ -132,9 +132,9 @@ export class UsersService {
                 email: dto.email,
                 password: dto.password || 'TemporaryPassword123!',
                 name: dto.name,
-                role: dto.role as any,
+                role: dto.role,
             }
-        });
+        } as any);
 
         if (!result) {
             throw new Error('Failed to create user via Better Auth');
