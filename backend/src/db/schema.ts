@@ -29,6 +29,7 @@ export const user = pgTable('user', {
     emailVerified: boolean('email_verified').notNull().default(false),
     image: text('image'),
     role: userRoleEnum('role').default('USER'),
+    banned: boolean('banned').default(false),
     preferences: jsonb('preferences').default({}),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
