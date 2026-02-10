@@ -132,7 +132,7 @@ export class UsersService {
                 email: dto.email,
                 password: dto.password || 'TemporaryPassword123!',
                 name: dto.name,
-                role: dto.role,
+                role: dto.role as any,
             }
         });
 
