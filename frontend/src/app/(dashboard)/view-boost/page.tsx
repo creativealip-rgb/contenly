@@ -12,6 +12,7 @@ import { Play, Pause, Trash2, Plus, Zap, ShieldCheck, Loader2 } from 'lucide-rea
 import { api } from '@/lib/api';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AdminGuard } from '@/components/guards';
+import { toast } from 'sonner';
 
 interface ViewBoostJob {
   id: string;
@@ -38,17 +39,18 @@ export default function ViewBoostPage() {
   });
 
   useEffect(() => {
-    fetchJobs();
-    const interval = setInterval(fetchJobs, 5000); // Refresh every 5s
+    fetchJobs(true);
+    const interval = setInterval(() => fetchJobs(false), 5000); // Refresh every 5s
     return () => clearInterval(interval);
   }, []);
 
-  const fetchJobs = async () => {
+  const fetchJobs = async (showToast = false) => {
     try {
       const response = await api.get<{ data: ViewBoostJob[] }>('/view-boost/jobs');
       setJobs(response.data);
     } catch (error) {
       console.error('Failed to fetch jobs:', error);
+      if (showToast) toast.error('Failed to fetch jobs');
     } finally {
       setIsTableLoading(false);
     }
@@ -250,7 +252,7 @@ export default function ViewBoostPage() {
                   <TableRow>
                     <TableCell colSpan={6} className="py-12 text-center">
                       <div className="flex justify-center">
-                        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                        <Loader2 className="h-8 w-8 animate-spin !text-blue-600" />
                       </div>
                     </TableCell>
                   </TableRow>

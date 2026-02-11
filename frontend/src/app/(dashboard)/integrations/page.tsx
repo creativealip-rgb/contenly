@@ -51,6 +51,7 @@ import {
 } from 'lucide-react'
 import { WordPressSite } from '@/lib/sites-store'
 import { authClient } from '@/lib/auth-client'
+import { toast } from 'sonner'
 
 // Use relative path on client to leverage Next.js Proxy (cookies)
 // Server-side fetch (if any) would need absolute
@@ -124,6 +125,9 @@ export default function IntegrationsPage() {
             } else {
                 console.warn('[loadCategoryMappings] Data is not an array:', data)
             }
+        } catch (error) {
+            console.error('Failed to load category mappings:', error)
+            toast.error('Failed to load category mappings')
         } finally {
             setIsLoadingMappings(false)
         }
@@ -153,6 +157,9 @@ export default function IntegrationsPage() {
                     localStorage.setItem('contently_wp_sites', JSON.stringify(sitesForLocalStorage))
                 }
             }
+        } catch (error) {
+            console.error('Failed to fetch sites:', error)
+            toast.error('Failed to fetch sites')
         } finally {
             setIsLoadingSites(false)
         }
@@ -417,7 +424,7 @@ export default function IntegrationsPage() {
                 <CardContent>
                     {isLoadingSites ? (
                         <div className="flex justify-center py-12">
-                            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                            <Loader2 className="h-8 w-8 animate-spin !text-blue-600" />
                         </div>
                     ) : sites.length === 0 ? (
                         <div className="text-center py-8 text-muted-foreground">
@@ -517,7 +524,7 @@ export default function IntegrationsPage() {
                                 <TableRow>
                                     <TableCell colSpan={4} className="py-12">
                                         <div className="flex justify-center">
-                                            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                                            <Loader2 className="h-8 w-8 animate-spin !text-blue-600" />
                                         </div>
                                     </TableCell>
                                 </TableRow>

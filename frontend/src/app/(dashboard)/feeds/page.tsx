@@ -41,7 +41,8 @@ import {
     RefreshCw,
     CheckCircle2,
     XCircle,
-    Clock
+    Clock,
+    Loader2
 } from 'lucide-react'
 import {
     DropdownMenu,
@@ -70,6 +71,9 @@ export default function FeedsPage() {
             try {
                 const fetchedFeeds = await getFeeds()
                 setFeeds(fetchedFeeds)
+            } catch (error) {
+                console.error('Failed to load feeds:', error)
+                toast.error('Failed to load feeds')
             } finally {
                 setIsLoading(false)
             }
@@ -337,7 +341,7 @@ export default function FeedsPage() {
                                 <TableRow>
                                     <TableCell colSpan={6} className="py-12">
                                         <div className="flex justify-center">
-                                            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                                            <Loader2 className="h-8 w-8 animate-spin !text-blue-600" />
                                         </div>
                                     </TableCell>
                                 </TableRow>

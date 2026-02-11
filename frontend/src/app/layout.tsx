@@ -40,7 +40,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={plusJakartaSans.className} suppressHydrationWarning>
         <AuthProvider>
-          <NextTopLoader color="#2563eb" showSpinner={false} shadow="0 0 10px #2563eb,0 0 5px #2563eb" />
+          <NextTopLoader color="#2563eb" showSpinner={true} shadow="0 0 10px #2563eb,0 0 5px #2563eb" />
           {children}
         </AuthProvider>
         <Toaster />
