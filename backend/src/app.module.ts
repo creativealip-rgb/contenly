@@ -22,6 +22,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { CategoryMappingModule } from './modules/category-mapping/category-mapping.module';
 import { ViewBoostModule } from './modules/view-boost/view-boost.module';
+import { TelegramBotModule } from './modules/telegram-bot/telegram-bot.module';
 
 @Module({
   imports: [
@@ -65,6 +66,7 @@ import { ViewBoostModule } from './modules/view-boost/view-boost.module';
     IntegrationsModule,
     CategoryMappingModule,
     ViewBoostModule,
+    TelegramBotModule,
   ],
   controllers: [AppController],
   providers: [AppService],
