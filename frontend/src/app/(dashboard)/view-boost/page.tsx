@@ -9,7 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Play, Pause, Trash2, Plus } from 'lucide-react';
-import { api } from '@/lib/api';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface ViewBoostJob {
   id: string;
@@ -40,8 +41,14 @@ export default function ViewBoostPage() {
 
   const fetchJobs = async () => {
     try {
-      const response = await api.get('/view-boost/jobs');
-      setJobs(response.data.data);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/view-boost/jobs`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      setJobs(data.data);
     } catch (error) {
       console.error('Failed to fetch jobs:', error);
     }
@@ -51,7 +58,15 @@ export default function ViewBoostPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await api.post('/view-boost/jobs', formData);
+      const token = localStorage.getItem('token');
+      await fetch(`${API_URL}/view-boost/jobs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
+      });
       setFormData({
         url: '',
         targetViews: 100,
@@ -69,7 +84,13 @@ export default function ViewBoostPage() {
 
   const startJob = async (id: string) => {
     try {
-      await api.post(`/view-boost/jobs/${id}/start`);
+      const token = localStorage.getItem('token');
+      await fetch(`${API_URL}/view-boost/jobs/${id}/start`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       fetchJobs();
     } catch (error) {
       console.error('Failed to start job:', error);
@@ -78,7 +99,13 @@ export default function ViewBoostPage() {
 
   const pauseJob = async (id: string) => {
     try {
-      await api.post(`/view-boost/jobs/${id}/pause`);
+      const token = localStorage.getItem('token');
+      await fetch(`${API_URL}/view-boost/jobs/${id}/pause`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       fetchJobs();
     } catch (error) {
       console.error('Failed to pause job:', error);
@@ -87,7 +114,13 @@ export default function ViewBoostPage() {
 
   const deleteJob = async (id: string) => {
     try {
-      await api.delete(`/view-boost/jobs/${id}`);
+      const token = localStorage.getItem('token');
+      await fetch(`${API_URL}/view-boost/jobs/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       fetchJobs();
     } catch (error) {
       console.error('Failed to delete job:', error);
