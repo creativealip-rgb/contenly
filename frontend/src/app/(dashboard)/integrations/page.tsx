@@ -51,6 +51,7 @@ import {
 } from 'lucide-react'
 import { WordPressSite } from '@/lib/sites-store'
 import { authClient } from '@/lib/auth-client'
+import { toast } from 'sonner'
 
 // Use relative path on client to leverage Next.js Proxy (cookies)
 // Server-side fetch (if any) would need absolute
@@ -84,8 +85,10 @@ async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
 export default function IntegrationsPage() {
     const [isAddOpen, setIsAddOpen] = useState(false)
     const [sites, setSites] = useState<WordPressSite[]>([])
+    const [isLoadingSites, setIsLoadingSites] = useState(true)
     const [isRefreshingCategories, setIsRefreshingCategories] = useState(false)
     const [categoryMappings, setCategoryMappings] = useState<Array<{ source: string; target: string; wpCategoryId?: number }>>([])
+    const [isLoadingMappings, setIsLoadingMappings] = useState(true)
 
     // Form state
     const [formData, setFormData] = useState({
@@ -104,6 +107,7 @@ export default function IntegrationsPage() {
     }, [])
 
     const loadCategoryMappings = async () => {
+        setIsLoadingMappings(true)
         try {
             console.log('[loadCategoryMappings] Fetching from backend...')
             const data = await fetchWithAuth('/category-mapping')
@@ -123,10 +127,14 @@ export default function IntegrationsPage() {
             }
         } catch (error) {
             console.error('Failed to load category mappings:', error)
+            toast.error('Failed to load category mappings')
+        } finally {
+            setIsLoadingMappings(false)
         }
     }
 
     const fetchSites = async () => {
+        setIsLoadingSites(true)
         try {
             const data = await fetchWithAuth('/wordpress/sites')
             if (Array.isArray(data)) {
@@ -151,6 +159,9 @@ export default function IntegrationsPage() {
             }
         } catch (error) {
             console.error('Failed to fetch sites:', error)
+            toast.error('Failed to fetch sites')
+        } finally {
+            setIsLoadingSites(false)
         }
     }
 
@@ -323,7 +334,7 @@ export default function IntegrationsPage() {
                 </div>
                 <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
                     <DialogTrigger asChild>
-                        <Button className="bg-gradient-to-r from-violet-600 to-indigo-600">
+                        <Button className="bg-gradient-to-r from-blue-600 to-blue-700">
                             <Plus className="h-4 w-4 mr-2" />
                             Add Site
                         </Button>
@@ -386,7 +397,7 @@ export default function IntegrationsPage() {
                         <DialogFooter>
                             <Button variant="outline" onClick={() => setIsAddOpen(false)} disabled={isTesting}>Cancel</Button>
                             <Button
-                                className="bg-gradient-to-r from-violet-600 to-indigo-600"
+                                className="bg-gradient-to-r from-blue-600 to-blue-700"
                                 onClick={handleAddSite}
                                 disabled={isTesting}
                             >
@@ -411,7 +422,11 @@ export default function IntegrationsPage() {
                     <CardDescription>Your WordPress integrations</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {sites.length === 0 ? (
+                    {isLoadingSites ? (
+                        <div className="flex justify-center py-12">
+                            <Loader2 className="h-8 w-8 animate-spin !text-blue-600" />
+                        </div>
+                    ) : sites.length === 0 ? (
                         <div className="text-center py-8 text-muted-foreground">
                             <Plug className="h-12 w-12 mx-auto mb-3 opacity-20" />
                             <p>No sites connected yet. Click "Add Site" to start.</p>
@@ -505,24 +520,40 @@ export default function IntegrationsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {categoryMappings.map((mapping, index) => (
-                                <TableRow key={index}>
-                                    <TableCell>
-                                        <Badge variant="outline">{mapping.source}</Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge className="bg-violet-500/10 text-violet-600">{mapping.target}</Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <Button variant="ghost" size="icon" className="text-red-600 hover:text-red-600">
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
+                            {isLoadingMappings ? (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="py-12">
+                                        <div className="flex justify-center">
+                                            <Loader2 className="h-8 w-8 animate-spin !text-blue-600" />
+                                        </div>
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            ) : categoryMappings.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                                        No category mappings found. Refresh categories to start.
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                categoryMappings.map((mapping, index) => (
+                                    <TableRow key={index}>
+                                        <TableCell>
+                                            <Badge variant="outline">{mapping.source}</Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge className="bg-blue-500/10 text-blue-600">{mapping.target}</Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <Button variant="ghost" size="icon" className="text-red-600 hover:text-red-600">
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
                         </TableBody>
                     </Table>
                 </CardContent>

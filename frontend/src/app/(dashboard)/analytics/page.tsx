@@ -28,7 +28,7 @@ function BarChartSimple({ data }: { data: { label: string; value: number }[] }) 
             {data.map((item, index) => (
                 <div key={index} className="flex-1 flex flex-col items-center gap-2">
                     <div
-                        className="w-full bg-gradient-to-t from-violet-600 to-indigo-500 rounded-t-lg transition-all hover:opacity-80"
+                        className="w-full bg-gradient-to-t from-blue-700 to-blue-500 rounded-t-lg transition-all hover:opacity-80"
                         style={{ height: `${(item.value / max) * 100}%` }}
                     />
                     <span className="text-xs text-muted-foreground">{item.label}</span>
@@ -70,8 +70,8 @@ function DonutChart({ value, total, label }: { value: number; total: number; lab
                     />
                     <defs>
                         <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stopColor="#7c3aed" />
-                            <stop offset="100%" stopColor="#4f46e5" />
+                            <stop offset="0%" stopColor="#2563eb" />
+                            <stop offset="100%" stopColor="#3b82f6" />
                         </linearGradient>
                     </defs>
                 </svg>
@@ -129,8 +129,8 @@ export default function AnalyticsPage() {
                 <Card>
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-violet-500/10">
-                                <FileText className="h-6 w-6 text-violet-600" />
+                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/10">
+                                <FileText className="h-6 w-6 text-blue-600" />
                             </div>
                             <div>
                                 <p className="text-2xl font-bold">127</p>
@@ -278,7 +278,7 @@ export default function AnalyticsPage() {
                                 <span className="font-medium">127 tokens</span>
                             </div>
                             <div className="h-2 rounded-full bg-muted overflow-hidden">
-                                <div className="h-full bg-violet-600" style={{ width: '68%' }} />
+                                <div className="h-full bg-blue-700" style={{ width: '68%' }} />
                             </div>
                         </div>
                         <div className="space-y-2">
@@ -287,7 +287,7 @@ export default function AnalyticsPage() {
                                 <span className="font-medium">48 tokens</span>
                             </div>
                             <div className="h-2 rounded-full bg-muted overflow-hidden">
-                                <div className="h-full bg-indigo-600" style={{ width: '26%' }} />
+                                <div className="h-full bg-blue-500" style={{ width: '26%' }} />
                             </div>
                         </div>
                         <div className="space-y-2">

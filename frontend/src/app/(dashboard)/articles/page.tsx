@@ -42,6 +42,7 @@ import {
     Loader2
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
+import { toast } from 'sonner'
 
 export default function ArticlesPage() {
     const [search, setSearch] = useState('')
@@ -90,6 +91,67 @@ export default function ArticlesPage() {
         }
     }
 
+    const handleDelete = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this article?')) return
+
+        try {
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+            const response = await fetch(`${API_BASE_URL}/articles/${id}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            })
+
+            if (response.ok) {
+                toast.success('Article deleted')
+                fetchArticles()
+            } else {
+                toast.error('Failed to delete article')
+            }
+        } catch (error) {
+            toast.error('Error deleting article')
+        }
+    }
+
+    const handleView = (article: any) => {
+        if (article.wpPostUrl) {
+            window.open(article.wpPostUrl, '_blank')
+        } else if (article.sourceUrl) {
+            window.open(article.sourceUrl, '_blank')
+        } else {
+            toast.info('No URL available for this article')
+        }
+    }
+
+    const handleEdit = (article: any) => {
+        if (article.wpSite?.url && article.wpPostId) {
+            const editUrl = `${article.wpSite.url}/wp-admin/post.php?post=${article.wpPostId}&action=edit`
+            window.open(editUrl, '_blank')
+        } else {
+            toast.info('This article is not yet published to WordPress. You can publish it from Content Lab.')
+        }
+    }
+
+    const handleSyncStatus = async () => {
+        setIsLoading(true)
+        try {
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+            const response = await fetch(`${API_BASE_URL}/wordpress/sync-scheduled`, {
+                method: 'POST',
+                credentials: 'include'
+            })
+            if (response.ok) {
+                toast.success('Status synchronization completed')
+                fetchArticles()
+            } else {
+                toast.error('Failed to sync statuses')
+            }
+        } catch (error) {
+            toast.error('Error during synchronization')
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
     useEffect(() => {
         fetchArticles()
     }, [search, statusFilter])
@@ -120,10 +182,16 @@ export default function ArticlesPage() {
                         View and manage all your generated articles.
                     </p>
                 </div>
-                <Button variant="outline" onClick={fetchArticles}>
-                    <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                    Refresh
-                </Button>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={handleSyncStatus} disabled={isLoading}>
+                        <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                        Sync Status
+                    </Button>
+                    <Button variant="outline" onClick={fetchArticles} disabled={isLoading}>
+                        <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                        Refresh
+                    </Button>
+                </div>
             </div>
 
             {/* Stats */}
@@ -131,8 +199,8 @@ export default function ArticlesPage() {
                 <Card>
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-violet-500/10">
-                                <FileText className="h-6 w-6 text-violet-600" />
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-blue-500/10">
+                                <FileText className="h-6 w-6 text-blue-600" />
                             </div>
                             <div className="min-w-0">
                                 <p className="text-2xl font-bold truncate">{stats.total}</p>
@@ -224,7 +292,7 @@ export default function ArticlesPage() {
                 <CardContent>
                     {isLoading ? (
                         <div className="flex justify-center py-8">
-                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                            <Loader2 className="h-8 w-8 animate-spin !text-blue-600" />
                         </div>
                     ) : articles.length === 0 ? (
                         <div className="text-center py-8 text-muted-foreground">
@@ -268,15 +336,21 @@ export default function ArticlesPage() {
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleView(article)}>
                                                         <Eye className="h-4 w-4 mr-2" />
                                                         View
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem disabled className="opacity-50">
+                                                    <DropdownMenuItem
+                                                        onClick={() => handleEdit(article)}
+                                                        disabled={!article.wpPostId}
+                                                    >
                                                         <Edit className="h-4 w-4 mr-2" />
                                                         Edit
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem className="text-red-600">
+                                                    <DropdownMenuItem
+                                                        className="text-red-600"
+                                                        onClick={() => handleDelete(article.id)}
+                                                    >
                                                         <Trash2 className="h-4 w-4 mr-2" />
                                                         Delete
                                                     </DropdownMenuItem>

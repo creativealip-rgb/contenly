@@ -59,37 +59,37 @@ const features = [
     icon: IconAI,
     title: 'AI-Powered Rewriting',
     description: 'Transform any URL into unique, SEO-optimized content using GPT-4 and Claude 3.5. Preserve facts, change everything else.',
-    color: 'from-indigo-500 to-purple-500',
+    color: 'from-blue-600 to-cyan-500',
   },
   {
     icon: IconWordPress,
     title: 'WordPress Integration',
     description: 'One-click publishing directly to your WordPress sites. Map categories, set status, and sync seamlessly.',
-    color: 'from-cyan-500 to-blue-500',
+    color: 'from-blue-500 to-indigo-500',
   },
   {
     icon: IconImage,
     title: 'AI Image Generation',
     description: 'Generate unique, copyright-free featured images with DALL-E 3. No more hunting for stock photos.',
-    color: 'from-purple-500 to-pink-500',
+    color: 'from-cyan-500 to-blue-400',
   },
   {
     icon: IconRSS,
     title: 'RSS Auto-Fetching',
     description: 'Add RSS feeds once, get fresh content delivered to your queue automatically. Never miss a trending topic.',
-    color: 'from-emerald-500 to-teal-500',
+    color: 'from-blue-400 to-teal-400',
   },
   {
     icon: IconSEO,
     title: 'SEO Optimization',
     description: 'Auto-generate meta titles, descriptions, and slugs. Built-in SEO scoring keeps your content ranking high.',
-    color: 'from-orange-500 to-amber-500',
+    color: 'from-indigo-400 to-blue-500',
   },
   {
     icon: IconTokens,
     title: 'Flexible Token System',
     description: 'Pay only for what you use. No monthly commitments, no hidden fees. Scale up or down as needed.',
-    color: 'from-rose-500 to-red-500',
+    color: 'from-blue-700 to-blue-500',
   },
 ]
 
@@ -131,32 +131,31 @@ export default function LandingPage() {
     <div className="min-h-screen bg-background overflow-hidden">
       {/* Navbar */}
       <header className="fixed top-0 left-0 right-0 z-50 glass">
-        <div className="max-w-7xl mx-auto flex h-16 items-center justify-between px-4 md:px-6">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="flex items-center justify-center overflow-hidden">
-              <Image src="/logo-full.png" alt="Contently Logo" width={140} height={40} className="object-contain h-9 w-auto" />
-            </div>
-          </Link>
+        <div className="max-w-7xl mx-auto flex h-16 items-center px-4 md:px-6">
+          <div className="flex-1">
+            <Link href="/" className="flex items-center gap-3">
+              <div className="flex items-center justify-center overflow-hidden">
+                <Image src="/logo-full.png" alt="Contently Logo" width={140} height={40} className="object-contain h-9 w-auto" />
+              </div>
+            </Link>
+          </div>
 
-          {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-8">
-            <Link href="#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+          {/* Desktop Nav - Centered */}
+          <nav className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-10">
+            <Link href="#features" className="text-sm font-semibold text-muted-foreground hover:text-brand-primary transition-all hover:scale-105">
               Features
             </Link>
-            <Link href="#testimonials" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            <Link href="#testimonials" className="text-sm font-semibold text-muted-foreground hover:text-brand-primary transition-all hover:scale-105">
               Testimonials
             </Link>
-            <Link href="#contact" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            <Link href="#contact" className="text-sm font-semibold text-muted-foreground hover:text-brand-primary transition-all hover:scale-105">
               Contact
             </Link>
           </nav>
 
-          <div className="hidden md:flex items-center gap-3">
-            <Link href="/login">
-              <Button variant="ghost" className="font-medium">Sign In</Button>
-            </Link>
+          <div className="hidden md:flex flex-1 justify-end items-center">
             <Link href="/register">
-              <Button className="btn-premium text-sm py-2 px-5">
+              <Button className="btn-premium text-sm py-2 px-6 shadow-blue-500/20">
                 Get Started
               </Button>
             </Link>
@@ -201,9 +200,6 @@ export default function LandingPage() {
               Contact
             </Link>
             <div className="h-px bg-border my-2"></div>
-            <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
-              <Button variant="ghost" className="w-full justify-start font-medium h-12">Sign In</Button>
-            </Link>
             <Link href="/register" onClick={() => setIsMobileMenuOpen(false)}>
               <Button className="btn-premium w-full h-12">
                 Get Started
@@ -372,7 +368,7 @@ export default function LandingPage() {
 
                   {/* Author */}
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-blue-400 flex items-center justify-center text-white font-semibold">
                       {testimonial.name.split(' ').map(n => n[0]).join('')}
                     </div>
                     <div>
@@ -392,8 +388,8 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto px-4 md:px-6">
           <Card className="relative overflow-hidden border-0 shadow-2xl">
             {/* Background gradient */}
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 opacity-10"></div>
-            <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full blur-3xl opacity-20 -translate-y-1/2 translate-x-1/2"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-500 to-cyan-400 opacity-10"></div>
+            <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-600 to-blue-400 rounded-full blur-3xl opacity-20 -translate-y-1/2 translate-x-1/2"></div>
 
             <CardContent className="relative p-8 md:p-16 text-center">
               <span className="inline-block px-4 py-1.5 rounded-full bg-accent text-sm font-medium mb-6">

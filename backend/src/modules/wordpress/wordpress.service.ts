@@ -1,8 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { eq, and } from 'drizzle-orm';
 import { DrizzleService } from '../../db/drizzle.service';
-import { wpSite, categoryMapping } from '../../db/schema';
+import { wpSite, categoryMapping, article } from '../../db/schema';
 import { ArticlesService } from '../articles/articles.service';
 import axios from 'axios';
 import * as crypto from 'crypto';
@@ -12,7 +12,7 @@ import * as path from 'path';
 import { validate as uuidValidate } from 'uuid';
 
 @Injectable()
-export class WordpressService {
+export class WordpressService implements OnModuleInit {
     private encryptionKey: string;
 
     constructor(
@@ -21,6 +21,19 @@ export class WordpressService {
         private articlesService: ArticlesService,
     ) {
         this.encryptionKey = this.configService.get('ENCRYPTION_KEY') || 'default-encryption-key-32-bytes!!';
+    }
+
+    async onModuleInit() {
+        console.log('[WordpressService] Initializing scheduled article sync...');
+        // Run sync every 30 minutes
+        setInterval(() => {
+            this.syncScheduledArticles().catch(err =>
+                console.error('[WordpressService] Error in automated sync:', err.message)
+            );
+        }, 30 * 60 * 1000);
+
+        // Also run once on startup after a small delay
+        setTimeout(() => this.syncScheduledArticles(), 10000);
     }
 
     get db() {
@@ -503,6 +516,53 @@ export class WordpressService {
         } catch (error: any) {
             console.error('[getRecentPosts] Error:', error.message);
             return [];
+        }
+    }
+
+    async syncScheduledArticles() {
+        console.log('[WordpressService] Syncing scheduled articles...');
+
+        try {
+            // Find all articles with status SCHEDULED
+            const scheduledArticles = await this.db.query.article.findMany({
+                where: eq(article.status, 'SCHEDULED'),
+                with: {
+                    wpSite: true,
+                }
+            });
+
+            if (scheduledArticles.length === 0) {
+                return;
+            }
+
+            console.log(`[WordpressService] Found ${scheduledArticles.length} scheduled articles to check.`);
+
+            for (const art of scheduledArticles) {
+                if (!art.wpSite || !art.wpPostId) continue;
+
+                try {
+                    const appPassword = this.decrypt(art.wpSite.appPasswordEncrypted);
+                    const auth = Buffer.from(`${art.wpSite.username}:${appPassword}`).toString('base64');
+
+                    // Check post status on WordPress
+                    const response = await axios.get(`${art.wpSite.url}/wp-json/wp/v2/posts/${art.wpPostId}`, {
+                        headers: { Authorization: `Basic ${auth}` },
+                        timeout: 5000,
+                    });
+
+                    if (response.data.status === 'publish') {
+                        console.log(`[WordpressService] Article ${art.id} is now PUBLISHED on WordPress. Updating local status.`);
+                        await this.articlesService.updateStatus(art.id, 'PUBLISHED', {
+                            wpPostId: String(response.data.id),
+                            wpPostUrl: response.data.link
+                        });
+                    }
+                } catch (err: any) {
+                    console.error(`[WordpressService] Failed to check status for article ${art.id}:`, err.message);
+                }
+            }
+        } catch (error: any) {
+            console.error('[WordpressService] Error in syncScheduledArticles:', error.message);
         }
     }
 }

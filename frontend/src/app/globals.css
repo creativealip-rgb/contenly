@@ -68,11 +68,11 @@
   --ring: #18181b;
 
   /* Brand colors */
-  --brand-primary: #6366f1;
-  --brand-secondary: #8b5cf6;
-  --brand-accent: #06b6d4;
-  --brand-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
-  --brand-gradient-hover: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #9333ea 100%);
+  --brand-primary: #2563eb;
+  --brand-secondary: #3b82f6;
+  --brand-accent: #0ea5e9;
+  --brand-gradient: linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #3b82f6 100%);
+  --brand-gradient-hover: linear-gradient(135deg, #1e40af 0%, #1d4ed8 50%, #2563eb 100%);
 
   /* Chart colors */
   --chart-1: #6366f1;
@@ -113,9 +113,9 @@
   --ring: #a1a1aa;
 
   /* Brand colors - slightly adjusted for dark mode */
-  --brand-primary: #818cf8;
-  --brand-secondary: #a78bfa;
-  --brand-accent: #22d3ee;
+  --brand-primary: #3b82f6;
+  --brand-secondary: #60a5fa;
+  --brand-accent: #38bdf8;
 
   /* Chart colors */
   --chart-1: #818cf8;
@@ -368,7 +368,7 @@
 .hero-orb-1 {
   width: 600px;
   height: 600px;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
   top: -200px;
   right: -100px;
 }

@@ -1,11 +1,17 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { db, schema } from '../db';
+import { admin } from 'better-auth/plugins';
 
 console.log('🔐 Better Auth initializing...');
 const rawBaseUrl = process.env.API_URL || 'http://localhost:3001';
 const API_BASE_URL = rawBaseUrl.endsWith('/') ? rawBaseUrl.slice(0, -1) : rawBaseUrl;
-const BETTER_AUTH_URL = API_BASE_URL.endsWith('/auth') ? API_BASE_URL : `${API_BASE_URL}/auth`;
+// Since NestJS has a global prefix 'api', Better Auth needs to know it's served under /api/auth
+const BETTER_AUTH_URL = API_BASE_URL.includes('/api/auth')
+    ? API_BASE_URL
+    : API_BASE_URL.endsWith('/api')
+        ? `${API_BASE_URL}/auth`
+        : `${API_BASE_URL}/api/auth`;
 
 console.log('📍 Better Auth URL:', BETTER_AUTH_URL);
 console.log('📍 Trusted Origins:', [
@@ -116,10 +122,18 @@ export const auth = betterAuth({
     // Advanced configuration
     advanced: {
         defaultCookieAttributes: {
-            sameSite: "none",
-            secure: true, // Required for SameSite: None, works on localhost too
+            sameSite: "lax", // Changed from "none" to "lax" for proxy compatibility
+            secure: true,
+        },
+        useSecureCookies: true,
+        // Trust proxy headers from Traefik
+        crossSubdomainCookies: {
+            enabled: false,
         },
     },
+    plugins: [
+        admin()
+    ]
 });
 
 console.log('🔐 Better Auth initialized');

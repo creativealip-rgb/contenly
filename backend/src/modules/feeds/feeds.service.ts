@@ -4,11 +4,13 @@ import { Queue } from 'bull';
 import { eq, desc } from 'drizzle-orm';
 import { DrizzleService } from '../../db/drizzle.service';
 import { feed, feedItem } from '../../db/schema';
+import { FeedPollerService } from './feed-poller.service';
 
 @Injectable()
 export class FeedsService {
     constructor(
         private drizzle: DrizzleService,
+        private feedPoller: FeedPollerService,
         // @InjectQueue('feed-polling') private feedQueue: Queue,
     ) { }
 
@@ -59,15 +61,34 @@ export class FeedsService {
         }
     }
 
+    async update(userId: string, id: string, data: { name?: string; url?: string; pollingIntervalMinutes?: number; status?: string }) {
+        const [updatedFeed] = await this.db
+            .update(feed)
+            .set({
+                ...data,
+                status: data.status as any,
+                updatedAt: new Date(),
+            })
+            .where(eq(feed.id, id))
+            .returning();
+        return updatedFeed;
+    }
+
     async delete(userId: string, id: string) {
         await this.db.delete(feed).where(eq(feed.id, id));
         return { message: 'Feed deleted' };
     }
 
     async triggerPoll(feedId: string) {
-        // Add job to queue for immediate polling
-        // await this.feedQueue.add('poll-feed', { feedId });
-        console.log('Skipping poll (Redis disabled)');
+        // Direct call to poller for immediate feedback
+        try {
+            console.log('[FeedsService] Triggering immediate poll for:', feedId);
+            const result = await this.feedPoller.pollFeed(feedId);
+            return result;
+        } catch (error) {
+            console.error('[FeedsService] Poll failed:', error.message);
+            throw error;
+        }
     }
 
     async scheduleFeedPolling(feedId: string, intervalMinutes: number) {

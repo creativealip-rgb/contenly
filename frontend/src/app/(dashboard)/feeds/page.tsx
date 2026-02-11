@@ -41,7 +41,8 @@ import {
     RefreshCw,
     CheckCircle2,
     XCircle,
-    Clock
+    Clock,
+    Loader2
 } from 'lucide-react'
 import {
     DropdownMenu,
@@ -49,7 +50,8 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { RssFeed, getFeeds, addFeed, removeFeed } from '@/lib/feeds-store'
+import { RssFeed, getFeeds, addFeed, removeFeed, updateFeed, pollFeed } from '@/lib/feeds-store'
+import { toast } from 'sonner'
 
 
 
@@ -59,11 +61,22 @@ export default function FeedsPage() {
     const [newFeedName, setNewFeedName] = useState('')
     const [newFeedUrl, setNewFeedUrl] = useState('')
     const [pollingInterval, setPollingInterval] = useState('15')
+    const [editingFeedId, setEditingFeedId] = useState<string | null>(null)
+    const [isPolling, setIsPolling] = useState<string | null>(null)
+    const [isLoading, setIsLoading] = useState(true)
 
     useEffect(() => {
         const loadFeeds = async () => {
-            const fetchedFeeds = await getFeeds()
-            setFeeds(fetchedFeeds)
+            setIsLoading(true)
+            try {
+                const fetchedFeeds = await getFeeds()
+                setFeeds(fetchedFeeds)
+            } catch (error) {
+                console.error('Failed to load feeds:', error)
+                toast.error('Failed to load feeds')
+            } finally {
+                setIsLoading(false)
+            }
         }
         loadFeeds()
     }, [])
@@ -71,26 +84,81 @@ export default function FeedsPage() {
     const handleAddFeed = async () => {
         if (!newFeedName || !newFeedUrl) return
 
-        const newFeed: RssFeed = {
-            id: Math.random().toString(36).substring(7),
-            name: newFeedName,
-            url: newFeedUrl,
-            status: 'active',
-            pollingInterval: parseInt(pollingInterval),
-            itemsFetched: 0,
-            lastSynced: new Date().toISOString()
-        }
-
         try {
-            await addFeed(newFeed)
+            if (editingFeedId) {
+                await updateFeed(editingFeedId, {
+                    name: newFeedName,
+                    url: newFeedUrl,
+                    pollingInterval: parseInt(pollingInterval)
+                })
+                toast.success('Feed updated successfully')
+            } else {
+                const newFeed: RssFeed = {
+                    id: Math.random().toString(36).substring(7),
+                    name: newFeedName,
+                    url: newFeedUrl,
+                    status: 'active',
+                    pollingInterval: parseInt(pollingInterval),
+                    itemsFetched: 0,
+                    lastSynced: new Date().toISOString()
+                }
+                await addFeed(newFeed)
+                toast.success('Feed added successfully')
+            }
             const updatedFeeds = await getFeeds()
             setFeeds(updatedFeeds)
-            setNewFeedName('')
-            setNewFeedUrl('')
+            resetForm()
             setIsAddOpen(false)
         } catch (error) {
-            console.error('Failed to add feed:', error)
-            alert('Failed to add feed. Please try again.')
+            console.error('Failed to save feed:', error)
+            toast.error('Failed to save feed')
+        }
+    }
+
+    const resetForm = () => {
+        setNewFeedName('')
+        setNewFeedUrl('')
+        setPollingInterval('15')
+        setEditingFeedId(null)
+    }
+
+    const handleEditClick = (feed: RssFeed) => {
+        setEditingFeedId(feed.id)
+        setNewFeedName(feed.name)
+        setNewFeedUrl(feed.url)
+        setPollingInterval(feed.pollingInterval?.toString() || '15')
+        setIsAddOpen(true)
+    }
+
+    const handlePollNow = async (id: string) => {
+        setIsPolling(id)
+        try {
+            const result = await pollFeed(id)
+            if (result) {
+                toast.success(`Polling completed: ${result.newItems} new items found`)
+            } else {
+                toast.success('Polling completed')
+            }
+            // Refresh feeds
+            const updatedFeeds = await getFeeds()
+            setFeeds(updatedFeeds)
+        } catch (error) {
+            toast.error('Failed to start polling: ' + (error instanceof Error ? error.message : 'Unknown error'))
+        } finally {
+            setIsPolling(null)
+        }
+    }
+
+    const handleToggleStatus = async (feed: RssFeed) => {
+        const currentStatus = (feed.status || 'ACTIVE').toUpperCase()
+        const newStatus = currentStatus === 'ACTIVE' ? 'PAUSED' : 'ACTIVE'
+        try {
+            await updateFeed(feed.id, { status: newStatus as any })
+            const updatedFeeds = await getFeeds()
+            setFeeds(updatedFeeds)
+            toast.success(`Feed ${newStatus === 'ACTIVE' ? 'resumed' : 'paused'}`)
+        } catch (error) {
+            toast.error('Failed to update status')
         }
     }
 
@@ -99,19 +167,21 @@ export default function FeedsPage() {
             await removeFeed(id)
             const updatedFeeds = await getFeeds()
             setFeeds(updatedFeeds)
+            toast.success('Feed removed')
         } catch (error) {
             console.error('Failed to remove feed:', error)
-            alert('Failed to remove feed. Please try again.')
+            toast.error('Failed to remove feed')
         }
     }
 
     const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'active':
+        const s = status.toUpperCase()
+        switch (s) {
+            case 'ACTIVE':
                 return <Badge className="bg-green-500/10 text-green-600 hover:bg-green-500/20"><CheckCircle2 className="h-3 w-3 mr-1" />Active</Badge>
-            case 'paused':
+            case 'PAUSED':
                 return <Badge variant="secondary"><Pause className="h-3 w-3 mr-1" />Paused</Badge>
-            case 'error':
+            case 'ERROR':
                 return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Error</Badge>
             default:
                 return <Badge variant="outline">{status}</Badge>
@@ -143,16 +213,16 @@ export default function FeedsPage() {
                 </div>
                 <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
                     <DialogTrigger asChild>
-                        <Button className="bg-gradient-to-r from-violet-600 to-indigo-600">
+                        <Button className="bg-gradient-to-r from-blue-600 to-blue-700">
                             <Plus className="h-4 w-4 mr-2" />
                             Add Feed
                         </Button>
                     </DialogTrigger>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>Add RSS Feed</DialogTitle>
+                            <DialogTitle>{editingFeedId ? 'Edit RSS Feed' : 'Add RSS Feed'}</DialogTitle>
                             <DialogDescription>
-                                Add a new RSS feed to automatically fetch content.
+                                {editingFeedId ? 'Update your feed settings.' : 'Add a new RSS feed to automatically fetch content.'}
                             </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4 py-4">
@@ -191,13 +261,13 @@ export default function FeedsPage() {
                             {/* Target WordPress Site removed as per request */}
                         </div>
                         <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancel</Button>
+                            <Button variant="outline" onClick={() => { setIsAddOpen(false); resetForm(); }}>Cancel</Button>
                             <Button
-                                className="bg-gradient-to-r from-violet-600 to-indigo-600"
+                                className="bg-gradient-to-r from-blue-600 to-blue-700"
                                 onClick={handleAddFeed}
                                 disabled={!newFeedName || !newFeedUrl}
                             >
-                                Add Feed
+                                {editingFeedId ? 'Update Feed' : 'Add Feed'}
                             </Button>
                         </DialogFooter>
                     </DialogContent>
@@ -209,8 +279,8 @@ export default function FeedsPage() {
                 <Card>
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-violet-500/10">
-                                <Rss className="h-6 w-6 text-violet-600" />
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-blue-500/10">
+                                <Rss className="h-6 w-6 text-blue-600" />
                             </div>
                             <div className="min-w-0">
                                 <p className="text-2xl font-bold truncate">{feeds.length}</p>
@@ -226,7 +296,7 @@ export default function FeedsPage() {
                                 <CheckCircle2 className="h-6 w-6 text-green-600" />
                             </div>
                             <div className="min-w-0">
-                                <p className="text-2xl font-bold truncate">{feeds.filter(f => f.status === 'active').length}</p>
+                                <p className="text-2xl font-bold truncate">{feeds.filter(f => f.status?.toUpperCase() === 'ACTIVE').length}</p>
                                 <p className="text-sm text-muted-foreground truncate" title="Active">Active</p>
                             </div>
                         </div>
@@ -267,63 +337,82 @@ export default function FeedsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {feeds.map((feed) => (
-                                <TableRow key={feed.id}>
-                                    <TableCell>
-                                        <div>
-                                            <p className="font-medium">{feed.name}</p>
-                                            <p className="text-xs text-muted-foreground truncate max-w-[200px]">{feed.url}</p>
+                            {isLoading ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="py-12">
+                                        <div className="flex justify-center">
+                                            <Loader2 className="h-8 w-8 animate-spin !text-blue-600" />
                                         </div>
                                     </TableCell>
-                                    <TableCell>{getStatusBadge(feed.status || 'active')}</TableCell>
-                                    <TableCell>{feed.pollingInterval || 15}m</TableCell>
-                                    <TableCell>{formatTimeAgo(feed.lastSynced)}</TableCell>
-                                    <TableCell>{feed.itemsFetched || 0}</TableCell>
-                                    <TableCell className="text-right">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon">
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem>
-                                                    <RefreshCw className="h-4 w-4 mr-2" />
-                                                    Poll Now
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem>
-                                                    <Edit className="h-4 w-4 mr-2" />
-                                                    Edit
-                                                </DropdownMenuItem>
-                                                {feed.status === 'active' ? (
-                                                    <DropdownMenuItem>
-                                                        <Pause className="h-4 w-4 mr-2" />
-                                                        Pause
-                                                    </DropdownMenuItem>
-                                                ) : (
-                                                    <DropdownMenuItem>
-                                                        <Play className="h-4 w-4 mr-2" />
-                                                        Resume
-                                                    </DropdownMenuItem>
-                                                )}
-                                                <DropdownMenuItem
-                                                    className="text-red-600"
-                                                    onClick={() => handleRemoveFeed(feed.id)}
-                                                >
-                                                    <Trash2 className="h-4 w-4 mr-2" />
-                                                    Delete
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                </TableRow>
+                            ) : feeds.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                        No feeds found. Add one to start fetching content!
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            ) : (
+                                feeds.map((feed) => (
+                                    <TableRow key={feed.id}>
+                                        <TableCell>
+                                            <div>
+                                                <p className="font-medium">{feed.name}</p>
+                                                <p className="text-xs text-muted-foreground truncate max-w-[200px]">{feed.url}</p>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>{getStatusBadge(feed.status || 'active')}</TableCell>
+                                        <TableCell>{feed.pollingInterval || 15}m</TableCell>
+                                        <TableCell>{formatTimeAgo(feed.lastSynced)}</TableCell>
+                                        <TableCell>{feed.itemsFetched || 0}</TableCell>
+                                        <TableCell className="text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon">
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem
+                                                        onClick={() => handlePollNow(feed.id)}
+                                                        disabled={isPolling === feed.id}
+                                                    >
+                                                        <RefreshCw className={`h-4 w-4 mr-2 ${isPolling === feed.id ? 'animate-spin' : ''}`} />
+                                                        {isPolling === feed.id ? 'Polling...' : 'Poll Now'}
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleEditClick(feed)}>
+                                                        <Edit className="h-4 w-4 mr-2" />
+                                                        Edit
+                                                    </DropdownMenuItem>
+                                                    {(feed.status || 'ACTIVE').toUpperCase() === 'ACTIVE' ? (
+                                                        <DropdownMenuItem onClick={() => handleToggleStatus(feed)}>
+                                                            <Pause className="h-4 w-4 mr-2" />
+                                                            Pause
+                                                        </DropdownMenuItem>
+                                                    ) : (
+                                                        <DropdownMenuItem onClick={() => handleToggleStatus(feed)}>
+                                                            <Play className="h-4 w-4 mr-2" />
+                                                            Resume
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                    <DropdownMenuItem
+                                                        className="text-red-600"
+                                                        onClick={() => handleRemoveFeed(feed.id)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4 mr-2" />
+                                                        Delete
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
                         </TableBody>
                     </Table>
                 </CardContent>
             </Card>
 
 
-        </div>
+        </div >
     )
 }

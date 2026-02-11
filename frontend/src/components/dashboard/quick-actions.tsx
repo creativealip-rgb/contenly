@@ -38,7 +38,7 @@ const quickActions = [
         description: 'Generate AI content from URL',
         href: '/content-lab',
         icon: icons.contentLab,
-        gradient: 'from-indigo-500 to-purple-500',
+        gradient: 'from-blue-600 to-blue-400',
     },
     {
         label: 'Add Source',
@@ -52,7 +52,7 @@ const quickActions = [
         description: 'Add WordPress site',
         href: '/integrations',  // Fixed: changed from /integrations/new to /integrations
         icon: icons.plug,
-        gradient: 'from-purple-500 to-pink-500',
+        gradient: 'from-blue-500 to-cyan-500',
     },
 ]
 
@@ -83,7 +83,7 @@ export function QuickActions({ isLoading }: QuickActionsProps) {
                         <Link key={action.href} href={action.href} className="block min-w-0">
                             <Button
                                 variant="outline"
-                                className="group w-full h-auto p-3 hover:bg-accent hover:border-indigo-500/30 transition-all duration-200 rounded-xl overflow-hidden"
+                                className="group w-full h-auto p-3 hover:bg-accent hover:border-blue-500/30 transition-all duration-200 rounded-xl overflow-hidden"
                             >
                                 <div className="flex items-center gap-3 w-full min-w-0">
                                     <div className={`flex-shrink-0 flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-lg bg-gradient-to-br ${action.gradient} text-white shadow-md`}>

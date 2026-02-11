@@ -76,7 +76,7 @@ export default function SettingsPage() {
                             <div className="flex items-center gap-6">
                                 <Avatar className="h-20 w-20">
                                     <AvatarImage src="" />
-                                    <AvatarFallback className="text-2xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white">
+                                    <AvatarFallback className="text-2xl bg-gradient-to-br from-blue-600 to-blue-700 text-white">
                                         JD
                                     </AvatarFallback>
                                 </Avatar>
@@ -114,7 +114,7 @@ export default function SettingsPage() {
                             </div>
 
                             <div className="flex justify-end">
-                                <Button className="bg-gradient-to-r from-violet-600 to-indigo-600">
+                                <Button className="bg-gradient-to-r from-blue-600 to-blue-700">
                                     Save Changes
                                 </Button>
                             </div>
@@ -178,7 +178,7 @@ export default function SettingsPage() {
                             </div>
 
                             <div className="flex justify-end">
-                                <Button className="bg-gradient-to-r from-violet-600 to-indigo-600">
+                                <Button className="bg-gradient-to-r from-blue-600 to-blue-700">
                                     Update Password
                                 </Button>
                             </div>
@@ -196,7 +196,7 @@ export default function SettingsPage() {
                                     Manage API keys for external integrations.
                                 </CardDescription>
                             </div>
-                            <Button className="bg-gradient-to-r from-violet-600 to-indigo-600">
+                            <Button className="bg-gradient-to-r from-blue-600 to-blue-700">
                                 <Plus className="h-4 w-4 mr-2" />
                                 Generate Key
                             </Button>

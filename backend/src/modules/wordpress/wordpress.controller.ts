@@ -63,4 +63,11 @@ export class WordpressController {
     ) {
         return this.wordpressService.publishArticle(user.id, dto);
     }
+
+    @Post('sync-scheduled')
+    @ApiOperation({ summary: 'Sync status of scheduled articles' })
+    async syncScheduled() {
+        await this.wordpressService.syncScheduledArticles();
+        return { message: 'Sync completed' };
+    }
 }

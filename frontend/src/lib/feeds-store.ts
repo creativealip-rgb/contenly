@@ -96,3 +96,59 @@ export const removeFeed = async (id: string): Promise<void> => {
     }
 }
 
+// Update a feed
+export const updateFeed = async (id: string, feed: Partial<RssFeed>): Promise<RssFeed | null> => {
+    try {
+        const response = await fetch(`${API_BASE}/feeds/${id}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': 'true'
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                name: feed.name,
+                url: feed.url,
+                pollingIntervalMinutes: feed.pollingInterval || feed.pollingIntervalMinutes,
+                status: feed.status,
+            }),
+        })
+
+        if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.message || 'Failed to update feed')
+        }
+
+        const updatedFeed = await response.json()
+        return {
+            ...updatedFeed,
+            pollingInterval: updatedFeed.pollingIntervalMinutes,
+            status: updatedFeed.status || 'active',
+        }
+    } catch (error) {
+        console.error('Error updating feed:', error)
+        throw error
+    }
+}
+
+// Manually trigger feed polling
+export const pollFeed = async (id: string): Promise<{ newItems: number; totalItems: number } | null> => {
+    try {
+        const response = await fetch(`${API_BASE}/feeds/${id}/poll`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'ngrok-skip-browser-warning': 'true' }
+        })
+
+        if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.message || 'Failed to trigger poll')
+        }
+
+        const result = await response.json()
+        return result.data
+    } catch (error) {
+        console.error('Error triggering poll:', error)
+        throw error
+    }
+}

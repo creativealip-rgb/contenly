@@ -97,7 +97,7 @@ export default function BillingPage() {
                         <div className="mt-8 grid gap-4 sm:grid-cols-2 max-w-lg">
                             <WhatsAppActionModal
                                 trigger={
-                                    <Button className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 h-12 text-lg">
+                                    <Button className="w-full bg-gradient-to-r from-blue-600 to-blue-700 h-12 text-lg">
                                         <Plus className="h-5 w-5 mr-2" />
                                         Buy Extra Tokens
                                     </Button>
