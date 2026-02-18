@@ -22,6 +22,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { CategoryMappingModule } from './modules/category-mapping/category-mapping.module';
 import { ViewBoostModule } from './modules/view-boost/view-boost.module';
+import { HealthModule } from './modules/health/health.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { ViewBoostModule } from './modules/view-boost/view-boost.module';
     DrizzleModule,
 
     // Feature Modules
+    HealthModule,
     AuthModule,
     UsersModule,
     ScraperModule,

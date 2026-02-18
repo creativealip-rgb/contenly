@@ -37,7 +37,16 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/src ./src
 COPY --from=builder /app/drizzle.config.ts ./
+COPY --from=builder /app/drizzle ./drizzle
+COPY --from=builder /app/start.sh ./
+
+# Make startup script executable
+RUN chmod +x start.sh
 
 EXPOSE 3001
 
-CMD ["npm", "run", "start:prod"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3001/api/health || exit 1
+
+CMD ["./start.sh"]
