@@ -17,9 +17,7 @@ export class BillingService {
         // Initialize Stripe only if secret key is provided
         const stripeSecretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
         if (stripeSecretKey) {
-            this.stripe = new Stripe(stripeSecretKey, {
-                apiVersion: '2026-01-28.clover',
-            });
+            this.stripe = new Stripe(stripeSecretKey);
         }
     }
 
