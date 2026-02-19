@@ -9,10 +9,9 @@ import { AuthModule } from '../auth/auth.module';
 @Module({
     imports: [
         AuthModule,
-        AuthModule,
-        // BullModule.registerQueue({
-        //     name: 'feed-polling',
-        // }),
+        BullModule.registerQueue({
+            name: 'feed-polling',
+        }),
     ],
     controllers: [FeedsController],
     providers: [FeedsService, FeedPollerService, FeedPollProcessor],

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import axios from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { CreateViewBoostJobDto } from './dto/view-boost-job.dto';
 import { DrizzleService } from '../../db/drizzle.service';
@@ -7,10 +7,9 @@ import { viewBoostJobs } from '../../db/schema';
 import { eq, and } from 'drizzle-orm';
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import { ViewBoostJob, ViewBoostStatus, ViewBoostJobUpdate } from '../../db/types';
 
 puppeteer.use(StealthPlugin());
-
-export type ViewBoostStatus = 'pending' | 'running' | 'completed' | 'failed' | 'paused';
 
 @Injectable()
 export class ViewBoostService {
@@ -109,17 +108,17 @@ export class ViewBoostService {
       .where(eq(viewBoostJobs.id, jobId));
   }
 
-  private async runStandardJob(job: any): Promise<void> {
-    const proxies = this.parseProxies(job.proxyList);
+  private async runStandardJob(job: ViewBoostJob): Promise<void> {
+    const proxies = this.parseProxies(job.proxyList || '');
     const userAgents = this.getUserAgents();
-    let currentViews = job.currentViews;
+    let currentViews = job.currentViews || 0;
 
     while (this.activeJobs.get(job.id) && currentViews < job.targetViews) {
       try {
         const userAgent = userAgents[Math.floor(Math.random() * userAgents.length)];
         const proxy = this.getRandomItem(proxies);
 
-        const config: any = {
+        const config: AxiosRequestConfig = {
           method: 'GET',
           url: job.url,
           headers: {
@@ -141,9 +140,10 @@ export class ViewBoostService {
         await this.updateProgress(job.id, currentViews);
 
         this.logger.log(`Job ${job.id} (Standard): View ${currentViews}/${job.targetViews}`);
-        await this.sleep(this.getRandomDelay(job.delayMin, job.delayMax));
-      } catch (error) {
-        this.logger.error(`Job ${job.id} Standard error: ${error.message}`);
+        await this.sleep(this.getRandomDelay(job.delayMin || 5, job.delayMax || 30));
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        this.logger.error(`Job ${job.id} Standard error: ${message}`);
         await this.sleep(5000);
       }
     }
@@ -151,9 +151,9 @@ export class ViewBoostService {
     await this.finalizeJob(job, currentViews);
   }
 
-  private async runPremiumJob(job: any): Promise<void> {
-    const proxies = this.parseProxies(job.proxyList);
-    let currentViews = job.currentViews;
+  private async runPremiumJob(job: ViewBoostJob): Promise<void> {
+    const proxies = this.parseProxies(job.proxyList || '');
+    let currentViews = job.currentViews || 0;
 
     while (this.activeJobs.get(job.id) && currentViews < job.targetViews) {
       let browser;
@@ -258,9 +258,10 @@ export class ViewBoostService {
         await browser.close();
         browser = null;
 
-        await this.sleep(this.getRandomDelay(job.delayMin, job.delayMax));
-      } catch (error) {
-        this.logger.error(`Job ${job.id} Premium error: ${error.message}`);
+        await this.sleep(this.getRandomDelay(job.delayMin || 5, job.delayMax || 30));
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        this.logger.error(`Job ${job.id} Premium error: ${message}`);
         if (browser) await browser.close();
         await this.sleep(5000);
       }
@@ -297,11 +298,16 @@ export class ViewBoostService {
       .where(eq(viewBoostJobs.id, jobId));
   }
 
-  private async finalizeJob(job: any, currentViews: number): Promise<void> {
+  private async finalizeJob(job: ViewBoostJob, currentViews: number): Promise<void> {
     if (currentViews >= job.targetViews) {
+      const updateData: ViewBoostJobUpdate = {
+        status: 'completed',
+        completedAt: new Date(),
+        updatedAt: new Date(),
+      };
       await this.db
         .update(viewBoostJobs)
-        .set({ status: 'completed', completedAt: new Date() })
+        .set(updateData)
         .where(eq(viewBoostJobs.id, job.id));
     }
     this.activeJobs.delete(job.id);

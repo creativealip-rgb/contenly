@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -134,7 +135,7 @@ export default function ContentLabPage() {
             setIsFetchingCategories(true)
             try {
                 // Use backend endpoint which already has stored credentials
-                const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
 
                 const response = await fetch(`${API_BASE_URL}/wordpress/sites/${activeSite.id}/categories`, {
                     credentials: 'include', // Send session cookies
@@ -266,7 +267,7 @@ export default function ContentLabPage() {
         setIsScanning(true)
 
         try {
-            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
             // Auto-scrape full article content from backend URL
             const response = await fetch(`${API_BASE_URL}/scraper/scrape`, {
                 method: 'POST',
@@ -634,27 +635,47 @@ Source: ${article.url}`)
 
     return (
         <div className="space-y-6">
-            {/* Page Header */}
-            <div>
-                <h1 className="text-3xl font-bold">Content Lab</h1>
-                <p className="text-muted-foreground">
-                    Transform RSS feed articles or any web content into unique, SEO-optimized articles.
-                </p>
-            </div>
+            {/* Page Header - Monev Style */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, type: "spring", stiffness: 100 }}
+            >
+                <Card className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-500 to-cyan-500 text-white border-0">
+                    <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                    <div className="absolute bottom-0 left-0 w-32 h-32 bg-cyan-400/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+                    
+                    <CardContent className="relative z-10 py-6 px-6">
+                        <div className="flex items-center gap-2 text-blue-100 mb-2">
+                            <Sparkles className="w-4 h-4" />
+                            <span className="text-xs font-medium uppercase tracking-wider">AI Content Generator</span>
+                        </div>
+                        <h1 className="text-2xl md:text-3xl font-bold tracking-tight mb-1">Content Lab</h1>
+                        <p className="text-blue-100 text-sm max-w-lg">
+                            Transform RSS feed articles or any web content into unique, SEO-optimized articles.
+                        </p>
+                    </CardContent>
+                </Card>
+            </motion.div>
 
             {/* Source Selection Card */}
-            <Card className="border-blue-100 dark:border-blue-900 shadow-sm">
-                <CardHeader>
-                    <CardTitle className="text-xl flex items-center gap-2">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                            1
-                        </span>
-                        Choose Source
-                    </CardTitle>
-                    <CardDescription>
-                        Select content to transform from Web Sources
-                    </CardDescription>
-                </CardHeader>
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1, type: "spring", stiffness: 100 }}
+            >
+                <Card variant="glass" className="overflow-hidden">
+                    <CardHeader>
+                        <CardTitle className="text-lg flex items-center gap-3">
+                            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-cyan-500 text-white text-sm font-bold">
+                                1
+                            </span>
+                            Choose Source
+                        </CardTitle>
+                        <CardDescription>
+                            Select content to transform from Web Sources
+                        </CardDescription>
+                    </CardHeader>
                 <CardContent>
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                         <TabsList className="grid w-full grid-cols-3 mb-6">
@@ -800,21 +821,27 @@ Source: ${article.url}`)
                         </TabsContent>
                     </Tabs>
                 </CardContent>
-            </Card>
+                </Card>
+            </motion.div>
 
             {/* AI Configuration */}
-            <Card className="border-blue-100 dark:border-blue-900 shadow-sm">
-                <CardHeader>
-                    <CardTitle className="text-xl flex items-center gap-2">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                            2
-                        </span>
-                        AI Configuration
-                    </CardTitle>
-                    <CardDescription>
-                        Configure how AI will rewrite your content
-                    </CardDescription>
-                </CardHeader>
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
+            >
+                <Card variant="glass" className="overflow-hidden">
+                    <CardHeader>
+                        <CardTitle className="text-lg flex items-center gap-3">
+                            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-cyan-500 text-white text-sm font-bold">
+                                2
+                            </span>
+                            AI Configuration
+                        </CardTitle>
+                        <CardDescription>
+                            Configure how AI will rewrite your content
+                        </CardDescription>
+                    </CardHeader>
                 <CardContent className="space-y-4">
                     {/* First Row */}
                     <div className="grid grid-cols-2 gap-6">
@@ -913,12 +940,18 @@ Source: ${article.url}`)
                         </Button>
                     </div>
                 </CardContent>
-            </Card>
+                </Card>
+            </motion.div>
 
             {/* Split Screen Editor */}
-            <div className="grid gap-6 lg:grid-cols-2">
+            <motion.div 
+                className="grid gap-6 lg:grid-cols-2"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, type: "spring", stiffness: 100 }}
+            >
                 {/* Source Content */}
-                <Card className="min-h-[500px]">
+                <Card variant="glass" hover className="min-h-[500px]">
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
                             <div>
@@ -955,7 +988,7 @@ Source: ${article.url}`)
                 </Card>
 
                 {/* AI Generated Content */}
-                <Card className="min-h-[500px]">
+                <Card variant="glass" hover className="min-h-[500px]">
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
                             <div>
@@ -991,13 +1024,18 @@ Source: ${article.url}`)
                         />
                     </CardContent>
                 </Card>
-            </div>
+            </motion.div>
 
             {/* Configuration & Actions */}
-            <div className="grid gap-6 lg:grid-cols-2">
+            <motion.div 
+                className="grid gap-6 lg:grid-cols-2"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, type: "spring", stiffness: 100 }}
+            >
 
                 {/* SEO Preview */}
-                <Card>
+                <Card variant="glass">
                     <CardHeader className="pb-3 flex flex-row items-center justify-between">
                         <CardTitle className="text-lg">SEO Preview</CardTitle>
                         <Button
@@ -1131,7 +1169,7 @@ Source: ${article.url}`)
                 </Card>
 
                 {/* Actions */}
-                <Card>
+                <Card variant="glass">
                     <CardHeader className="pb-3">
                         <CardTitle className="text-lg">Actions</CardTitle>
                     </CardHeader>
@@ -1255,7 +1293,7 @@ Source: ${article.url}`)
 
                     </CardContent>
                 </Card>
-            </div>
+            </motion.div>
         </div >
     )
 }

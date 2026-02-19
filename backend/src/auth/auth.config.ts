@@ -6,12 +6,14 @@ import { admin } from 'better-auth/plugins';
 console.log('🔐 Better Auth initializing...');
 const rawBaseUrl = process.env.API_URL || 'http://localhost:3001';
 const API_BASE_URL = rawBaseUrl.endsWith('/') ? rawBaseUrl.slice(0, -1) : rawBaseUrl;
-// Since NestJS has a global prefix 'api', Better Auth needs to know it's served under /api/auth
-const BETTER_AUTH_URL = API_BASE_URL.includes('/api/auth')
+// Since NestJS has a global prefix 'api/v1', Better Auth needs to know it's served under /api/v1/auth
+const BETTER_AUTH_URL = API_BASE_URL.includes('/api/v1/auth')
     ? API_BASE_URL
-    : API_BASE_URL.endsWith('/api')
+    : API_BASE_URL.endsWith('/api/v1')
         ? `${API_BASE_URL}/auth`
-        : `${API_BASE_URL}/api/auth`;
+        : API_BASE_URL.endsWith('/api')
+        ? `${API_BASE_URL}/v1/auth`
+        : `${API_BASE_URL}/api/v1/auth`;
 
 console.log('📍 Better Auth URL:', BETTER_AUTH_URL);
 console.log('📍 Trusted Origins:', [

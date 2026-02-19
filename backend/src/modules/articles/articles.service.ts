@@ -1,12 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { eq, and, ilike, or, sql, desc } from 'drizzle-orm';
 import { DrizzleService } from '../../db/drizzle.service';
 import { article, wpSite } from '../../db/schema';
 import { CreateArticleDto, UpdateArticleDto } from './dto';
 import { validate as uuidValidate } from 'uuid';
+import { ArticleStatus, ArticleUpdateData } from '../../db/types';
 
 @Injectable()
 export class ArticlesService {
+    private readonly logger = new Logger(ArticlesService.name);
+
     constructor(private drizzle: DrizzleService) { }
 
     get db() {
@@ -25,7 +28,7 @@ export class ArticlesService {
 
         // Build where conditions
         const conditions = [eq(article.userId, userId)];
-        if (status) conditions.push(eq(article.status, status as any));
+        if (status) conditions.push(eq(article.status, status as ArticleStatus));
         if (wpSiteId) conditions.push(eq(article.wpSiteId, wpSiteId));
 
         let articles;
@@ -98,7 +101,7 @@ export class ArticlesService {
                 metaTitle: dto.metaTitle,
                 metaDescription: dto.metaDescription,
                 slug: dto.slug,
-                status: (dto.status as any) || 'DRAFT',
+                status: (dto.status as ArticleStatus) || 'DRAFT',
                 wpPostId: dto.wpPostId,
                 wpPostUrl: dto.wpPostUrl,
                 wpSiteId: dto.wpSiteId,
@@ -111,11 +114,22 @@ export class ArticlesService {
     }
 
     async update(userId: string, id: string, dto: UpdateArticleDto) {
-        console.log(`[ArticlesService] Attempting update for article ${id} (User: ${userId})`);
+        this.logger.log(`Attempting update for article ${id} (User: ${userId})`);
         await this.findById(userId, id);
 
-        const updateData: any = {
-            ...dto,
+        const updateData: ArticleUpdateData = {
+            title: dto.title,
+            generatedContent: dto.generatedContent,
+            originalContent: dto.originalContent,
+            sourceUrl: dto.sourceUrl,
+            metaTitle: dto.metaTitle,
+            metaDescription: dto.metaDescription,
+            slug: dto.slug,
+            featuredImageUrl: dto.featuredImageUrl,
+            wpPostId: dto.wpPostId,
+            wpPostUrl: dto.wpPostUrl,
+            wpSiteId: dto.wpSiteId,
+            tokensUsed: dto.tokensUsed,
             updatedAt: new Date(),
         };
 
@@ -123,18 +137,19 @@ export class ArticlesService {
         if (dto.feedItemId !== undefined) {
             if (dto.feedItemId === null || dto.feedItemId === '' || !uuidValidate(dto.feedItemId)) {
                 if (dto.feedItemId) {
-                    console.warn(`[ArticlesService] Ignoring invalid feedItemId UUID: ${dto.feedItemId}`);
+                    this.logger.warn(`Ignoring invalid feedItemId UUID: ${dto.feedItemId}`);
                 }
-                delete updateData.feedItemId;
+            } else {
+                updateData.feedItemId = dto.feedItemId;
             }
         }
 
         // Ensure status is correctly typed for enum
         if (dto.status) {
-            updateData.status = dto.status as any;
+            updateData.status = dto.status as ArticleStatus;
         }
 
-        console.log(`[ArticlesService] Fields to update:`, Object.keys(updateData));
+        this.logger.log(`Fields to update: ${Object.keys(updateData).join(', ')}`);
 
         try {
             const [updated] = await this.db
@@ -144,14 +159,15 @@ export class ArticlesService {
                 .returning();
 
             if (!updated) {
-                console.error(`[ArticlesService] Update successful but no record returned for ID ${id}`);
+                this.logger.error(`Update successful but no record returned for ID ${id}`);
             } else {
-                console.log(`[ArticlesService] Update successful. New Status: ${updated.status}`);
+                this.logger.log(`Update successful. New Status: ${updated.status}`);
             }
 
             return updated;
-        } catch (error: any) {
-            console.error(`[ArticlesService] Update query failed:`, error.message || error);
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Unknown error';
+            this.logger.error(`Update query failed: ${message}`);
             throw error;
         }
     }
@@ -162,11 +178,11 @@ export class ArticlesService {
         return { message: 'Article deleted' };
     }
 
-    async updateStatus(id: string, status: string, wpData?: { wpPostId: string; wpPostUrl: string }) {
+    async updateStatus(id: string, status: ArticleStatus, wpData?: { wpPostId: string; wpPostUrl: string }) {
         const [updated] = await this.db
             .update(article)
             .set({
-                status: status as any,
+                status,
                 ...(wpData && {
                     wpPostId: wpData.wpPostId,
                     wpPostUrl: wpData.wpPostUrl,

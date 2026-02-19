@@ -47,3 +47,6 @@ next-env.d.ts
 # OS
 .DS_Store
 Desktop.ini
+
+# Windows artifacts (reserved names)
+nul

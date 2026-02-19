@@ -39,14 +39,14 @@ import { ViewBoostModule } from './modules/view-boost/view-boost.module';
       },
     ]),
 
-    // Redis Queue (BullMQ) - Optional, comment out if not using Redis
-    // BullModule.forRoot({
-    //   redis: {
-    //     host: process.env.REDIS_HOST || 'localhost',
-    //     port: parseInt(process.env.REDIS_PORT || '6379'),
-    //     password: process.env.REDIS_PASSWORD || undefined,
-    //   },
-    // }),
+    // Redis Queue (BullMQ)
+    BullModule.forRoot({
+      redis: {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '6379'),
+        password: process.env.REDIS_PASSWORD || undefined,
+      },
+    }),
 
     // Database (Drizzle)
     DrizzleModule,

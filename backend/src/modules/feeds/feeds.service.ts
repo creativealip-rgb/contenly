@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { eq, desc } from 'drizzle-orm';
@@ -8,10 +8,12 @@ import { FeedPollerService } from './feed-poller.service';
 
 @Injectable()
 export class FeedsService {
+    private readonly logger = new Logger(FeedsService.name);
+
     constructor(
         private drizzle: DrizzleService,
         private feedPoller: FeedPollerService,
-        // @InjectQueue('feed-polling') private feedQueue: Queue,
+        @InjectQueue('feed-polling') private feedQueue: Queue,
     ) { }
 
     get db() {
@@ -26,7 +28,7 @@ export class FeedsService {
     }
 
     async create(userId: string, data: { name: string; url: string; pollingIntervalMinutes?: number }) {
-        console.log('[FeedsService] Creating feed for user:', userId, 'Data:', data);
+        this.logger.log(`Creating feed for user: ${userId}, URL: ${data.url}`);
         try {
             const [newFeed] = await this.db
                 .insert(feed)
@@ -38,25 +40,25 @@ export class FeedsService {
                 })
                 .returning();
 
-            console.log('[FeedsService] Feed created in DB:', newFeed?.id);
+            this.logger.log(`Feed created in DB: ${newFeed?.id}`);
 
-            // Trigger immediate poll for new feed (optional - depends on Redis/Bull)
+            // Trigger immediate poll for new feed
             try {
                 await this.triggerPoll(newFeed.id);
             } catch (error) {
-                console.warn('[FeedsService] Could not trigger poll (Redis may not be running):', error.message);
+                this.logger.warn(`Could not trigger immediate poll: ${error.message}`);
             }
 
-            // Schedule recurring polling (optional - depends on Redis/Bull)  
+            // Schedule recurring polling
             try {
                 await this.scheduleFeedPolling(newFeed.id, newFeed.pollingIntervalMinutes);
             } catch (error) {
-                console.warn('[FeedsService] Could not schedule polling (Redis may not be running):', error.message);
+                this.logger.warn(`Could not schedule polling: ${error.message}`);
             }
 
             return newFeed;
         } catch (error) {
-            console.error('[FeedsService] Error creating feed:', error);
+            this.logger.error('Error creating feed:', error);
             throw error;
         }
     }
@@ -75,25 +77,27 @@ export class FeedsService {
     }
 
     async delete(userId: string, id: string) {
+        // Remove scheduled polling job before deleting
+        try {
+            await this.removeScheduledPolling(id);
+        } catch (error) {
+            this.logger.warn(`Could not remove scheduled polling: ${error.message}`);
+        }
+        
         await this.db.delete(feed).where(eq(feed.id, id));
         return { message: 'Feed deleted' };
     }
 
     async triggerPoll(feedId: string) {
-        // Direct call to poller for immediate feedback
-        try {
-            console.log('[FeedsService] Triggering immediate poll for:', feedId);
-            const result = await this.feedPoller.pollFeed(feedId);
-            return result;
-        } catch (error) {
-            console.error('[FeedsService] Poll failed:', error.message);
-            throw error;
-        }
+        // Add job to queue for immediate processing
+        this.logger.log(`Triggering immediate poll for feed: ${feedId}`);
+        await this.feedQueue.add('poll-feed', { feedId }, { priority: 1 });
     }
 
     async scheduleFeedPolling(feedId: string, intervalMinutes: number) {
         // Schedule recurring job based on pollingIntervalMinutes
-        /*
+        this.logger.log(`Scheduling recurring poll for feed ${feedId} every ${intervalMinutes} minutes`);
+        
         await this.feedQueue.add(
             'poll-feed',
             { feedId },
@@ -102,9 +106,16 @@ export class FeedsService {
                     every: intervalMinutes * 60 * 1000, // Convert minutes to milliseconds
                 },
                 jobId: `feed-${feedId}-recurring`, // Unique ID to prevent duplicates
-            }
+            },
         );
-        */
-        console.log('Skipping schedule (Redis disabled)');
+    }
+
+    async removeScheduledPolling(feedId: string) {
+        // Remove recurring job when feed is deleted
+        const job = await this.feedQueue.getJob(`feed-${feedId}-recurring`);
+        if (job) {
+            await job.remove();
+            this.logger.log(`Removed scheduled polling for feed: ${feedId}`);
+        }
     }
 }

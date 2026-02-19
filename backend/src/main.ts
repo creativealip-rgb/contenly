@@ -60,8 +60,10 @@ async function bootstrap() {
     exposedHeaders: 'set-cookie',
   });
 
-  // Global prefix
-  app.setGlobalPrefix('api');
+  // Global prefix with API versioning
+  app.setGlobalPrefix('api/v1', {
+    exclude: ['health'], // Exclude health check from versioning if needed
+  });
 
   // Validation
   app.useGlobalPipes(
@@ -91,13 +93,13 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  SwaggerModule.setup('api/v1/docs', app, document);
 
   const port = process.env.PORT || 3001;
   await app.listen(port);
 
   console.log(`🚀 Contently Backend running on: http://localhost:${port}`);
-  console.log(`📚 API Documentation: http://localhost:${port}/api/docs`);
+  console.log(`📚 API Documentation: http://localhost:${port}/api/v1/docs`);
 }
 
 bootstrap();

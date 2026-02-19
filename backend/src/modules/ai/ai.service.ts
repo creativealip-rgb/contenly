@@ -1,13 +1,14 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { OpenAiService } from './services/openai.service';
 import { BillingService } from '../billing/billing.service';
 import { GenerateContentDto, GenerateSeoDto, GenerateImageDto } from './dto';
 import { ArticlesService } from '../articles/articles.service';
-
 import { WordpressService } from '../wordpress/wordpress.service';
 
 @Injectable()
 export class AiService {
+    private readonly logger = new Logger(AiService.name);
+
     constructor(
         private openAiService: OpenAiService,
         private billingService: BillingService,
@@ -16,17 +17,14 @@ export class AiService {
     ) { }
 
     async generateContent(userId: string, dto: GenerateContentDto) {
-        // TEMP: Skip billing check for testing without auth
-        if (userId !== 'temp-user-id') {
-            // Check token balance
-            const hasBalance = await this.billingService.checkBalance(userId, 1);
-            if (!hasBalance) {
-                throw new BadRequestException('Insufficient token balance');
-            }
+        // Check token balance
+        const hasBalance = await this.billingService.checkBalance(userId, 1);
+        if (!hasBalance) {
+            throw new BadRequestException('Insufficient token balance');
         }
 
         // Generate content
-        console.log(`[AiService] Generating content for mode: ${dto.mode}, content length: ${dto.originalContent?.length}`);
+        this.logger.log(`Generating content for mode: ${dto.mode}, content length: ${dto.originalContent?.length}`);
         const aiResponse = await this.openAiService.generateContent(
             dto.originalContent,
             {
@@ -41,36 +39,33 @@ export class AiService {
         const slug = aiResponse.slug;
 
         // Convert potential Markdown to HTML as a fallback
-        console.log(`[AiService] Raw content generated, length: ${content?.length}`);
+        this.logger.log(`Raw content generated, length: ${content?.length}`);
         content = this.convertMarkdownToHtml(content);
-        console.log(`[AiService] Content converted to HTML, length: ${content?.length}`);
+        this.logger.log(`Content converted to HTML, length: ${content?.length}`);
 
         // Fetch and inject "Baca Juga" links if we have a site and category
         try {
-            console.log(`[AiService] Attempting to inject links for user: ${userId}, category: ${dto.categoryId}`);
-            const userIdToUse = userId === 'temp-user-id' ? 'temp-user-id' : userId;
-            const sites = await this.wordpressService.getSites(userIdToUse);
+            this.logger.log(`Attempting to inject links for user: ${userId}, category: ${dto.categoryId}`);
+            const sites = await this.wordpressService.getSites(userId);
 
-            console.log(`[AiService] Found ${sites?.length || 0} sites`);
+            this.logger.log(`Found ${sites?.length || 0} sites`);
             if (sites && sites.length > 0) {
                 const recentPosts = await this.wordpressService.getRecentPosts(sites[0].id, dto.categoryId);
-                console.log(`[AiService] Fetched ${recentPosts?.length || 0} recent posts for category ${dto.categoryId}`);
+                this.logger.log(`Fetched ${recentPosts?.length || 0} recent posts for category ${dto.categoryId}`);
 
                 if (recentPosts && recentPosts.length > 0) {
                     content = this.injectInternalLinks(content, recentPosts);
-                    console.log(`[AiService] Successfully injected ${recentPosts.length} links`);
+                    this.logger.log(`Successfully injected ${recentPosts.length} links`);
                 } else {
-                    console.warn(`[AiService] No recent posts found for category ${dto.categoryId}`);
+                    this.logger.warn(`No recent posts found for category ${dto.categoryId}`);
                 }
             }
         } catch (linkError) {
-            console.error('[AiService] Failed to inject internal links:', linkError);
+            this.logger.error('Failed to inject internal links', linkError);
         }
 
-        // Deduct tokens (skip for temp user)
-        if (userId !== 'temp-user-id') {
-            await this.billingService.deductTokens(userId, 1, 'Article generation');
-        }
+        // Deduct tokens
+        await this.billingService.deductTokens(userId, 1, 'Article generation');
 
         // Save generated content as a draft article
         let articleId = null;
@@ -89,7 +84,7 @@ export class AiService {
             });
             articleId = savedArticle.id;
         } catch (error) {
-            console.error('Failed to auto-save generated article:', error);
+            this.logger.error('Failed to auto-save generated article', error);
             // Don't fail the request if auto-save fails
         }
 
@@ -153,7 +148,7 @@ export class AiService {
         const chunks = content.split(delimiter);
         const actualChunks = chunks.filter(c => c.trim().length > 0);
 
-        console.log(`[AiService] Injecting 3 links into ${isHtml ? 'HTML' : 'Markdown'} (${actualChunks.length} paragraphs)`);
+        this.logger.log(`Injecting links into ${isHtml ? 'HTML' : 'Markdown'} (${actualChunks.length} paragraphs)`);
 
         const createLink = (item: { title: string; link: string }) =>
             isHtml

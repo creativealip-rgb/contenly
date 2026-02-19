@@ -12,7 +12,7 @@ export async function POST(request: Request) {
         }
 
         // Call the backend NestJS advanced scraper service
-        const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
 
         // Build headers object with proper typing
         const headers: HeadersInit = {

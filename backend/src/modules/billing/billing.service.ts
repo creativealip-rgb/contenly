@@ -1,11 +1,27 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { eq, sql, and } from 'drizzle-orm';
 import { DrizzleService } from '../../db/drizzle.service';
-import { tokenBalance, transaction } from '../../db/schema';
+import { tokenBalance, transaction, subscription } from '../../db/schema';
+import Stripe from 'stripe';
 
 @Injectable()
 export class BillingService {
-    constructor(private drizzle: DrizzleService) { }
+    private readonly logger = new Logger(BillingService.name);
+    private stripe: Stripe | null = null;
+
+    constructor(
+        private drizzle: DrizzleService,
+        private configService: ConfigService,
+    ) {
+        // Initialize Stripe only if secret key is provided
+        const stripeSecretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
+        if (stripeSecretKey) {
+            this.stripe = new Stripe(stripeSecretKey, {
+                apiVersion: '2026-01-28.clover',
+            });
+        }
+    }
 
     get db() {
         return this.drizzle.db;
@@ -142,8 +158,6 @@ export class BillingService {
     }
 
     async getSubscription(userId: string) {
-        const { subscription } = await import('../../db/schema.js');
-
         return this.db.query.subscription.findFirst({
             where: and(
                 eq(subscription.userId, userId),
@@ -151,5 +165,181 @@ export class BillingService {
             ),
             orderBy: (s, { desc }) => [desc(s.createdAt)],
         });
+    }
+
+    // ==========================================
+    // STRIPE WEBHOOK HANDLERS
+    // ==========================================
+
+    async handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
+        this.logger.log(`Processing checkout session: ${session.id}`);
+
+        const userId = session.metadata?.userId;
+        if (!userId) {
+            this.logger.error('No userId in checkout session metadata');
+            return;
+        }
+
+        // Handle one-time payment for tokens
+        if (session.mode === 'payment') {
+            const tokens = parseInt(session.metadata?.tokens || '0', 10);
+            const amount = session.amount_total ? session.amount_total / 100 : 0;
+
+            if (tokens > 0) {
+                await this.addTokens(userId, tokens, session.payment_intent as string);
+                
+                // Update transaction with actual amount
+                await this.db
+                    .update(transaction)
+                    .set({ amount })
+                    .where(eq(transaction.stripePaymentId, session.payment_intent as string));
+
+                this.logger.log(`Added ${tokens} tokens to user ${userId}`);
+            }
+        }
+
+        // Handle subscription creation
+        if (session.mode === 'subscription' && session.subscription) {
+            await this.handleSubscriptionCreated(userId, session.subscription as string, session);
+        }
+    }
+
+    async handleSubscriptionCreated(userId: string, subscriptionId: string, session: Stripe.Checkout.Session) {
+        this.logger.log(`Creating subscription ${subscriptionId} for user ${userId}`);
+
+        if (!this.stripe) {
+            this.logger.error('Stripe not initialized');
+            return;
+        }
+
+        const stripeSubscription = await this.stripe.subscriptions.retrieve(subscriptionId);
+        const plan = session.metadata?.plan || 'PRO';
+        const tokensPerMonth = parseInt(session.metadata?.tokensPerMonth || '1000', 10);
+
+        // Create subscription record
+        await this.db.insert(subscription).values({
+            userId,
+            plan: plan as 'PRO' | 'ENTERPRISE',
+            stripeSubscriptionId: subscriptionId,
+            status: 'ACTIVE',
+            tokensPerMonth,
+            currentPeriodStart: new Date((stripeSubscription as any).current_period_start * 1000),
+            currentPeriodEnd: new Date((stripeSubscription as any).current_period_end * 1000),
+        });
+
+        // Add initial monthly tokens
+        await this.addTokens(userId, tokensPerMonth, subscriptionId);
+
+        this.logger.log(`Subscription created for user ${userId} with ${tokensPerMonth} tokens/month`);
+    }
+
+    async handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
+        this.logger.log(`Processing invoice payment: ${invoice.id}`);
+
+        const subscriptionId = (invoice as any).subscription;
+        if (!subscriptionId) return;
+
+        const userId = invoice.metadata?.userId;
+        if (!userId) {
+            this.logger.error('No userId in invoice metadata');
+            return;
+        }
+
+        // Get subscription to find tokens to add
+        const sub = await this.db.query.subscription.findFirst({
+            where: eq(subscription.stripeSubscriptionId, subscriptionId as string),
+        });
+
+        if (sub) {
+            // Add monthly tokens
+            await this.addTokens(userId, sub.tokensPerMonth, invoice.id);
+
+            // Update subscription period
+            await this.db
+                .update(subscription)
+                .set({
+                    status: 'ACTIVE',
+                    currentPeriodStart: new Date((invoice as any).period_start * 1000),
+                    currentPeriodEnd: new Date((invoice as any).period_end * 1000),
+                })
+                .where(eq(subscription.stripeSubscriptionId, subscriptionId as string));
+
+            this.logger.log(`Added ${sub.tokensPerMonth} monthly tokens to user ${userId}`);
+        }
+    }
+
+    async handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
+        this.logger.warn(`Invoice payment failed: ${invoice.id}`);
+
+        const subscriptionId = (invoice as any).subscription;
+        if (!subscriptionId) return;
+
+        // Update subscription status
+        await this.db
+            .update(subscription)
+            .set({ status: 'PAST_DUE' })
+            .where(eq(subscription.stripeSubscriptionId, subscriptionId as string));
+    }
+
+    async handleCustomerSubscriptionDeleted(stripeSubscription: Stripe.Subscription) {
+        this.logger.log(`Subscription deleted: ${stripeSubscription.id}`);
+
+        // Update subscription status
+        await this.db
+            .update(subscription)
+            .set({ 
+                status: 'CANCELED',
+                canceledAt: new Date(),
+            })
+            .where(eq(subscription.stripeSubscriptionId, stripeSubscription.id));
+    }
+
+    // ==========================================
+    // CHECKOUT SESSION CREATION
+    // ==========================================
+
+    async createCheckoutSession(
+        userId: string,
+        priceId: string,
+        mode: 'payment' | 'subscription',
+        tokens?: number,
+        plan?: string,
+    ) {
+        if (!this.stripe) {
+            throw new BadRequestException('Stripe is not configured');
+        }
+
+        const session = await this.stripe.checkout.sessions.create({
+            mode,
+            payment_method_types: ['card'],
+            line_items: [
+                {
+                    price: priceId,
+                    quantity: 1,
+                },
+            ],
+            success_url: `${this.configService.get('FRONTEND_URL')}/billing?success=true`,
+            cancel_url: `${this.configService.get('FRONTEND_URL')}/billing?canceled=true`,
+            metadata: {
+                userId,
+                tokens: tokens?.toString() || '0',
+                plan: plan || 'PRO',
+            },
+        });
+
+        return { url: session.url };
+    }
+
+    async createCustomerPortalSession(userId: string, customerId: string) {
+        if (!this.stripe) {
+            throw new BadRequestException('Stripe is not configured');
+        }
+
+        const session = await this.stripe.billingPortal.sessions.create({
+            customer: customerId,
+            return_url: `${this.configService.get('FRONTEND_URL')}/billing`,
+        });
+
+        return { url: session.url };
     }
 }
