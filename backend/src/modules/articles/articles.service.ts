@@ -31,38 +31,62 @@ export class ArticlesService {
         if (status) conditions.push(eq(article.status, status as ArticleStatus));
         if (wpSiteId) conditions.push(eq(article.wpSiteId, wpSiteId));
 
-        let articles;
-        if (search) {
-            articles = await this.db.query.article.findMany({
-                where: and(
-                    ...conditions,
-                    or(
-                        ilike(article.title, `%${search}%`),
-                        ilike(article.generatedContent, `%${search}%`),
-                    ),
-                ),
-                orderBy: [desc(article.createdAt)],
-                offset,
-                limit,
-                with: {
-                    wpSite: {
-                        columns: { id: true, name: true, url: true },
-                    },
-                },
-            });
-        } else {
-            articles = await this.db.query.article.findMany({
-                where: and(...conditions),
-                orderBy: [desc(article.createdAt)],
-                offset,
-                limit,
-                with: {
-                    wpSite: {
-                        columns: { id: true, name: true, url: true },
-                    },
-                },
-            });
+        // Fetch articles without relational queries to avoid Drizzle ORM issues
+        const articlesData = await this.db
+            .select()
+            .from(article)
+            .where(
+                search 
+                    ? and(
+                        ...conditions,
+                        or(
+                            ilike(article.title, `%${search}%`),
+                            ilike(article.generatedContent, `%${search}%`),
+                        ),
+                    )
+                    : and(...conditions)
+            )
+            .orderBy(desc(article.createdAt))
+            .limit(limit)
+            .offset(offset);
+
+        // Fetch wpSite data separately for articles that have wpSiteId
+        const wpSiteIds = articlesData
+            .filter(a => a.wpSiteId)
+            .map(a => a.wpSiteId);
+        
+        let wpSitesData: any[] = [];
+        if (wpSiteIds.length > 0) {
+            wpSitesData = await this.db
+                .select({
+                    id: wpSite.id,
+                    name: wpSite.name,
+                    url: wpSite.url,
+                })
+                .from(wpSite)
+                .where(eq(wpSite.id, wpSiteIds[0]));
+            
+            // For multiple IDs, we need to query each one separately or use OR conditions
+            if (wpSiteIds.length > 1) {
+                for (let i = 1; i < wpSiteIds.length; i++) {
+                    const additionalSites = await this.db
+                        .select({
+                            id: wpSite.id,
+                            name: wpSite.name,
+                            url: wpSite.url,
+                        })
+                        .from(wpSite)
+                        .where(eq(wpSite.id, wpSiteIds[i]));
+                    wpSitesData.push(...additionalSites);
+                }
+            }
         }
+
+        // Merge articles with their wpSite data
+        const articles = articlesData.map(art => ({
+            ...art,
+            wpSite: wpSitesData.find(ws => ws.id === art.wpSiteId) || null,
+        }));
 
         // Get total count
         const [{ count }] = await this.db
@@ -77,16 +101,34 @@ export class ArticlesService {
     }
 
     async findById(userId: string, id: string) {
-        const result = await this.db.query.article.findFirst({
-            where: and(eq(article.id, id), eq(article.userId, userId)),
-            with: {
-                wpSite: true,
-                feedItem: true,
-            },
-        });
+        // Fetch article without relational queries
+        const result = await this.db
+            .select()
+            .from(article)
+            .where(and(eq(article.id, id), eq(article.userId, userId)))
+            .limit(1);
 
-        if (!result) throw new NotFoundException('Article not found');
-        return result;
+        if (!result || result.length === 0) {
+            throw new NotFoundException('Article not found');
+        }
+
+        const articleData = result[0];
+
+        // Fetch wpSite separately if exists
+        let wpSiteData = null;
+        if (articleData.wpSiteId) {
+            const wpSiteResult = await this.db
+                .select()
+                .from(wpSite)
+                .where(eq(wpSite.id, articleData.wpSiteId))
+                .limit(1);
+            wpSiteData = wpSiteResult[0] || null;
+        }
+
+        return {
+            ...articleData,
+            wpSite: wpSiteData,
+        };
     }
 
     async create(userId: string, dto: CreateArticleDto) {
