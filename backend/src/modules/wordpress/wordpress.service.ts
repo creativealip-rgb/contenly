@@ -13,7 +13,7 @@ import { WpCategory, WpPostData, WpPostResponse, ArticleStatus, ArticleUpdateDat
 @Injectable()
 export class WordpressService implements OnModuleInit {
     private readonly logger = new Logger(WordpressService.name);
-    private encryptionKey: string;
+    private encryptionKey: string | null = null;
 
     constructor(
         private drizzle: DrizzleService,
@@ -22,12 +22,23 @@ export class WordpressService implements OnModuleInit {
     ) {
         const key = this.configService.get<string>('ENCRYPTION_KEY');
         if (!key || key.length < 32) {
-            throw new Error(
+            this.logger.warn(
                 'ENCRYPTION_KEY environment variable is not set or is too short (minimum 32 characters). ' +
-                'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
+                'WordPress integration will not work. Generate one with: ' +
+                'node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
+            );
+        } else {
+            this.encryptionKey = key;
+        }
+    }
+
+    private getEncryptionKey(): string {
+        if (!this.encryptionKey) {
+            throw new Error(
+                'ENCRYPTION_KEY is not configured. Please set the ENCRYPTION_KEY environment variable. '
             );
         }
-        this.encryptionKey = key;
+        return this.encryptionKey;
     }
 
     async onModuleInit() {
@@ -49,8 +60,9 @@ export class WordpressService implements OnModuleInit {
 
     // Encryption helpers
     private encrypt(text: string): string {
+        const key = this.getEncryptionKey();
         const iv = crypto.randomBytes(16);
-        const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(this.encryptionKey.substring(0, 32)), iv);
+        const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(key.substring(0, 32)), iv);
         let encrypted = cipher.update(text);
         encrypted = Buffer.concat([encrypted, cipher.final()]);
         return iv.toString('hex') + ':' + encrypted.toString('hex');
@@ -80,7 +92,8 @@ export class WordpressService implements OnModuleInit {
                 throw new Error(`Invalid IV length: expected 16 bytes, got ${iv.length}`);
             }
 
-            const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(this.encryptionKey.substring(0, 32)), iv);
+            const key = this.getEncryptionKey();
+            const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(key.substring(0, 32)), iv);
             let decrypted = decipher.update(encrypted);
             decrypted = Buffer.concat([decrypted, decipher.final()]);
             return decrypted.toString();
