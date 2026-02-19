@@ -639,12 +639,10 @@ export class WordpressService implements OnModuleInit {
 
         try {
             // Find all articles with status SCHEDULED
-            const scheduledArticles = await this.db.query.article.findMany({
-                where: eq(article.status, 'SCHEDULED'),
-                with: {
-                    wpSite: true,
-                }
-            });
+            const scheduledArticles = await this.db
+                .select()
+                .from(article)
+                .where(eq(article.status, 'SCHEDULED'));
 
             if (scheduledArticles.length === 0) {
                 return;
@@ -653,14 +651,25 @@ export class WordpressService implements OnModuleInit {
             this.logger.log(`Found ${scheduledArticles.length} scheduled articles to check.`);
 
             for (const art of scheduledArticles) {
-                if (!art.wpSite || !art.wpPostId) continue;
+                if (!art.wpSiteId || !art.wpPostId) continue;
+
+                // Fetch wpSite separately
+                const wpSiteData = await this.db
+                    .select()
+                    .from(wpSite)
+                    .where(eq(wpSite.id, art.wpSiteId))
+                    .limit(1);
+
+                if (!wpSiteData || wpSiteData.length === 0) continue;
+
+                const site = wpSiteData[0];
 
                 try {
-                    const appPassword = this.decrypt(art.wpSite.appPasswordEncrypted);
-                    const auth = Buffer.from(`${art.wpSite.username}:${appPassword}`).toString('base64');
+                    const appPassword = this.decrypt(site.appPasswordEncrypted);
+                    const auth = Buffer.from(`${site.username}:${appPassword}`).toString('base64');
 
                     // Check post status on WordPress
-                    const response = await axios.get(`${art.wpSite.url}/wp-json/wp/v2/posts/${art.wpPostId}`, {
+                    const response = await axios.get(`${site.url}/wp-json/wp/v2/posts/${art.wpPostId}`, {
                         headers: { Authorization: `Basic ${auth}` },
                         timeout: 5000,
                     });
