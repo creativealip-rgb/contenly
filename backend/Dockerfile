@@ -40,5 +40,5 @@ COPY --from=builder /app/drizzle.config.ts ./
 
 EXPOSE 3001
 
-# Run db:push before starting the app
-CMD npm run db:push && npm run start:prod
+# Run db:push before starting the app (force to skip interactive prompts)
+CMD npm run db:push -- --force && npm run start:prod
