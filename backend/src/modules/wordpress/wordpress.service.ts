@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { DrizzleService } from '../../db/drizzle.service';
 import { wpSite, categoryMapping, article } from '../../db/schema';
 import { ArticlesService } from '../articles/articles.service';
@@ -639,10 +639,11 @@ export class WordpressService implements OnModuleInit {
 
         try {
             // Find all articles with status SCHEDULED
+            // Using sql template to avoid enum type issues
             const scheduledArticles = await this.db
                 .select()
                 .from(article)
-                .where(eq(article.status, 'SCHEDULED'));
+                .where(sql`${article.status} = 'SCHEDULED'`);
 
             if (scheduledArticles.length === 0) {
                 return;
