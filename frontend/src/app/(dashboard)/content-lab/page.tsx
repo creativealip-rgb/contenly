@@ -332,7 +332,7 @@ Source: ${article.url}`)
         setGeneratedTitle('')
 
         try {
-            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
             const response = await fetch(`${API_BASE_URL}/ai/generate`, {
                 method: 'POST',
                 headers: {
@@ -387,7 +387,7 @@ Source: ${article.url}`)
         setSourceContent('')
         setSelectedArticle(null)
         try {
-            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
             const response = await fetch(`${API_BASE_URL}/scraper/scrape`, {
                 method: 'POST',
                 headers: {
@@ -434,7 +434,7 @@ Source: ${article.url}`)
 
         try {
             // Use relative path for client-side to leverage Next.js proxy
-            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
 
             const response = await fetch(`${API_BASE_URL}/wordpress/publish`, {
                 method: 'POST',
@@ -445,7 +445,7 @@ Source: ${article.url}`)
                     content: generatedContent,
                     status,
                     categories: selectedCategory ? [selectedCategory] : undefined,
-                    sourceUrl: selectedArticle?.url || scrapeUrl || articleIdea || '',
+                    sourceUrl: selectedArticle?.url || scrapeUrl || '',
                     originalContent: selectedArticle?.content || sourceContent || '',
                     feedItemId: selectedArticle?.id,
                     featuredImageUrl: featuredImage, // This can be a URL or a base64 from local upload
@@ -486,7 +486,7 @@ Source: ${article.url}`)
         setIsGeneratingImage(true)
         try {
             // Check tokens (implicit in backend, but good to know)
-            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
             const response = await fetch(`${API_BASE_URL}/ai/generate-image`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -529,7 +529,7 @@ Source: ${article.url}`)
 
         setIsRefreshingSEO(true)
         try {
-            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
             const response = await fetch(`${API_BASE_URL}/ai/generate-seo`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -588,7 +588,7 @@ Source: ${article.url}`)
             const scheduledDateTime = new Date(`${scheduleDate}T${scheduleTime}`).toISOString()
 
             // Use relative path for client-side to leverage Next.js proxy
-            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
 
             const response = await fetch(`${API_BASE_URL}/wordpress/publish`, {
                 method: 'POST',
@@ -599,7 +599,7 @@ Source: ${article.url}`)
                     content: generatedContent,
                     status: 'future',
                     categories: selectedCategory ? [selectedCategory] : undefined,
-                    sourceUrl: selectedArticle?.url || scrapeUrl || articleIdea || '',
+                    sourceUrl: selectedArticle?.url || scrapeUrl || '',
                     originalContent: selectedArticle?.content || sourceContent || '',
                     feedItemId: selectedArticle?.id,
                     featuredImageUrl: featuredImage,

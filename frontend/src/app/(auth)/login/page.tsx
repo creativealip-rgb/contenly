@@ -90,7 +90,7 @@ export default function LoginPage() {
                             </div>
                         )}
 
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                        <form onSubmit={handleSubmit} className="space-y-4 max-w-sm mx-auto">
                             <div className="space-y-2">
                                 <Label htmlFor="email">Email</Label>
                                 <Input
@@ -132,19 +132,22 @@ export default function LoginPage() {
                                     </Button>
                                 </div>
                             </div>
-                            <Button
-                                type="submit"
-                                className="w-full btn-premium"
-                                disabled={isLoading}
-                            >
-                                {isLoading ? 'Signing in...' : 'Sign In'}
-                            </Button>
+                            <div className="flex justify-center pt-2">
+                                <Button
+                                    type="submit"
+                                    className="w-full max-w-xs btn-premium"
+                                    disabled={isLoading}
+                                >
+                                    {isLoading ? 'Signing in...' : 'Sign In'}
+                                </Button>
+                            </div>
                         </form>
 
-                        <div className="space-y-4 pt-2">
+                        <div className="flex flex-col items-center justify-center pt-4 space-y-3">
+                            <div className="text-sm text-gray-500 dark:text-gray-400">atau</div>
                             <Button
                                 variant="outline"
-                                className="w-full"
+                                className="w-full max-w-xs"
                                 disabled={isGoogleLoading || isLoading}
                                 onClick={async () => {
                                     setIsGoogleLoading(true)

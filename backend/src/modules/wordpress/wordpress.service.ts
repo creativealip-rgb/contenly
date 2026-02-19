@@ -57,13 +57,39 @@ export class WordpressService implements OnModuleInit {
     }
 
     private decrypt(text: string): string {
-        const [ivHex, encryptedHex] = text.split(':');
-        const iv = Buffer.from(ivHex, 'hex');
-        const encrypted = Buffer.from(encryptedHex, 'hex');
-        const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(this.encryptionKey.substring(0, 32)), iv);
-        let decrypted = decipher.update(encrypted);
-        decrypted = Buffer.concat([decrypted, decipher.final()]);
-        return decrypted.toString();
+        if (!text || typeof text !== 'string') {
+            throw new Error('Encrypted text is empty or invalid');
+        }
+
+        const parts = text.split(':');
+        if (parts.length !== 2) {
+            throw new Error(`Invalid encrypted text format. Expected format: iv:encrypted, got ${parts.length} parts`);
+        }
+
+        const [ivHex, encryptedHex] = parts;
+        
+        if (!ivHex || !encryptedHex) {
+            throw new Error('Invalid encrypted text: missing IV or encrypted data');
+        }
+
+        try {
+            const iv = Buffer.from(ivHex, 'hex');
+            const encrypted = Buffer.from(encryptedHex, 'hex');
+            
+            if (iv.length !== 16) {
+                throw new Error(`Invalid IV length: expected 16 bytes, got ${iv.length}`);
+            }
+
+            const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(this.encryptionKey.substring(0, 32)), iv);
+            let decrypted = decipher.update(encrypted);
+            decrypted = Buffer.concat([decrypted, decipher.final()]);
+            return decrypted.toString();
+        } catch (error) {
+            if (error instanceof Error) {
+                throw new Error(`Decryption failed: ${error.message}`);
+            }
+            throw new Error('Decryption failed: unknown error');
+        }
     }
 
     async getSites(userId: string) {
@@ -114,12 +140,37 @@ export class WordpressService implements OnModuleInit {
     async testConnection(url: string, username: string, appPassword: string): Promise<boolean> {
         try {
             const auth = Buffer.from(`${username}:${appPassword}`).toString('base64');
-            const response = await axios.get(`${url}/wp-json/wp/v2/users/me`, {
+            const apiUrl = `${url}/wp-json/wp/v2/users/me`;
+            this.logger.log(`Testing connection to: ${apiUrl}`);
+            
+            const response = await axios.get(apiUrl, {
                 headers: { Authorization: `Basic ${auth}` },
                 timeout: 10000,
             });
+            
+            this.logger.log(`Connection test successful: ${response.status}`);
             return response.status === 200;
-        } catch {
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                if (error.code === 'ECONNREFUSED') {
+                    this.logger.error(`Connection refused: ${url} - Site may be down or unreachable`);
+                } else if (error.code === 'ENOTFOUND') {
+                    this.logger.error(`DNS lookup failed: ${url} - Invalid URL or domain`);
+                } else if (error.code === 'ETIMEDOUT') {
+                    this.logger.error(`Connection timeout: ${url} - Site took too long to respond`);
+                } else if (error.response) {
+                    this.logger.error(`WordPress API error: ${error.response.status} - ${error.response.statusText}`);
+                    if (error.response.status === 401) {
+                        this.logger.error('Authentication failed - check username and app password');
+                    } else if (error.response.status === 404) {
+                        this.logger.error('WordPress REST API not found - ensure pretty permalinks are enabled');
+                    }
+                } else {
+                    this.logger.error(`Connection error: ${error.message}`);
+                }
+            } else {
+                this.logger.error(`Unexpected error during connection test: ${error}`);
+            }
             return false;
         }
     }
@@ -131,8 +182,33 @@ export class WordpressService implements OnModuleInit {
 
         if (!site) throw new NotFoundException('Site not found');
 
+        this.logger.log(`Verifying connection for site: ${site.name} (${site.url})`);
+
         try {
-            const appPassword = this.decrypt(site.appPasswordEncrypted);
+            // Validate encrypted password exists
+            if (!site.appPasswordEncrypted) {
+                throw new Error('Site has no encrypted password stored');
+            }
+
+            let appPassword: string;
+            try {
+                appPassword = this.decrypt(site.appPasswordEncrypted);
+            } catch (decryptError) {
+                const decryptMsg = decryptError instanceof Error ? decryptError.message : 'Unknown decryption error';
+                this.logger.error(`Failed to decrypt password for site ${siteId}: ${decryptMsg}`);
+                
+                // Update status to error
+                await this.db
+                    .update(wpSite)
+                    .set({ status: 'ERROR' })
+                    .where(eq(wpSite.id, siteId));
+                
+                return { 
+                    connected: false, 
+                    message: `Password decryption failed: ${decryptMsg}. Please reconnect the site.` 
+                };
+            }
+
             const isConnected = await this.testConnection(site.url, site.username, appPassword);
 
             // Update last health check
@@ -141,17 +217,30 @@ export class WordpressService implements OnModuleInit {
                     .update(wpSite)
                     .set({ status: 'CONNECTED', lastHealthCheck: new Date() })
                     .where(eq(wpSite.id, siteId));
+                this.logger.log(`Site ${site.name} connection verified successfully`);
             } else {
                 await this.db
                     .update(wpSite)
                     .set({ status: 'ERROR' })
                     .where(eq(wpSite.id, siteId));
+                this.logger.warn(`Site ${site.name} connection test returned false`);
             }
 
             return { connected: isConnected };
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : 'Unknown error';
-            this.logger.error('verifySiteConnection error', message);
+            this.logger.error(`verifySiteConnection error for site ${siteId}:`, message);
+            
+            // Update status to error on any exception
+            try {
+                await this.db
+                    .update(wpSite)
+                    .set({ status: 'ERROR' })
+                    .where(eq(wpSite.id, siteId));
+            } catch (dbError) {
+                this.logger.error('Failed to update site status after error', dbError);
+            }
+            
             return { connected: false, message };
         }
     }

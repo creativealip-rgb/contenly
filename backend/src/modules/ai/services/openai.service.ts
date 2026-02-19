@@ -9,28 +9,45 @@ export class OpenAiService {
 
     constructor(private configService: ConfigService) {
         console.log('🔍 OpenAiService: Initializing...');
-        console.log('📝 All env vars:', {
-            OPENROUTER_API_KEY: this.configService.get('OPENROUTER_API_KEY') ? 'SET' : 'NOT SET',
-            OPENROUTER_BASE_URL: this.configService.get('OPENROUTER_BASE_URL'),
-            OPENROUTER_MODEL: this.configService.get('OPENROUTER_MODEL'),
-        });
-
-        const apiKey = (this.configService.get('OPENROUTER_API_KEY') || '').trim();
-        const baseURL = (this.configService.get('OPENROUTER_BASE_URL') || 'https://openrouter.ai/api/v1').trim();
-
+        
+        // Get model preference from env (default to GPT-5.3-Codex)
+        const preferredModel = (this.configService.get('OPENAI_MODEL') || 'gpt-5.3-codex').trim();
+        
+        // Try OpenAI API first, then fall back to OpenRouter
+        let apiKey = (this.configService.get('OPENAI_API_KEY') || '').trim();
+        let baseURL = 'https://api.openai.com/v1';
+        let model = preferredModel;
+        
+        // If OpenAI key not available, try OpenRouter
         if (!apiKey) {
-            console.error('❌ OPENROUTER_API_KEY is undefined or empty!');
-            throw new Error('OPENROUTER_API_KEY is not set in environment variables');
+            apiKey = (this.configService.get('OPENROUTER_API_KEY') || '').trim();
+            baseURL = (this.configService.get('OPENROUTER_BASE_URL') || 'https://openrouter.ai/api/v1').trim();
+            model = this.configService.get('OPENROUTER_MODEL') || 'google/gemini-2.0-flash-exp:free';
+            console.log('📝 Using OpenRouter configuration');
+        } else {
+            console.log('📝 Using OpenAI API configuration');
         }
 
-        console.log('✅ OpenAI client initializing with OpenRouter');
+        console.log('📝 All env vars:', {
+            OPENAI_API_KEY: this.configService.get('OPENAI_API_KEY') ? 'SET' : 'NOT SET',
+            OPENAI_MODEL: model,
+            OPENROUTER_API_KEY: this.configService.get('OPENROUTER_API_KEY') ? 'SET' : 'NOT SET',
+            baseURL: baseURL,
+        });
+
+        if (!apiKey) {
+            console.error('❌ No API key found! Set either OPENAI_API_KEY or OPENROUTER_API_KEY');
+            throw new Error('No AI API key configured. Set OPENAI_API_KEY or OPENROUTER_API_KEY in environment variables');
+        }
+
+        console.log('✅ OpenAI client initializing');
         console.log(`🔑 API Key Prefix: ${apiKey.substring(0, 10)}...`);
 
         this.openai = new OpenAI({
             apiKey,
             baseURL,
         });
-        this.model = this.configService.get('OPENROUTER_MODEL') || 'google/gemini-2.0-flash-exp:free';
+        this.model = model;
         console.log(`✅ Model set to: ${this.model}`);
     }
 
@@ -147,15 +164,23 @@ Return JSON with:
     }
 
     async generateImage(prompt: string): Promise<string> {
-        const response = await this.openai.images.generate({
-            model: 'dall-e-3',
-            prompt: `Create a professional, high-quality featured image for an article about: ${prompt}. The image should be clean, modern, and suitable for a blog post.`,
-            n: 1,
-            size: '1792x1024',
-            quality: 'standard',
-        });
+        try {
+            const response = await this.openai.images.generate({
+                model: 'dall-e-3',
+                prompt: `Create a professional, high-quality featured image for an article about: ${prompt}. The image should be clean, modern, and suitable for a blog post.`,
+                n: 1,
+                size: '1792x1024',
+                quality: 'standard',
+            });
 
-        return response.data[0]?.url || '';
+            return response.data[0]?.url || '';
+        } catch (error: any) {
+            console.error('[OpenAiService] Image generation failed:', {
+                status: error.status,
+                message: error.message,
+            });
+            throw error;
+        }
     }
 
     private generateSlug(title: string): string {

@@ -63,6 +63,12 @@ export function Navbar() {
 
     // Fetch token balance on mount and periodically
     useEffect(() => {
+        // Only fetch balance if user is logged in
+        if (!user) {
+            setTokenBalance(null)
+            return
+        }
+
         const fetchBalance = async () => {
             try {
                 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
@@ -75,9 +81,13 @@ export function Navbar() {
                 if (response.ok) {
                     const data = await response.json()
                     setTokenBalance(data.balance || 0)
+                } else if (response.status === 401) {
+                    // User not authenticated, clear balance
+                    setTokenBalance(null)
                 }
             } catch (error) {
                 console.error('Failed to fetch token balance:', error)
+                setTokenBalance(null)
             }
         }
 
@@ -86,7 +96,7 @@ export function Navbar() {
         // Refresh balance every 10 seconds to catch updates
         const interval = setInterval(fetchBalance, 10000)
         return () => clearInterval(interval)
-    }, [])
+    }, [user])
 
     const handleLogout = async () => {
         try {

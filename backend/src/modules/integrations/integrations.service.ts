@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { DrizzleService } from '../../db/drizzle.service';
 import { wpSite, categoryMapping } from '../../db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -9,30 +10,67 @@ import * as crypto from 'crypto';
 
 @Injectable()
 export class IntegrationsService {
-    constructor(private readonly drizzle: DrizzleService) { }
+    private readonly logger = new Logger(IntegrationsService.name);
+    private encryptionKey: string;
 
-    // Encrypt app password before storing
-    private encryptPassword(password: string): string {
-        const algorithm = 'aes-256-cbc';
-        const key = Buffer.from(process.env.ENCRYPTION_KEY || 'your-32-character-secret-key!!', 'utf-8').slice(0, 32);
-        const iv = crypto.randomBytes(16);
-        const cipher = crypto.createCipheriv(algorithm, key, iv);
-        let encrypted = cipher.update(password, 'utf8', 'hex');
-        encrypted += cipher.final('hex');
-        return iv.toString('hex') + ':' + encrypted;
+    constructor(
+        private readonly drizzle: DrizzleService,
+        private readonly configService: ConfigService,
+    ) {
+        const key = this.configService.get<string>('ENCRYPTION_KEY');
+        if (!key || key.length < 32) {
+            throw new Error(
+                'ENCRYPTION_KEY environment variable is not set or is too short (minimum 32 characters). ' +
+                'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
+            );
+        }
+        this.encryptionKey = key;
     }
 
-    // Decrypt app password when retrieving
+    // Encrypt app password before storing - MUST match wordpress.service.ts implementation
+    private encryptPassword(password: string): string {
+        const iv = crypto.randomBytes(16);
+        const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(this.encryptionKey.substring(0, 32)), iv);
+        let encrypted = cipher.update(password);
+        encrypted = Buffer.concat([encrypted, cipher.final()]);
+        return iv.toString('hex') + ':' + encrypted.toString('hex');
+    }
+
+    // Decrypt app password when retrieving - MUST match wordpress.service.ts implementation
     private decryptPassword(encrypted: string): string {
-        const algorithm = 'aes-256-cbc';
-        const key = Buffer.from(process.env.ENCRYPTION_KEY || 'your-32-character-secret-key!!', 'utf-8').slice(0, 32);
+        if (!encrypted || typeof encrypted !== 'string') {
+            throw new Error('Encrypted password is empty or invalid');
+        }
+
         const parts = encrypted.split(':');
-        const iv = Buffer.from(parts[0], 'hex');
-        const encryptedText = parts[1];
-        const decipher = crypto.createDecipheriv(algorithm, key, iv);
-        let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
-        decrypted += decipher.final('utf8');
-        return decrypted;
+        if (parts.length !== 2) {
+            throw new Error(`Invalid encrypted password format. Expected: iv:encrypted, got ${parts.length} parts`);
+        }
+
+        const [ivHex, encryptedHex] = parts;
+        
+        if (!ivHex || !encryptedHex) {
+            throw new Error('Invalid encrypted password: missing IV or encrypted data');
+        }
+
+        try {
+            const iv = Buffer.from(ivHex, 'hex');
+            const encryptedBuffer = Buffer.from(encryptedHex, 'hex');
+            
+            if (iv.length !== 16) {
+                throw new Error(`Invalid IV length: expected 16 bytes, got ${iv.length}`);
+            }
+
+            const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(this.encryptionKey.substring(0, 32)), iv);
+            let decrypted = decipher.update(encryptedBuffer);
+            decrypted = Buffer.concat([decrypted, decipher.final()]);
+            return decrypted.toString();
+        } catch (error) {
+            if (error instanceof Error) {
+                throw new Error(`Decryption failed: ${error.message}`);
+            }
+            throw new Error('Decryption failed: unknown error');
+        }
     }
 
     // Create WordPress site
@@ -114,7 +152,24 @@ export class IntegrationsService {
     // Test WordPress connection
     async testConnection(siteId: string, userId: string) {
         const site = await this.getSite(siteId, userId);
-        const decryptedPassword = this.decryptPassword(site.appPasswordEncrypted);
+        
+        this.logger.log(`Testing connection for site: ${site.name} (${site.url})`);
+        
+        let decryptedPassword: string;
+        try {
+            decryptedPassword = this.decryptPassword(site.appPasswordEncrypted);
+        } catch (decryptError) {
+            const msg = decryptError instanceof Error ? decryptError.message : 'Unknown decryption error';
+            this.logger.error(`Failed to decrypt password for site ${siteId}: ${msg}`);
+            
+            // Update status to error
+            await this.drizzle.db
+                .update(wpSite)
+                .set({ status: 'ERROR', lastHealthCheck: new Date() })
+                .where(eq(wpSite.id, siteId));
+            
+            throw new BadRequestException(`Password decryption failed: ${msg}. Please reconnect the site.`);
+        }
 
         try {
             const credentials = Buffer.from(`${site.username}:${decryptedPassword}`).toString('base64');
@@ -125,7 +180,9 @@ export class IntegrationsService {
             });
 
             if (!response.ok) {
-                throw new Error('Connection failed');
+                const errorText = await response.text();
+                this.logger.error(`WordPress API error: ${response.status} - ${errorText}`);
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
             // Update status to CONNECTED
@@ -134,22 +191,33 @@ export class IntegrationsService {
                 .set({ status: 'CONNECTED', lastHealthCheck: new Date() })
                 .where(eq(wpSite.id, siteId));
 
+            this.logger.log(`Connection test successful for site: ${site.name}`);
             return { success: true, message: 'Connection successful' };
         } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+            this.logger.error(`Connection test failed for site ${siteId}: ${errorMsg}`);
+            
             // Update status to ERROR
             await this.drizzle.db
                 .update(wpSite)
                 .set({ status: 'ERROR', lastHealthCheck: new Date() })
                 .where(eq(wpSite.id, siteId));
 
-            throw new BadRequestException(`Connection failed: ${error.message}`);
+            throw new BadRequestException(`Connection failed: ${errorMsg}`);
         }
     }
 
     // Refresh categories from WordPress
     async refreshCategories(siteId: string, userId: string) {
         const site = await this.getSite(siteId, userId);
-        const decryptedPassword = this.decryptPassword(site.appPasswordEncrypted);
+        
+        let decryptedPassword: string;
+        try {
+            decryptedPassword = this.decryptPassword(site.appPasswordEncrypted);
+        } catch (decryptError) {
+            const msg = decryptError instanceof Error ? decryptError.message : 'Unknown decryption error';
+            throw new BadRequestException(`Password decryption failed: ${msg}. Please reconnect the site.`);
+        }
 
         try {
             const credentials = Buffer.from(`${site.username}:${decryptedPassword}`).toString('base64');
