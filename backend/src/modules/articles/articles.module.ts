@@ -5,9 +5,9 @@ import { AuthModule } from '../auth/auth.module';
 import { AiModule } from '../ai/ai.module';
 
 @Module({
-    imports: [forwardRef(() => AiModule), AuthModule],
-    controllers: [ArticlesController],
-    providers: [ArticlesService],
-    exports: [ArticlesService],
+  imports: [forwardRef(() => AiModule), AuthModule],
+  controllers: [ArticlesController],
+  providers: [ArticlesService],
+  exports: [ArticlesService],
 })
-export class ArticlesModule { }
+export class ArticlesModule {}

@@ -22,6 +22,8 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { CategoryMappingModule } from './modules/category-mapping/category-mapping.module';
 import { ViewBoostModule } from './modules/view-boost/view-boost.module';
+import { InstagramStudioModule } from './modules/instagram-studio/instagram-studio.module';
+import { VideoScriptModule } from './modules/video-script/video-script.module';
 
 @Module({
   imports: [
@@ -65,6 +67,8 @@ import { ViewBoostModule } from './modules/view-boost/view-boost.module';
     IntegrationsModule,
     CategoryMappingModule,
     ViewBoostModule,
+    InstagramStudioModule,
+    VideoScriptModule,
   ],
   controllers: [AppController],
   providers: [AppService],

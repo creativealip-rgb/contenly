@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+<<<<<<< HEAD
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -44,17 +45,19 @@ import {
 } from 'lucide-react'
 
 
+=======
+import { Plus } from 'lucide-react'
+>>>>>>> c1209c3 (feat: global styling refresh, layout fixes, and build error resolution)
 import { WordPressSite, getSites, getActiveSite } from '@/lib/sites-store'
 import { RssFeed, getFeeds, addFeed, removeFeed } from '@/lib/feeds-store'
-import { Plus, Trash2 } from 'lucide-react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { migrateLocalStorageFeeds } from '@/lib/migrate-feeds'
-
-// ... (other imports)
-
 import { useContentLabStore } from '@/stores/content-lab-store'
 
-// ... imports
+// New Components
+import { SourceSidebar } from './components/SourceSidebar'
+import { ContentEditor } from './components/ContentEditor'
+import { ToolsPanel } from './components/ToolsPanel'
+import { ContentLabState, ContentLabHandlers } from './components/types'
 
 export default function ContentLabPage() {
     // Global Store State
@@ -77,38 +80,21 @@ export default function ContentLabPage() {
         metaDescription, setMetaDescription,
     } = useContentLabStore()
 
-    // Local UI State (Not persisted)
+    // Local UI State
     const [selectedFeed, setSelectedFeed] = useState('')
     const [isScanning, setIsScanning] = useState(false)
-    const [isGenerating, setIsGenerating] = useState(false)
     const [isScraping, setIsScraping] = useState(false)
     const [isRewriting, setIsRewriting] = useState(false)
-
-    // SEO & Image state (Local for now, unless extended)
-    const [isGeneratingImage, setIsGeneratingImage] = useState(false)
-    /* const [tone, setTone] = useState('professional') */ // Unused duplicate?
-    const [generateImage, setGenerateImage] = useState(true)
     const [copied, setCopied] = useState(false)
-
-    // Publishing state
     const [isPublishing, setIsPublishing] = useState(false)
     const [isRefreshingSEO, setIsRefreshingSEO] = useState(false)
-
-    // Scheduling state
     const [isScheduleOpen, setIsScheduleOpen] = useState(false)
     const [scheduleDate, setScheduleDate] = useState('')
     const [scheduleTime, setScheduleTime] = useState('')
-    const [postStatus, setPostStatus] = useState('draft')
-
-    // WordPress categories
     const [wpCategories, setWpCategories] = useState<Array<{ id: number; name: string }>>([])
     const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
     const [isFetchingCategories, setIsFetchingCategories] = useState(false)
-
-    // Sites state
     const [sites, setSites] = useState<WordPressSite[]>([])
-
-    // RSS Feeds state
     const [feeds, setFeeds] = useState<RssFeed[]>([])
     const [articles, setArticles] = useState<any[]>([])
     const [isFetchingRSS, setIsFetchingRSS] = useState(false)
@@ -116,40 +102,34 @@ export default function ContentLabPage() {
     const [newFeedUrl, setNewFeedUrl] = useState('')
     const [newFeedName, setNewFeedName] = useState('')
 
+    // Initial Load
     useEffect(() => {
-        // Load sites and feeds
         const loadData = async () => {
             const fetchedSites = await getSites()
             setSites(fetchedSites)
-
-            // Migrate localStorage feeds to database (one-time)
             await migrateLocalStorageFeeds()
-
             const fetchedFeeds = await getFeeds()
             setFeeds(fetchedFeeds)
 
-            // Fetch WordPress categories from active site via backend
             const activeSite = await getActiveSite()
             if (!activeSite) return
 
             setIsFetchingCategories(true)
             try {
+<<<<<<< HEAD
                 // Use backend endpoint which already has stored credentials
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
 
+=======
+                const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+>>>>>>> c1209c3 (feat: global styling refresh, layout fixes, and build error resolution)
                 const response = await fetch(`${API_BASE_URL}/wordpress/sites/${activeSite.id}/categories`, {
-                    credentials: 'include', // Send session cookies
+                    credentials: 'include',
                     headers: { 'ngrok-skip-browser-warning': 'true' }
                 })
-
-                if (!response.ok) {
-                    throw new Error('Failed to fetch categories')
-                }
-
-                const categories = await response.json()
-
-                if (Array.isArray(categories)) {
-                    setWpCategories(categories)
+                if (response.ok) {
+                    const categories = await response.json()
+                    if (Array.isArray(categories)) setWpCategories(categories)
                 }
             } catch (error) {
                 console.error('Failed to fetch categories:', error)
@@ -157,49 +137,23 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/a
                 setIsFetchingCategories(false)
             }
         }
-
         loadData()
     }, [])
 
-
-    // Derived credentials from active site
-    const getSelectedSiteCredentials = async () => {
-        const site = await getActiveSite()
-        if (!site) return null
-
-        return {
-            wpUrl: site.url,
-            username: site.username,
-            appPassword: site.appPassword
-        }
-    }
-
-    // Fetch content from RSS
+    // Logic Handlers
     const handleFetchArticles = async (feedId: string) => {
         const feed = feeds.find(f => f.id === feedId)
         if (!feed) return
-
         setIsFetchingRSS(true)
         setArticles([])
-        setSelectedArticle(null)
-        setSourceContent('')
-
         try {
             const response = await fetch('/api/rss', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ url: feed.url }),
             })
-
             const data = await response.json()
-            if (data.success) {
-                setArticles(data.items)
-            } else {
-                console.error('Failed to fetch RSS:', data.error)
-                // Fallback or error notification
-            }
+            if (data.success) setArticles(data.items)
         } catch (error) {
             console.error('RSS Error:', error)
         } finally {
@@ -209,7 +163,6 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/a
 
     const handleAddFeed = async () => {
         if (!newFeedName || !newFeedUrl) return
-
         const newFeed: RssFeed = {
             id: Math.random().toString(36).substring(7),
             name: newFeedName,
@@ -217,7 +170,6 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/a
             status: 'active',
             lastSynced: new Date().toISOString()
         }
-
         try {
             const addedFeed = await addFeed(newFeed)
             if (addedFeed) {
@@ -226,89 +178,53 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/a
                 setNewFeedName('')
                 setNewFeedUrl('')
                 setIsAddFeedOpen(false)
-
-                // Auto select and fetch
                 setSelectedFeed(addedFeed.id)
                 handleFetchArticles(addedFeed.id)
             }
         } catch (error) {
             console.error('Failed to add feed:', error)
-            alert('Failed to add feed. Please try again.')
         }
     }
 
     const handleRemoveFeed = async (e: React.MouseEvent, id: string) => {
         e.stopPropagation()
-
         try {
             await removeFeed(id)
             const updatedFeeds = await getFeeds()
             setFeeds(updatedFeeds)
-
             if (selectedFeed === id) {
                 setSelectedFeed('')
                 setArticles([])
             }
         } catch (error) {
             console.error('Failed to remove feed:', error)
-            alert('Failed to remove feed. Please try again.')
         }
     }
-
-    // Effect to fetch when selectedFeed changes
-    useEffect(() => {
-        if (selectedFeed) {
-            handleFetchArticles(selectedFeed)
-        }
-    }, [selectedFeed])
 
     const handleSelectArticle = async (article: any) => {
         setSelectedArticle(article)
         setIsScanning(true)
-
         try {
+<<<<<<< HEAD
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
             // Auto-scrape full article content from backend URL
+=======
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+>>>>>>> c1209c3 (feat: global styling refresh, layout fixes, and build error resolution)
             const response = await fetch(`${API_BASE_URL}/scraper/scrape`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'ngrok-skip-browser-warning': 'true'
-                },
+                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
                 credentials: 'include',
                 body: JSON.stringify({ url: article.url })
             })
-
             const result = await response.json()
-
-            console.log('Scraper API Response:', {
-                success: result.success,
-                contentLength: result.data?.content?.length || 0,
-                hasContent: !!result.data?.content,
-                source: result.data?.source,
-                tier: result.data?.extractionTier
-            })
-
             if (result.success && result.data) {
-                // Use scraped full content
                 setSourceContent(result.data.content || '')
             } else {
-                console.warn('Scraping failed, using RSS fallback')
-                // Fallback to RSS excerpt if scraping fails
-                setSourceContent(`# ${article.title}
-
-${article.excerpt || article.description || ''}
-
-Source: ${article.url}`)
+                setSourceContent(`# ${article.title}\n\n${article.excerpt || article.description || ''}\n\nSource: ${article.url}`)
             }
         } catch (error) {
-            console.error('Scraping error:', error)
-            // Fallback to RSS excerpt
-            setSourceContent(`# ${article.title}
-
-${article.excerpt || article.description || ''}
-
-Source: ${article.url}`)
+            setSourceContent(`# ${article.title}\n\n${article.excerpt || article.description || ''}\n\nSource: ${article.url}`)
         } finally {
             setIsScanning(false)
         }
@@ -316,84 +232,59 @@ Source: ${article.url}`)
 
     const handleAIRewrite = async () => {
         const hasSource = activeTab === 'idea' ? articleIdea.trim() : sourceContent.trim();
-
         if (!hasSource) {
-            alert(activeTab === 'idea' ? 'Please enter your idea or keywords first' : 'Please select an article first')
+            alert(activeTab === 'idea' ? 'Please enter your idea first' : 'Please select an article first')
             return
         }
-
         if (!selectedCategory) {
-            alert('Silakan pilih kategori terlebih dahulu agar AI dapat menyisipkan internal link yang relevan.')
+            alert('Silakan pilih kategori terlebih dahulu.')
             return
         }
-
         setIsRewriting(true)
         setGeneratedContent('')
         setGeneratedTitle('')
-
         try {
             const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
             const response = await fetch(`${API_BASE_URL}/ai/generate`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'ngrok-skip-browser-warning': 'true'
-                },
+                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
                 credentials: 'include',
                 body: JSON.stringify({
                     originalContent: activeTab === 'idea' ? articleIdea : sourceContent,
                     title: selectedArticle?.title || 'Rewritten Article',
                     sourceUrl: selectedArticle?.url || scrapeUrl || '',
-                    feedItemId: selectedArticle?.id,
                     mode: activeTab === 'idea' ? 'idea' : 'rewrite',
-                    categoryId: selectedCategory || undefined,
+                    categoryId: selectedCategory,
                     options: {
                         tone: aiTone,
-                        length: aiLength === 'shorter' ? 'short' : aiLength === 'longer' ? 'long' : 'medium',
+                        length: aiLength === 'shorter' ? 'short' : aiLength === 'longer' ? 'long' : 'medium'
                     }
                 }),
             })
-
             const result = await response.json()
-
             if (result.success && result.data) {
                 setGeneratedContent(result.data.content)
                 setGeneratedTitle(result.data.title)
-
-                // Update SEO fields with AI generated values
                 if (result.data.metaDescription) setMetaDescription(result.data.metaDescription)
                 if (result.data.slug) setSlug(result.data.slug)
                 if (result.data.title) setMetaTitle(result.data.title)
-
-                if (result.data.articleId) {
-                    setGeneratedArticleId(result.data.articleId)
-                }
-            } else {
-                alert(`AI Rewrite failed: ${result.error || 'Unknown error'}`)
             }
-        } catch (error: any) {
+        } catch (error) {
             console.error('AI Rewrite error:', error)
-            alert(`Failed to rewrite: ${error.message}`)
         } finally {
             setIsRewriting(false)
         }
     }
 
-
-
     const handleScrape = async () => {
         if (!scrapeUrl) return
         setIsScraping(true)
         setSourceContent('')
-        setSelectedArticle(null)
         try {
             const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
             const response = await fetch(`${API_BASE_URL}/scraper/scrape`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'ngrok-skip-browser-warning': 'true'
-                },
+                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
                 credentials: 'include',
                 body: JSON.stringify({ url: scrapeUrl })
             })
@@ -401,21 +292,93 @@ Source: ${article.url}`)
             if (result.success) {
                 const content = result.data.content || result.data.excerpt || ''
                 setSourceContent(content)
-                setSelectedArticle({
-                    id: 'scraped-' + Date.now(),
-                    title: result.data.title,
-                    url: result.data.url,
-                    excerpt: result.data.excerpt || content.substring(0, 150) + '...',
-                    publishedAt: result.data.publishedAt
-                })
+                setSelectedArticle({ id: 'scraped-' + Date.now(), title: result.data.title, url: result.data.url })
                 setGeneratedTitle(result.data.title)
-            } else {
-                console.error("Scrape failed:", result.error)
             }
         } catch (error) {
             console.error("Scrape error:", error)
         } finally {
             setIsScraping(false)
+        }
+    }
+
+    const slugify = (text: string) => text.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-')
+
+    const handleRefreshSEO = async () => {
+        if (!generatedContent || !generatedTitle) return
+        setIsRefreshingSEO(true)
+        try {
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+            const response = await fetch(`${API_BASE_URL}/ai/generate-seo`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ title: generatedTitle, content: generatedContent }),
+            })
+            const result = await response.json()
+            if (result.metaTitle) setMetaTitle(result.metaTitle)
+            if (result.metaDescription) setMetaDescription(result.metaDescription)
+            if (result.slug) setSlug(result.slug)
+        } catch (error) {
+            setMetaTitle(generatedTitle)
+            setSlug(slugify(generatedTitle))
+        } finally {
+            setIsRefreshingSEO(false)
+        }
+    }
+
+    const handlePublishNow = async (status: 'draft' | 'publish') => {
+        if (!generatedContent || !generatedTitle) return
+        setIsPublishing(true)
+        setPublishResult(null)
+        try {
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+            const response = await fetch(`${API_BASE_URL}/wordpress/publish`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    title: generatedTitle,
+                    content: generatedContent,
+                    status,
+                    categories: selectedCategory ? [selectedCategory] : undefined,
+                    sourceUrl: selectedArticle?.url || scrapeUrl || articleIdea || '',
+                    featuredImageUrl: featuredImage,
+                }),
+            })
+            const data = await response.json()
+            if (data.success) setPublishResult({ success: true, message: 'Success!', link: data.post.link })
+            else setPublishResult({ success: false, message: data.error || 'Failed' })
+        } catch (error: any) {
+            setPublishResult({ success: false, message: error.message })
+        } finally {
+            setIsPublishing(false)
+        }
+    }
+
+    const handleSchedulePublish = async () => {
+        if (!generatedContent || !generatedTitle || !scheduleDate || !scheduleTime) return
+        setIsPublishing(true)
+        try {
+            const scheduledDateTime = new Date(`${scheduleDate}T${scheduleTime}`).toISOString()
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+            const response = await fetch(`${API_BASE_URL}/wordpress/publish`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    title: generatedTitle, content: generatedContent, status: 'future', date: scheduledDateTime, featuredImageUrl: featuredImage
+                }),
+            })
+            const data = await response.json()
+            if (data.success) {
+                setPublishResult({ success: true, message: `Scheduled for ${new Date(scheduledDateTime).toLocaleString()}`, link: data.post.link })
+                setIsScheduleOpen(false)
+            }
+        } catch (error) {
+            console.error(error)
+        } finally {
+            setIsPublishing(false)
         }
     }
 
@@ -425,6 +388,7 @@ Source: ${article.url}`)
         setTimeout(() => setCopied(false), 2000)
     }
 
+<<<<<<< HEAD
     // Publish to WordPress
     const handlePublishNow = async (status: 'draft' | 'publish') => {
         if (!generatedContent || !generatedTitle) return
@@ -559,24 +523,19 @@ Source: ${article.url}`)
     }
 
     // Auto-update SEO fields when content generates (only if empty)
+=======
+>>>>>>> c1209c3 (feat: global styling refresh, layout fixes, and build error resolution)
     useEffect(() => {
-        if (generatedTitle && !metaTitle) {
-            setMetaTitle(generatedTitle)
-        }
-        if (generatedTitle && !slug) {
-            setSlug(slugify(generatedTitle))
-        }
-    }, [generatedTitle, metaTitle, slug, setMetaTitle, setSlug])
+        if (selectedFeed) handleFetchArticles(selectedFeed)
+    }, [selectedFeed])
 
-    useEffect(() => {
-        if (generatedContent && !metaDescription) {
-            let desc = generatedContent.substring(0, 160)
-            const lastSpace = desc.lastIndexOf(' ')
-            if (lastSpace > 0) desc = desc.substring(0, lastSpace)
-            setMetaDescription(desc + '...')
-        }
-    }, [generatedContent, metaDescription, setMetaDescription])
+    const state: ContentLabState = {
+        wpCategories, selectedCategory, isFetchingCategories, sites,
+        feeds, articles, selectedArticle, selectedFeed, isFetchingRSS, isAddFeedOpen,
+        newFeedUrl, newFeedName, isScanning, isScraping, isRewriting, activeTab
+    }
 
+<<<<<<< HEAD
     // Schedule publish
     const handleSchedulePublish = async () => {
         if (!generatedContent || !generatedTitle || !scheduleDate || !scheduleTime) return
@@ -1295,5 +1254,46 @@ Source: ${article.url}`)
                 </Card>
             </motion.div>
         </div >
+=======
+    const handlers: ContentLabHandlers = {
+        setFeeds, setArticles, setSelectedFeed, setIsFetchingRSS, setIsAddFeedOpen,
+        setNewFeedUrl, setNewFeedName, setIsScanning, setIsScraping, setIsRewriting, setActiveTab, setSelectedCategory,
+        handleFetchArticles, handleAddFeed, handleRemoveFeed, handleSelectArticle, handleScrape, handleAIRewrite
+    }
+
+    return (
+        <div className="h-[calc(100vh-180px)] min-h-[600px] px-4 md:px-0">
+            <div className="grid grid-cols-1 xl:grid-cols-[300px_1fr_320px] h-full gap-4 xl:gap-8">
+                {/* Left Sidebar: Sources */}
+                <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/40 dark:border-slate-800/60 rounded-[32px] p-6 overflow-y-auto custom-scrollbar shadow-inner">
+                    <SourceSidebar state={state} handlers={handlers} />
+                </div>
+
+                {/* Center Panel: Main Editor */}
+                <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-2xl border border-white/60 dark:border-slate-800/60 rounded-[40px] p-8 lg:p-10 overflow-y-auto custom-scrollbar shadow-2xl shadow-slate-200/50 dark:shadow-none border-t-white/40 relative">
+                    <ContentEditor state={state} handlers={handlers} copied={copied} handleCopy={handleCopy} />
+                </div>
+
+                {/* Right Panel: Tools & Publishing */}
+                <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/40 dark:border-slate-800/60 rounded-[32px] p-6 lg:p-8 overflow-y-auto custom-scrollbar shadow-inner">
+                    <ToolsPanel
+                        state={state}
+                        handlers={handlers}
+                        isRefreshingSEO={isRefreshingSEO}
+                        handleRefreshSEO={handleRefreshSEO}
+                        handlePublishNow={handlePublishNow}
+                        isPublishing={isPublishing}
+                        isScheduleOpen={isScheduleOpen}
+                        setIsScheduleOpen={setIsScheduleOpen}
+                        scheduleDate={scheduleDate}
+                        setScheduleDate={setScheduleDate}
+                        scheduleTime={scheduleTime}
+                        setScheduleTime={setScheduleTime}
+                        handleSchedulePublish={handleSchedulePublish}
+                    />
+                </div>
+            </div>
+        </div>
+>>>>>>> c1209c3 (feat: global styling refresh, layout fixes, and build error resolution)
     )
 }

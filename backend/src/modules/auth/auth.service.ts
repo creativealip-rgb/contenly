@@ -10,139 +10,151 @@ import { Resend } from 'resend';
 
 @Injectable()
 export class AuthService {
-    private readonly logger = new Logger(AuthService.name);
-    private resend: Resend | null = null;
+  private readonly logger = new Logger(AuthService.name);
+  private resend: Resend | null = null;
 
-    constructor(
-        private billingService: BillingService,
-        private configService: ConfigService,
-    ) {
-        // Initialize Resend if API key is provided
-        const resendApiKey = this.configService.get<string>('RESEND_API_KEY');
-        if (resendApiKey) {
-            this.resend = new Resend(resendApiKey);
-            this.logger.log('Resend email service initialized');
-        } else {
-            this.logger.warn('RESEND_API_KEY not set - password reset emails will only be logged');
-        }
+  constructor(
+    private billingService: BillingService,
+    private configService: ConfigService,
+  ) {
+    // Initialize Resend if API key is provided
+    const resendApiKey = this.configService.get<string>('RESEND_API_KEY');
+    if (resendApiKey) {
+      this.resend = new Resend(resendApiKey);
+      this.logger.log('Resend email service initialized');
+    } else {
+      this.logger.warn('RESEND_API_KEY not set - password reset emails will only be logged');
     }
+  }
 
-    async signUp(data: { email: string; password: string; name?: string }) {
-        try {
-            const result = await auth.api.signUpEmail({
-                body: {
-                    email: data.email,
-                    password: data.password,
-                    name: data.name || data.email.split('@')[0],
-                },
-            });
+  async signUp(data: { email: string; password: string; name?: string }) {
+    try {
+      const result = await auth.api.signUpEmail({
+        body: {
+          email: data.email,
+          password: data.password,
+          name: data.name || data.email.split('@')[0],
+        },
+      });
 
-            // Create initial token balance for new user
-            if (result.user) {
-                await this.billingService.initializeBalance(result.user.id);
-            }
+      // Create initial token balance for new user
+      if (result.user) {
+        await this.billingService.initializeBalance(result.user.id);
+      }
 
-            return {
-                user: result.user,
-                session: (result as any).session,
-            };
-        } catch (error: any) {
-            throw new BadRequestException(error.message || 'Registration failed');
-        }
+      return {
+        user: result.user,
+        session: (result as any).session,
+      };
+    } catch (error: any) {
+      throw new BadRequestException(error.message || 'Registration failed');
     }
+  }
 
-    async signIn(data: { email: string; password: string }) {
-        try {
-            const result = await auth.api.signInEmail({
-                body: {
-                    email: data.email,
-                    password: data.password,
-                },
-            });
+  async signIn(data: { email: string; password: string }) {
+    try {
+      const result = await auth.api.signInEmail({
+        body: {
+          email: data.email,
+          password: data.password,
+        },
+      });
 
-            return {
-                user: result.user,
-                session: (result as any).session,
-            };
-        } catch (error: any) {
-            throw new UnauthorizedException('Invalid credentials');
-        }
+      return {
+        user: result.user,
+        session: (result as any).session,
+      };
+    } catch (error: any) {
+      throw new UnauthorizedException('Invalid credentials');
     }
+  }
 
-    async signOut(sessionToken: string) {
-        try {
-            await auth.api.signOut({
-                headers: {
-                    Authorization: `Bearer ${sessionToken}`,
-                },
-            });
-            return { message: 'Logged out successfully' };
-        } catch {
-            return { message: 'Logged out successfully' };
-        }
+  async signOut(sessionToken: string) {
+    try {
+      await auth.api.signOut({
+        headers: {
+          Authorization: `Bearer ${sessionToken}`,
+        },
+      });
+      return { message: 'Logged out successfully' };
+    } catch {
+      return { message: 'Logged out successfully' };
     }
+  }
 
-    async getSession(options: { headers: Headers }) {
-        try {
-            const session = await auth.api.getSession({
-                headers: options.headers,
-            });
-            return session;
-        } catch (error: any) {
-            this.logger.error('getSession error', error);
-            throw new UnauthorizedException('Session validation failed');
-        }
+  async getSession(options: { headers: Headers }) {
+    try {
+      // Debug Headers
+      const authHeader = options.headers.get('authorization');
+      const cookieHeader = options.headers.get('cookie');
+      const originHeader = options.headers.get('origin');
+      const hostHeader = options.headers.get('host');
+      this.logger.log(`[SessionAuthGuard] Host: ${hostHeader}`);
+      this.logger.log(`[SessionAuthGuard] Origin: ${originHeader}`);
+      this.logger.log(`[SessionAuthGuard] Auth Header Present: ${!!authHeader}`);
+      this.logger.log(
+        `[SessionAuthGuard] Cookie Header Present: ${!!cookieHeader}`,
+      );
+      const session = await auth.api.getSession({
+        headers: options.headers,
+      });
+      return session;
+    } catch (error: any) {
+      this.logger.error('[AuthService] getSession Error:', error);
+      throw new UnauthorizedException(
+        `DEBUG: getSession Error: ${error.message || 'Unknown'}`,
+      );
     }
+  }
 
-    async forgotPassword(email: string) {
-        try {
-            // Check if user exists
-            const existingUser = await db.query.user.findFirst({
-                where: eq(schema.user.email, email),
-            });
+  async forgotPassword(email: string) {
+    try {
+      // Check if user exists
+      const existingUser = await db.query.user.findFirst({
+        where: eq(schema.user.email, email),
+      });
 
-            if (!existingUser) {
-                // Return success even if user doesn't exist for security
-                return { message: 'Password reset email sent' };
-            }
+      if (!existingUser) {
+        // Return success even if user doesn't exist for security
+        return { message: 'Password reset email sent' };
+      }
 
-            // Generate token
-            const token = crypto.randomBytes(32).toString('hex');
-            const expiresAt = new Date(Date.now() + 1000 * 60 * 60); // 1 hour
+      // Generate token
+      const token = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 1000 * 60 * 60); // 1 hour
 
-            // Store in verification table
-            await db.insert(schema.verification).values({
-                id: crypto.randomUUID(),
-                identifier: email,
-                value: token,
-                expiresAt: expiresAt,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            });
+      // Store in verification table
+      await db.insert(schema.verification).values({
+        id: crypto.randomUUID(),
+        identifier: email,
+        value: token,
+        expiresAt: expiresAt,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
 
-            // Send password reset email
-            const resetUrl = `${process.env.FRONTEND_URL?.split(',')[0] || 'http://localhost:3000'}/reset-password?token=${token}`;
-            await this.sendPasswordResetEmail(email, resetUrl);
+      // Send password reset email
+      const resetUrl = `${process.env.FRONTEND_URL?.split(',')[0] || 'http://localhost:3000'}/reset-password?token=${token}`;
+      await this.sendPasswordResetEmail(email, resetUrl);
 
-            return { message: 'Password reset email sent' };
-        } catch (error: any) {
-            this.logger.error('Forgot password error', error);
-            return { message: 'Password reset email sent' };
-        }
+      return { message: 'Password reset email sent' };
+    } catch (error: any) {
+      this.logger.error('Forgot password error', error);
+      return { message: 'Password reset email sent' };
     }
+  }
 
-    private async sendPasswordResetEmail(email: string, resetUrl: string) {
-        const emailFrom = this.configService.get<string>('EMAIL_FROM') || 'noreply@contenly.app';
-        const frontendUrl = this.configService.get<string>('FRONTEND_URL')?.split(',')[0] || 'http://localhost:3000';
+  private async sendPasswordResetEmail(email: string, resetUrl: string) {
+    const emailFrom = this.configService.get<string>('EMAIL_FROM') || 'noreply@contenly.app';
 
-        // If Resend is configured, send actual email
-        if (this.resend) {
-            try {
-                await this.resend.emails.send({
-                    from: emailFrom,
-                    to: email,
-                    subject: 'Password Reset - Contently',
-                    html: `
+    // If Resend is configured, send actual email
+    if (this.resend) {
+      try {
+        await this.resend.emails.send({
+          from: emailFrom,
+          to: email,
+          subject: 'Password Reset - Contently',
+          html: `
                         <!DOCTYPE html>
                         <html>
                         <head>
@@ -174,67 +186,73 @@ export class AuthService {
                         </body>
                         </html>
                     `,
-                });
-                this.logger.log(`Password reset email sent to ${email}`);
-            } catch (error) {
-                this.logger.error(`Failed to send password reset email to ${email}`, error);
-                // Don't throw - we don't want to reveal whether email was sent
-            }
-        } else {
-            // Development mode: log the reset URL
-            this.logger.log(`Password reset URL for ${email}: ${resetUrl}`);
-            this.logger.warn('Email not sent - RESEND_API_KEY not configured');
-        }
+        });
+        this.logger.log(`Password reset email sent to ${email}`);
+      } catch (error) {
+        this.logger.error(`Failed to send password reset email to ${email}`, error);
+      }
+    } else {
+      console.log(
+        '=================================================================',
+      );
+      console.log(`🔐 PASSWORD RESET LINK for ${email}:`);
+      console.log(resetUrl);
+      console.log(
+        '=================================================================',
+      );
+      this.logger.warn('Email not sent - RESEND_API_KEY not configured');
     }
+  }
 
-    async resetPassword(token: string, newPassword: string) {
-        try {
-            // Find valid token
-            const validToken = await db.query.verification.findFirst({
-                where: and(
-                    eq(schema.verification.value, token),
-                    gt(schema.verification.expiresAt, new Date())
-                ),
-            });
+  async resetPassword(token: string, newPassword: string) {
+    try {
+      // Find valid token
+      const validToken = await db.query.verification.findFirst({
+        where: and(
+          eq(schema.verification.value, token),
+          gt(schema.verification.expiresAt, new Date()),
+        ),
+      });
 
-            if (!validToken) {
-                throw new BadRequestException('Invalid or expired reset token');
-            }
+      if (!validToken) {
+        throw new BadRequestException('Invalid or expired reset token');
+      }
 
-            // Find user
-            const user = await db.query.user.findFirst({
-                where: eq(schema.user.email, validToken.identifier),
-            });
+      // Find user
+      const user = await db.query.user.findFirst({
+        where: eq(schema.user.email, validToken.identifier),
+      });
 
-            if (!user) {
-                throw new BadRequestException('User not found');
-            }
+      if (!user) {
+        throw new BadRequestException('User not found');
+      }
 
-            // Hash new password
-            const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash(newPassword, salt);
+      // Hash new password
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-            // Update account password
-            // Note: Better Auth stores password in the account table
-            await db.update(schema.account)
-                .set({ password: hashedPassword, updatedAt: new Date() })
-                .where(eq(schema.account.userId, user.id));
+      // Update account password
+      // Note: Better Auth stores password in the account table
+      await db
+        .update(schema.account)
+        .set({ password: hashedPassword, updatedAt: new Date() })
+        .where(eq(schema.account.userId, user.id));
 
-            // Delete used token
-            await db.delete(schema.verification)
-                .where(eq(schema.verification.id, validToken.id));
+      // Delete used token
+      await db
+        .delete(schema.verification)
+        .where(eq(schema.verification.id, validToken.id));
 
-            this.logger.log(`Password reset successful for user: ${user.id}`);
-
-            return { message: 'Password updated successfully' };
-        } catch (error: any) {
-            this.logger.error('Reset password error', error);
-            if (error instanceof BadRequestException) throw error;
-            throw new BadRequestException('Failed to reset password');
-        }
+      this.logger.log(`Password reset successful for user: ${user.id}`);
+      return { message: 'Password updated successfully' };
+    } catch (error: any) {
+      this.logger.error('Reset password error:', error);
+      if (error instanceof BadRequestException) throw error;
+      throw new BadRequestException('Failed to reset password');
     }
+  }
 
-    getOAuthUrl(provider: 'google' | 'github') {
-        return `${process.env.API_URL}/api/auth/${provider}`;
-    }
+  getOAuthUrl(provider: 'google' | 'github') {
+    return `${process.env.API_URL}/api/auth/${provider}`;
+  }
 }

@@ -48,8 +48,10 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { motion, AnimatePresence } from 'framer-motion'
 import { RssFeed, getFeeds, addFeed, removeFeed, updateFeed, pollFeed } from '@/lib/feeds-store'
 import { toast } from 'sonner'
 
@@ -211,6 +213,7 @@ export default function FeedsPage() {
     }
 
     return (
+<<<<<<< HEAD
         <motion.div 
             className="space-y-6"
             variants={containerVariants}
@@ -433,6 +436,242 @@ export default function FeedsPage() {
                         </Table>
                     </CardContent>
                 </Card>
+=======
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-8"
+        >
+            {/* Page Header */}
+            <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                    <h1 className="text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
+                        Web Sources
+                    </h1>
+                    <p className="text-slate-500 font-medium">
+                        Automate content fetching from your favorite RSS feeds.
+                    </p>
+                </div>
+                <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+                    <DialogTrigger asChild>
+                        <Button className="h-12 px-6 bg-slate-900 hover:bg-black text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-slate-200 dark:shadow-none transition-all hover:scale-[1.02] active:scale-[0.98]">
+                            <Plus className="h-5 w-5 mr-2" />
+                            New Source
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="glass border-none max-w-md">
+                        <DialogHeader>
+                            <DialogTitle className="text-2xl font-black tracking-tight">{editingFeedId ? 'Update Source' : 'Connect Source'}</DialogTitle>
+                            <DialogDescription className="font-medium">
+                                Configure a new RSS feed for auto-scraping.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-6">
+                            <div className="space-y-2">
+                                <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 ml-1">Source Name</Label>
+                                <Input
+                                    placeholder="e.g., TechCrunch News"
+                                    className="h-12 rounded-xl bg-white/50 border-slate-200 focus:ring-blue-400 font-bold"
+                                    value={newFeedName}
+                                    onChange={(e) => setNewFeedName(e.target.value)}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 ml-1">Feed URL</Label>
+                                <Input
+                                    placeholder="https://example.com/feed"
+                                    className="h-12 rounded-xl bg-white/50 border-slate-200 focus:ring-blue-400 font-mono text-xs"
+                                    value={newFeedUrl}
+                                    onChange={(e) => setNewFeedUrl(e.target.value)}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 ml-1">Polling Frequency</Label>
+                                <Select value={pollingInterval} onValueChange={setPollingInterval}>
+                                    <SelectTrigger className="h-12 rounded-xl bg-white/50 border-slate-200 font-bold">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="glass border-none">
+                                        <SelectItem value="5">Turbo (5 min)</SelectItem>
+                                        <SelectItem value="15">Frequent (15 min)</SelectItem>
+                                        <SelectItem value="30">Normal (30 min)</SelectItem>
+                                        <SelectItem value="60">Daily (1 hour)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <DialogFooter className="gap-2">
+                            <Button variant="ghost" className="rounded-xl font-bold" onClick={() => { setIsAddOpen(false); resetForm(); }}>Cancel</Button>
+                            <Button
+                                className="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-blue-100"
+                                onClick={handleAddFeed}
+                                disabled={!newFeedName || !newFeedUrl}
+                            >
+                                {editingFeedId ? 'Update' : 'Add Source'}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <motion.div
+                    whileHover={{ y: -5 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                >
+                    <Card className="card-clean border-none p-6 shadow-sm">
+                        <div className="flex items-center gap-5">
+                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 shadow-inner">
+                                <Rss className="h-7 w-7" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-3xl font-black tracking-tighter">{feeds.length}</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Sources</p>
+                            </div>
+                        </div>
+                    </Card>
+                </motion.div>
+                <motion.div
+                    whileHover={{ y: -5 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 17, delay: 0.1 }}
+                >
+                    <Card className="card-clean border-none p-6 shadow-sm">
+                        <div className="flex items-center gap-5">
+                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 shadow-inner">
+                                <CheckCircle2 className="h-7 w-7" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-3xl font-black tracking-tighter">{feeds.filter(f => f.status?.toUpperCase() === 'ACTIVE').length}</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Syncing</p>
+                            </div>
+                        </div>
+                    </Card>
+                </motion.div>
+                <motion.div
+                    whileHover={{ y: -5 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 17, delay: 0.2 }}
+                >
+                    <Card className="card-clean border-none p-6 shadow-sm">
+                        <div className="flex items-center gap-5">
+                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 shadow-inner">
+                                <RefreshCw className="h-7 w-7" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-3xl font-black tracking-tighter">{feeds.reduce((acc, f) => acc + (f.itemsFetched || 0), 0)}</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Articles Scraped</p>
+                            </div>
+                        </div>
+                    </Card>
+                </motion.div>
+            </div>
+
+            {/* Feeds Table */}
+            <motion.div
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.3 }}
+                className="card-clean p-8"
+            >
+                <div className="mb-8">
+                    <h2 className="text-xl font-black tracking-tight">Active Stream</h2>
+                    <p className="text-slate-400 text-sm font-medium">Monitoring sources in real-time</p>
+                </div>
+
+                <div className="rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-slate-800">
+                    <Table>
+                        <TableHeader className="bg-slate-50/50 dark:bg-slate-800/20">
+                            <TableRow className="border-none hover:bg-transparent">
+                                <TableHead className="h-16 font-black text-slate-400 uppercase tracking-widest text-[10px] px-8">Source Name</TableHead>
+                                <TableHead className="h-16 font-black text-slate-400 uppercase tracking-widest text-[10px]">Status</TableHead>
+                                <TableHead className="h-16 font-black text-slate-400 uppercase tracking-widest text-[10px]">Freq</TableHead>
+                                <TableHead className="h-16 font-black text-slate-400 uppercase tracking-widest text-[10px]">Last Synced</TableHead>
+                                <TableHead className="h-16 font-black text-slate-400 uppercase tracking-widest text-[10px]">Count</TableHead>
+                                <TableHead className="h-16 text-right px-8"></TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {isLoading ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="py-20 text-center">
+                                        <Loader2 className="h-10 w-10 animate-spin text-blue-600 opacity-20 mx-auto" />
+                                    </TableCell>
+                                </TableRow>
+                            ) : feeds.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="text-center py-20 text-slate-400 font-bold uppercase tracking-widest text-xs">
+                                        No data streams found
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                feeds.map((feed) => (
+                                    <TableRow key={feed.id} className="group border-slate-50 dark:border-slate-800 hover:bg-slate-50/50 transition-colors">
+                                        <TableCell className="px-8 font-black text-slate-900 dark:text-white uppercase tracking-tighter">
+                                            <div>
+                                                <p className="text-sm">{feed.name}</p>
+                                                <p className="text-[10px] text-slate-400 truncate max-w-[180px] font-mono">{feed.url}</p>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge className={`rounded-lg px-2 py-0.5 font-extrabold uppercase text-[9px] tracking-wider ${(feed.status || 'ACTIVE').toUpperCase() === 'ACTIVE'
+                                                ? 'bg-emerald-100 text-emerald-700'
+                                                : 'bg-rose-100 text-rose-700'
+                                                }`}>
+                                                {feed.status || 'active'}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="font-bold text-slate-500 text-sm whitespace-nowrap">{feed.pollingInterval || 15}m</TableCell>
+                                        <TableCell className="font-bold text-slate-500 text-sm whitespace-nowrap">{formatTimeAgo(feed.lastSynced)}</TableCell>
+                                        <TableCell className="font-black text-blue-600 bg-blue-50/50 text-center rounded-lg h-7 w-12 p-0 inline-flex items-center justify-center my-4">{feed.itemsFetched || 0}</TableCell>
+                                        <TableCell className="text-right px-8">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-blue-50 hover:text-blue-600">
+                                                        <MoreHorizontal className="h-5 w-5" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="glass border-none min-w-[170px]">
+                                                    <DropdownMenuItem
+                                                        onClick={() => handlePollNow(feed.id)}
+                                                        disabled={isPolling === feed.id}
+                                                        className="font-bold py-2.5"
+                                                    >
+                                                        <RefreshCw className={`h-4 w-4 mr-2 ${isPolling === feed.id ? 'animate-spin' : ''}`} />
+                                                        {isPolling === feed.id ? 'Fetching...' : 'Manual Sync'}
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleEditClick(feed)} className="font-bold py-2.5">
+                                                        <Edit className="h-4 w-4 mr-2" />
+                                                        Configurations
+                                                    </DropdownMenuItem>
+                                                    {(feed.status || 'ACTIVE').toUpperCase() === 'ACTIVE' ? (
+                                                        <DropdownMenuItem onClick={() => handleToggleStatus(feed)} className="font-bold py-2.5 text-amber-600">
+                                                            <Pause className="h-4 w-4 mr-2" />
+                                                            Pause Stream
+                                                        </DropdownMenuItem>
+                                                    ) : (
+                                                        <DropdownMenuItem onClick={() => handleToggleStatus(feed)} className="font-bold py-2.5 text-emerald-600">
+                                                            <Play className="h-4 w-4 mr-2" />
+                                                            Resume Stream
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                    <DropdownMenuSeparator className="opacity-50" />
+                                                    <DropdownMenuItem
+                                                        className="text-rose-600 font-extrabold py-2.5"
+                                                        onClick={() => handleRemoveFeed(feed.id)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4 mr-2" />
+                                                        Kill Stream
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
+>>>>>>> c1209c3 (feat: global styling refresh, layout fixes, and build error resolution)
             </motion.div>
         </motion.div>
     )

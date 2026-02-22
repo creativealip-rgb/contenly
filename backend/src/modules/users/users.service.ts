@@ -9,179 +9,189 @@ import { auth } from '../../auth/auth.config';
 
 @Injectable()
 export class UsersService {
-    constructor(private drizzle: DrizzleService) { }
+  constructor(private drizzle: DrizzleService) {}
 
-    get db() {
-        return this.drizzle.db;
+  get db() {
+    return this.drizzle.db;
+  }
+
+  async findById(id: string) {
+    const result = await this.db.query.user.findFirst({
+      where: eq(user.id, id),
+      with: {
+        tokenBalance: true,
+      },
+    });
+    return result;
+  }
+
+  async findByEmail(email: string) {
+    const result = await this.db.query.user.findFirst({
+      where: eq(user.email, email),
+    });
+    return result;
+  }
+
+  async update(id: string, data: UpdateUserDto) {
+    const existing = await this.findById(id);
+    if (!existing) {
+      throw new NotFoundException('User not found');
     }
 
-    async findById(id: string) {
-        const result = await this.db.query.user.findFirst({
-            where: eq(user.id, id),
-            with: {
-                tokenBalance: true,
-            },
-        });
-        return result;
+    const [updated] = await this.db
+      .update(user)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(user.id, id))
+      .returning();
+
+    return updated;
+  }
+
+  async updatePreferences(id: string, preferences: Record<string, unknown>) {
+    const [updated] = await this.db
+      .update(user)
+      .set({
+        preferences,
+        updatedAt: new Date(),
+      })
+      .where(eq(user.id, id))
+      .returning();
+
+    return updated;
+  }
+
+  async getApiKeys(userId: string) {
+    const keys = await this.db.query.apiKey.findMany({
+      where: eq(apiKey.userId, userId),
+      columns: {
+        id: true,
+        name: true,
+        keyPrefix: true,
+        lastUsedAt: true,
+        expiresAt: true,
+        createdAt: true,
+      },
+    });
+    return keys;
+  }
+
+  async createApiKey(userId: string, name: string) {
+    const rawKey = `cam_${uuidv4().replace(/-/g, '')}`;
+    const keyHash = await bcrypt.hash(rawKey, 10);
+    const keyPrefix = rawKey.substring(0, 12);
+
+    await this.db.insert(apiKey).values({
+      userId,
+      name,
+      keyHash,
+      keyPrefix,
+    });
+
+    // Return the raw key only once
+    return { key: rawKey, prefix: keyPrefix };
+  }
+
+  async revokeApiKey(userId: string, keyId: string) {
+    const key = await this.db.query.apiKey.findFirst({
+      where: eq(apiKey.id, keyId),
+    });
+
+    if (!key || key.userId !== userId) {
+      throw new NotFoundException('API key not found');
     }
 
-    async findByEmail(email: string) {
-        const result = await this.db.query.user.findFirst({
-            where: eq(user.email, email),
-        });
-        return result;
+    await this.db.delete(apiKey).where(eq(apiKey.id, keyId));
+    return { message: 'API key revoked' };
+  }
+
+  // ==========================================
+  // SUPER ADMIN METHODS
+  // ==========================================
+
+  async findAll() {
+    console.log('[UsersService] Fetching all users from DB...');
+    const users = await this.db.query.user.findMany({
+      with: {
+        tokenBalance: true,
+      },
+      orderBy: (user, { desc }) => [desc(user.createdAt)],
+    });
+    console.log(`[UsersService] Found ${users.length} users`);
+    return users;
+  }
+
+  async createUser(dto: {
+    name: string;
+    email: string;
+    role: string;
+    password?: string;
+  }) {
+    console.log(
+      `[UsersService] Creating user: ${dto.email} with role ${dto.role}`,
+    );
+
+    // Better Auth admin API to create user
+    const result = await auth.api.createUser({
+      body: {
+        email: dto.email,
+        password: dto.password || 'TemporaryPassword123!',
+        name: dto.name,
+        role: dto.role,
+      },
+    } as any);
+
+    if (!result) {
+      throw new Error('Failed to create user via Better Auth');
     }
 
-    async update(id: string, data: UpdateUserDto) {
-        const existing = await this.findById(id);
-        if (!existing) {
-            throw new NotFoundException('User not found');
-        }
+    return result;
+  }
 
-        const [updated] = await this.db
-            .update(user)
-            .set({
-                ...data,
-                updatedAt: new Date(),
-            })
-            .where(eq(user.id, id))
-            .returning();
+  async updateRole(id: string, role: string) {
+    const [updated] = await this.db
+      .update(user)
+      .set({
+        role: role as any,
+        updatedAt: new Date(),
+      })
+      .where(eq(user.id, id))
+      .returning();
+    return updated;
+  }
 
-        return updated;
+  async addTokens(userId: string, amount: number) {
+    const balance = await this.db.query.tokenBalance.findFirst({
+      where: eq(tokenBalance.userId, userId),
+    });
+
+    if (!balance) {
+      // Create balance if it doesn't exist
+      const [newBalance] = await this.db
+        .insert(tokenBalance)
+        .values({
+          userId,
+          balance: amount,
+        })
+        .returning();
+      return newBalance;
     }
 
-    async updatePreferences(id: string, preferences: Record<string, unknown>) {
-        const [updated] = await this.db
-            .update(user)
-            .set({
-                preferences,
-                updatedAt: new Date(),
-            })
-            .where(eq(user.id, id))
-            .returning();
+    const [updated] = await this.db
+      .update(tokenBalance)
+      .set({
+        balance: (balance.balance || 0) + amount,
+        updatedAt: new Date(),
+      })
+      .where(eq(tokenBalance.userId, userId))
+      .returning();
+    return updated;
+  }
 
-        return updated;
-    }
-
-    async getApiKeys(userId: string) {
-        const keys = await this.db.query.apiKey.findMany({
-            where: eq(apiKey.userId, userId),
-            columns: {
-                id: true,
-                name: true,
-                keyPrefix: true,
-                lastUsedAt: true,
-                expiresAt: true,
-                createdAt: true,
-            },
-        });
-        return keys;
-    }
-
-    async createApiKey(userId: string, name: string) {
-        const rawKey = `cam_${uuidv4().replace(/-/g, '')}`;
-        const keyHash = await bcrypt.hash(rawKey, 10);
-        const keyPrefix = rawKey.substring(0, 12);
-
-        await this.db.insert(apiKey).values({
-            userId,
-            name,
-            keyHash,
-            keyPrefix,
-        });
-
-        // Return the raw key only once
-        return { key: rawKey, prefix: keyPrefix };
-    }
-
-    async revokeApiKey(userId: string, keyId: string) {
-        const key = await this.db.query.apiKey.findFirst({
-            where: eq(apiKey.id, keyId),
-        });
-
-        if (!key || key.userId !== userId) {
-            throw new NotFoundException('API key not found');
-        }
-
-        await this.db.delete(apiKey).where(eq(apiKey.id, keyId));
-        return { message: 'API key revoked' };
-    }
-
-    // ==========================================
-    // SUPER ADMIN METHODS
-    // ==========================================
-
-    async findAll() {
-        console.log('[UsersService] Fetching all users from DB...');
-        const users = await this.db.query.user.findMany({
-            with: {
-                tokenBalance: true,
-            },
-            orderBy: (user, { desc }) => [desc(user.createdAt)],
-        });
-        console.log(`[UsersService] Found ${users.length} users`);
-        return users;
-    }
-
-    async createUser(dto: { name: string; email: string; role: string; password?: string }) {
-        console.log(`[UsersService] Creating user: ${dto.email} with role ${dto.role}`);
-
-        // Better Auth admin API to create user
-        const result = await auth.api.createUser({
-            body: {
-                email: dto.email,
-                password: dto.password || 'TemporaryPassword123!',
-                name: dto.name,
-                role: dto.role,
-            }
-        } as any);
-
-        if (!result) {
-            throw new Error('Failed to create user via Better Auth');
-        }
-
-        return result;
-    }
-
-    async updateRole(id: string, role: string) {
-        const [updated] = await this.db
-            .update(user)
-            .set({
-                role: role as any,
-                updatedAt: new Date(),
-            })
-            .where(eq(user.id, id))
-            .returning();
-        return updated;
-    }
-
-    async addTokens(userId: string, amount: number) {
-        const balance = await this.db.query.tokenBalance.findFirst({
-            where: eq(tokenBalance.userId, userId),
-        });
-
-        if (!balance) {
-            // Create balance if it doesn't exist
-            const [newBalance] = await this.db.insert(tokenBalance).values({
-                userId,
-                balance: amount,
-            }).returning();
-            return newBalance;
-        }
-
-        const [updated] = await this.db
-            .update(tokenBalance)
-            .set({
-                balance: (balance.balance || 0) + amount,
-                updatedAt: new Date(),
-            })
-            .where(eq(tokenBalance.userId, userId))
-            .returning();
-        return updated;
-    }
-
-    async delete(id: string) {
-        await this.db.delete(user).where(eq(user.id, id));
-        return { message: 'User deleted successfully' };
-    }
+  async delete(id: string) {
+    await this.db.delete(user).where(eq(user.id, id));
+    return { message: 'User deleted successfully' };
+  }
 }

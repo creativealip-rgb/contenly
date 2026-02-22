@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { FeedsService } from './feeds.service';
 import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
@@ -10,46 +18,52 @@ import type { User } from '../../db/types';
 @UseGuards(SessionAuthGuard)
 @Controller('feeds')
 export class FeedsController {
-    constructor(private feedsService: FeedsService) { }
+  constructor(private feedsService: FeedsService) {}
 
-    @Get()
-    @ApiOperation({ summary: 'List all RSS feeds' })
-    async findAll(@CurrentUser() user: User) {
-        return this.feedsService.findAll(user.id);
-    }
+  @Get()
+  @ApiOperation({ summary: 'List all RSS feeds' })
+  async findAll(@CurrentUser() user: User) {
+    return this.feedsService.findAll(user.id);
+  }
 
-    @Post()
-    @ApiOperation({ summary: 'Add new RSS feed' })
-    async create(
-        @CurrentUser() user: User,
-        @Body() dto: { name: string; url: string; pollingIntervalMinutes?: number },
-    ) {
-        return this.feedsService.create(user.id, dto);
-    }
+  @Post()
+  @ApiOperation({ summary: 'Add new RSS feed' })
+  async create(
+    @CurrentUser() user: User,
+    @Body() dto: { name: string; url: string; pollingIntervalMinutes?: number },
+  ) {
+    return this.feedsService.create(user.id, dto);
+  }
 
-    @Delete(':id')
-    @ApiOperation({ summary: 'Remove RSS feed' })
-    async delete(@CurrentUser() user: User, @Param('id') id: string) {
-        return this.feedsService.delete(user.id, id);
-    }
+  @Delete(':id')
+  @ApiOperation({ summary: 'Remove RSS feed' })
+  async delete(@CurrentUser() user: User, @Param('id') id: string) {
+    return this.feedsService.delete(user.id, id);
+  }
 
-    @Post(':id')
-    @ApiOperation({ summary: 'Update RSS feed' })
-    async update(
-        @CurrentUser() user: User,
-        @Param('id') id: string,
-        @Body() dto: { name?: string; url?: string; pollingIntervalMinutes?: number; status?: string },
-    ) {
-        return this.feedsService.update(user.id, id, dto);
-    }
+  @Post(':id')
+  @ApiOperation({ summary: 'Update RSS feed' })
+  async update(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body()
+    dto: {
+      name?: string;
+      url?: string;
+      pollingIntervalMinutes?: number;
+      status?: string;
+    },
+  ) {
+    return this.feedsService.update(user.id, id, dto);
+  }
 
-    @Post(':id/poll')
-    @ApiOperation({ summary: 'Manually trigger feed polling' })
-    async pollFeed(@Param('id') id: string) {
-        const result = await this.feedsService.triggerPoll(id);
-        return {
-            message: 'Feed polling completed',
-            data: result
-        };
-    }
+  @Post(':id/poll')
+  @ApiOperation({ summary: 'Manually trigger feed polling' })
+  async pollFeed(@Param('id') id: string) {
+    const result = await this.feedsService.triggerPoll(id);
+    return {
+      message: 'Feed polling completed',
+      data: result,
+    };
+  }
 }

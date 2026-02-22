@@ -5,20 +5,20 @@ import * as schema from './schema';
 
 @Injectable()
 export class DrizzleService implements OnModuleDestroy {
-    private client: ReturnType<typeof postgres>;
-    public db: PostgresJsDatabase<typeof schema>;
+  private client: ReturnType<typeof postgres>;
+  public db: PostgresJsDatabase<typeof schema>;
 
-    constructor() {
-        this.client = postgres(process.env.DATABASE_URL!, { prepare: false });
-        this.db = drizzle(this.client, { schema });
-    }
+  constructor() {
+    this.client = postgres(process.env.DATABASE_URL, { prepare: false });
+    this.db = drizzle(this.client, { schema });
+  }
 
-    async onModuleDestroy() {
-        await this.client.end();
-    }
+  async onModuleDestroy() {
+    await this.client.end();
+  }
 
-    // Helper to get the database instance
-    getDb() {
-        return this.db;
-    }
+  // Helper to get the database instance
+  getDb() {
+    return this.db;
+  }
 }

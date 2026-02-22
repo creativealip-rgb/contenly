@@ -1,0 +1,344 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select'
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog'
+import {
+    Instagram,
+    Plus,
+    Loader2,
+    Sparkles,
+    Image as ImageIcon,
+    Trash2,
+    Download,
+    RefreshCw,
+    Palette,
+    Type,
+    Layout,
+    ChevronLeft,
+    ChevronRight,
+    Eye,
+} from 'lucide-react'
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+
+interface Project {
+    id: string
+    title: string
+    sourceUrl: string
+    sourceContent: string
+    globalStyle: string
+    fontFamily: string
+    totalSlides: number
+    status: string
+    createdAt: string
+    slides?: Slide[]
+}
+
+interface Slide {
+    id: string
+    slideNumber: number
+    textContent: string
+    visualPrompt: string
+    imageUrl: string
+    layoutPosition: string
+    fontSize: number
+    fontColor: string
+}
+
+interface StylePreset {
+    id: string
+    name: string
+    description: string
+    promptTemplate: string
+}
+
+interface Font {
+    family: string
+    category: string
+    variants: string[]
+}
+
+export default function InstagramStudioPage() {
+    const router = useRouter()
+    const [projects, setProjects] = useState<Project[]>([])
+    const [isLoading, setIsLoading] = useState(true)
+    const [isCreating, setIsCreating] = useState(false)
+    const [isNewProjectOpen, setIsNewProjectOpen] = useState(false)
+
+    const [newProject, setNewProject] = useState({
+        title: '',
+        sourceUrl: '',
+        sourceContent: '',
+        globalStyle: 'modern minimal',
+        fontFamily: 'Montserrat',
+    })
+
+    useEffect(() => {
+        fetchProjects()
+    }, [])
+
+    const fetchProjects = async () => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/instagram-studio/projects`, {
+                credentials: 'include',
+                headers: { 'ngrok-skip-browser-warning': 'true' },
+            })
+            const data = await response.json()
+            setProjects(Array.isArray(data) ? data : [])
+        } catch (error) {
+            console.error('Failed to fetch projects:', error)
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const handleCreateProject = async () => {
+        if (!newProject.title) return
+
+        setIsCreating(true)
+        try {
+            const response = await fetch(`${API_BASE_URL}/instagram-studio/projects`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(newProject),
+            })
+
+            if (response.ok) {
+                const project = await response.json()
+                router.push(`/instagram-studio/${project.id}`)
+            }
+        } catch (error) {
+            console.error('Failed to create project:', error)
+        } finally {
+            setIsCreating(false)
+        }
+    }
+
+    const handleDeleteProject = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this project?')) return
+
+        try {
+            await fetch(`${API_BASE_URL}/instagram-studio/projects/${id}`, {
+                method: 'DELETE',
+                credentials: 'include',
+            })
+            fetchProjects()
+        } catch (error) {
+            console.error('Failed to delete project:', error)
+        }
+    }
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'draft':
+                return 'bg-gray-100 text-gray-700'
+            case 'storyboard':
+                return 'bg-blue-100 text-blue-700'
+            case 'generating':
+                return 'bg-yellow-100 text-yellow-700'
+            case 'ready':
+                return 'bg-green-100 text-green-700'
+            default:
+                return 'bg-gray-100 text-gray-700'
+        }
+    }
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+        )
+    }
+
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold">Instagram Studio</h1>
+                    <p className="text-muted-foreground">
+                        Create AI-powered Instagram carousels from your content
+                    </p>
+                </div>
+                <Dialog open={isNewProjectOpen} onOpenChange={setIsNewProjectOpen}>
+                    <DialogTrigger asChild>
+                        <Button className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700">
+                            <Plus className="h-4 w-4 mr-2" />
+                            New Project
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                            <DialogTitle>Create New Carousel Project</DialogTitle>
+                            <DialogDescription>
+                                Start by providing content or a URL to generate your Instagram carousel
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <Label>Project Title</Label>
+                                <Input
+                                    placeholder="My Instagram Carousel"
+                                    value={newProject.title}
+                                    onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Source URL (Optional)</Label>
+                                <Input
+                                    placeholder="https://example.com/article"
+                                    value={newProject.sourceUrl}
+                                    onChange={(e) => setNewProject({ ...newProject, sourceUrl: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Content</Label>
+                                <Textarea
+                                    placeholder="Paste your article content here, or enter a URL above to scrape..."
+                                    value={newProject.sourceContent}
+                                    onChange={(e) => setNewProject({ ...newProject, sourceContent: e.target.value })}
+                                    className="min-h-[150px]"
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Visual Style</Label>
+                                    <Select
+                                        value={newProject.globalStyle}
+                                        onValueChange={(v) => setNewProject({ ...newProject, globalStyle: v })}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="modern minimal">Modern Minimal</SelectItem>
+                                            <SelectItem value="tech futuristic">Tech Futuristic</SelectItem>
+                                            <SelectItem value="cinematic">Cinematic</SelectItem>
+                                            <SelectItem value="nature organic">Nature Organic</SelectItem>
+                                            <SelectItem value="bold colorful">Bold Colorful</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Font Family</Label>
+                                    <Select
+                                        value={newProject.fontFamily}
+                                        onValueChange={(v) => setNewProject({ ...newProject, fontFamily: v })}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Montserrat">Montserrat</SelectItem>
+                                            <SelectItem value="Poppins">Poppins</SelectItem>
+                                            <SelectItem value="Playfair Display">Playfair Display</SelectItem>
+                                            <SelectItem value="Roboto">Roboto</SelectItem>
+                                            <SelectItem value="Bebas Neue">Bebas Neue</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsNewProjectOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button onClick={handleCreateProject} disabled={isCreating || !newProject.title}>
+                                {isCreating ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                        Creating...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Sparkles className="h-4 w-4 mr-2" />
+                                        Create Project
+                                    </>
+                                )}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </div>
+
+            {projects.length === 0 ? (
+                <Card className="border-dashed">
+                    <CardContent className="flex flex-col items-center justify-center py-12">
+                        <Instagram className="h-16 w-16 text-muted-foreground/50 mb-4" />
+                        <h3 className="text-lg font-medium mb-2">No projects yet</h3>
+                        <p className="text-muted-foreground text-center max-w-sm mb-4">
+                            Create your first Instagram carousel project to get started
+                        </p>
+                        <Button onClick={() => setIsNewProjectOpen(true)}>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Create First Project
+                        </Button>
+                    </CardContent>
+                </Card>
+            ) : (
+                <div className="grid gap-6 md:grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3">
+                    {projects.map((project) => (
+                        <Card
+                            key={project.id}
+                            className="cursor-pointer hover:shadow-lg transition-all hover:border-pink-200"
+                            onClick={() => router.push(`/instagram-studio/${project.id}`)}
+                        >
+                            <CardHeader className="pb-3">
+                                <div className="flex items-start justify-between">
+                                    <CardTitle className="text-lg">{project.title}</CardTitle>
+                                    <Badge className={getStatusColor(project.status)}>
+                                        {project.status}
+                                    </Badge>
+                                </div>
+                                <CardDescription>
+                                    {project.totalSlides} slides • {project.globalStyle}
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm text-muted-foreground">
+                                        {new Date(project.createdAt).toLocaleDateString()}
+                                    </span>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            handleDeleteProject(project.id)
+                                        }}
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            )}
+        </div>
+    )
+}

@@ -6,9 +6,9 @@ import { BillingModule } from '../billing/billing.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
-    imports: [UsersModule, BillingModule],
-    controllers: [AuthController],
-    providers: [AuthService, JwtStrategy],
-    exports: [AuthService],
+  imports: [UsersModule, BillingModule],
+  controllers: [AuthController],
+  providers: [AuthService, JwtStrategy],
+  exports: [AuthService],
 })
-export class AuthModule { }
+export class AuthModule {}

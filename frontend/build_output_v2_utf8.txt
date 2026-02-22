@@ -1,0 +1,113 @@
+﻿
+> frontend@0.1.0 build
+> next build
+
+node.exe : ΓÜá Warning: 
+Next.js inferred your 
+workspace root, but it 
+may not be correct.
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo       
+       : NotSpecified:   
+  (ΓÜá Warning: Ne...n   
+ ot be correct.:Strin    
+g) [], RemoteExcepti    
+on
+    + FullyQualifiedErro 
+   rId : NativeCommandE  
+  rror
+ 
+ We detected multiple 
+lockfiles and selected 
+the directory of C:\Users
+\62812\OneDrive\Documents
+\Vibe Coding\Saas\contenl
+y\package-lock.json as 
+the root directory.
+ To silence this 
+warning, set 
+`turbopack.root` in your 
+Next.js config, or 
+consider removing one of 
+the lockfiles if it's 
+not needed.
+   See https://nextjs.org
+/docs/app/api-reference/c
+onfig/next-config-js/turb
+opack#root-directory for 
+more information.
+ Detected additional 
+lockfiles: 
+   * C:\Users\62812\OneDr
+ive\Documents\Vibe Coding
+\Saas\contenly\frontend\p
+ackage-lock.json
+
+Γû▓ Next.js 16.1.1 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 23.1s
+  Running TypeScript ...
+Failed to compile.
+
+./src/app/(dashboard)/art
+icles/page.tsx:369:46
+Type error: Cannot find 
+name 'DropdownMenu'.
+
+[0m [90m 367 |[39m    
+                         
+            [33m<[39m[
+33m/[39m[33mTableCell[
+39m[33m>[39m
+ [90m 368 |[39m        
+                         
+        [33m<[39m[33mT
+ableCell[39m className[
+33m=[39m[32m"text-right
+ px-8"[39m[33m>[39m
+[31m[1m>[22m[39m[90m
+ 369 |[39m              
+                         
+      [33m<[39m[33mDro
+pdownMenu[39m[33m>[39m
+ [90m     |[39m        
+                         
+             
+[31m[1m^[22m[39m
+ [90m 370 |[39m        
+                         
+                [33m<[3
+9m[33mDropdownMenuTrigge
+r[39m asChild[33m>[39m
+ [90m 371 |[39m        
+                         
+                    [33m
+<[39m[33mButton[39m va
+riant[33m=[39m[32m"gho
+st"[39m size[33m=[39m
+[32m"icon"[39m className
+[33m=[39m[32m"h-10 
+w-10 rounded-xl 
+hover:bg-blue-50 hover:te
+xt-blue-600"[39m[33m>[
+39m
+ [90m 372 |[39m        
+                         
+                        
+[33m<[39m[33mMoreHorizo
+ntal[39m className[33m=
+[39m[32m"h-5 w-5"[39m 
+[33m/[39m[33m>[39m[0
+m
+Next.js build worker 
+exited with code: 1 and 
+signal: null

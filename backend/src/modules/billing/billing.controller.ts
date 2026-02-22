@@ -92,10 +92,9 @@ export class BillingController {
                 signature,
                 webhookSecret,
             );
-        } catch (err) {
-            const message = err instanceof Error ? err.message : 'Unknown error';
-            this.logger.error(`Webhook signature verification failed: ${message}`);
-            return { received: false, error: message };
+        } catch (err: any) {
+            this.logger.error(`Webhook signature verification failed: ${err.message}`);
+            return { received: false, error: err.message };
         }
 
         // Handle the event
@@ -130,10 +129,9 @@ export class BillingController {
             }
 
             return { received: true };
-        } catch (err) {
-            const message = err instanceof Error ? err.message : 'Unknown error';
-            this.logger.error(`Error processing webhook: ${message}`);
-            return { received: false, error: message };
+        } catch (err: any) {
+            this.logger.error(`Error processing webhook: ${err.message}`);
+            return { received: false, error: err.message };
         }
     }
 }

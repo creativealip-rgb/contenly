@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores'
 import { authClient } from '@/lib/auth-client'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { motion } from 'framer-motion'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -116,8 +117,8 @@ export function Navbar() {
     }
 
     return (
-        <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl">
-            <div className="flex h-16 items-center justify-between px-4 md:px-6">
+        <header className="fixed top-0 z-50 w-full bg-white/60 dark:bg-slate-900/60 backdrop-blur-2xl border-b border-white/20 dark:border-slate-800/40">
+            <div className="flex h-20 items-center justify-between px-6 md:px-10">
                 {/* Left: Menu Toggle && Logo (Desktop) */}
                 <div className="flex items-center gap-4">
                     <Button
@@ -145,23 +146,31 @@ export function Navbar() {
                 </div>
 
                 {/* Right: Actions */}
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-6">
                     {/* Token Balance */}
-                    <div className="hidden md:flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 px-4 py-2 text-sm font-medium text-amber-600">
-                        {icons.tokens}
-                        <span>{tokenBalance !== null ? `${tokenBalance} Tokens` : 'Loading...'}</span>
-                    </div>
+                    <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        className="hidden md:flex items-center gap-2.5 rounded-2xl bg-gradient-to-br from-amber-400/10 to-orange-500/10 border border-amber-200/50 dark:border-amber-900/30 px-5 py-2.5 text-sm font-black text-amber-600 shadow-sm"
+                    >
+                        <div className="p-1.5 bg-amber-400 text-white rounded-lg shadow-inner">
+                            {icons.tokens}
+                        </div>
+                        <div className="flex flex-col leading-tight">
+                            <span className="text-[10px] uppercase tracking-widest text-amber-500/60 font-black">Balance</span>
+                            <span>{tokenBalance !== null ? tokenBalance.toLocaleString() : '---'}</span>
+                        </div>
+                    </motion.div>
 
 
 
                     {/* User Menu */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="relative h-10 w-10 rounded-xl hover:bg-accent p-0">
-                                <Avatar className="h-10 w-10 rounded-xl">
+                            <Button variant="ghost" className="relative h-12 w-12 rounded-2xl hover:bg-white/40 dark:hover:bg-slate-800/40 p-1 group transition-all">
+                                <Avatar className="h-full w-full rounded-xl border-2 border-transparent group-hover:border-blue-400 transition-all">
                                     <AvatarImage src={user?.avatarUrl} alt={user?.fullName || 'User'} />
-                                    <AvatarFallback className="rounded-xl bg-gradient-to-br from-blue-600 to-cyan-600 text-white font-semibold">
-                                        {user?.fullName?.charAt(0) || 'U'}
+                                    <AvatarFallback className="rounded-xl bg-gradient-to-br from-blue-600 to-cyan-600 text-white font-black text-sm uppercase">
+                                        {user?.fullName?.split(' ').map(n => n[0]).join('') || 'U'}
                                     </AvatarFallback>
                                 </Avatar>
                             </Button>
