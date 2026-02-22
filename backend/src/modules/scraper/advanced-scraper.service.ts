@@ -33,36 +33,54 @@ export class AdvancedScraperService {
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         },
         timeout: 30000,
+        maxRedirects: 10,
       });
 
       const html = response.data;
+      this.logger.log(`Fetched HTML for ${url}, length: ${html?.length || 0}`);
 
       // Try Tier 1: Mozilla Readability
-      const tier1Result = await this.extractWithReadability(url, html);
-      if (tier1Result) {
-        this.logger.log(`✅ Tier 1 (Readability) succeeded for ${url}`);
-        return { ...tier1Result, extractionTier: 1 };
+      try {
+        const tier1Result = await this.extractWithReadability(url, html);
+        if (tier1Result) {
+          this.logger.log(`✅ Tier 1 (Readability) succeeded for ${url}`);
+          return { ...tier1Result, extractionTier: 1 };
+        }
+      } catch (e) {
+        this.logger.warn(`Tier 1 failed for ${url}: ${e.message}`);
       }
 
       // Try Tier 2: Advanced Heuristics
-      const tier2Result = await this.extractWithHeuristics(html, url);
-      if (tier2Result) {
-        this.logger.log(`✅ Tier 2 (Heuristics) succeeded for ${url}`);
-        return { ...tier2Result, extractionTier: 2 };
+      try {
+        const tier2Result = await this.extractWithHeuristics(html, url);
+        if (tier2Result) {
+          this.logger.log(`✅ Tier 2 (Heuristics) succeeded for ${url}`);
+          return { ...tier2Result, extractionTier: 2 };
+        }
+      } catch (e) {
+        this.logger.warn(`Tier 2 failed for ${url}: ${e.message}`);
       }
 
       // Try Tier 3: CSS Selectors (Fallback)
-      const tier3Result = await this.extractWithSelectors(html, url);
-      if (tier3Result) {
-        this.logger.log(`✅ Tier 3 (Selectors) succeeded for ${url}`);
-        return { ...tier3Result, extractionTier: 3 };
+      try {
+        const tier3Result = await this.extractWithSelectors(html, url);
+        if (tier3Result) {
+          this.logger.log(`✅ Tier 3 (Selectors) succeeded for ${url}`);
+          return { ...tier3Result, extractionTier: 3 };
+        }
+      } catch (e) {
+        this.logger.warn(`Tier 3 failed for ${url}: ${e.message}`);
       }
 
-      throw new Error('All extraction tiers failed');
+      this.logger.error(`Scrape failed for ${url}: No usable content extracted across all tiers`);
+      throw new Error('All content extraction methods failed to produce usable text');
     } catch (error) {
       this.logger.error(
         `Failed to scrape ${url}: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
+      if (error.response) {
+        this.logger.error(`Axios Error Status: ${error.response.status}`);
+      }
       throw new BadRequestException(
         `Failed to scrape article: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );

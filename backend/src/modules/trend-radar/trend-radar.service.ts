@@ -91,11 +91,23 @@ export class TrendRadarService {
         this.logger.log(`Analyzing trend: ${url}`);
 
         try {
-            // 1. Scrape the trend content
-            const scraped = await this.advancedScraperService.scrapeArticle(url);
+            // 1. Resolve real URL if it's a news.google.com redirect
+            let targetUrl = url;
+            if (url.includes('news.google.com')) {
+                this.logger.log(`[TrendRadarService] Resolving real URL for: ${url}`);
+                targetUrl = await this.resolveRealUrl(url);
+                this.logger.log(`[TrendRadarService] Resolved to: ${targetUrl}`);
+            }
 
-            // 2. Use AI to analyze viral potential and hooks
+            // 2. Scrape the trend content
+            this.logger.log(`[TrendRadarService] Starting scrape for ${targetUrl}`);
+            const scraped = await this.advancedScraperService.scrapeArticle(targetUrl);
+            this.logger.log(`[TrendRadarService] Scrape successful for ${scraped.title}`);
+
+            // 3. Use AI to analyze viral potential and hooks
+            this.logger.log(`[TrendRadarService] Starting AI analysis...`);
             const analysis = await this.openAiService.analyzeTrend(scraped.content, scraped.title);
+            this.logger.log(`[TrendRadarService] AI analysis completed`);
 
             return {
                 success: true,
@@ -105,8 +117,26 @@ export class TrendRadarService {
                 }
             };
         } catch (error) {
-            this.logger.error(`Trend analysis failed: ${error.message}`);
+            this.logger.error(`Trend analysis failed for ${url}: ${error.message}`);
+            if (error.stack) this.logger.error(error.stack);
             return { success: false, error: 'Failed to analyze trend' };
+        }
+    }
+
+    private async resolveRealUrl(googleNewsUrl: string): Promise<string> {
+        try {
+            const response = await axios.get(googleNewsUrl, {
+                maxRedirects: 10,
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                }
+            });
+
+            // The real URL is often where we end up after redirects
+            return response.request.res.responseUrl || response.config.url || googleNewsUrl;
+        } catch (error) {
+            this.logger.warn(`Failed to resolve real URL for ${googleNewsUrl}: ${error.message}`);
+            return googleNewsUrl;
         }
     }
 }
