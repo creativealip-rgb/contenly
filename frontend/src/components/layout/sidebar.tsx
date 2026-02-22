@@ -23,6 +23,14 @@ const icons = {
             <path d="M10 15h4M10 18h2" strokeLinecap="round" />
         </svg>
     ),
+    radar: (
+        <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth="1.5">
+            <circle cx="12" cy="12" r="9" />
+            <circle cx="12" cy="12" r="6" />
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 3v9l4.5 4.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+    ),
     video: (
         <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth="1.5">
             <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h10a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" strokeLinecap="round" strokeLinejoin="round" />
@@ -97,6 +105,7 @@ const icons = {
 
 const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: icons.dashboard },
+    { href: '/trend-radar', label: 'Trend Radar', icon: icons.radar },
     { href: '/content-lab', label: 'Content Lab', icon: icons.contentLab },
     { href: '/instagram-studio', label: 'Instagram Studio', icon: icons.instagram },
     { href: '/video-scripts', label: 'Video Scripts', icon: icons.video },

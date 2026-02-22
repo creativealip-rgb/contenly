@@ -21,6 +21,9 @@ export interface ContentLabState {
     isScraping: boolean;
     isRewriting: boolean;
     activeTab: string;
+    isRefreshingSEO: boolean;
+    isPublishing: boolean;
+    isGeneratingImage: boolean;
 }
 
 export interface ContentLabHandlers {
@@ -44,4 +47,5 @@ export interface ContentLabHandlers {
     handleSelectArticle: (article: any) => Promise<void>;
     handleScrape: () => Promise<void>;
     handleAIRewrite: () => Promise<void>;
+    handleGenerateImage: () => Promise<void>;
 }

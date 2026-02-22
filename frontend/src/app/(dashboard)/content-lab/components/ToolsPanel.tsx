@@ -54,6 +54,8 @@ interface ToolsPanelProps {
     scheduleTime: string;
     setScheduleTime: (val: string) => void;
     handleSchedulePublish: () => void;
+    isGeneratingImage: boolean;
+    handleGenerateImage: () => void;
 }
 
 export function ToolsPanel({
@@ -69,7 +71,9 @@ export function ToolsPanel({
     setScheduleDate,
     scheduleTime,
     setScheduleTime,
-    handleSchedulePublish
+    handleSchedulePublish,
+    isGeneratingImage,
+    handleGenerateImage
 }: ToolsPanelProps) {
     const {
         aiTone, setAiTone,
@@ -235,11 +239,30 @@ export function ToolsPanel({
                             </div>
                         </>
                     ) : (
-                        <div className="text-center p-4 cursor-pointer" onClick={() => document.getElementById('image-input')?.click()}>
-                            <div className="p-3 bg-white text-blue-600 rounded-full w-fit mx-auto mb-2 shadow-sm border border-slate-100">
-                                <ImageIcon className="h-5 w-5" />
+                        <div className="flex flex-col items-center gap-3">
+                            <div className="text-center p-4 cursor-pointer" onClick={() => document.getElementById('image-input')?.click()}>
+                                <div className="p-3 bg-white text-blue-600 rounded-full w-fit mx-auto mb-2 shadow-sm border border-slate-100">
+                                    <ImageIcon className="h-5 w-5" />
+                                </div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-blue-600/60">Featured Image</p>
                             </div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-blue-600/60">Featured Image</p>
+
+                            {generatedTitle && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 text-[10px] font-bold text-blue-600 bg-blue-50/50 hover:bg-blue-100 rounded-lg px-3"
+                                    onClick={(e) => { e.stopPropagation(); handleGenerateImage(); }}
+                                    disabled={isGeneratingImage}
+                                >
+                                    {isGeneratingImage ? (
+                                        <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                                    ) : (
+                                        <Sparkles className="h-3 w-3 mr-1" />
+                                    )}
+                                    Generate via AI (2T)
+                                </Button>
+                            )}
                         </div>
                     )}
                     <input id="image-input" type="file" className="hidden" accept="image/*" onChange={(e) => {

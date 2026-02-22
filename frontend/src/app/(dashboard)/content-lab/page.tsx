@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-<<<<<<< HEAD
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -27,6 +26,12 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog'
 import {
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+} from '@/components/ui/tabs'
+import {
     Rss,
     Loader2,
     Sparkles,
@@ -41,13 +46,11 @@ import {
     Clock,
     ExternalLink,
     FileText,
-    Globe
+    Globe,
+    Plus,
+    Trash2
 } from 'lucide-react'
-
-
-=======
-import { Plus } from 'lucide-react'
->>>>>>> c1209c3 (feat: global styling refresh, layout fixes, and build error resolution)
+import { toast } from 'sonner'
 import { WordPressSite, getSites, getActiveSite } from '@/lib/sites-store'
 import { RssFeed, getFeeds, addFeed, removeFeed } from '@/lib/feeds-store'
 import { migrateLocalStorageFeeds } from '@/lib/migrate-feeds'
@@ -88,6 +91,7 @@ export default function ContentLabPage() {
     const [copied, setCopied] = useState(false)
     const [isPublishing, setIsPublishing] = useState(false)
     const [isRefreshingSEO, setIsRefreshingSEO] = useState(false)
+    const [isGeneratingImage, setIsGeneratingImage] = useState(false)
     const [isScheduleOpen, setIsScheduleOpen] = useState(false)
     const [scheduleDate, setScheduleDate] = useState('')
     const [scheduleTime, setScheduleTime] = useState('')
@@ -101,6 +105,8 @@ export default function ContentLabPage() {
     const [isAddFeedOpen, setIsAddFeedOpen] = useState(false)
     const [newFeedUrl, setNewFeedUrl] = useState('')
     const [newFeedName, setNewFeedName] = useState('')
+
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
 
     // Initial Load
     useEffect(() => {
@@ -116,13 +122,6 @@ export default function ContentLabPage() {
 
             setIsFetchingCategories(true)
             try {
-<<<<<<< HEAD
-                // Use backend endpoint which already has stored credentials
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
-
-=======
-                const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
->>>>>>> c1209c3 (feat: global styling refresh, layout fixes, and build error resolution)
                 const response = await fetch(`${API_BASE_URL}/wordpress/sites/${activeSite.id}/categories`, {
                     credentials: 'include',
                     headers: { 'ngrok-skip-browser-warning': 'true' }
@@ -139,6 +138,10 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/a
         }
         loadData()
     }, [])
+
+    useEffect(() => {
+        if (selectedFeed) handleFetchArticles(selectedFeed)
+    }, [selectedFeed])
 
     // Logic Handlers
     const handleFetchArticles = async (feedId: string) => {
@@ -205,12 +208,6 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/a
         setSelectedArticle(article)
         setIsScanning(true)
         try {
-<<<<<<< HEAD
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
-            // Auto-scrape full article content from backend URL
-=======
-            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
->>>>>>> c1209c3 (feat: global styling refresh, layout fixes, and build error resolution)
             const response = await fetch(`${API_BASE_URL}/scraper/scrape`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
@@ -244,7 +241,6 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/a
         setGeneratedContent('')
         setGeneratedTitle('')
         try {
-            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
             const response = await fetch(`${API_BASE_URL}/ai/generate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
@@ -281,7 +277,6 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/a
         setIsScraping(true)
         setSourceContent('')
         try {
-            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
             const response = await fetch(`${API_BASE_URL}/scraper/scrape`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
@@ -302,179 +297,6 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/a
         }
     }
 
-    const slugify = (text: string) => text.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-')
-
-    const handleRefreshSEO = async () => {
-        if (!generatedContent || !generatedTitle) return
-        setIsRefreshingSEO(true)
-        try {
-            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
-            const response = await fetch(`${API_BASE_URL}/ai/generate-seo`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ title: generatedTitle, content: generatedContent }),
-            })
-            const result = await response.json()
-            if (result.metaTitle) setMetaTitle(result.metaTitle)
-            if (result.metaDescription) setMetaDescription(result.metaDescription)
-            if (result.slug) setSlug(result.slug)
-        } catch (error) {
-            setMetaTitle(generatedTitle)
-            setSlug(slugify(generatedTitle))
-        } finally {
-            setIsRefreshingSEO(false)
-        }
-    }
-
-    const handlePublishNow = async (status: 'draft' | 'publish') => {
-        if (!generatedContent || !generatedTitle) return
-        setIsPublishing(true)
-        setPublishResult(null)
-        try {
-            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
-            const response = await fetch(`${API_BASE_URL}/wordpress/publish`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({
-                    title: generatedTitle,
-                    content: generatedContent,
-                    status,
-                    categories: selectedCategory ? [selectedCategory] : undefined,
-                    sourceUrl: selectedArticle?.url || scrapeUrl || articleIdea || '',
-                    featuredImageUrl: featuredImage,
-                }),
-            })
-            const data = await response.json()
-            if (data.success) setPublishResult({ success: true, message: 'Success!', link: data.post.link })
-            else setPublishResult({ success: false, message: data.error || 'Failed' })
-        } catch (error: any) {
-            setPublishResult({ success: false, message: error.message })
-        } finally {
-            setIsPublishing(false)
-        }
-    }
-
-    const handleSchedulePublish = async () => {
-        if (!generatedContent || !generatedTitle || !scheduleDate || !scheduleTime) return
-        setIsPublishing(true)
-        try {
-            const scheduledDateTime = new Date(`${scheduleDate}T${scheduleTime}`).toISOString()
-            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
-            const response = await fetch(`${API_BASE_URL}/wordpress/publish`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({
-                    title: generatedTitle, content: generatedContent, status: 'future', date: scheduledDateTime, featuredImageUrl: featuredImage
-                }),
-            })
-            const data = await response.json()
-            if (data.success) {
-                setPublishResult({ success: true, message: `Scheduled for ${new Date(scheduledDateTime).toLocaleString()}`, link: data.post.link })
-                setIsScheduleOpen(false)
-            }
-        } catch (error) {
-            console.error(error)
-        } finally {
-            setIsPublishing(false)
-        }
-    }
-
-    const handleCopy = () => {
-        navigator.clipboard.writeText(generatedContent)
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
-    }
-
-<<<<<<< HEAD
-    // Publish to WordPress
-    const handlePublishNow = async (status: 'draft' | 'publish') => {
-        if (!generatedContent || !generatedTitle) return
-
-        setIsPublishing(true)
-        setPublishResult(null)
-
-        try {
-            // Use relative path for client-side to leverage Next.js proxy
-            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
-
-            const response = await fetch(`${API_BASE_URL}/wordpress/publish`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include', // Send session cookies
-                body: JSON.stringify({
-                    title: generatedTitle,
-                    content: generatedContent,
-                    status,
-                    categories: selectedCategory ? [selectedCategory] : undefined,
-                    sourceUrl: selectedArticle?.url || scrapeUrl || '',
-                    originalContent: selectedArticle?.content || sourceContent || '',
-                    feedItemId: selectedArticle?.id,
-                    featuredImageUrl: featuredImage, // This can be a URL or a base64 from local upload
-                    articleId: generatedArticleId,
-                }),
-            })
-
-            const data = await response.json()
-
-            if (data.success) {
-                setPublishResult({
-                    success: true,
-                    message: status === 'publish' ? 'Artikel berhasil dipublish!' : 'Draft berhasil disimpan!',
-                    link: data.post.link,
-                })
-            } else {
-                setPublishResult({
-                    success: false,
-                    message: data.error || 'Gagal mempublish artikel',
-                })
-            }
-        } catch (error: any) {
-            setPublishResult({
-                success: false,
-                message: error.message || 'Terjadi kesalahan',
-            })
-        } finally {
-            setIsPublishing(false)
-        }
-    }
-
-    const handleGenerateImage = async () => {
-        if (!generatedTitle) {
-            alert('Please generate content first to provide context for the image')
-            return
-        }
-
-        setIsGeneratingImage(true)
-        try {
-            // Check tokens (implicit in backend, but good to know)
-            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
-            const response = await fetch(`${API_BASE_URL}/ai/generate-image`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({
-                    prompt: `Professional featured image for a news article titled: "${generatedTitle}". Style: high quality, clean, related to the topic.`,
-                }),
-            })
-
-            const result = await response.json()
-            if (result.success && result.data?.imageUrl) {
-                setFeaturedImage(result.data.imageUrl)
-            } else {
-                alert(`Image generation failed: ${result.error || 'Unknown error'}`)
-            }
-        } catch (error: any) {
-            console.error('Image Gen error:', error)
-            alert('Failed to generate image')
-        } finally {
-            setIsGeneratingImage(false)
-        }
-    }
-
-    // SEO Helpers
     const slugify = (text: string) => {
         return text
             .toString()
@@ -493,10 +315,9 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/a
 
         setIsRefreshingSEO(true)
         try {
-            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
             const response = await fetch(`${API_BASE_URL}/ai/generate-seo`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
                 credentials: 'include',
                 body: JSON.stringify({
                     title: generatedTitle,
@@ -510,7 +331,6 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/a
             if (result.slug) setSlug(result.slug)
         } catch (error) {
             console.error('SEO Refresh error:', error)
-            // Fallback to local if AI fails
             setMetaTitle(generatedTitle)
             setSlug(slugify(generatedTitle))
             let desc = generatedContent.substring(0, 160)
@@ -522,32 +342,64 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/a
         }
     }
 
-    // Auto-update SEO fields when content generates (only if empty)
-=======
->>>>>>> c1209c3 (feat: global styling refresh, layout fixes, and build error resolution)
-    useEffect(() => {
-        if (selectedFeed) handleFetchArticles(selectedFeed)
-    }, [selectedFeed])
+    const handlePublishNow = async (status: 'draft' | 'publish') => {
+        if (!generatedContent || !generatedTitle) return
 
-    const state: ContentLabState = {
-        wpCategories, selectedCategory, isFetchingCategories, sites,
-        feeds, articles, selectedArticle, selectedFeed, isFetchingRSS, isAddFeedOpen,
-        newFeedUrl, newFeedName, isScanning, isScraping, isRewriting, activeTab
+        setIsPublishing(true)
+        setPublishResult(null)
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/wordpress/publish`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    title: generatedTitle,
+                    content: generatedContent,
+                    status,
+                    categories: selectedCategory ? [selectedCategory] : undefined,
+                    sourceUrl: selectedArticle?.url || scrapeUrl || '',
+                    originalContent: selectedArticle?.content || sourceContent || '',
+                    feedItemId: selectedArticle?.id,
+                    featuredImageUrl: featuredImage,
+                    articleId: generatedArticleId,
+                }),
+            })
+
+            const data = await response.json()
+
+            if (data.success) {
+                setPublishResult({
+                    success: true,
+                    message: status === 'publish' ? 'Artikel berhasil dipublish!' : 'Draft berhasil disimpan!',
+                    link: data.post.link,
+                })
+                toast.success(status === 'publish' ? 'Published!' : 'Draft saved!')
+            } else {
+                setPublishResult({
+                    success: false,
+                    message: data.error || 'Gagal mempublish artikel',
+                })
+                toast.error('Publish failed')
+            }
+        } catch (error: any) {
+            setPublishResult({
+                success: false,
+                message: error.message || 'Terjadi kesalahan',
+            })
+            toast.error('An error occurred')
+        } finally {
+            setIsPublishing(false)
+        }
     }
 
-<<<<<<< HEAD
-    // Schedule publish
     const handleSchedulePublish = async () => {
         if (!generatedContent || !generatedTitle || !scheduleDate || !scheduleTime) return
 
         setIsPublishing(true)
 
         try {
-            // Combine date and time into ISO string
             const scheduledDateTime = new Date(`${scheduleDate}T${scheduleTime}`).toISOString()
-
-            // Use relative path for client-side to leverage Next.js proxy
-            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
 
             const response = await fetch(`${API_BASE_URL}/wordpress/publish`, {
                 method: 'POST',
@@ -576,724 +428,134 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/a
                     link: data.post.link,
                 })
                 setIsScheduleOpen(false)
+                toast.success('Scheduled successfully!')
             } else {
                 setPublishResult({
                     success: false,
                     message: data.error || 'Gagal menjadwalkan artikel',
                 })
+                toast.error('Scheduling failed')
             }
         } catch (error: any) {
             setPublishResult({
                 success: false,
                 message: error.message || 'Terjadi kesalahan',
             })
+            toast.error('An error occurred')
         } finally {
             setIsPublishing(false)
         }
     }
 
-    return (
-        <div className="space-y-6">
-            {/* Page Header - Monev Style */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, type: "spring", stiffness: 100 }}
-            >
-                <Card className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-500 to-cyan-500 text-white border-0">
-                    <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-                    <div className="absolute bottom-0 left-0 w-32 h-32 bg-cyan-400/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
-                    
-                    <CardContent className="relative z-10 py-6 px-6">
-                        <div className="flex items-center gap-2 text-blue-100 mb-2">
-                            <Sparkles className="w-4 h-4" />
-                            <span className="text-xs font-medium uppercase tracking-wider">AI Content Generator</span>
-                        </div>
-                        <h1 className="text-2xl md:text-3xl font-bold tracking-tight mb-1">Content Lab</h1>
-                        <p className="text-blue-100 text-sm max-w-lg">
-                            Transform RSS feed articles or any web content into unique, SEO-optimized articles.
-                        </p>
-                    </CardContent>
-                </Card>
-            </motion.div>
+    const handleGenerateImage = async () => {
+        if (!generatedTitle) {
+            toast.error('Please generate content first')
+            return
+        }
 
-            {/* Source Selection Card */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1, type: "spring", stiffness: 100 }}
-            >
-                <Card variant="glass" className="overflow-hidden">
-                    <CardHeader>
-                        <CardTitle className="text-lg flex items-center gap-3">
-                            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-cyan-500 text-white text-sm font-bold">
-                                1
-                            </span>
-                            Choose Source
-                        </CardTitle>
-                        <CardDescription>
-                            Select content to transform from Web Sources
-                        </CardDescription>
-                    </CardHeader>
-                <CardContent>
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                        <TabsList className="grid w-full grid-cols-3 mb-6">
-                            <TabsTrigger value="rss" className="flex items-center gap-2">
-                                <Rss className="h-4 w-4" />
-                                Web Source
-                            </TabsTrigger>
-                            <TabsTrigger value="url" className="flex items-center gap-2">
-                                <Globe className="h-4 w-4" />
-                                Direct URL
-                            </TabsTrigger>
-                            <TabsTrigger value="idea" className="flex items-center gap-2">
-                                <Sparkles className="h-4 w-4" />
-                                Idea
-                            </TabsTrigger>
-                        </TabsList>
+        setIsGeneratingImage(true)
+        try {
+            const response = await fetch(`${API_BASE_URL}/ai/generate-image`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    prompt: `Professional featured image for a blog post titled: ${generatedTitle}. High quality, cinematic, photorealistic, no text.`
+                })
+            })
+            const data = await response.json()
+            if (data.success && data.data?.imageUrl) {
+                setFeaturedImage(data.data.imageUrl)
+                toast.success('Generated featured image!')
+            } else if (data.imageUrl) { // Support both API formats found in conflicts
+                setFeaturedImage(data.imageUrl)
+                toast.success('Generated featured image!')
+            } else {
+                toast.error('Failed to generate image')
+            }
+        } catch (error) {
+            console.error('Image Gen error:', error)
+            toast.error('Failed to generate image')
+        } finally {
+            setIsGeneratingImage(false)
+        }
+    }
 
-                        <TabsContent value="rss" className="space-y-4">
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <Label>Select Source</Label>
-                                    <Dialog open={isAddFeedOpen} onOpenChange={setIsAddFeedOpen}>
-                                        <DialogTrigger asChild>
-                                            <Button variant="ghost" size="sm" className="text-blue-600 h-6 px-2 hover:bg-blue-50">
-                                                <Plus className="h-4 w-4 mr-1" /> Add Source
-                                            </Button>
-                                        </DialogTrigger>
-                                        <DialogContent>
-                                            <DialogHeader>
-                                                <DialogTitle>Add New Web Source</DialogTitle>
-                                                <DialogDescription>
-                                                    Enter the URL of the feed you want to follow.
-                                                </DialogDescription>
-                                            </DialogHeader>
-                                            <div className="space-y-4 py-4">
-                                                <div className="space-y-2">
-                                                    <Label>Source Name</Label>
-                                                    <Input
-                                                        placeholder="e.g. TechCrunch"
-                                                        value={newFeedName}
-                                                        onChange={(e) => setNewFeedName(e.target.value)}
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label>Source URL</Label>
-                                                    <Input
-                                                        placeholder="https://example.com/feed"
-                                                        value={newFeedUrl}
-                                                        onChange={(e) => setNewFeedUrl(e.target.value)}
-                                                    />
-                                                </div>
-                                            </div>
-                                            <DialogFooter>
-                                                <Button variant="outline" onClick={() => setIsAddFeedOpen(false)}>Cancel</Button>
-                                                <Button onClick={handleAddFeed} disabled={!newFeedName || !newFeedUrl}>Add Source</Button>
-                                            </DialogFooter>
-                                        </DialogContent>
-                                    </Dialog>
-                                </div>
-                                <Select value={selectedFeed || ''} onValueChange={(val) => {
-                                    setSelectedFeed(val)
-                                    setSelectedArticle(null)
-                                    setSourceContent('')
-                                }}>
-                                    <SelectTrigger className="border-blue-200 focus:ring-blue-500">
-                                        <SelectValue placeholder="Select a feed..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {feeds.map((feed) => (
-                                            <SelectItem key={feed.id} value={feed.id}>
-                                                <div className="flex flex-col items-start text-left">
-                                                    <span className="font-medium">{feed.name}</span>
-                                                    <span className="text-xs text-muted-foreground truncate max-w-[200px]">{feed.url}</span>
-                                                </div>
-                                            </SelectItem>
-                                        ))}
-                                        {feeds.length === 0 && (
-                                            <div className="p-2 text-center text-sm text-muted-foreground">No feeds added</div>
-                                        )}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+    const handleCopy = () => {
+        navigator.clipboard.writeText(generatedContent)
+        setCopied(true)
+        toast.success('Copied to clipboard!')
+        setTimeout(() => setCopied(false), 2000)
+    }
 
-                            <div className="space-y-2">
-                                <Label>Select Article</Label>
-                                <Select value={selectedArticle?.id || ''} onValueChange={(val) => {
-                                    const article = articles.find(a => a.id === val)
-                                    if (article) handleSelectArticle(article)
-                                }}>
-                                    <SelectTrigger disabled={!selectedFeed || isFetchingRSS} className="w-full">
-                                        <SelectValue placeholder={isFetchingRSS ? "Fetching articles..." : "Choose an article..."} />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {articles.map((article) => (
-                                            <SelectItem key={article.id} value={article.id}>
-                                                {article.title}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </TabsContent>
+    const state: ContentLabState = {
+        wpCategories, selectedCategory, isFetchingCategories, sites,
+        feeds, articles, selectedArticle, selectedFeed, isFetchingRSS, isAddFeedOpen,
+        newFeedUrl, newFeedName, isScanning, isScraping, isRewriting, activeTab,
+        isRefreshingSEO, isPublishing, isGeneratingImage
+    }
 
-                        <TabsContent value="url" className="space-y-4">
-                            <div className="space-y-2">
-                                <Label>Article URL</Label>
-                                <div className="flex gap-2">
-                                    <Input
-                                        placeholder="https://example.com/blog-post"
-                                        value={scrapeUrl}
-                                        onChange={(e) => setScrapeUrl(e.target.value)}
-                                        className="flex-1"
-                                    />
-                                    <Button
-                                        onClick={handleScrape}
-                                        disabled={isScraping || !scrapeUrl}
-                                        className="bg-blue-600 hover:bg-blue-700"
-                                    >
-                                        {isScraping ? <Loader2 className="h-4 w-4 animate-spin text-blue-600" /> : "Scrape"}
-                                    </Button>
-                                </div>
-                                <p className="text-xs text-muted-foreground">
-                                    Enter a full article URL to scrape its content.
-                                </p>
-                            </div>
-                        </TabsContent>
-
-                        <TabsContent value="idea" className="space-y-4">
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label>What should the article be about?</Label>
-                                    <Textarea
-                                        placeholder="e.g. 5 tips for morning productivity or The future of web development in 2024"
-                                        value={articleIdea}
-                                        onChange={(e) => setArticleIdea(e.target.value)}
-                                        className="min-h-[100px]"
-                                    />
-                                    <p className="text-xs text-muted-foreground">
-                                        Write down your keywords, topics, or a brief outline. AI will generate a fresh article based on this.
-                                    </p>
-                                </div>
-                            </div>
-                        </TabsContent>
-                    </Tabs>
-                </CardContent>
-                </Card>
-            </motion.div>
-
-            {/* AI Configuration */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
-            >
-                <Card variant="glass" className="overflow-hidden">
-                    <CardHeader>
-                        <CardTitle className="text-lg flex items-center gap-3">
-                            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-cyan-500 text-white text-sm font-bold">
-                                2
-                            </span>
-                            AI Configuration
-                        </CardTitle>
-                        <CardDescription>
-                            Configure how AI will rewrite your content
-                        </CardDescription>
-                    </CardHeader>
-                <CardContent className="space-y-4">
-                    {/* First Row */}
-                    <div className="grid grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                            <Label className="text-sm font-medium">Tone</Label>
-                            <Select value={aiTone} onValueChange={(v: any) => setAiTone(v)}>
-                                <SelectTrigger className="h-10">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent position="popper" sideOffset={4}>
-                                    <SelectItem value="professional">Professional</SelectItem>
-                                    <SelectItem value="casual">Casual</SelectItem>
-                                    <SelectItem value="creative">Creative</SelectItem>
-                                    <SelectItem value="technical">Technical</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <p className="text-xs text-muted-foreground">Writing tone and personality</p>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label className="text-sm font-medium">Style</Label>
-                            <Select value={aiStyle} onValueChange={(v: any) => setAiStyle(v)}>
-                                <SelectTrigger className="h-10">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent position="popper" sideOffset={4}>
-                                    <SelectItem value="blog">Blog Post</SelectItem>
-                                    <SelectItem value="news">News Article</SelectItem>
-                                    <SelectItem value="tutorial">Tutorial/Guide</SelectItem>
-                                    <SelectItem value="review">Review</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <p className="text-xs text-muted-foreground">Article format and structure</p>
-                        </div>
-                    </div>
-
-                    {/* Second Row */}
-                    <div className="grid grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                            <Label className="text-sm font-medium">Length</Label>
-                            <Select value={aiLength} onValueChange={(v: any) => setAiLength(v)}>
-                                <SelectTrigger className="h-10">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent position="popper" sideOffset={4}>
-                                    <SelectItem value="shorter">Shorter (70%)</SelectItem>
-                                    <SelectItem value="same">Same Length</SelectItem>
-                                    <SelectItem value="longer">Longer (130%)</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <p className="text-xs text-muted-foreground">Target article length</p>
-                        </div>
-
-                        {/* Category (Moved for internal links) */}
-                        <div className="space-y-2">
-                            <Label className="text-sm font-medium flex items-center gap-1">
-                                Category <span className="text-red-500">*</span>
-                            </Label>
-                            <Select
-                                value={selectedCategory?.toString() || ''}
-                                onValueChange={(val) => setSelectedCategory(parseInt(val))}
-                                disabled={isFetchingCategories || wpCategories.length === 0}
-                            >
-                                <SelectTrigger className={`h-10 ${!selectedCategory ? 'border-amber-200 bg-amber-50/10' : ''}`}>
-                                    <SelectValue placeholder={isFetchingCategories ? "Loading categories..." : wpCategories.length > 0 ? "Select category" : "No categories found"} />
-                                </SelectTrigger>
-                                <SelectContent position="popper" sideOffset={4}>
-                                    {wpCategories.map(category => (
-                                        <SelectItem key={category.id} value={category.id.toString()}>
-                                            {category.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <p className="text-[10px] text-muted-foreground leading-tight">Wajib dipilih agar AI bisa menyisipkan internal link "Baca Juga" yang relevan.</p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-end">
-                        <Button
-                            className="w-full h-10 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-                            onClick={handleAIRewrite}
-                            disabled={(activeTab === 'idea' ? !articleIdea.trim() : !sourceContent) || isRewriting}
-                        >
-                            {isRewriting ? (
-                                <>
-                                    <Loader2 className="h-4 w-4 mr-2 animate-spin text-blue-600" />
-                                    Generating...
-                                </>
-                            ) : (
-                                <>
-                                    <Sparkles className="h-4 w-4 mr-2" />
-                                    Generate Article
-                                </>
-                            )}
-                        </Button>
-                    </div>
-                </CardContent>
-                </Card>
-            </motion.div>
-
-            {/* Split Screen Editor */}
-            <motion.div 
-                className="grid gap-6 lg:grid-cols-2"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3, type: "spring", stiffness: 100 }}
-            >
-                {/* Source Content */}
-                <Card variant="glass" hover className="min-h-[500px]">
-                    <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle className="text-lg">Original Content</CardTitle>
-                                <CardDescription>
-                                    {selectedArticle ? selectedArticle.title : 'Select a source above'}
-                                </CardDescription>
-                            </div>
-                            <Badge variant="secondary">Read-only</Badge>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="relative bg-muted rounded-lg p-4 min-h-[400px] max-h-[600px] overflow-auto flex flex-col">
-                            {isScanning || isScraping ? (
-                                <div className="flex-1 flex flex-col items-center justify-center py-12">
-                                    <div className="relative">
-                                        <div className="h-12 w-12 rounded-full border-4 border-blue-100 dark:border-blue-900/30"></div>
-                                        <div className="absolute top-0 left-0 h-12 w-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
-                                    </div>
-                                    <p className="mt-4 text-sm font-medium text-muted-foreground animate-pulse">Fetching content...</p>
-                                </div>
-                            ) : sourceContent ? (
-                                <pre className="whitespace-pre-wrap text-sm font-mono">{sourceContent}</pre>
-                            ) : (
-                                <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
-                                    <div className="text-center">
-                                        <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                                        <p>Content will appear here</p>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* AI Generated Content */}
-                <Card variant="glass" hover className="min-h-[500px]">
-                    <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle className="text-lg">AI Generated</CardTitle>
-                                <CardDescription>Unique, rewritten content</CardDescription>
-                            </div>
-                            <div className="flex gap-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleCopy}
-                                    disabled={!generatedContent}
-                                >
-                                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleAIRewrite}
-                                    disabled={!sourceContent || isRewriting}
-                                >
-                                    <RotateCcw className={`h-4 w-4 ${isRewriting ? 'animate-spin' : ''}`} />
-                                </Button>
-                            </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <Textarea
-                            value={generatedContent}
-                            onChange={(e) => setGeneratedContent(e.target.value)}
-                            placeholder="AI-generated content will appear here..."
-                            className="min-h-[400px] max-h-[600px] resize-none font-mono text-sm"
-                        />
-                    </CardContent>
-                </Card>
-            </motion.div>
-
-            {/* Configuration & Actions */}
-            <motion.div 
-                className="grid gap-6 lg:grid-cols-2"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4, type: "spring", stiffness: 100 }}
-            >
-
-                {/* SEO Preview */}
-                <Card variant="glass">
-                    <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                        <CardTitle className="text-lg">SEO Preview</CardTitle>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleRefreshSEO}
-                            disabled={isRefreshingSEO || !generatedContent}
-                            title="Regenerate SEO with AI"
-                        >
-                            <RefreshCw className={`h-4 w-4 ${isRefreshingSEO ? 'animate-spin' : ''}`} />
-                        </Button>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                            <Label>Meta Title</Label>
-                            <Input
-                                value={metaTitle || generatedTitle || ""}
-                                onChange={(e) => setMetaTitle(e.target.value)}
-                                placeholder="Article Title"
-                            />
-                            <p className="text-xs text-muted-foreground">Characters: {(metaTitle || generatedTitle || "").length}/60</p>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label>Slug (URL)</Label>
-                            <Input
-                                value={slug}
-                                onChange={(e) => setSlug(e.target.value)}
-                                placeholder="article-slug-url"
-                                className="font-mono text-sm"
-                            />
-                            <p className="text-xs text-muted-foreground">URL-friendly version of title</p>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label>Meta Description</Label>
-                            <Textarea
-                                value={metaDescription}
-                                onChange={(e) => setMetaDescription(e.target.value)}
-                                placeholder="AI generated description..."
-                                className="resize-none"
-                                rows={3}
-                            />
-                            <p className="text-xs text-muted-foreground">Ideal: 150-160 characters</p>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <Label className="text-sm font-medium">Featured Image (Gambar Utama)</Label>
-                                {featuredImage && (
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => setFeaturedImage('')}
-                                        className="h-7 text-xs text-red-500 hover:text-red-600 hover:bg-red-50"
-                                    >
-                                        <Trash2 className="h-3 w-3 mr-1" /> Remove
-                                    </Button>
-                                )}
-                            </div>
-
-                            {!featuredImage ? (
-                                <div className="grid grid-cols-1 gap-3">
-                                    <div className="relative">
-                                        <Button
-                                            variant="outline"
-                                            className="w-full h-32 flex flex-col items-center justify-center gap-3 border-dashed border-2 hover:bg-blue-50 hover:border-blue-200 transition-all"
-                                            onClick={() => document.getElementById('featured-image-upload')?.click()}
-                                        >
-                                            <div className="p-3 bg-blue-100 rounded-full text-blue-600">
-                                                <ImageIcon className="h-6 w-6" />
-                                            </div>
-                                            <div className="text-center">
-                                                <span className="text-sm font-medium block">Click to upload image</span>
-                                                <span className="text-xs text-muted-foreground">SVG, PNG, JPG or GIF (max. 800x400px)</span>
-                                            </div>
-                                        </Button>
-                                        <input
-                                            id="featured-image-upload"
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={(e) => {
-                                                const file = e.target.files?.[0]
-                                                if (file) {
-                                                    const reader = new FileReader();
-                                                    reader.onloadend = () => {
-                                                        setFeaturedImage(reader.result as string);
-                                                    };
-                                                    reader.readAsDataURL(file);
-                                                }
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="relative rounded-lg border-2 border-blue-100 overflow-hidden group aspect-video">
-                                    <img src={featuredImage} alt="Featured" className="w-full h-full object-cover" />
-                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                        <Button
-                                            variant="secondary"
-                                            size="sm"
-                                            onClick={() => document.getElementById('featured-image-upload-change')?.click()}
-                                        >
-                                            Ganti Gambar
-                                        </Button>
-                                        <input
-                                            id="featured-image-upload-change"
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={(e) => {
-                                                const file = e.target.files?.[0]
-                                                if (file) {
-                                                    const reader = new FileReader();
-                                                    reader.onloadend = () => {
-                                                        setFeaturedImage(reader.result as string);
-                                                    };
-                                                    reader.readAsDataURL(file);
-                                                }
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-                            )}
-                            <p className="text-[10px] text-center text-muted-foreground uppercase tracking-wider font-semibold">
-                                Recommended: 1200x630px · JPG, PNG, or WEBP
-                            </p>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Actions */}
-                <Card variant="glass">
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-lg">Actions</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-
-                        {/* Category moved to AI Config */}
-
-                        {publishResult && (
-                            <div className={`p-3 rounded-md text-sm ${publishResult.success ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
-                                <div className="flex items-center gap-2">
-                                    {publishResult.success ? <Check className="h-4 w-4" /> : <Loader2 className="h-4 w-4 animate-spin hidden" />}
-                                    <p>{publishResult.message}</p>
-                                </div>
-                                {publishResult.link && (
-                                    <a href={publishResult.link} target="_blank" rel="noopener noreferrer" className="text-xs underline mt-1 block hover:text-green-800">
-                                        View Post
-                                    </a>
-                                )}
-                            </div>
-                        )}
-
-                        <div className="grid grid-cols-2 gap-2">
-                            <Button
-                                variant="outline"
-                                className="w-full"
-                                onClick={() => handlePublishNow('draft')}
-                                disabled={!generatedContent || isPublishing}
-                            >
-                                {isPublishing ? <Loader2 className="h-4 w-4 animate-spin text-blue-600" /> : "Save Draft"}
-                            </Button>
-                            <Button
-                                className="w-full bg-gradient-to-r from-blue-600 to-blue-700"
-                                onClick={() => handlePublishNow('publish')}
-                                disabled={!generatedContent || isPublishing}
-                            >
-                                {isPublishing ? (
-                                    <Loader2 className="h-4 w-4 mr-2 animate-spin text-blue-600" />
-                                ) : (
-                                    <Send className="h-4 w-4 mr-2" />
-                                )}
-                                Publish
-                            </Button>
-                        </div>
-
-                        <Dialog open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
-                            <DialogTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    className="w-full"
-                                    disabled={!generatedContent || isPublishing}
-                                >
-                                    <Calendar className="h-4 w-4 mr-2" />
-                                    Schedule Post
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>Schedule Post</DialogTitle>
-                                    <DialogDescription>
-                                        Choose when to publish this article to your WordPress site.
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <div className="space-y-4 py-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <Label>Date</Label>
-                                            <div className="relative">
-                                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                                <Input
-                                                    type="date"
-                                                    className="pl-10"
-                                                    value={scheduleDate}
-                                                    onChange={(e) => setScheduleDate(e.target.value)}
-                                                    min={new Date().toISOString().split('T')[0]}
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>Time</Label>
-                                            <div className="relative">
-                                                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                                <Input
-                                                    type="time"
-                                                    className="pl-10"
-                                                    value={scheduleTime}
-                                                    onChange={(e) => setScheduleTime(e.target.value)}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>Post Status</Label>
-                                        <Select defaultValue="publish">
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent position="popper" side="bottom" sideOffset={4}>
-                                                <SelectItem value="publish">Published</SelectItem>
-                                                <SelectItem value="draft">Draft</SelectItem>
-                                                <SelectItem value="private">Private</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-                                <DialogFooter>
-                                    <Button variant="outline" onClick={() => setIsScheduleOpen(false)}>
-                                        Cancel
-                                    </Button>
-                                    <Button
-                                        className="bg-gradient-to-r from-blue-600 to-blue-700"
-                                        onClick={handleSchedulePublish}
-                                        disabled={!scheduleDate || !scheduleTime || isPublishing}
-                                    >
-                                        <Calendar className="h-4 w-4 mr-2" />
-                                        Schedule
-                                    </Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
-
-
-                    </CardContent>
-                </Card>
-            </motion.div>
-        </div >
-=======
     const handlers: ContentLabHandlers = {
         setFeeds, setArticles, setSelectedFeed, setIsFetchingRSS, setIsAddFeedOpen,
         setNewFeedUrl, setNewFeedName, setIsScanning, setIsScraping, setIsRewriting, setActiveTab, setSelectedCategory,
-        handleFetchArticles, handleAddFeed, handleRemoveFeed, handleSelectArticle, handleScrape, handleAIRewrite
+        handleFetchArticles, handleAddFeed, handleRemoveFeed, handleSelectArticle, handleScrape, handleAIRewrite, handleGenerateImage
     }
 
     return (
         <div className="h-[calc(100vh-180px)] min-h-[600px] px-4 md:px-0">
-            <div className="grid grid-cols-1 xl:grid-cols-[300px_1fr_320px] h-full gap-4 xl:gap-8">
-                {/* Left Sidebar: Sources */}
-                <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/40 dark:border-slate-800/60 rounded-[32px] p-6 overflow-y-auto custom-scrollbar shadow-inner">
-                    <SourceSidebar state={state} handlers={handlers} />
-                </div>
-
-                {/* Center Panel: Main Editor */}
-                <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-2xl border border-white/60 dark:border-slate-800/60 rounded-[40px] p-8 lg:p-10 overflow-y-auto custom-scrollbar shadow-2xl shadow-slate-200/50 dark:shadow-none border-t-white/40 relative">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] h-full gap-4 lg:gap-8">
+                {/* Left Panel: Main Editor */}
+                <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-2xl border border-white/60 dark:border-slate-800/60 rounded-[40px] p-6 lg:p-10 overflow-y-auto custom-scrollbar shadow-2xl shadow-slate-200/50 dark:shadow-none border-t-white/40 relative order-2 lg:order-1">
                     <ContentEditor state={state} handlers={handlers} copied={copied} handleCopy={handleCopy} />
                 </div>
 
-                {/* Right Panel: Tools & Publishing */}
-                <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/40 dark:border-slate-800/60 rounded-[32px] p-6 lg:p-8 overflow-y-auto custom-scrollbar shadow-inner">
-                    <ToolsPanel
-                        state={state}
-                        handlers={handlers}
-                        isRefreshingSEO={isRefreshingSEO}
-                        handleRefreshSEO={handleRefreshSEO}
-                        handlePublishNow={handlePublishNow}
-                        isPublishing={isPublishing}
-                        isScheduleOpen={isScheduleOpen}
-                        setIsScheduleOpen={setIsScheduleOpen}
-                        scheduleDate={scheduleDate}
-                        setScheduleDate={setScheduleDate}
-                        scheduleTime={scheduleTime}
-                        setScheduleTime={setScheduleTime}
-                        handleSchedulePublish={handleSchedulePublish}
-                    />
+                {/* Right Panel: Consolidated Tabbed Sidebar */}
+                <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/40 dark:border-slate-800/60 rounded-[32px] overflow-hidden flex flex-col shadow-inner order-1 lg:order-2">
+                    <Tabs defaultValue="tools" className="flex flex-col h-full">
+                        <div className="px-6 pt-6 pb-2">
+                            <TabsList className="grid w-full grid-cols-2 rounded-2xl bg-white/50 dark:bg-slate-800/50 p-1.5 h-12">
+                                <TabsTrigger
+                                    value="tools"
+                                    className="rounded-xl font-bold data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all"
+                                >
+                                    AI Tools
+                                </TabsTrigger>
+                                <TabsTrigger
+                                    value="sources"
+                                    className="rounded-xl font-bold data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all"
+                                >
+                                    Sources
+                                </TabsTrigger>
+                            </TabsList>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar">
+                            <TabsContent value="sources" className="mt-0 h-full">
+                                <SourceSidebar state={state} handlers={handlers} />
+                            </TabsContent>
+                            <TabsContent value="tools" className="mt-0 space-y-6">
+                                <ToolsPanel
+                                    state={state}
+                                    handlers={handlers}
+                                    isRefreshingSEO={isRefreshingSEO}
+                                    handleRefreshSEO={handleRefreshSEO}
+                                    handlePublishNow={handlePublishNow}
+                                    isPublishing={isPublishing}
+                                    isScheduleOpen={isScheduleOpen}
+                                    setIsScheduleOpen={setIsScheduleOpen}
+                                    scheduleDate={scheduleDate}
+                                    setScheduleDate={setScheduleDate}
+                                    scheduleTime={scheduleTime}
+                                    setScheduleTime={setScheduleTime}
+                                    handleSchedulePublish={handleSchedulePublish}
+                                    isGeneratingImage={isGeneratingImage}
+                                    handleGenerateImage={handleGenerateImage}
+                                />
+                            </TabsContent>
+                        </div>
+                    </Tabs>
                 </div>
             </div>
         </div>
->>>>>>> c1209c3 (feat: global styling refresh, layout fixes, and build error resolution)
     )
 }

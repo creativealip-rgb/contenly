@@ -24,6 +24,7 @@ import { CategoryMappingModule } from './modules/category-mapping/category-mappi
 import { ViewBoostModule } from './modules/view-boost/view-boost.module';
 import { InstagramStudioModule } from './modules/instagram-studio/instagram-studio.module';
 import { VideoScriptModule } from './modules/video-script/video-script.module';
+import { TrendRadarModule } from './modules/trend-radar/trend-radar.module';
 
 @Module({
   imports: [
@@ -69,6 +70,7 @@ import { VideoScriptModule } from './modules/video-script/video-script.module';
     ViewBoostModule,
     InstagramStudioModule,
     VideoScriptModule,
+    TrendRadarModule,
   ],
   controllers: [AppController],
   providers: [AppService],
