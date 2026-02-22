@@ -11,24 +11,27 @@ export class OpenAiService {
   constructor(private configService: ConfigService) {
     console.log('🔍 OpenAiService: Initializing...');
 
-    // Get model preference from env (default to GPT-5.3-Codex or Gemini)
-    const preferredModel = (this.configService.get('OPENAI_MODEL') || 'gpt-5.3-codex').trim();
+    // Get model preference from env (default to GPT-4o-mini)
+    const preferredModel = (this.configService.get('OPENAI_MODEL') || 'gpt-4o-mini').trim();
 
-    // Try OpenAI API first, then fall back to OpenRouter
+    // Try OpenAI API first
     let apiKey = (this.configService.get('OPENAI_API_KEY') || '').trim();
     let baseURL = 'https://api.openai.com/v1';
     let model = preferredModel;
 
-    // If OpenAI key not available, try OpenRouter
-    if (!apiKey) {
-      apiKey = (this.configService.get('OPENROUTER_API_KEY') || '').trim();
+    // Logic: If model name contains a slash (e.g. 'openai/gpt-5.2'), use OpenRouter
+    // Or if OpenAI API key is missing
+    const useOpenRouter = model.includes('/') || !apiKey;
+
+    if (useOpenRouter) {
+      console.log('📝 Switching to OpenRouter (model contains slash or OpenAI key missing)');
+      apiKey = (this.configService.get('OPENROUTER_API_KEY') || apiKey).trim();
       baseURL = (this.configService.get('OPENROUTER_BASE_URL') || 'https://openrouter.ai/api/v1').trim();
-      model = this.configService.get('OPENROUTER_MODEL') || 'google/gemini-2.0-flash-exp:free';
-      console.log('📝 Using OpenRouter configuration');
-    } else {
-      console.log('📝 Using OpenAI API configuration');
-      // If native OpenAI is used for text, we also use it for nativeOpenai
-      this.nativeOpenai = new OpenAI({ apiKey });
+
+      // If we are using OpenRouter, check if there's a specific OpenRouter model set
+      if (this.configService.get('OPENROUTER_MODEL')) {
+        model = this.configService.get('OPENROUTER_MODEL');
+      }
     }
 
     if (!apiKey) {
@@ -41,6 +44,8 @@ export class OpenAiService {
       baseURL,
     });
     this.model = model;
+
+    console.log(`✅ Model set to: ${this.model} via ${useOpenRouter ? 'OpenRouter' : 'OpenAI'}`);
 
     // Explicitly check for native OpenAI key for DALL-E if not already set
     if (!this.nativeOpenai) {

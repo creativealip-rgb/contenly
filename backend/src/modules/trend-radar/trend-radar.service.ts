@@ -17,9 +17,8 @@ export class TrendRadarService {
         this.logger.log(`Searching trends for: ${query}`);
 
         try {
-            // Mocking discovery from Google News/RSS for MVP
-            // In a real scenario, we'd use a Search API or a more complex discovery scraper
-            const searchUrl = `https://news.google.com/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
+            // Updated search URL for Indonesian locale
+            const searchUrl = `https://news.google.com/search?q=${encodeURIComponent(query)}&hl=id&gl=ID&ceid=ID:id`;
 
             const response = await axios.get(searchUrl, {
                 headers: {
@@ -30,25 +29,53 @@ export class TrendRadarService {
             const $ = cheerio.load(response.data);
             const results: any[] = [];
 
-            $('article').each((i, el) => {
-                if (i >= 10) return; // Limit to top 10
+            // Modern Google News uses different selectors than 'article' in some views
+            // We search for the title link class 'JtKRv' and find its container
+            $('a.JtKRv').each((i, el) => {
+                if (i >= 15) return; // Increased limit slightly
 
-                const title = $(el).find('h3').text().trim();
-                const link = $(el).find('a').attr('href');
-                const source = $(el).find('div[data-name]').text().trim();
-                const time = $(el).find('time').text().trim();
+                const $titleEl = $(el);
+                const title = $titleEl.text().trim();
+                const link = $titleEl.attr('href');
+
+                // Find source and time in the common parent container
+                const $container = $titleEl.closest('div').parent();
+                const source = $container.find('.vr1PYe').text().trim();
+                const time = $container.find('time').text().trim();
 
                 if (title && link) {
                     results.push({
                         id: `trend-${i}`,
                         title,
                         url: link.startsWith('./') ? `https://news.google.com${link.substring(1)}` : link,
-                        source,
-                        time,
+                        source: source || 'News Source',
+                        time: time || 'Recently',
                         type: 'news'
                     });
                 }
             });
+
+            // Fallback to old 'article' selector if 'JtKRv' yielded nothing
+            if (results.length === 0) {
+                $('article').each((i, el) => {
+                    if (i >= 10) return;
+                    const title = $(el).find('h3').text().trim();
+                    const link = $(el).find('a').attr('href');
+                    const source = $(el).find('div[data-name]').text().trim() || $(el).find('.vr1PYe').text().trim();
+                    const time = $(el).find('time').text().trim();
+
+                    if (title && link) {
+                        results.push({
+                            id: `trend-fallback-${i}`,
+                            title,
+                            url: link.startsWith('./') ? `https://news.google.com${link.substring(1)}` : link,
+                            source: source || 'News Source',
+                            time,
+                            type: 'news'
+                        });
+                    }
+                });
+            }
 
             return {
                 success: true,
