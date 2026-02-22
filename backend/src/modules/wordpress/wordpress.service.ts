@@ -509,7 +509,6 @@ export class WordpressService implements OnModuleInit {
         } else {
           // Create new article
           await this.articlesService.create(userId, {
-            userId,
             title: dto.title,
             originalContent: dto.originalContent || '',
             generatedContent: dto.content,

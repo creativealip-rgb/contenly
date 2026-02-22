@@ -334,8 +334,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-<<<<<<< HEAD
-/* Enhanced Glassmorphism - Monev Style */
+/* Enhanced Glassmorphism & Card Styles */
 .glass-strong {
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(24px);
@@ -379,8 +378,8 @@
 
 .dark .glass-card:hover {
   border-color: rgba(255, 255, 255, 0.2);
-=======
-/* Card Clean style from Style Guide */
+}
+
 .card-clean {
   @apply rounded-2xl transition-all duration-300;
   background: rgba(255, 255, 255, 0.7);
@@ -402,7 +401,6 @@
 
 .dark .card-clean:hover {
   box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.6);
->>>>>>> c1209c3 (feat: global styling refresh, layout fixes, and build error resolution)
 }
 
 /* Premium button styles */

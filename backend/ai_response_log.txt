@@ -1,47 +1,35 @@
 {
-  "total_slides": 7,
+  "total_slides": 5,
   "slides": [
     {
       "slide_number": 1,
-      "text_content": "**Mid-Range Naik Kelas!**\n\nInfinix Note 60 Pro dan Redmi Note 15 Pro+ bikin pasar kelas menengah jadi panas lagi. Bukan cuma “murah meriah”—ini adu fitur rasa flagship dengan harga yang (katanya) tetap kompetitif.",
-      "visual_prompt": "Cinematic wide shot of two futuristic smartphone silhouettes facing each other like a duel, with subtle holographic spec icons floating between them (chipset, display, camera, battery, IP rating). Volumetric lighting, neon glow accents, crisp rim light, high contrast. Photorealistic 8k render, Unreal Engine 5 aesthetic, sleek cyber-futuristic minimalism. Color palette: neon cyan, electric magenta, deep blue, graphite black, chrome highlights. Deep black background with ample negative space at the top for text overlay, clean composition, no clutter, studio-like atmosphere\n~4:5",
-      "layout_position": "top-center"
+      "text_content": "**10 Link Biru, Tamat**\n\nGoogle AI Mode bikin pencarian berubah: pengguna dapat “jawaban jadi” dari AI, bukan daftar tautan. Artinya, klik bisa turun—dan SEO bukan lagi soal ranking saja, tapi soal dipercaya dan disitasi.",
+      "visual_prompt": "Minimalist futuristic editorial style, photorealistic 8k render, high-contrast look with subtle film grain, deep black and charcoal background, neon cyan and electric purple accents with small white highlights, sleek glass UI elements floating. Cinematic wide shot of a search bar dissolving into an AI summary card, faint data streams, soft volumetric lighting, crisp rim light, clean composition. Ample negative space on the upper-left for text overlay, no clutter, no readable text, no logos.\n~4:5",
+      "layout_position": "top-left"
     },
     {
       "slide_number": 2,
-      "text_content": "**Chipset Sama, Era Baru**\n\nKeduanya kompak pakai Snapdragon 7s Gen 4 (4nm). Ini sinyal jelas: mid-range sekarang bukan cuma soal harga, tapi soal efisiensi daya dan performa yang makin “serius”.",
-      "visual_prompt": "Cinematic close-up of a futuristic 4nm chipset floating above a matte graphite pedestal, etched with glowing text ‘Snapdragon 7s Gen 4’. Micro-circuit traces emit neon cyan and electric magenta light, with soft deep blue bloom. Volumetric lighting, dramatic shadows, subtle haze, ultra-sharp macro detail. Photorealistic 8k render, Unreal Engine 5 aesthetic, sleek cyber-futuristic minimalism. Color palette: neon cyan, electric magenta, deep blue, graphite black, chrome highlights. Deep black background with ample negative space at the right for text overlay, clean minimal studio scene\n~4:5",
+      "text_content": "**Apa Itu AI Mode?**\n\nAI Mode adalah pengalaman “AI-first” di Google Search—mirip asisten riset yang nempel langsung di mesin pencari dan ditenagai Gemini 2.5. Biasanya muncul sebagai tab khusus (atau lewat google.com/aimode) untuk eksplorasi yang lebih dalam.",
+      "visual_prompt": "Minimalist futuristic editorial style, photorealistic 8k render, high-contrast look with subtle film grain, deep black and charcoal background, neon cyan and electric purple accents with small white highlights, sleek glass UI panels. Cinematic medium shot of a floating browser-like interface showing layered AI cards and a discrete tab strip, glowing edge lights, soft volumetric lighting and controlled reflections. Clean background with ample negative space on the right for text overlay, no clutter, no readable text, no logos.\n~4:5",
       "layout_position": "center-right"
     },
     {
       "slide_number": 3,
-      "text_content": "**144Hz vs 120Hz**\n\nInfinix ngegas di layar: AMOLED 6,78 inci 1,5K + 144Hz buat transisi super mulus. Redmi lebih lega: AMOLED 6,83 inci 1,5K, tapi stay di 120Hz—bedanya tipis, tapi krusial buat gamer kompetitif.",
-      "visual_prompt": "Cinematic angled shot of two holographic smartphone displays side-by-side, one labeled ‘144Hz’ and the other ‘120Hz’ in glowing neon typography. The screens show abstract motion trails to visualize smoothness, with sharp AMOLED-like contrast. Volumetric lighting, neon cyan and magenta edge glow, deep blue ambient fill, reflective chrome accents. Photorealistic 8k render, Unreal Engine 5 aesthetic, sleek cyber-futuristic minimalism. Color palette: neon cyan, electric magenta, deep blue, graphite black, chrome highlights. Deep black background with ample negative space at the bottom for text overlay, clean and uncluttered\n~4:5",
-      "layout_position": "bottom-center"
+      "text_content": "**Beda Dengan AI Overviews**\n\nAI Overviews muncul di SERP biasa untuk ringkasan cepat—cenderung statis. AI Mode itu “percakapan”: bisa follow-up, membandingkan opsi, menjaga konteks, dan bahkan multimodal (teks, suara, gambar).",
+      "visual_prompt": "Minimalist futuristic editorial style, photorealistic 8k render, high-contrast look with subtle film grain, deep black and charcoal background, neon cyan and electric purple accents with small white highlights. Cinematic split-composition: left side a compact AI overview card, right side a conversational thread of stacked prompt-and-response bubbles with subtle icons, glowing separators, soft volumetric lighting, crisp rim light. Clean background with ample negative space at the top-center for text overlay, no readable text, no logos.\n~4:5",
+      "layout_position": "top-center"
     },
     {
       "slide_number": 4,
-      "text_content": "**Skor Ngebut Tipis**\n\nAntutu 11: Infinix sekitar 1.106.xxx, Redmi sekitar 1.045.xxx. Selisih kecil, tapi bisa kebaca—biasanya gara-gara optimasi software dan sistem pendinginan yang beda gaya.",
-      "visual_prompt": "Cinematic medium shot of a futuristic benchmark dashboard hologram hovering in front of a dark studio backdrop, showing two vertical bars with numbers ‘1.106.xxx’ and ‘1.045.xxx’. Include subtle cooling/thermal line graphics around the bars. Volumetric lighting, neon cyan grids, electric magenta highlights, deep blue glow, glossy chrome UI elements. Photorealistic 8k render, Unreal Engine 5 aesthetic, sleek cyber-futuristic minimalism. Color palette: neon cyan, electric magenta, deep blue, graphite black, chrome highlights. Deep black background with ample negative space at the left for text overlay, minimal clean layout\n~4:5",
-      "layout_position": "center-left"
+      "text_content": "**Ranking Tak Menjamin Dipilih**\n\nRiset Semrush menemukan sidebar AI Mode menampilkan sekitar 7 domain unik dan tidak selalu meniru top 10 organik. Tumpang tindih domain sering di bawah 50%, bahkan URL persis bisa di bawah 30%—halaman yang kamu “optimasi mati-matian” belum tentu yang disitasi AI.",
+      "visual_prompt": "Minimalist futuristic editorial style, photorealistic 8k render, high-contrast look with subtle film grain, deep black and charcoal background, neon cyan and electric purple accents with small white highlights. Cinematic close-up of a floating vertical sidebar with seven glowing domain tiles as abstract placeholders, alongside a faint top-10 list blurred out, connected by thin holographic lines showing low overlap. Soft volumetric lighting, sharp highlights, clean background with ample negative space bottom-left for text overlay, no readable text, no logos.\n~4:5",
+      "layout_position": "bottom-left"
     },
     {
       "slide_number": 5,
-      "text_content": "**Kamera: Dua Filosofi**\n\nRedmi pamer 200MP + OIS: enak buat crop tanpa banyak kehilangan detail. Infinix pilih 50MP f/1.59 + OIS: bukaan lebih besar, secara teori lebih kuat di low-light—tinggal lihat tuning pemrosesan gambarnya.",
-      "visual_prompt": "Cinematic close-up of a futuristic camera module concept split into two halves: one side with a large ‘200MP’ holographic label and stabilizing gyro rings (OIS), the other with ‘f/1.59’ and a wide aperture iris glowing. Volumetric lighting, neon cyan and electric magenta reflections, deep blue ambient haze, chrome and graphite materials. Photorealistic 8k render, Unreal Engine 5 aesthetic, sleek cyber-futuristic minimalism. Color palette: neon cyan, electric magenta, deep blue, graphite black, chrome highlights. Deep black background with ample negative space at the top-left for text overlay, clean studio composition\n~4:5",
-      "layout_position": "top-left"
-    },
-    {
-      "slide_number": 6,
-      "text_content": "**6.500mAh, Dua Gaya**\n\nDua-duanya bawa baterai 6.500mAh—standar baru buat sehari penuh. Redmi unggul di kabel 100W, sementara Infinix lebih “lengkap”: 90W kabel + 30W wireless (fitur yang biasanya cuma muncul di kelas atas).",
-      "visual_prompt": "Cinematic product-style shot of a futuristic battery core labeled ‘6500mAh’ glowing in neon cyan, with two charging paths branching out as luminous lines: one labeled ‘100W wired’ and another labeled ‘90W wired + 30W wireless’ with a wireless charging ring icon. Volumetric lighting, neon glow, deep shadows, subtle blue haze, chrome accents. Photorealistic 8k render, Unreal Engine 5 aesthetic, sleek cyber-futuristic minimalism. Color palette: neon cyan, electric magenta, deep blue, graphite black, chrome highlights. Deep black background with ample negative space at the right for text overlay, clean minimal scene\n~4:5",
-      "layout_position": "center-right"
-    },
-    {
-      "slide_number": 7,
-      "text_content": "**IP69K Itu Gila**\n\nRedmi Note 15 Pro+ bawa IP69K: tahan debu dan semprotan air bertekanan tinggi—level “siksa harian” yang serius. Infinix IP64 masih aman buat percikan, tapi jelas beda kelas; penentu terakhir tinggal kebutuhan kamu (dan harga final yang bakal jadi game changer).",
-      "visual_prompt": "Cinematic low-angle shot of a futuristic smartphone outline partially hit by stylized high-pressure water jets and dust particles frozen mid-air, with a bold holographic ‘IP69K’ stamp glowing neon cyan; a secondary smaller ‘IP64’ stamp fades in the background for comparison. Volumetric lighting, dramatic shadows, deep blue mist, electric magenta accent sparks, chrome highlights. Photorealistic 8k render, Unreal Engine 5 aesthetic, sleek cyber-futuristic minimalism. Color palette: neon cyan, electric magenta, deep blue, graphite black, chrome highlights. Deep black background with ample negative space at the bottom for text overlay, clean composition, no clutter\n~4:5",
-      "layout_position": "bottom-center"
+      "text_content": "**SEO Baru: Reputasi & Sitasi**\n\nAI Mode memilih sumber berdasarkan trust, relevansi, dan “mudah dibaca mesin”—termasuk kutip UGC seperti Reddit. Plus, AI Mode bisa menampilkan iklan untuk kueri tertentu: artinya Google sedang menyiapkan inventaris baru, dan brand yang paling sering dirujuk akan menang.",
+      "visual_prompt": "Minimalist futuristic editorial style, photorealistic 8k render, high-contrast look with subtle film grain, deep black and charcoal background, neon cyan and electric purple accents with small white highlights. Cinematic low-angle shot of a glowing “trust network” graph: nodes as abstract website cards (one resembling a community thread), plus a small ad-badge placeholder icon, all connected with luminous lines. Soft volumetric lighting, controlled reflections, clean background with ample negative space on the upper-right for text overlay, no readable text, no logos.\n~4:5",
+      "layout_position": "top-right"
     }
   ]
 }

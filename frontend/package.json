@@ -24,12 +24,8 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
-<<<<<<< HEAD
-    "framer-motion": "^12.34.2",
-    "isomorphic-dompurify": "^2.24.0",
-=======
     "framer-motion": "^12.34.3",
->>>>>>> c1209c3 (feat: global styling refresh, layout fixes, and build error resolution)
+    "isomorphic-dompurify": "^2.36.0",
     "lucide-react": "^0.562.0",
     "marked": "^17.0.1",
     "next": "16.1.1",

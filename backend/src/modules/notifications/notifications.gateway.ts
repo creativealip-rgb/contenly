@@ -40,18 +40,18 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     private readonly logger = new Logger(NotificationsGateway.name);
     private userSockets: Map<string, Set<string>> = new Map();
 
-    constructor(private configService: ConfigService) {}
+    constructor(private configService: ConfigService) { }
 
     handleConnection(client: Socket) {
         this.logger.log(`Client connected: ${client.id}`);
-        
+
         // The client should send userId after connection
         // This is handled in the subscribe handler
     }
 
     handleDisconnect(client: Socket) {
         this.logger.log(`Client disconnected: ${client.id}`);
-        
+
         // Remove client from all user rooms
         for (const [userId, sockets] of this.userSockets.entries()) {
             if (sockets.has(client.id)) {
@@ -85,7 +85,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         this.userSockets.get(userId)!.add(client.id);
 
         this.logger.log(`Client ${client.id} subscribed to user:${userId}`);
-        
+
         return { success: true, message: `Subscribed to notifications for user ${userId}` };
     }
 
@@ -106,7 +106,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         }
 
         this.logger.log(`Client ${client.id} unsubscribed from user:${userId}`);
-        
+
         return { success: true };
     }
 
@@ -122,9 +122,9 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         createdAt: Date;
     }) {
         const room = `user:${userId}`;
-        
-        this.server.to(room).emit('notification', notification);
-        
+
+        (this.server as any).to(room).emit('notification', notification);
+
         this.logger.log(`Notification sent to user:${userId} - ${notification.title}`);
     }
 
