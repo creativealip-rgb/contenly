@@ -187,7 +187,11 @@ Return JSON with:
   }
 
   async generateImage(prompt: string): Promise<string> {
-    const client = this.nativeOpenai || this.openai;
+    if (!this.nativeOpenai) {
+      throw new Error('OPENAI_API_KEY is missing. Image generation requires a direct OpenAI API Key (DALL-E 3 is not supported via OpenRouter). Please add OPENAI_API_KEY to your VPS .env file.');
+    }
+
+    const client = this.nativeOpenai;
     const response = await client.images.generate({
       model: 'dall-e-3',
       prompt: `Create a professional, high-quality featured image for an article about: ${prompt}. The image should be clean, modern, and suitable for a blog post.`,

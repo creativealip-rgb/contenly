@@ -106,9 +106,11 @@ export default function AnalyticsPage() {
         <div className="space-y-6">
             {/* Page Header */}
             <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold">Analytics</h1>
-                    <p className="text-muted-foreground">
+                <div className="space-y-1">
+                    <h1 className="text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
+                        Analytics
+                    </h1>
+                    <p className="text-slate-500 font-medium">
                         Track your content performance and usage.
                     </p>
                 </div>
@@ -126,7 +128,7 @@ export default function AnalyticsPage() {
 
             {/* Stats Overview */}
             <div className="grid gap-4 md:grid-cols-4">
-                <Card>
+                <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
                             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/10">
@@ -143,7 +145,7 @@ export default function AnalyticsPage() {
                         </div>
                     </CardContent>
                 </Card>
-                <Card>
+                <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
                             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-500/10">
@@ -160,7 +162,7 @@ export default function AnalyticsPage() {
                         </div>
                     </CardContent>
                 </Card>
-                <Card>
+                <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
                             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-500/10">
@@ -177,7 +179,7 @@ export default function AnalyticsPage() {
                         </div>
                     </CardContent>
                 </Card>
-                <Card>
+                <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
                             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/10">
@@ -197,7 +199,7 @@ export default function AnalyticsPage() {
 
             {/* Charts */}
             <div className="grid gap-6 lg:grid-cols-2">
-                <Card>
+                <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <BarChart3 className="h-5 w-5" />
@@ -210,7 +212,7 @@ export default function AnalyticsPage() {
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Sparkles className="h-5 w-5" />
@@ -226,7 +228,7 @@ export default function AnalyticsPage() {
 
             {/* Success Rate & Breakdown */}
             <div className="grid gap-6 lg:grid-cols-3">
-                <Card>
+                <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <PieChart className="h-5 w-5" />
@@ -238,7 +240,7 @@ export default function AnalyticsPage() {
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                     <CardHeader>
                         <CardTitle>WordPress Sync Status</CardTitle>
                     </CardHeader>
@@ -267,7 +269,7 @@ export default function AnalyticsPage() {
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                     <CardHeader>
                         <CardTitle>Token Breakdown</CardTitle>
                     </CardHeader>

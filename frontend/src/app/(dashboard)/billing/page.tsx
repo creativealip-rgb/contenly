@@ -64,29 +64,39 @@ export default function BillingPage() {
     }, [])
 
     return (
-        <motion.div 
+        <motion.div
             className="space-y-6"
             variants={containerVariants}
             initial="hidden"
             animate="visible"
         >
-            {/* Page Header - Hero Balance Card */}
+            {/* Page Header */}
+            <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                    <h1 className="text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
+                        Billing
+                    </h1>
+                    <p className="text-slate-500 font-medium">Manage your tokens and usage.</p>
+                </div>
+            </div>
+
+            {/* Token Balance Card */}
             <motion.div variants={itemVariants}>
                 <Card className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-500 to-cyan-500 text-white border-0">
                     {/* Decorative elements */}
                     <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
                     <div className="absolute bottom-0 left-0 w-48 h-48 bg-cyan-400/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
                     <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-                    
+
                     <CardContent className="relative z-10 py-10 px-6">
                         <div className="flex items-center gap-2 text-blue-100 mb-4">
                             <Zap className="w-4 h-4" />
                             <span className="text-xs font-medium uppercase tracking-wider">Token Balance</span>
                         </div>
-                        
+
                         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
                             <div>
-                                <motion.div 
+                                <motion.div
                                     className="text-5xl md:text-6xl font-bold tracking-tight tabular-nums"
                                     initial={{ scale: 0.8, opacity: 0 }}
                                     animate={{ scale: 1, opacity: 1 }}
@@ -95,7 +105,7 @@ export default function BillingPage() {
                                     {loading ? '...' : (balance !== null ? balance.toLocaleString() : 0)}
                                 </motion.div>
                                 <p className="text-blue-100 mt-2 text-lg">tokens remaining</p>
-                                
+
                                 {/* Usage indicator */}
                                 <div className="mt-4 flex items-center gap-3">
                                     <div className="h-2 w-32 rounded-full bg-white/20 overflow-hidden">
@@ -109,7 +119,7 @@ export default function BillingPage() {
                                     <span className="text-xs text-blue-100">{balance || 0} available</span>
                                 </div>
                             </div>
-                            
+
                             {/* Glass card for stats */}
                             <div className="glass-subtle rounded-2xl p-4 flex gap-6">
                                 <div className="text-center px-4 border-r border-white/20">
@@ -134,7 +144,7 @@ export default function BillingPage() {
 
             {/* Actions */}
             <motion.div className="grid gap-4 md:grid-cols-2" variants={itemVariants}>
-                <Card variant="glass" hover className="overflow-hidden">
+                <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                     <CardContent className="pt-6">
                         <div className="flex items-start gap-4">
                             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 text-white">
@@ -158,7 +168,7 @@ export default function BillingPage() {
                     </CardContent>
                 </Card>
 
-                <Card variant="glass" hover className="overflow-hidden">
+                <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                     <CardContent className="pt-6">
                         <div className="flex items-start gap-4">
                             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-400 text-white">
@@ -185,7 +195,7 @@ export default function BillingPage() {
 
             {/* Info Card */}
             <motion.div variants={itemVariants}>
-                <Card variant="glass">
+                <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                     <CardHeader>
                         <CardTitle className="text-sm uppercase tracking-wider text-muted-foreground font-semibold">About Tokens</CardTitle>
                     </CardHeader>
@@ -240,7 +250,7 @@ function WhatsAppActionModal({ trigger }: { trigger: React.ReactNode }) {
                     </DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-col items-center justify-center p-6 space-y-4 text-center">
-                    <motion.div 
+                    <motion.div
                         className="p-4 bg-gradient-to-br from-green-500 to-green-400 rounded-full"
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}

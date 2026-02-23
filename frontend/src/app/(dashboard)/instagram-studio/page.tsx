@@ -39,6 +39,7 @@ import {
     ChevronLeft,
     ChevronRight,
     Eye,
+    Calendar,
 } from 'lucide-react'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
@@ -177,9 +178,11 @@ export default function InstagramStudioPage() {
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold">Instagram Studio</h1>
-                    <p className="text-muted-foreground">
+                <div className="space-y-1">
+                    <h1 className="text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
+                        Instagram Studio
+                    </h1>
+                    <p className="text-slate-500 font-medium">
                         Create AI-powered Instagram carousels from your content
                     </p>
                 </div>
@@ -303,29 +306,34 @@ export default function InstagramStudioPage() {
                     {projects.map((project) => (
                         <Card
                             key={project.id}
-                            className="cursor-pointer hover:shadow-lg transition-all hover:border-pink-200"
+                            className="group relative h-full glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-[2.5rem] cursor-pointer"
                             onClick={() => router.push(`/instagram-studio/${project.id}`)}
                         >
-                            <CardHeader className="pb-3">
+                            <CardHeader className="pt-8 px-8">
                                 <div className="flex items-start justify-between">
-                                    <CardTitle className="text-lg">{project.title}</CardTitle>
+                                    <CardTitle className="text-xl font-black tracking-tighter leading-tight group-hover:text-blue-600 transition-colors">
+                                        {project.title}
+                                    </CardTitle>
                                     <Badge className={getStatusColor(project.status)}>
                                         {project.status}
                                     </Badge>
                                 </div>
-                                <CardDescription>
-                                    {project.totalSlides} slides • {project.globalStyle}
+                                <CardDescription className="text-xs font-bold text-slate-400 group-hover:text-slate-500 transition-colors mt-2">
+                                    <span className="flex items-center gap-1.5">
+                                        {project.totalSlides} slides • {project.globalStyle}
+                                    </span>
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="px-8 pb-8 mt-4">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm text-muted-foreground">
+                                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400">
+                                        <Calendar className="h-3.5 w-3.5" />
                                         {new Date(project.createdAt).toLocaleDateString()}
-                                    </span>
+                                    </div>
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                                        className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl"
                                         onClick={(e) => {
                                             e.stopPropagation()
                                             handleDeleteProject(project.id)

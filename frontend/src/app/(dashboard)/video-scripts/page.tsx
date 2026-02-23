@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
-import { Plus, Clock, ExternalLink, RefreshCw, Trash2, Film } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Film, Plus, Loader2, Sparkles, Wand2, Type, LayoutTemplate, Trash2, Clock, ExternalLink, PlayCircle, SplitSquareVertical, Settings2, Share2, Calendar, RefreshCw } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -130,7 +130,7 @@ export default function VideoScriptsPage() {
                         disabled={isLoading}
                         className="h-12 px-6 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-white/40 glass border-none transition-all active:scale-95"
                     >
-                        <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                        <Loader2 className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
                         Sync
                     </Button>
 
@@ -220,11 +220,11 @@ export default function VideoScriptsPage() {
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: idx * 0.05 }}
                             key={project.id}
-                            whileHover={{ y: -8, scale: 1.02 }}
+                            whileHover={{ y: -4, scale: 1.01 }}
                             className="group cursor-pointer"
                             onClick={() => router.push(`/video-scripts/${project.id}`)}
                         >
-                            <Card className="card-clean h-full border-none shadow-sm flex flex-col p-6 overflow-hidden">
+                            <Card className="group relative h-full glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-[2.5rem] cursor-pointer flex flex-col p-8">
                                 <div className="flex justify-between items-start mb-6">
                                     <Badge className={`rounded-lg px-2 py-0.5 font-extrabold uppercase text-[9px] tracking-wider border-none ${project.status === 'ready'
                                         ? 'bg-emerald-100 text-emerald-700'
@@ -232,30 +232,30 @@ export default function VideoScriptsPage() {
                                         }`}>
                                         {project.status || 'draft'}
                                     </Badge>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity text-rose-500 hover:bg-rose-50 rounded-xl"
-                                        onClick={(e) => handleDeleteProject(e, project.id)}
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
                                 </div>
 
-                                <h3 className="text-lg font-black leading-tight uppercase tracking-tight line-clamp-2 mb-4 group-hover:text-blue-600 transition-colors">
+                                <h3 className="text-xl font-black tracking-tighter leading-tight group-hover:text-blue-600 transition-colors mb-4 line-clamp-2">
                                     {project.title}
                                 </h3>
 
-                                <div className="mt-auto pt-6 border-t border-slate-50 flex items-center justify-between">
-                                    <div className="flex items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                        <Clock className="h-3 w-3 mr-1.5" />
-                                        {format(new Date(project.updatedAt), 'MMM d, yy')}
+                                <div className="mt-auto pt-6 flex items-center justify-between">
+                                    <div className="flex items-center text-xs font-bold text-slate-400">
+                                        <Calendar className="h-3.5 w-3.5 mr-1.5" />
+                                        {new Date(project.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' })}
                                     </div>
-                                    {project.sourceUrl && (
-                                        <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                                    <div className="flex gap-2">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onClick={(e) => handleDeleteProject(e, project.id)}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                        <div className="h-8 w-8 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
                                             <ExternalLink className="h-4 w-4" />
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
                             </Card>
                         </motion.div>

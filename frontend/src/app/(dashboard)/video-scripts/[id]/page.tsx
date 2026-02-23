@@ -93,8 +93,8 @@ export default function VideoScriptEditorPage() {
 
     const handleCopyScript = () => {
         if (!project?.scenes || project.scenes.length === 0) return
-        
-        const fullScript = project.scenes.map(s => 
+
+        const fullScript = project.scenes.map(s =>
             `--- SCENE ${s.sceneNumber} ---\n[Visual]: ${s.visualContext}\n[Voiceover]: ${s.voiceoverText}\n`
         ).join('\n')
 
@@ -170,7 +170,7 @@ export default function VideoScriptEditorPage() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* Left Column: Source Content */}
                 <div className="lg:col-span-4 space-y-6">
-                    <Card className="border-indigo-100 shadow-sm sticky top-6">
+                    <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl sticky top-6">
                         <CardHeader className="pb-3 bg-indigo-50/50 rounded-t-xl">
                             <CardTitle className="text-lg flex items-center">
                                 <AlignLeft className="h-4 w-4 mr-2 text-indigo-500" /> Source Content
@@ -203,7 +203,7 @@ export default function VideoScriptEditorPage() {
                     ) : (
                         <div className="space-y-6">
                             {project.scenes.map((scene, index) => (
-                                <Card key={scene.id} className="overflow-hidden border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                                <Card key={scene.id} className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                                     <div className="bg-slate-900 text-slate-100 px-4 py-2 flex items-center justify-between">
                                         <div className="font-semibold tracking-wide text-sm">
                                             SCENE {scene.sceneNumber}
@@ -211,7 +211,7 @@ export default function VideoScriptEditorPage() {
                                             {index === project.scenes.length - 1 && <Badge variant="secondary" className="ml-3 bg-blue-500/20 text-blue-300 border-none">The Call to Action</Badge>}
                                         </div>
                                     </div>
-                                    
+
                                     <CardContent className="p-0">
                                         <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100">
                                             {/* Visual Context Column */}

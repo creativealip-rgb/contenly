@@ -511,20 +511,20 @@ export default function ContentLabPage() {
 
                 {/* Right Panel: Consolidated Tabbed Sidebar */}
                 <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/40 dark:border-slate-800/60 rounded-[32px] overflow-hidden flex flex-col shadow-inner order-1 lg:order-2">
-                    <Tabs defaultValue="tools" className="flex flex-col h-full">
+                    <Tabs defaultValue="sources" className="flex flex-col h-full">
                         <div className="px-6 pt-6 pb-2">
                             <TabsList className="grid w-full grid-cols-2 rounded-2xl bg-white/50 dark:bg-slate-800/50 p-1.5 h-12">
-                                <TabsTrigger
-                                    value="tools"
-                                    className="rounded-xl font-bold data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all"
-                                >
-                                    AI Tools
-                                </TabsTrigger>
                                 <TabsTrigger
                                     value="sources"
                                     className="rounded-xl font-bold data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all"
                                 >
                                     Sources
+                                </TabsTrigger>
+                                <TabsTrigger
+                                    value="tools"
+                                    className="rounded-xl font-bold data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all"
+                                >
+                                    AI Tools
                                 </TabsTrigger>
                             </TabsList>
                         </div>

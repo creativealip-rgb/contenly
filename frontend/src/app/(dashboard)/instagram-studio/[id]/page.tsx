@@ -333,7 +333,7 @@ export default function InstagramStudioEditorPage() {
             </div>
 
             {!project.slides || project.slides.length === 0 ? (
-                <Card>
+                <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                     <CardContent className="flex flex-col items-center justify-center py-12">
                         <Sparkles className="h-16 w-16 text-muted-foreground/50 mb-4" />
                         <h3 className="text-lg font-medium mb-2">No slides yet</h3>
@@ -362,7 +362,7 @@ export default function InstagramStudioEditorPage() {
             ) : (
                 <div className="grid gap-6 lg:grid-cols-2">
                     <div className="space-y-4">
-                        <Card>
+                        <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                             <CardHeader className="pb-3 border-b mb-4">
                                 <div className="flex items-center justify-between">
                                     <CardTitle className="text-lg">
@@ -585,7 +585,7 @@ export default function InstagramStudioEditorPage() {
                     </div>
 
                     <div className="space-y-4">
-                        <Card>
+                        <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                             <CardHeader className="pb-3">
                                 <CardTitle className="text-lg">Preview</CardTitle>
                             </CardHeader>
@@ -646,7 +646,7 @@ export default function InstagramStudioEditorPage() {
                             </CardContent>
                         </Card>
 
-                        <Card>
+                        <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                             <CardHeader className="pb-3">
                                 <CardTitle className="text-lg">All Slides</CardTitle>
                             </CardHeader>

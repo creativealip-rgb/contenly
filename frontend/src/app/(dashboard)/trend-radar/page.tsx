@@ -202,7 +202,7 @@ export default function TrendRadarPage() {
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: idx * 0.05 }}
                                 >
-                                    <Card className="group relative h-full glass border-white/40 dark:border-white/10 overflow-hidden hover:shadow-2xl hover:shadow-blue-100/50 dark:hover:shadow-none transition-all duration-500 rounded-[2.5rem]">
+                                    <Card className="group relative h-full glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-[2.5rem]">
                                         <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <div className="bg-blue-600 text-white p-2 rounded-xl shadow-lg">
                                                 <ArrowRight className="h-4 w-4" />

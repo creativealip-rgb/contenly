@@ -31,9 +31,11 @@ export default function SettingsPage() {
     return (
         <div className="space-y-6">
             {/* Page Header */}
-            <div>
-                <h1 className="text-3xl font-bold">Settings</h1>
-                <p className="text-muted-foreground">
+            <div className="space-y-1">
+                <h1 className="text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
+                    Settings
+                </h1>
+                <p className="text-slate-500 font-medium">
                     Manage your account settings and preferences.
                 </p>
             </div>
@@ -64,7 +66,7 @@ export default function SettingsPage() {
 
                 {/* Profile Tab */}
                 <TabsContent value="profile">
-                    <Card>
+                    <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                         <CardHeader>
                             <CardTitle>Profile Information</CardTitle>
                             <CardDescription>
@@ -124,7 +126,7 @@ export default function SettingsPage() {
 
                 {/* Security Tab */}
                 <TabsContent value="security">
-                    <Card>
+                    <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                         <CardHeader>
                             <CardTitle>Password & Security</CardTitle>
                             <CardDescription>
@@ -188,7 +190,7 @@ export default function SettingsPage() {
 
                 {/* API Keys Tab */}
                 <TabsContent value="api-keys">
-                    <Card>
+                    <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                         <CardHeader className="flex flex-row items-center justify-between">
                             <div>
                                 <CardTitle>API Keys</CardTitle>
@@ -256,7 +258,7 @@ export default function SettingsPage() {
 
                 {/* Notifications Tab */}
                 <TabsContent value="notifications">
-                    <Card>
+                    <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                         <CardHeader>
                             <CardTitle>Notification Preferences</CardTitle>
                             <CardDescription>
@@ -295,7 +297,7 @@ export default function SettingsPage() {
 
                 {/* Connections Tab */}
                 <TabsContent value="connections">
-                    <Card>
+                    <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                         <CardHeader>
                             <CardTitle>Connected Accounts</CardTitle>
                             <CardDescription>

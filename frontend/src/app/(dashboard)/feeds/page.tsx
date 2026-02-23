@@ -292,10 +292,10 @@ export default function FeedsPage() {
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 <motion.div
-                    whileHover={{ y: -5 }}
+                    whileHover={{ y: -2 }}
                     transition={{ type: "spring", stiffness: 400, damping: 17 }}
                 >
-                    <Card className="card-clean border-none p-6 shadow-sm">
+                    <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl p-6">
                         <div className="flex items-center gap-5">
                             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 shadow-inner">
                                 <Rss className="h-7 w-7" />
@@ -308,10 +308,10 @@ export default function FeedsPage() {
                     </Card>
                 </motion.div>
                 <motion.div
-                    whileHover={{ y: -5 }}
+                    whileHover={{ y: -2 }}
                     transition={{ type: "spring", stiffness: 400, damping: 17, delay: 0.1 }}
                 >
-                    <Card className="card-clean border-none p-6 shadow-sm">
+                    <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl p-6">
                         <div className="flex items-center gap-5">
                             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 shadow-inner">
                                 <CheckCircle2 className="h-7 w-7" />
@@ -324,10 +324,10 @@ export default function FeedsPage() {
                     </Card>
                 </motion.div>
                 <motion.div
-                    whileHover={{ y: -5 }}
+                    whileHover={{ y: -2 }}
                     transition={{ type: "spring", stiffness: 400, damping: 17, delay: 0.2 }}
                 >
-                    <Card className="card-clean border-none p-6 shadow-sm">
+                    <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl p-6">
                         <div className="flex items-center gap-5">
                             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 shadow-inner">
                                 <RefreshCw className="h-7 w-7" />

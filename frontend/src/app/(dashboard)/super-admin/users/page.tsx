@@ -179,75 +179,66 @@ export default function UserManagementPage() {
 
     return (
         <SuperAdminGuard>
-            <motion.div 
+            <motion.div
                 className="space-y-6"
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
             >
                 {/* Page Header */}
-                <motion.div variants={itemVariants}>
-                    <Card className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-500 to-cyan-500 text-white border-0">
-                        <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-                        <CardContent className="relative z-10 py-6 px-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <div className="flex items-center gap-2 text-blue-100 mb-2">
-                                        <Users className="w-4 h-4" />
-                                        <span className="text-xs font-medium uppercase tracking-wider">Administration</span>
-                                    </div>
-                                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight mb-1">User Management</h1>
-                                    <p className="text-blue-100 text-sm">Manage all users, roles, and token balances.</p>
+                <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                        <h1 className="text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
+                            Users
+                        </h1>
+                        <p className="text-slate-500 font-medium">Manage all users in the system.</p>
+                    </div>
+                    <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                        <DialogTrigger asChild>
+                            <Button className="h-10 px-6 bg-slate-900 hover:bg-black text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-slate-200 dark:shadow-none transition-all hover:scale-[1.02] active:scale-[0.98]">
+                                <Plus className="w-4 h-4 mr-2" /> Add User
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Buat User Baru</DialogTitle>
+                                <DialogDescription>Tambah user baru secara manual ke sistem.</DialogDescription>
+                            </DialogHeader>
+                            <div className="py-4 space-y-4">
+                                <div className="space-y-2">
+                                    <Label>Nama Lengkap</Label>
+                                    <Input placeholder="Jhon Doe" value={newUser.name} onChange={(e) => setNewUser(prev => ({ ...prev, name: e.target.value }))} />
                                 </div>
-                                <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                                    <DialogTrigger asChild>
-                                        <Button className="bg-white text-blue-600 hover:bg-white/90">
-                                            <Plus className="w-4 h-4 mr-2" /> Add User
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                        <DialogHeader>
-                                            <DialogTitle>Buat User Baru</DialogTitle>
-                                            <DialogDescription>Tambah user baru secara manual ke sistem.</DialogDescription>
-                                        </DialogHeader>
-                                        <div className="py-4 space-y-4">
-                                            <div className="space-y-2">
-                                                <Label>Nama Lengkap</Label>
-                                                <Input placeholder="Jhon Doe" value={newUser.name} onChange={(e) => setNewUser(prev => ({ ...prev, name: e.target.value }))} />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label>Email</Label>
-                                                <Input type="email" placeholder="jhon@example.com" value={newUser.email} onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))} />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label>Password (Opsional)</Label>
-                                                <Input type="password" placeholder="Minimal 8 karakter" value={newUser.password} onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))} />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label>Role</Label>
-                                                <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={newUser.role} onChange={(e) => setNewUser(prev => ({ ...prev, role: e.target.value }))}>
-                                                    <option value="USER">User</option>
-                                                    <option value="ADMIN">Admin</option>
-                                                    <option value="SUPER_ADMIN">Super Admin</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <DialogFooter>
-                                            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>Batal</Button>
-                                            <Button className="bg-gradient-to-r from-blue-600 to-cyan-500" onClick={handleCreateUser} disabled={isCreating}>
-                                                {isCreating ? 'Creating...' : 'Buat User'}
-                                            </Button>
-                                        </DialogFooter>
-                                    </DialogContent>
-                                </Dialog>
+                                <div className="space-y-2">
+                                    <Label>Email</Label>
+                                    <Input type="email" placeholder="jhon@example.com" value={newUser.email} onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Password (Opsional)</Label>
+                                    <Input type="password" placeholder="Minimal 8 karakter" value={newUser.password} onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Role</Label>
+                                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={newUser.role} onChange={(e) => setNewUser(prev => ({ ...prev, role: e.target.value }))}>
+                                        <option value="USER">User</option>
+                                        <option value="ADMIN">Admin</option>
+                                        <option value="SUPER_ADMIN">Super Admin</option>
+                                    </select>
+                                </div>
                             </div>
-                        </CardContent>
-                    </Card>
-                </motion.div>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>Batal</Button>
+                                <Button className="bg-gradient-to-r from-blue-600 to-cyan-500" onClick={handleCreateUser} disabled={isCreating}>
+                                    {isCreating ? 'Creating...' : 'Buat User'}
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                </div>
 
                 {/* Users Table */}
                 <motion.div variants={itemVariants}>
-                    <Card variant="glass">
+                    <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                             <CardTitle className="text-sm uppercase tracking-wider text-muted-foreground font-semibold">Daftar Seluruh User</CardTitle>
                             <div className="relative w-72">

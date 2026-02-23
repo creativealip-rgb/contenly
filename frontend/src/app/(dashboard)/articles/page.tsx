@@ -216,7 +216,7 @@ export default function ArticlesPage() {
 
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                <motion.div whileHover={{ y: -5 }} className="card-clean p-6 border-none shadow-sm">
+                <motion.div whileHover={{ y: -2 }} className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl p-6">
                     <div className="flex items-center gap-4">
                         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
                             <FileText className="h-6 w-6" />
@@ -227,7 +227,7 @@ export default function ArticlesPage() {
                         </div>
                     </div>
                 </motion.div>
-                <motion.div whileHover={{ y: -5 }} transition={{ delay: 0.05 }} className="card-clean p-6 border-none shadow-sm">
+                <motion.div whileHover={{ y: -2 }} transition={{ delay: 0.05 }} className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl p-6">
                     <div className="flex items-center gap-4">
                         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
                             <CheckCircle2 className="h-6 w-6" />
@@ -238,7 +238,7 @@ export default function ArticlesPage() {
                         </div>
                     </div>
                 </motion.div>
-                <motion.div whileHover={{ y: -5 }} transition={{ delay: 0.1 }} className="card-clean p-6 border-none shadow-sm">
+                <motion.div whileHover={{ y: -2 }} transition={{ delay: 0.1 }} className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl p-6">
                     <div className="flex items-center gap-4">
                         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
                             <Clock className="h-6 w-6" />
@@ -249,7 +249,7 @@ export default function ArticlesPage() {
                         </div>
                     </div>
                 </motion.div>
-                <motion.div whileHover={{ y: -5 }} transition={{ delay: 0.15 }} className="card-clean p-6 border-none shadow-sm">
+                <motion.div whileHover={{ y: -2 }} transition={{ delay: 0.15 }} className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl p-6">
                     <div className="flex items-center gap-4">
                         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
                             <Clock className="h-6 w-6" />
@@ -298,7 +298,7 @@ export default function ArticlesPage() {
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.3 }}
-                className="card-clean p-8"
+                className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl p-8"
             >
                 <div className="flex items-center justify-between mb-8">
                     <div>
