@@ -1,13 +1,12 @@
 import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { Request } from 'express';
-import { auth } from '../../auth/auth.config';
 import { DrizzleService } from '../../db/drizzle.service';
 import { apiKey } from '../../db/schema';
 import { eq } from 'drizzle-orm';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
-export class AuthGuard implements CanActivate {
+export class ApiKeyAuthGuard implements CanActivate {
     constructor(private drizzle: DrizzleService) {}
 
     get db() {
@@ -16,46 +15,37 @@ export class AuthGuard implements CanActivate {
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const request = context.switchToHttp().getRequest<Request>();
-
-        // Try session auth first (Better Auth)
-        try {
-            const session = await auth.api.getSession({
-                headers: request.headers as any,
-            });
-
-            if (session && session.user) {
-                (request as any).user = session.user;
-                (request as any).session = session.session;
-                return true;
-            }
-        } catch (error) {
-            // Session auth failed, try API key
-        }
-
-        // Try API key auth
+        
+        // Extract API key from headers
         const apiKeyValue = this.extractApiKey(request);
-        if (apiKeyValue) {
-            const keyRecord = await this.validateApiKey(apiKeyValue);
-            
-            if (keyRecord) {
-                // Check expiration
-                if (keyRecord.expiresAt && new Date() > new Date(keyRecord.expiresAt)) {
-                    throw new UnauthorizedException('API key expired');
-                }
-
-                // Update last used
-                await this.db
-                    .update(apiKey)
-                    .set({ lastUsedAt: new Date() })
-                    .where(eq(apiKey.id, keyRecord.id));
-
-                (request as any).user = { id: keyRecord.userId };
-                (request as any).apiKeyId = keyRecord.id;
-                return true;
-            }
+        
+        if (!apiKeyValue) {
+            throw new UnauthorizedException('API key required');
         }
 
-        throw new UnauthorizedException('Authentication required');
+        // Validate API key
+        const keyRecord = await this.validateApiKey(apiKeyValue);
+        
+        if (!keyRecord) {
+            throw new UnauthorizedException('Invalid API key');
+        }
+
+        // Check if expired
+        if (keyRecord.expiresAt && new Date() > new Date(keyRecord.expiresAt)) {
+            throw new UnauthorizedException('API key expired');
+        }
+
+        // Update last used
+        await this.db
+            .update(apiKey)
+            .set({ lastUsedAt: new Date() })
+            .where(eq(apiKey.id, keyRecord.id));
+
+        // Attach user to request
+        (request as any).user = { id: keyRecord.userId };
+        (request as any).apiKeyId = keyRecord.id;
+
+        return true;
     }
 
     private extractApiKey(request: Request): string | null {

@@ -1,5 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import { DrizzleService } from '../db/drizzle.service';
+import { DrizzleService } from '../../db/drizzle.service';
 import { sql } from 'drizzle-orm';
 
 @Controller('health')
