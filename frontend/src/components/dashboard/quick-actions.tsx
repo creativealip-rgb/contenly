@@ -2,32 +2,40 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { FlaskConical, Rss, Plug, ArrowRight } from 'lucide-react'
+import { FlaskConical, TrendingUp, Instagram, Video, ArrowRight } from 'lucide-react'
 
 const quickActions = [
     {
-        label: 'Konten Baru',
-        description: 'Buat konten AI dari struktur tautan',
+        label: 'Content Lab',
+        description: 'Buat artikel AI berkualitas',
         href: '/content-lab',
         icon: FlaskConical,
         gradient: 'from-blue-600 to-blue-400',
         delay: 0,
     },
     {
-        label: 'Tambah Sumber',
-        description: 'Atur pengambilan otomatis (RSS)',
-        href: '/feeds',
-        icon: Rss,
-        gradient: 'from-cyan-500 to-blue-500',
+        label: 'Trend Radar',
+        description: 'Temukan topik viral global',
+        href: '/trend-radar',
+        icon: TrendingUp,
+        gradient: 'from-amber-500 to-orange-500',
         delay: 1,
     },
     {
-        label: 'Hubungkan Situs',
-        description: 'Tambah situs WordPress',
-        href: '/integrations',
-        icon: Plug,
-        gradient: 'from-blue-500 to-cyan-500',
+        label: 'Instagram Studio',
+        description: 'Buat carousel Instagram AI',
+        href: '/instagram-studio',
+        icon: Instagram,
+        gradient: 'from-pink-500 to-rose-500',
         delay: 2,
+    },
+    {
+        label: 'Script Studio',
+        description: 'Buat script video pendek',
+        href: '/video-scripts',
+        icon: Video,
+        gradient: 'from-purple-500 to-indigo-500',
+        delay: 3,
     },
 ]
 
