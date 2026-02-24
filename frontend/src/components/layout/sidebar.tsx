@@ -134,7 +134,6 @@ export function Sidebar() {
 
     return (
         <>
-            {/* Mobile Overlay */}
             <div
                 className={cn(
                     "fixed inset-0 z-30 bg-background/80 backdrop-blur-sm transition-all duration-200 md:hidden",
