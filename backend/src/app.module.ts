@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { BullModule } from '@nestjs/bull';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -9,6 +10,7 @@ import { AppService } from './app.service';
 import { DrizzleModule } from './db/drizzle.module';
 
 // Feature Modules
+import { SecurityModule } from './modules/security/security.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { ScraperModule } from './modules/scraper/scraper.module';
@@ -35,6 +37,9 @@ import { TelegramBotModule } from './modules/telegram-bot/telegram-bot.module';
       envFilePath: '.env',
     }),
 
+    // Scheduling
+    ScheduleModule.forRoot(),
+
     // Rate Limiting
     ThrottlerModule.forRoot([
       {
@@ -54,6 +59,9 @@ import { TelegramBotModule } from './modules/telegram-bot/telegram-bot.module';
 
     // Database (Drizzle)
     DrizzleModule,
+
+    // Security
+    SecurityModule,
 
     // Feature Modules
     AuthModule,

@@ -6,85 +6,22 @@ import { eq, and } from 'drizzle-orm';
 import { CreateSiteDto } from './dto/create-site.dto';
 import { UpdateSiteDto } from './dto/update-site.dto';
 import { CreateMappingDto } from './dto/create-mapping.dto';
-import * as crypto from 'crypto';
+
+import { EncryptionService } from '../security/encryption.service';
 
 @Injectable()
 export class IntegrationsService {
   private readonly logger = new Logger(IntegrationsService.name);
-  private encryptionKey: string | null = null;
 
   constructor(
     private readonly drizzle: DrizzleService,
     private readonly configService: ConfigService,
-  ) {
-    const key = this.configService.get<string>('ENCRYPTION_KEY') || 'your-32-character-secret-key!!';
-    if (!key || key.length < 32) {
-      this.logger.warn(
-        'ENCRYPTION_KEY environment variable is not set or is too short (minimum 32 characters). ' +
-        'WordPress integration will not work properly. Generate one with: ' +
-        'node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
-      );
-    }
-    this.encryptionKey = key;
-  }
-
-  private getEncryptionKey(): string {
-    if (!this.encryptionKey) {
-      throw new Error(
-        'ENCRYPTION_KEY is not configured. Please set the ENCRYPTION_KEY environment variable. '
-      );
-    }
-    return this.encryptionKey;
-  }
-
-  // Encrypt app password before storing - MUST match wordpress.service.ts implementation
-  private encryptPassword(password: string): string {
-    const key = this.getEncryptionKey();
-    const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(key.substring(0, 32)), iv);
-    let encrypted = cipher.update(password);
-    encrypted = Buffer.concat([encrypted, cipher.final()]);
-    return iv.toString('hex') + ':' + encrypted.toString('hex');
-  }
-
-  // Decrypt app password when retrieving - MUST match wordpress.service.ts implementation
-  private decryptPassword(encrypted: string): string {
-    if (!encrypted || typeof encrypted !== 'string') {
-      throw new Error('Encrypted password is empty or invalid');
-    }
-
-    const parts = encrypted.split(':');
-    if (parts.length !== 2) {
-      throw new Error(`Invalid encrypted password format. Expected: iv:encrypted, got ${parts.length} parts`);
-    }
-
-    const [ivHex, encryptedHex] = parts;
-
-    if (!ivHex || !encryptedHex) {
-      throw new Error('Invalid encrypted password: missing IV or encrypted data');
-    }
-
-    try {
-      const iv = Buffer.from(ivHex, 'hex');
-      const encryptedBuffer = Buffer.from(encryptedHex, 'hex');
-
-      if (iv.length !== 16) {
-        throw new Error(`Invalid IV length: expected 16 bytes, got ${iv.length}`);
-      }
-
-      const key = this.getEncryptionKey();
-      const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(key.substring(0, 32)), iv);
-      let decrypted = decipher.update(encryptedBuffer);
-      decrypted = Buffer.concat([decrypted, decipher.final()]);
-      return decrypted.toString();
-    } catch (error: any) {
-      throw new Error(`Decryption failed: ${error.message}`);
-    }
-  }
+    private readonly encryptionService: EncryptionService,
+  ) { }
 
   // Create WordPress site
   async createSite(userId: string, dto: CreateSiteDto) {
-    const encryptedPassword = this.encryptPassword(dto.appPassword);
+    const encryptedPassword = this.encryptionService.encrypt(dto.appPassword);
 
     const [site] = await this.drizzle.db
       .insert(wpSite)
@@ -134,7 +71,7 @@ export class IntegrationsService {
     if (dto.name) updates.name = dto.name;
     if (dto.url) updates.url = dto.url.endsWith('/') ? dto.url.slice(0, -1) : dto.url;
     if (dto.username) updates.username = dto.username;
-    if (dto.appPassword) updates.appPasswordEncrypted = this.encryptPassword(dto.appPassword);
+    if (dto.appPassword) updates.appPasswordEncrypted = this.encryptionService.encrypt(dto.appPassword);
     updates.updatedAt = new Date();
 
     const [updatedSite] = await this.drizzle.db
@@ -164,7 +101,7 @@ export class IntegrationsService {
 
     let decryptedPassword: string;
     try {
-      decryptedPassword = this.decryptPassword(site.appPasswordEncrypted);
+      decryptedPassword = this.encryptionService.decrypt(site.appPasswordEncrypted);
     } catch (decryptError: any) {
       this.logger.error(`Failed to decrypt password for site ${siteId}: ${decryptError.message}`);
 
@@ -217,7 +154,7 @@ export class IntegrationsService {
 
     let decryptedPassword: string;
     try {
-      decryptedPassword = this.decryptPassword(site.appPasswordEncrypted);
+      decryptedPassword = this.encryptionService.decrypt(site.appPasswordEncrypted);
     } catch (decryptError: any) {
       throw new BadRequestException(`Password decryption failed: ${decryptError.message}. Please reconnect the site.`);
     }
