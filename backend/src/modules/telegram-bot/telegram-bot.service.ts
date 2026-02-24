@@ -1,6 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { ArticlesService } from '../articles/articles.service';
 import { AiService } from '../ai/ai.service';
 import { FeedsService } from '../feeds/feeds.service';
@@ -27,7 +25,7 @@ export class TelegramBotService {
     private articlesService: ArticlesService,
     private aiService: AiService,
     private feedsService: FeedsService,
-  ) {}
+  ) { }
 
   getSession(telegramId: string): TelegramSession | undefined {
     return this.sessions.get(telegramId);
@@ -64,27 +62,32 @@ export class TelegramBotService {
   async generateArticle(session: TelegramSession): Promise<{ title: string; content: string }> {
     const { source, sourceValue, tone, category } = session.data;
 
-    let prompt = '';
-    
+    let originalContent = '';
+    let mode: 'rewrite' | 'idea' = 'rewrite';
+
     if (source === 'idea') {
-      prompt = `Write an article about: ${sourceValue}\n\n`;
+      originalContent = sourceValue || '';
+      mode = 'idea';
     } else if (source === 'url') {
-      prompt = `Write an article based on this URL: ${sourceValue}\n\n`;
+      originalContent = sourceValue || '';
+      mode = 'rewrite';
     } else {
-      prompt = `Write an article from web source: ${sourceValue}\n\n`;
+      originalContent = sourceValue || '';
+      mode = 'rewrite';
     }
 
-    prompt += `Tone: ${tone}\n`;
-    prompt += `Category: ${category}\n`;
-    prompt += `Format: HTML with proper headings, paragraphs, and SEO optimization.`;
+    const result = await this.aiService.generateContent(session.userId, {
+      originalContent,
+      mode,
+      options: {
+        tone,
+      }
+    });
 
-    const result = await this.aiService.generateContent(prompt);
-    
-    // Extract title from content
-    const titleMatch = result.match(/<h1[^>]*>(.*?)<\/h1>/i);
-    const title = titleMatch ? titleMatch[1] : 'Generated Article';
-
-    return { title, content: result };
+    return {
+      title: result.title || 'Generated Article',
+      content: result.content
+    };
   }
 
   getSourceKeyboard() {
