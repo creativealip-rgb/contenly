@@ -1,0 +1,6 @@
+src/modules/instagram-studio/instagram-studio.service.ts(330,24): error TS2322: Type 'Buffer<ArrayBufferLike>' is not assignable to type 'string | SQL<unknown> | PgColumn<ColumnBaseConfig<ColumnDataType, string>, {}, {}>'.
+src/modules/instagram-studio/services/image-text.service.ts(50,36): error TS2349: This expression is not callable.
+  Type 'typeof sharp' has no call signatures.
+src/modules/instagram-studio/services/image-text.service.ts(143,40): error TS2349: This expression is not callable.
+  Type 'typeof sharp' has no call signatures.
+src/modules/instagram-studio/services/image-text.service.ts(174,13): error TS2322: Type 'string' is not assignable to type 'Buffer<ArrayBufferLike>'.

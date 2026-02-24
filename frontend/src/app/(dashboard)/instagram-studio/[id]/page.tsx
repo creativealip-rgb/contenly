@@ -69,6 +69,7 @@ export default function InstagramStudioEditorPage() {
     const [isLoading, setIsLoading] = useState(true)
     const [isGeneratingStoryboard, setIsGeneratingStoryboard] = useState(false)
     const [isGeneratingImage, setIsGeneratingImage] = useState<string | null>(null)
+    const [isGeneratingText, setIsGeneratingText] = useState<string | null>(null)
     const [isExporting, setIsExporting] = useState(false)
     const [isApplyingStyle, setIsApplyingStyle] = useState(false)
     const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
@@ -155,6 +156,35 @@ export default function InstagramStudioEditorPage() {
             console.error('Failed to generate image:', error)
         } finally {
             setIsGeneratingImage(null)
+        }
+    }
+
+    const handleGenerateText = async (slideId: string) => {
+        setIsGeneratingText(slideId)
+        try {
+            const response = await fetch(
+                `${API_BASE_URL}/instagram-studio/slides/${slideId}/generate-text`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                },
+            )
+
+            if (response.ok) {
+                const data = await response.json().catch(() => null)
+                fetchProject()
+                // You could show a toast here if you have a toast library configured
+                alert('Text generation simulated successfully!')
+            } else {
+                const errData = await response.json().catch(() => null)
+                alert(`Failed to generate text overlay: ${errData?.message || response.statusText}`)
+            }
+        } catch (error) {
+            console.error('Failed to generate text:', error)
+            alert('An error occurred while generating the text overlay')
+        } finally {
+            setIsGeneratingText(null)
         }
     }
 
@@ -447,70 +477,7 @@ export default function InstagramStudioEditorPage() {
                                             />
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <Label>Font Size</Label>
-                                                <Input
-                                                    type="number"
-                                                    value={currentSlide.fontSize || 24}
-                                                    onChange={(e) => handleUpdateSlide(currentSlide.id, { fontSize: parseInt(e.target.value) })}
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label>Font Color</Label>
-                                                <Input
-                                                    type="color"
-                                                    value={currentSlide.fontColor || '#FFFFFF'}
-                                                    onChange={(e) => handleUpdateSlide(currentSlide.id, { fontColor: e.target.value })}
-                                                    className="h-10"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label>Text Position</Label>
-                                            <Select
-                                                value={currentSlide.layoutPosition || 'center'}
-                                                onValueChange={(v) => handleUpdateSlide(currentSlide.id, { layoutPosition: v })}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="top-left">Top Left</SelectItem>
-                                                    <SelectItem value="top-center">Top Center</SelectItem>
-                                                    <SelectItem value="top-right">Top Right</SelectItem>
-                                                    <SelectItem value="center-left">Center Left</SelectItem>
-                                                    <SelectItem value="center">Center</SelectItem>
-                                                    <SelectItem value="center-right">Center Right</SelectItem>
-                                                    <SelectItem value="bottom-left">Bottom Left</SelectItem>
-                                                    <SelectItem value="bottom-center">Bottom Center</SelectItem>
-                                                    <SelectItem value="bottom-right">Bottom Right</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-
-                                        <div className="pt-2">
-                                            <Button
-                                                variant="secondary"
-                                                size="sm"
-                                                className="w-full text-xs"
-                                                onClick={() => handleApplyStyleToAll({
-                                                    fontSize: currentSlide.fontSize,
-                                                    fontColor: currentSlide.fontColor,
-                                                    layoutPosition: currentSlide.layoutPosition
-                                                })}
-                                                disabled={isApplyingStyle}
-                                            >
-                                                {isApplyingStyle ? (
-                                                    <><Loader2 className="h-3 w-3 mr-2 animate-spin" /> Applying...</>
-                                                ) : (
-                                                    <><Palette className="h-3 w-3 mr-2" /> Apply Formatting to All Slides</>
-                                                )}
-                                            </Button>
-                                        </div>
-
-                                        <div className="space-y-2">
+                                        <div className="space-y-4">
                                             <Label>Solid Background Color</Label>
                                             <div className="flex gap-2 items-center">
                                                 <Input
@@ -525,29 +492,49 @@ export default function InstagramStudioEditorPage() {
                                             </div>
                                         </div>
 
-                                        <Button
-                                            onClick={() => handleGenerateImage(currentSlide.id)}
-                                            disabled={true} // Disabled temporarily
-                                            className="w-full"
-                                            variant={currentSlide.imageUrl ? 'outline' : 'default'}
-                                        >
-                                            {isGeneratingImage === currentSlide.id ? (
-                                                <>
-                                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                                    Generating...
-                                                </>
-                                            ) : currentSlide.imageUrl ? (
-                                                <>
-                                                    <RefreshCw className="h-4 w-4 mr-2" />
-                                                    Regenerate Image (2 Tokens)
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <ImageIcon className="h-4 w-4 mr-2" />
-                                                    Generate Image (2 Tokens) <Badge className="ml-2 bg-yellow-500 hover:bg-yellow-600 text-white border-0 text-[10px] px-1 py-0 h-4">SOON</Badge>
-                                                </>
-                                            )}
-                                        </Button>
+                                        <div className="flex flex-col gap-3 pt-4 border-t border-border mt-4">
+                                            <Button
+                                                onClick={() => handleGenerateImage(currentSlide.id)}
+                                                disabled={false}
+                                                className="w-full"
+                                                variant="outline"
+                                            >
+                                                {isGeneratingImage === currentSlide.id ? (
+                                                    <>
+                                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                        Generating Image...
+                                                    </>
+                                                ) : currentSlide.imageUrl ? (
+                                                    <>
+                                                        <RefreshCw className="h-4 w-4 mr-2" />
+                                                        Regenerate Image (2 Tokens)
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <ImageIcon className="h-4 w-4 mr-2" />
+                                                        Generate Base Image (2 Tokens)
+                                                    </>
+                                                )}
+                                            </Button>
+
+                                            <Button
+                                                onClick={() => handleGenerateText(currentSlide.id)}
+                                                disabled={!currentSlide.imageUrl || isGeneratingText === currentSlide.id}
+                                                className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
+                                            >
+                                                {isGeneratingText === currentSlide.id ? (
+                                                    <>
+                                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                        Adding Text...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Type className="h-4 w-4 mr-2" />
+                                                        Burn Text to Image (1 Token) <Badge className="ml-2 bg-yellow-500 hover:bg-yellow-600 text-white border-0 text-[10px] px-1 py-0 h-4 rounded-full">NEW</Badge>
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </div>
                                     </>
                                 )}
                             </CardContent>
@@ -605,41 +592,7 @@ export default function InstagramStudioEditorPage() {
                                     ) : (
                                         <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center p-6 text-slate-500">
                                             <ImageIcon className="h-16 w-16 mb-4 opacity-20" />
-                                            <p className="opacity-50 text-sm">No Background Image</p>
-                                        </div>
-                                    )}
-
-                                    {/* Text Overlay Layer */}
-                                    {currentSlide && (
-                                        <div
-                                            className="absolute inset-0 flex p-6 pointer-events-none"
-                                            style={{
-                                                justifyContent: currentSlide.layoutPosition?.includes('left')
-                                                    ? 'flex-start'
-                                                    : currentSlide.layoutPosition?.includes('right')
-                                                        ? 'flex-end'
-                                                        : 'center',
-                                                alignItems: currentSlide.layoutPosition?.includes('top')
-                                                    ? 'flex-start'
-                                                    : currentSlide.layoutPosition?.includes('bottom')
-                                                        ? 'flex-end'
-                                                        : 'center',
-                                            }}
-                                        >
-                                            <p
-                                                style={{
-                                                    fontFamily: project.fontFamily,
-                                                    fontSize: `${currentSlide.fontSize || 24}px`,
-                                                    color: currentSlide.fontColor || '#FFFFFF',
-                                                    textShadow: '0 2px 8px rgba(0,0,0,0.8), 0 4px 16px rgba(0,0,0,0.6)',
-                                                    maxWidth: '85%',
-                                                    textAlign: 'center',
-                                                    whiteSpace: 'pre-wrap',
-                                                }}
-                                                dangerouslySetInnerHTML={{
-                                                    __html: currentSlide.textContent?.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') || ''
-                                                }}
-                                            />
+                                            <p className="opacity-50 text-sm">No Image Available</p>
                                         </div>
                                     )}
                                 </div>
@@ -677,26 +630,6 @@ export default function InstagramStudioEditorPage() {
                                                     <span className="text-xl font-bold opacity-30">{index + 1}</span>
                                                 </div>
                                             )}
-
-                                            {/* Minimal text preview (Thumbnail) */}
-                                            <div
-                                                className="absolute inset-0 p-2 flex pointer-events-none overflow-hidden"
-                                                style={{
-                                                    justifyContent: slide.layoutPosition?.includes('left') ? 'flex-start' : slide.layoutPosition?.includes('right') ? 'flex-end' : 'center',
-                                                    alignItems: slide.layoutPosition?.includes('top') ? 'flex-start' : slide.layoutPosition?.includes('bottom') ? 'flex-end' : 'center',
-                                                }}
-                                            >
-                                                <div
-                                                    style={{
-                                                        fontSize: '5px',
-                                                        lineHeight: '1.2',
-                                                        color: slide.fontColor || '#FFFFFF',
-                                                        textAlign: 'center',
-                                                        textShadow: '0 1px 2px rgba(0,0,0,0.8)'
-                                                    }}
-                                                    dangerouslySetInnerHTML={{ __html: slide.textContent?.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').substring(0, 50) + '...' }}
-                                                />
-                                            </div>
                                         </div>
                                     ))}
                                     <div

@@ -245,6 +245,73 @@ Return JSON with:
     }
   }
 
+  async analyzeImageLayout(imageUrl: string, text: string): Promise<{ layoutPosition: string; fontColor: string; headerText: string; bodyText: string }> {
+    const prompt = `Analyze this image and the text that will be overlaid on it: "${text}".
+    
+    1. Determine the best position for the text so it is readable and does not cover important subjects (like faces or main objects). Look for "negative space" or uncluttered areas.
+    2. Determine the best font color (either #FFFFFF or #000000) that will contrast well with the background at that specific position.
+    3. Separate the provided text into a short, punchy "headerText" (max 5-7 words, e.g. the main point or hook) and "bodyText" (the remaining explanation). If the text is very short, put it all in "headerText" and leave "bodyText" empty.
+    
+    Return a VALID JSON object with exactly these keys:
+    - "layoutPosition": Must be exactly one of ["center", "top", "bottom", "top-left", "top-right", "bottom-left", "bottom-right", "left", "right"].
+    - "fontColor": Must be exactly "#FFFFFF" or "#000000".
+    - "headerText": The extracted short header.
+    - "bodyText": The remaining explanation.
+    
+    Return ONLY the JSON.`;
+
+    try {
+      // Use the native client if available for guaranteed vision support, otherwise fallback to standard
+      const client = this.nativeOpenai || this.openai;
+      // Force a vision-capable model if using native, else trust the configured OpenRouter model
+      const targetModel = this.nativeOpenai ? 'gpt-4o-mini' : this.model;
+
+      const response = await client.chat.completions.create({
+        model: targetModel,
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert graphic designer and layout AI. Return only valid JSON.',
+          },
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: prompt },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: imageUrl,
+                },
+              },
+            ],
+          },
+        ],
+        temperature: 0.2,
+        max_tokens: 150,
+        response_format: { type: 'json_object' },
+      });
+
+      const result = JSON.parse(response.choices[0]?.message?.content || '{}');
+      console.log(`[OpenAiService] Vision layout analysis complete: ${JSON.stringify(result)}`);
+
+      return {
+        layoutPosition: result.layoutPosition || 'center',
+        fontColor: result.fontColor || '#FFFFFF',
+        headerText: result.headerText || text,
+        bodyText: result.bodyText || '',
+      };
+    } catch (error) {
+      console.error('[OpenAiService] Vision layout analysis failed:', error.message);
+      // Fallback defaults if vision fails (e.g., URL unaccessible or API error)
+      return {
+        layoutPosition: 'center',
+        fontColor: '#FFFFFF',
+        headerText: text, // Fallback to entire text as header
+        bodyText: '',
+      };
+    }
+  }
+
   private generateSlug(title: string): string {
     return title
       .toLowerCase()

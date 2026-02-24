@@ -95,6 +95,7 @@ export default function InstagramStudioPage() {
         globalStyle: 'modern minimal',
         fontFamily: 'Montserrat',
     })
+    const [isFetchingUrl, setIsFetchingUrl] = useState(false)
 
     useEffect(() => {
         fetchProjects()
@@ -135,6 +136,36 @@ export default function InstagramStudioPage() {
             console.error('Failed to create project:', error)
         } finally {
             setIsCreating(false)
+        }
+    }
+
+    const handleFetchUrl = async () => {
+        if (!newProject.sourceUrl) {
+            alert('Please enter a Source URL first')
+            return
+        }
+
+        setIsFetchingUrl(true)
+        try {
+            const response = await fetch(`${API_BASE_URL}/instagram-studio/fetch-url?url=${encodeURIComponent(newProject.sourceUrl)}`, {
+                credentials: 'include',
+                headers: { 'ngrok-skip-browser-warning': 'true' },
+            })
+            if (response.ok) {
+                const data = await response.json()
+                setNewProject(prev => ({
+                    ...prev,
+                    title: data.title || prev.title,
+                    sourceContent: data.content || prev.sourceContent
+                }))
+            } else {
+                alert('Failed to fetch URL content')
+            }
+        } catch (error) {
+            console.error('Failed to fetch URL:', error)
+            alert('An error occurred while fetching the URL')
+        } finally {
+            setIsFetchingUrl(false)
         }
     }
 
@@ -211,11 +242,22 @@ export default function InstagramStudioPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label>Source URL (Optional)</Label>
-                                <Input
-                                    placeholder="https://example.com/article"
-                                    value={newProject.sourceUrl}
-                                    onChange={(e) => setNewProject({ ...newProject, sourceUrl: e.target.value })}
-                                />
+                                <div className="flex gap-2">
+                                    <Input
+                                        placeholder="https://example.com/article"
+                                        value={newProject.sourceUrl}
+                                        onChange={(e) => setNewProject({ ...newProject, sourceUrl: e.target.value })}
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        onClick={handleFetchUrl}
+                                        disabled={isFetchingUrl || !newProject.sourceUrl}
+                                    >
+                                        {isFetchingUrl ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                                        Fetch News
+                                    </Button>
+                                </div>
                             </div>
                             <div className="space-y-2">
                                 <Label>Content</Label>

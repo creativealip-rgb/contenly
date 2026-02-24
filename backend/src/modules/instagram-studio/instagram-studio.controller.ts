@@ -32,6 +32,12 @@ import {
 export class InstagramStudioController {
   constructor(private readonly service: InstagramStudioService) { }
 
+  @Get('fetch-url')
+  @ApiOperation({ summary: 'Scrape article from a URL' })
+  async fetchUrl(@Query('url') url: string) {
+    return this.service.fetchUrlContent(url);
+  }
+
   @Post('projects')
   @ApiOperation({ summary: 'Create a new Instagram project' })
   async createProject(
@@ -87,6 +93,15 @@ export class InstagramStudioController {
     @Body() dto: InstagramGenerateImageDto,
   ) {
     return this.service.generateImage(user.id, slideId, dto);
+  }
+
+  @Post('slides/:id/generate-text')
+  @ApiOperation({ summary: 'Generate text overlay for a slide image' })
+  async generateTextOverlay(
+    @CurrentUser() user: User,
+    @Param('id') slideId: string,
+  ) {
+    return this.service.generateTextOverlay(user.id, slideId);
   }
 
   @Patch('slides/:id')

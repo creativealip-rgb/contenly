@@ -13,6 +13,7 @@ import { OpenAiService } from '../ai/services/openai.service';
 import { FontService } from './services/font.service';
 import { ExportService } from './services/export.service';
 import { ScraperService } from '../scraper/scraper.service';
+import { ImageTextService } from './services/image-text.service';
 import {
     CreateProjectDto,
     UpdateProjectDto,
@@ -36,7 +37,28 @@ export class InstagramStudioService {
         private fontService: FontService,
         private exportService: ExportService,
         private scraperService: ScraperService,
+        private imageTextService: ImageTextService,
     ) { }
+
+    async fetchUrlContent(url: string) {
+        if (!url) {
+            throw new BadRequestException('URL is required');
+        }
+        try {
+            const scraped = await this.scraperService.scrapeUrl({
+                url,
+                extractImages: false,
+                extractMetadata: false,
+            });
+            return {
+                title: scraped.title,
+                content: scraped.content,
+            };
+        } catch (error) {
+            this.logger.error(`Failed to fetch URL content: ${error.message}`);
+            throw new BadRequestException(`Failed to fetch URL: ${error.message}`);
+        }
+    }
 
     async createProject(userId: string, dto: CreateProjectDto) {
         let finalContent = dto.sourceContent;
@@ -258,6 +280,84 @@ export class InstagramStudioService {
             throw new BadRequestException(
                 `Image generation failed: ${error.message}`,
             );
+        }
+    }
+
+    async generateTextOverlay(
+        userId: string,
+        slideId: string,
+    ) {
+        const [slide] = await this.drizzle.db
+            .select()
+            .from(instagramSlide)
+            .where(eq(instagramSlide.id, slideId));
+
+        if (!slide) {
+            throw new NotFoundException('Slide not found');
+        }
+
+        if (!slide.imageUrl) {
+            throw new BadRequestException('Slide does not have a base image to overlay text on.');
+        }
+
+        const project = await this.getProject(userId, slide.projectId);
+
+        const hasBalance = await this.billingService.checkBalance(userId, 1);
+        if (!hasBalance) {
+            throw new BadRequestException('Insufficient token balance. You need 1 token to add text.');
+        }
+
+        this.logger.log(`[Text Overlay] Analyzing image layout for slide ${slideId} using Vision AI.`);
+
+        let layoutSuggestion = { layoutPosition: undefined, fontColor: undefined, headerText: undefined, bodyText: undefined };
+        try {
+            layoutSuggestion = await this.openAiService.analyzeImageLayout(slide.imageUrl, slide.textContent || '');
+            this.logger.log(`[Text Overlay] Vision AI suggested: Position ${layoutSuggestion.layoutPosition}, Color ${layoutSuggestion.fontColor}`);
+        } catch (error) {
+            this.logger.warn(`[Text Overlay] Vision AI layout analysis failed, falling back to defaults: ${error.message}`);
+        }
+
+        try {
+            // Options based on style and AI suggestion
+            const options = {
+                fontFamily: project.fontFamily || 'Montserrat',
+                fontSize: slide.fontSize || undefined, // undefined will fallback to 5.5% of image height
+                fontColor: layoutSuggestion.fontColor || slide.fontColor || '#FFFFFF',
+                layoutPosition: layoutSuggestion.layoutPosition || slide.layoutPosition || 'center'
+            };
+
+            // Use the AI parsed text if available, otherwise just use the original content
+            const textToRender = layoutSuggestion.headerText ?
+                JSON.stringify({ header: layoutSuggestion.headerText, body: layoutSuggestion.bodyText }) :
+                (slide.textContent || '');
+
+            const processedImageUrl = await this.imageTextService.overlayTextOnImage(
+                slide.imageUrl,
+                textToRender,
+                options
+            );
+
+            // Update the slide with new image URL
+            const [updatedSlide] = await this.drizzle.db
+                .update(instagramSlide)
+                .set({ imageUrl: processedImageUrl })
+                .where(eq(instagramSlide.id, slideId))
+                .returning();
+
+            await this.billingService.deductTokens(
+                userId,
+                1,
+                'Slide text generation',
+            );
+
+            return {
+                success: true,
+                message: 'Text overlay applied successfully',
+                slide: updatedSlide
+            };
+        } catch (error) {
+            this.logger.error(`[Text Overlay] Failed: ${error.message}`);
+            throw new BadRequestException(`Failed to apply text overlay: ${error.message}`);
         }
     }
 
