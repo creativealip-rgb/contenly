@@ -244,7 +244,7 @@ export default function SettingsPage() {
         if (!confirm('Apakah Anda yakin ingin memutuskan hubungan akun ini?')) return
         try {
             const { error } = await authClient.unlinkAccount({
-                accountID: id
+                accountId: id
             })
             if (error) throw error
             toast.success('Akun berhasil diputuskan')
