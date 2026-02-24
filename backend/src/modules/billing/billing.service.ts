@@ -69,7 +69,7 @@ export class BillingService {
     return sub?.plan || 'FREE';
   }
 
-  async checkDailyLimit(userId: string, featureType: 'ARTICLE_GENERATION' | 'INSTAGRAM_GENERATION'): Promise<boolean> {
+  async checkDailyLimit(userId: string, featureType: 'ARTICLE_GENERATION' | 'INSTAGRAM_GENERATION' | 'VIDEO_GENERATION'): Promise<boolean> {
     const tier = await this.getSubscriptionTier(userId);
     const limit = BILLING_TIERS[tier]?.dailyLimits?.[featureType] || 0;
 
@@ -89,7 +89,7 @@ export class BillingService {
     return currentUsage < limit;
   }
 
-  async incrementDailyUsage(userId: string, featureType: 'ARTICLE_GENERATION' | 'INSTAGRAM_GENERATION') {
+  async incrementDailyUsage(userId: string, featureType: 'ARTICLE_GENERATION' | 'INSTAGRAM_GENERATION' | 'VIDEO_GENERATION') {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 

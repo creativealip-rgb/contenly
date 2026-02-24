@@ -5,6 +5,8 @@ import { eq, desc } from 'drizzle-orm';
 import { DrizzleService } from '../../db/drizzle.service';
 import { feed, feedItem } from '../../db/schema';
 import { FeedPollerService } from './feed-poller.service';
+import { BillingService } from '../billing/billing.service';
+import { BILLING_TIERS } from '../billing/billing.constants';
 
 @Injectable()
 export class FeedsService {
@@ -13,6 +15,7 @@ export class FeedsService {
   constructor(
     private drizzle: DrizzleService,
     private feedPoller: FeedPollerService,
+    private billingService: BillingService,
     @InjectQueue('feed-polling') private feedQueue: Queue,
   ) { }
 
@@ -26,17 +29,27 @@ export class FeedsService {
       orderBy: [desc(feed.createdAt)],
     });
   }
-
   async create(userId: string, data: { name: string; url: string; pollingIntervalMinutes?: number }) {
     this.logger.log(`Creating feed for user: ${userId}, URL: ${data.url}`);
     try {
+      const tier = await this.billingService.getSubscriptionTier(userId);
+      const tierConfig = BILLING_TIERS[tier];
+
+      // Enforce sync rules
+      let pollingInterval = data.pollingIntervalMinutes || 15;
+      if (!tierConfig.canAutoSync) {
+        pollingInterval = 0; // Disable auto-sync
+      } else if (pollingInterval < tierConfig.minSyncInterval) {
+        pollingInterval = tierConfig.minSyncInterval;
+      }
+
       const [newFeed] = await this.db
         .insert(feed)
         .values({
           userId,
           name: data.name,
           url: data.url,
-          pollingIntervalMinutes: data.pollingIntervalMinutes || 15,
+          pollingIntervalMinutes: pollingInterval,
         })
         .returning();
 
@@ -49,11 +62,13 @@ export class FeedsService {
         this.logger.warn(`Could not trigger immediate poll: ${error.message}`);
       }
 
-      // Schedule recurring polling
-      try {
-        await this.scheduleFeedPolling(newFeed.id, newFeed.pollingIntervalMinutes);
-      } catch (error: any) {
-        this.logger.warn(`Could not schedule polling: ${error.message}`);
+      // Schedule recurring polling if active and auto-sync is allowed
+      if (newFeed.pollingIntervalMinutes > 0) {
+        try {
+          await this.scheduleFeedPolling(newFeed.id, newFeed.pollingIntervalMinutes);
+        } catch (error: any) {
+          this.logger.warn(`Could not schedule polling: ${error.message}`);
+        }
       }
 
       return newFeed;
@@ -64,15 +79,36 @@ export class FeedsService {
   }
 
   async update(userId: string, id: string, data: { name?: string; url?: string; pollingIntervalMinutes?: number; status?: string }) {
+    const tier = await this.billingService.getSubscriptionTier(userId);
+    const tierConfig = BILLING_TIERS[tier];
+
+    const updateData: any = { ...data };
+
+    if (data.pollingIntervalMinutes !== undefined) {
+      if (!tierConfig.canAutoSync) {
+        updateData.pollingIntervalMinutes = 0;
+      } else if (data.pollingIntervalMinutes < tierConfig.minSyncInterval) {
+        updateData.pollingIntervalMinutes = tierConfig.minSyncInterval;
+      }
+    }
+
     const [updatedFeed] = await this.db
       .update(feed)
       .set({
-        ...data,
+        ...updateData,
         status: data.status as any,
         updatedAt: new Date(),
       })
       .where(eq(feed.id, id))
       .returning();
+
+    // Re-schedule if interval changed
+    if (updatedFeed.pollingIntervalMinutes > 0) {
+      await this.scheduleFeedPolling(updatedFeed.id, updatedFeed.pollingIntervalMinutes);
+    } else {
+      await this.removeScheduledPolling(updatedFeed.id);
+    }
+
     return updatedFeed;
   }
 
@@ -101,6 +137,11 @@ export class FeedsService {
   }
 
   async scheduleFeedPolling(feedId: string, intervalMinutes: number) {
+    if (intervalMinutes <= 0) {
+      this.logger.log(`Skipping scheduling for feed ${feedId} as interval is ${intervalMinutes}`);
+      return;
+    }
+
     // Schedule recurring job based on pollingIntervalMinutes
     this.logger.log(`Scheduling recurring poll for feed ${feedId} every ${intervalMinutes} minutes`);
     try {

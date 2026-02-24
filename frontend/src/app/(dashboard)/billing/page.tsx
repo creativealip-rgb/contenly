@@ -183,7 +183,7 @@ export default function BillingPage() {
                             <CardTitle>Free</CardTitle>
                             <CardDescription>Untuk eksplorasi awal</CardDescription>
                             <div className="pt-4">
-                                <span className="text-3xl font-bold">$0</span>
+                                <span className="text-3xl font-bold">Rp 0</span>
                                 <span className="text-slate-500 text-sm"> / selamanya</span>
                             </div>
                         </CardHeader>
@@ -191,11 +191,19 @@ export default function BillingPage() {
                             <ul className="space-y-2 text-sm">
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                    <span>5 Token Kredit</span>
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                                     <span>2 Artikel / hari</span>
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                                     <span>2 Gambar AI / hari</span>
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                    <span>Maksimal 1 Situs WP</span>
                                 </li>
                                 <li className="flex items-center gap-2 text-slate-400">
                                     <CheckCircle2 className="w-4 h-4 grayscale opacity-50" />
@@ -225,7 +233,7 @@ export default function BillingPage() {
                             </CardTitle>
                             <CardDescription>Untuk kreator profesional</CardDescription>
                             <div className="pt-4">
-                                <span className="text-3xl font-bold">$29</span>
+                                <span className="text-3xl font-bold">Rp 499rb</span>
                                 <span className="text-slate-500 text-sm"> / bulan</span>
                             </div>
                         </CardHeader>
@@ -233,19 +241,23 @@ export default function BillingPage() {
                             <ul className="space-y-2 text-sm">
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                    <span>50 Artikel / hari</span>
+                                    <span className="font-bold">500 Token Kredit</span>
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                    <span>50 Gambar AI / hari</span>
+                                    <span>20 Artikel / hari</span>
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                    <span>20 Gambar AI / hari</span>
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                    <span className="font-bold">Maksimal 2 Situs WP</span>
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                                     <span>Analisis SEO Lanjutan</span>
-                                </li>
-                                <li className="flex items-center gap-2">
-                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                    <span>Prioritas Antrian</span>
                                 </li>
                             </ul>
                             <WhatsAppActionModal
@@ -270,7 +282,7 @@ export default function BillingPage() {
                             <CardTitle>Enterprise</CardTitle>
                             <CardDescription>Untuk skala bisnis besar</CardDescription>
                             <div className="pt-4">
-                                <span className="text-3xl font-bold">$99</span>
+                                <span className="text-3xl font-bold">Rp 1,5jt</span>
                                 <span className="text-slate-500 text-sm"> / bulan</span>
                             </div>
                         </CardHeader>
@@ -278,19 +290,23 @@ export default function BillingPage() {
                             <ul className="space-y-2 text-sm">
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                    <span>500 Artikel / hari</span>
+                                    <span className="font-bold">2.000 Token Kredit</span>
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                    <span>500 Gambar AI / hari</span>
+                                    <span>70 Artikel / hari</span>
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                    <span>Api Access</span>
+                                    <span>70 Gambar AI / hari</span>
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                    <span>Custom Workflow</span>
+                                    <span className="font-bold">Maksimal 5 Situs WP</span>
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                    <span>Api Access & Webhooks</span>
                                 </li>
                             </ul>
                             <WhatsAppActionModal

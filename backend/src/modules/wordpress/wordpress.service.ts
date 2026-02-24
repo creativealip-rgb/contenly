@@ -9,6 +9,8 @@ import * as crypto from 'crypto';
 import sharp from 'sharp';
 import { validate as uuidValidate } from 'uuid';
 import { WpCategory, WpPostData, WpPostResponse, ArticleStatus, ArticleUpdateData } from '../../db/types';
+import { BillingService } from '../billing/billing.service';
+import { BILLING_TIERS } from '../billing/billing.constants';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -21,6 +23,7 @@ export class WordpressService implements OnModuleInit {
     private drizzle: DrizzleService,
     private configService: ConfigService,
     private articlesService: ArticlesService,
+    private billingService: BillingService,
   ) {
     const key = this.configService.get<string>('ENCRYPTION_KEY') || 'default-encryption-key-32-bytes!!';
     if (!key || key.length < 32) {
@@ -122,6 +125,15 @@ export class WordpressService implements OnModuleInit {
   }
 
   async connectSite(userId: string, data: { name: string; url: string; username: string; appPassword: string }) {
+    // Check tier limits
+    const tier = await this.billingService.getSubscriptionTier(userId);
+    const limit = BILLING_TIERS[tier]?.maxWpSites || 1;
+
+    const existingSites = await this.getSites(userId);
+    if (existingSites.length >= limit) {
+      throw new BadRequestException(`Tier ${tier} limit reached. Maximum ${limit} WordPress sites allowed.`);
+    }
+
     // Test connection first
     const isValid = await this.testConnection(data.url, data.username, data.appPassword);
     if (!isValid) {

@@ -4,6 +4,7 @@ import { BillingService } from '../billing/billing.service';
 import { GenerateContentDto, GenerateSeoDto, AiGenerateImageDto } from './dto';
 import { ArticlesService } from '../articles/articles.service';
 import { WordpressService } from '../wordpress/wordpress.service';
+import { BILLING_TIERS } from '../billing/billing.constants';
 
 @Injectable()
 export class AiService {
@@ -28,13 +29,17 @@ export class AiService {
       throw new BadRequestException('Daily limit reached for Article Generation on your current plan. Please upgrade or try again tomorrow.');
     }
 
+    const tier = await this.billingService.getSubscriptionTier(userId);
+    const model = BILLING_TIERS[tier]?.aiModel;
+
     // Generate content
-    this.logger.log(`Generating content for mode: ${dto.mode}, content length: ${dto.originalContent?.length}`);
+    this.logger.log(`Generating content for user tier: ${tier}, mode: ${dto.mode}`);
     const aiResponse = await this.openAiService.generateContent(
       dto.originalContent,
       {
         ...dto.options,
         mode: dto.mode,
+        model,
       } as any,
     );
 

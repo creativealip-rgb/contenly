@@ -185,17 +185,17 @@ export function Navbar() {
                                 </div>
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator className="my-2" />
-                            <DropdownMenuItem disabled className="rounded-lg opacity-50 cursor-not-allowed">
-                                <div className="flex items-center gap-3 px-3 py-2">
+                            <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
+                                <Link href="/settings" className="flex items-center gap-3 px-3 py-2">
                                     {icons.user}
-                                    Profil (Segera)
-                                </div>
+                                    Profil
+                                </Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem disabled className="rounded-lg opacity-50 cursor-not-allowed">
-                                <div className="flex items-center gap-3 px-3 py-2">
+                            <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
+                                <Link href="/settings" className="flex items-center gap-3 px-3 py-2">
                                     {icons.settings}
-                                    Pengaturan (Segera)
-                                </div>
+                                    Pengaturan
+                                </Link>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="my-2" />
                             <DropdownMenuItem

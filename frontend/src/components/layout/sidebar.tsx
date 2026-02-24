@@ -117,7 +117,7 @@ const navItems = [
     { href: '/super-admin/users', label: 'Pengguna', icon: icons.userManagement, role: 'SUPER_ADMIN' },
     // Temporarily disabled
     // { href: '/analytics', label: 'Analitik', icon: icons.analytics },
-    // { href: '/settings', label: 'Pengaturan', icon: icons.settings },
+    { href: '/settings', label: 'Pengaturan', icon: icons.settings },
 ]
 
 export function Sidebar() {

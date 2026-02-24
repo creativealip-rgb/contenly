@@ -67,6 +67,7 @@ export class OpenAiService {
       targetLanguage?: string;
       mode?: 'rewrite' | 'idea' | 'custom';
       systemPrompt?: string;
+      model?: string;
     },
   ): Promise<any> {
     const lengthGuide = {
@@ -108,7 +109,7 @@ export class OpenAiService {
 
     try {
       const response = await this.openai.chat.completions.create({
-        model: this.model,
+        model: options.model || this.model,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
@@ -149,6 +150,7 @@ export class OpenAiService {
     title: string,
     content: string,
     keywords?: string[],
+    model?: string,
   ): Promise<{
     metaTitle: string;
     metaDescription: string;
@@ -166,7 +168,7 @@ Return JSON with:
 - slug: URL-friendly slug`;
 
     const response = await this.openai.chat.completions.create({
-      model: this.model,
+      model: model || this.model,
       messages: [
         {
           role: 'system',
@@ -203,7 +205,7 @@ Return JSON with:
     return response.data[0]?.url || '';
   }
 
-  async analyzeTrend(content: string, title: string): Promise<any> {
+  async analyzeTrend(content: string, title: string, model?: string): Promise<any> {
     const prompt = `Analyze this trending content and provide viral insights:
     
     TITLE: ${title}
@@ -222,7 +224,7 @@ Return JSON with:
 
     try {
       const response = await this.openai.chat.completions.create({
-        model: this.model,
+        model: model || this.model,
         messages: [
           { role: 'system', content: 'You are a viral content strategist. Return only valid JSON.' },
           { role: 'user', content: prompt },
@@ -245,7 +247,7 @@ Return JSON with:
     }
   }
 
-  async analyzeImageLayout(imageUrl: string, text: string): Promise<{ layoutPosition: string; fontColor: string; headerText: string; bodyText: string }> {
+  async analyzeImageLayout(imageUrl: string, text: string, model?: string): Promise<{ layoutPosition: string; fontColor: string; headerText: string; bodyText: string }> {
     const prompt = `Analyze this image and the text that will be overlaid on it: "${text}".
     
     1. Determine the best position for the text so it is readable and does not cover important subjects (like faces or main objects). Look for "negative space" or uncluttered areas.
@@ -263,8 +265,8 @@ Return JSON with:
     try {
       // Use the native client if available for guaranteed vision support, otherwise fallback to standard
       const client = this.nativeOpenai || this.openai;
-      // Force a vision-capable model if using native, else trust the configured OpenRouter model
-      const targetModel = this.nativeOpenai ? 'gpt-4o-mini' : this.model;
+      // Force a vision-capable model if using native, else trust the configured or passed model
+      const targetModel = this.nativeOpenai ? 'gpt-4o-mini' : (model || this.model);
 
       const response = await client.chat.completions.create({
         model: targetModel,
