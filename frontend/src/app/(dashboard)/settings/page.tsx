@@ -240,11 +240,12 @@ export default function SettingsPage() {
         }
     }
 
-    const handleUnlinkAccount = async (id: string) => {
+    const handleUnlinkAccount = async (id: string, providerId: string) => {
         if (!confirm('Apakah Anda yakin ingin memutuskan hubungan akun ini?')) return
         try {
             const { error } = await authClient.unlinkAccount({
-                accountId: id
+                accountId: id,
+                providerId: providerId
             })
             if (error) throw error
             toast.success('Akun berhasil diputuskan')
@@ -689,7 +690,7 @@ export default function SettingsPage() {
                                                     variant="outline"
                                                     size="sm"
                                                     className="rounded-xl border-red-100 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900/30"
-                                                    onClick={() => handleUnlinkAccount(providerAccount.id)}
+                                                    onClick={() => handleUnlinkAccount(providerAccount.id, providerAccount.providerId)}
                                                 >
                                                     Putuskan
                                                 </Button>
