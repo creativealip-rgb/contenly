@@ -28,7 +28,7 @@ async function bootstrap() {
   // CORS Setup
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
   const origins = frontendUrl.includes(',')
-    ? frontendUrl.split(',').map(url => url.trim())
+    ? frontendUrl.split(',').map((url) => url.trim())
     : [frontendUrl];
 
   logger.log(`Setting up CORS with origins: ${JSON.stringify(origins)}`);
@@ -40,7 +40,7 @@ async function bootstrap() {
         return callback(null, true);
       }
 
-      const isAllowed = origins.some(allowedOrigin => {
+      const isAllowed = origins.some((allowedOrigin) => {
         if (allowedOrigin === '*') return true;
         // Exact match or matches the start (for subdomains/paths)
         return origin === allowedOrigin || origin.startsWith(allowedOrigin);
@@ -56,12 +56,15 @@ async function bootstrap() {
     },
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: 'Content-Type, Accept, Authorization, x-forwarded-proto, cookie, ngrok-skip-browser-warning',
+    allowedHeaders:
+      'Content-Type, Accept, Authorization, x-forwarded-proto, cookie, ngrok-skip-browser-warning, Cache-Control',
     exposedHeaders: 'set-cookie',
   });
 
-  // Global prefix
-  app.setGlobalPrefix('api');
+  // Global prefix with API versioning
+  app.setGlobalPrefix('api/v1', {
+    exclude: ['health'], // Exclude health check from versioning if needed
+  });
 
   // Validation
   app.useGlobalPipes(
@@ -91,13 +94,13 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  SwaggerModule.setup('api/v1/docs', app, document);
 
   const port = process.env.PORT || 3001;
   await app.listen(port);
 
   console.log(`🚀 Contently Backend running on: http://localhost:${port}`);
-  console.log(`📚 API Documentation: http://localhost:${port}/api/docs`);
+  console.log(`📚 API Documentation: http://localhost:${port}/api/v1/docs`);
 }
 
 bootstrap();

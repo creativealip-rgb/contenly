@@ -1,10 +1,11 @@
 'use client'
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { useSidebarStore, useAuthStore } from '@/stores'
+import { motion } from 'framer-motion'
+import { usePathname } from 'next/navigation'
 
 // Custom SVG icons for a unique look
 const icons = {
@@ -20,6 +21,26 @@ const icons = {
         <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth="1.5">
             <path d="M9 3h6v4H9zM5 7h14v4H5zM7 11h10v10H7z" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M10 15h4M10 18h2" strokeLinecap="round" />
+        </svg>
+    ),
+    radar: (
+        <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth="1.5">
+            <circle cx="12" cy="12" r="9" />
+            <circle cx="12" cy="12" r="6" />
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 3v9l4.5 4.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+    ),
+    video: (
+        <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth="1.5">
+            <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h10a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+    ),
+    instagram: (
+        <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth="1.5">
+            <rect x="2" y="2" width="20" height="20" rx="5" />
+            <circle cx="12" cy="12" r="4" />
+            <circle cx="18" cy="6" r="1" fill="currentColor" />
         </svg>
     ),
     rss: (
@@ -84,16 +105,19 @@ const icons = {
 
 const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: icons.dashboard },
+    { href: '/trend-radar', label: 'Radar Tren', icon: icons.radar },
     { href: '/content-lab', label: 'Content Lab', icon: icons.contentLab },
-    { href: '/feeds', label: 'Web Sources', icon: icons.rss },
-    { href: '/articles', label: 'Articles', icon: icons.articles },
+    { href: '/instagram-studio', label: 'Instagram Studio', icon: icons.instagram },
+    { href: '/video-scripts', label: 'Video Scripts', icon: icons.video },
+    { href: '/feeds', label: 'Sumber Web', icon: icons.rss },
+    { href: '/articles', label: 'Artikel', icon: icons.articles },
     { href: '/view-boost', label: 'View Boost', icon: icons.analytics },
-    { href: '/integrations', label: 'Integrations', icon: icons.integrations },
-    { href: '/billing', label: 'Billing', icon: icons.billing },
-    { href: '/super-admin/users', label: 'Users', icon: icons.userManagement, role: 'SUPER_ADMIN' },
+    { href: '/integrations', label: 'Integrasi', icon: icons.integrations },
+    { href: '/billing', label: 'Tagihan', icon: icons.billing },
+    { href: '/super-admin/users', label: 'Pengguna', icon: icons.userManagement, role: 'SUPER_ADMIN' },
     // Temporarily disabled
-    // { href: '/analytics', label: 'Analytics', icon: icons.analytics },
-    // { href: '/settings', label: 'Settings', icon: icons.settings },
+    // { href: '/analytics', label: 'Analitik', icon: icons.analytics },
+    // { href: '/settings', label: 'Pengaturan', icon: icons.settings },
 ]
 
 export function Sidebar() {
@@ -121,11 +145,12 @@ export function Sidebar() {
 
             <aside
                 className={cn(
-                    "fixed left-0 top-16 z-40 h-[calc(100vh-4rem)] border-r border-border bg-card/50 backdrop-blur-xl transition-all duration-300",
-                    isCollapsed ? "md:w-[72px]" : "md:w-64",
-                    // Mobile behavior: fixed width, slide in/out
-                    "w-64",
-                    isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+                    "fixed left-0 top-20 z-40 h-[calc(100vh-6rem)] transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]",
+                    "mx-4 rounded-[2rem] border border-white/40 dark:border-white/10 glass shadow-2xl shadow-slate-200/50 dark:shadow-none",
+                    isCollapsed ? "md:w-[80px]" : "md:w-72",
+                    // Mobile behavior: slide in/out
+                    "w-72",
+                    isOpen ? "translate-x-0" : "-translate-x-[calc(100%+2rem)] md:translate-x-0"
                 )}
             >
                 <div className="flex h-full flex-col">
@@ -147,59 +172,43 @@ export function Sidebar() {
                             const isDisabled = isViewBoost && isNonAdmin
                             const isActive = !isDisabled && (pathname === item.href || pathname.startsWith(item.href + '/'))
 
-                            const content = (
-                                <>
-                                    <div className={cn(
-                                        "shrink-0 transition-colors duration-200",
-                                        isActive
-                                            ? "text-blue-600"
-                                            : "text-muted-foreground group-hover:text-foreground",
-                                        isDisabled && "opacity-50"
-                                    )}>
-                                        {item.icon}
-                                    </div>
-                                    <span className={cn(
-                                        "truncate transition-all duration-300",
-                                        isCollapsed ? "md:w-0 md:opacity-0" : "md:w-auto md:opacity-100",
-                                        isDisabled && "opacity-50"
-                                    )}>
-                                        {item.label} {isDisabled && '(Soon)'}
-                                    </span>
-
-                                    {isActive && (
-                                        <div className={cn(
-                                            "ml-auto h-1.5 w-1.5 rounded-full bg-blue-600",
-                                            isCollapsed ? "md:hidden" : "block"
-                                        )} />
-                                    )}
-                                </>
-                            )
-
-                            if (isDisabled) {
-                                return (
-                                    <div
-                                        key={item.href}
-                                        className="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 text-muted-foreground cursor-not-allowed opacity-70"
-                                    >
-                                        {content}
-                                    </div>
-                                )
-                            }
-
                             return (
-                                <Link
+                                <motion.div
                                     key={item.href}
-                                    href={item.href}
-                                    onClick={handleMobileLinkClick}
-                                    className={cn(
-                                        "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
-                                        isActive
-                                            ? "bg-gradient-to-r from-blue-500/10 to-cyan-500/10 text-foreground border border-blue-500/20"
-                                            : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                                    )}
+                                    whileHover={{ x: 4 }}
+                                    whileTap={{ scale: 0.98 }}
                                 >
-                                    {content}
-                                </Link>
+                                    <Link
+                                        href={item.href}
+                                        onClick={handleMobileLinkClick}
+                                        className={cn(
+                                            "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition-all duration-300",
+                                            isActive
+                                                ? "bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none"
+                                                : "text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-slate-800/80"
+                                        )}
+                                    >
+                                        <div className={cn(
+                                            "shrink-0 transition-colors duration-200",
+                                            isActive ? "text-white" : "text-slate-400 group-hover:text-blue-600"
+                                        )}>
+                                            {item.icon}
+                                        </div>
+                                        <span className={cn(
+                                            "truncate transition-all duration-500",
+                                            isCollapsed ? "md:w-0 md:opacity-0" : "md:w-auto md:opacity-100"
+                                        )}>
+                                            {item.label}
+                                        </span>
+
+                                        {isActive && !isCollapsed && (
+                                            <motion.div
+                                                layoutId="active-pill"
+                                                className="ml-auto h-1.5 w-1.5 rounded-full bg-white"
+                                            />
+                                        )}
+                                    </Link>
+                                </motion.div>
                             )
                         })}
                     </nav>
@@ -218,7 +227,7 @@ export function Sidebar() {
                             )}
                         >
                             {isCollapsed ? icons.chevronRight : icons.chevronLeft}
-                            {!isCollapsed && <span className="ml-2">Collapse</span>}
+                            {!isCollapsed && <span className="ml-2">Kecilkan</span>}
                         </Button>
                     </div>
                 </div>

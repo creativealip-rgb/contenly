@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores'
 import { authClient } from '@/lib/auth-client'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { motion } from 'framer-motion'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -63,9 +64,15 @@ export function Navbar() {
 
     // Fetch token balance on mount and periodically
     useEffect(() => {
+        // Only fetch balance if user is logged in
+        if (!user) {
+            setTokenBalance(null)
+            return
+        }
+
         const fetchBalance = async () => {
             try {
-                const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+                const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
 
                 const response = await fetch(`${API_BASE_URL}/billing/balance`, {
                     credentials: 'include',
@@ -75,9 +82,13 @@ export function Navbar() {
                 if (response.ok) {
                     const data = await response.json()
                     setTokenBalance(data.balance || 0)
+                } else if (response.status === 401) {
+                    // User not authenticated, clear balance
+                    setTokenBalance(null)
                 }
             } catch (error) {
                 console.error('Failed to fetch token balance:', error)
+                setTokenBalance(null)
             }
         }
 
@@ -86,7 +97,7 @@ export function Navbar() {
         // Refresh balance every 10 seconds to catch updates
         const interval = setInterval(fetchBalance, 10000)
         return () => clearInterval(interval)
-    }, [])
+    }, [user])
 
     const handleLogout = async () => {
         try {
@@ -106,8 +117,8 @@ export function Navbar() {
     }
 
     return (
-        <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl">
-            <div className="flex h-16 items-center justify-between px-4 md:px-6">
+        <header className="fixed top-0 z-50 w-full bg-white/60 dark:bg-slate-900/60 backdrop-blur-2xl border-b border-white/20 dark:border-slate-800/40">
+            <div className="flex h-20 items-center justify-between px-6 md:px-10">
                 {/* Left: Menu Toggle && Logo (Desktop) */}
                 <div className="flex items-center gap-4">
                     <Button
@@ -135,23 +146,31 @@ export function Navbar() {
                 </div>
 
                 {/* Right: Actions */}
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-6">
                     {/* Token Balance */}
-                    <div className="hidden md:flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 px-4 py-2 text-sm font-medium text-amber-600">
-                        {icons.tokens}
-                        <span>{tokenBalance !== null ? `${tokenBalance} Tokens` : 'Loading...'}</span>
-                    </div>
+                    <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        className="hidden md:flex items-center gap-2.5 rounded-2xl bg-gradient-to-br from-amber-400/10 to-orange-500/10 border border-amber-200/50 dark:border-amber-900/30 px-5 py-2.5 text-sm font-black text-amber-600 shadow-sm"
+                    >
+                        <div className="p-1.5 bg-amber-400 text-white rounded-lg shadow-inner">
+                            {icons.tokens}
+                        </div>
+                        <div className="flex flex-col leading-tight">
+                            <span className="text-[10px] uppercase tracking-widest text-amber-500/60 font-black">Saldo</span>
+                            <span>{tokenBalance !== null ? tokenBalance.toLocaleString() : '---'}</span>
+                        </div>
+                    </motion.div>
 
 
 
                     {/* User Menu */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="relative h-10 w-10 rounded-xl hover:bg-accent p-0">
-                                <Avatar className="h-10 w-10 rounded-xl">
+                            <Button variant="ghost" className="relative h-12 w-12 rounded-2xl hover:bg-white/40 dark:hover:bg-slate-800/40 p-1 group transition-all">
+                                <Avatar className="h-full w-full rounded-xl border-2 border-transparent group-hover:border-blue-400 transition-all">
                                     <AvatarImage src={user?.avatarUrl} alt={user?.fullName || 'User'} />
-                                    <AvatarFallback className="rounded-xl bg-gradient-to-br from-blue-600 to-cyan-600 text-white font-semibold">
-                                        {user?.fullName?.charAt(0) || 'U'}
+                                    <AvatarFallback className="rounded-xl bg-gradient-to-br from-blue-600 to-cyan-600 text-white font-black text-sm uppercase">
+                                        {user?.fullName?.split(' ').map(n => n[0]).join('') || 'U'}
                                     </AvatarFallback>
                                 </Avatar>
                             </Button>
@@ -169,13 +188,13 @@ export function Navbar() {
                             <DropdownMenuItem disabled className="rounded-lg opacity-50 cursor-not-allowed">
                                 <div className="flex items-center gap-3 px-3 py-2">
                                     {icons.user}
-                                    Profile (Soon)
+                                    Profil (Segera)
                                 </div>
                             </DropdownMenuItem>
                             <DropdownMenuItem disabled className="rounded-lg opacity-50 cursor-not-allowed">
                                 <div className="flex items-center gap-3 px-3 py-2">
                                     {icons.settings}
-                                    Settings (Soon)
+                                    Pengaturan (Segera)
                                 </div>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="my-2" />
@@ -185,7 +204,7 @@ export function Navbar() {
                             >
                                 <span className="flex items-center gap-3">
                                     {icons.logout}
-                                    Log out
+                                    Keluar
                                 </span>
                             </DropdownMenuItem>
                         </DropdownMenuContent>

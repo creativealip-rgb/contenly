@@ -24,18 +24,13 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog'
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select'
-import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
     Plus,
     Plug,
@@ -47,38 +42,43 @@ import {
     XCircle,
     ExternalLink,
     ArrowRight,
-    Loader2
+    Loader2,
+    Zap
 } from 'lucide-react'
 import { WordPressSite } from '@/lib/sites-store'
 import { authClient } from '@/lib/auth-client'
 import { toast } from 'sonner'
 
-// Use relative path on client to leverage Next.js Proxy (cookies)
-// Server-side fetch (if any) would need absolute
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
+
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+} as const
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 100 } }
+} as const
 
 async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
     const session = await authClient.getSession()
-    const token = session.data?.session.token // Adjust based on actual session structure
-
+    const token = session.data?.session.token
     const headers = {
         'Content-Type': 'application/json',
         'ngrok-skip-browser-warning': 'true',
         ...options.headers,
         ...(token ? { 'Authorization': `Bearer ${token}` } : {})
     }
-
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         ...options,
         headers,
-        credentials: 'include' // Important: Send cookies (httpOnly session token)
+        credentials: 'include'
     })
-
     if (!response.ok) {
         const error = await response.json().catch(() => ({ message: 'Request failed' }))
         throw new Error(error.message || `Error ${response.status}`)
     }
-
     return response.json()
 }
 
@@ -89,18 +89,10 @@ export default function IntegrationsPage() {
     const [isRefreshingCategories, setIsRefreshingCategories] = useState(false)
     const [categoryMappings, setCategoryMappings] = useState<Array<{ source: string; target: string; wpCategoryId?: number }>>([])
     const [isLoadingMappings, setIsLoadingMappings] = useState(true)
-
-    // Form state
-    const [formData, setFormData] = useState({
-        name: '',
-        url: '',
-        username: '',
-        appPassword: ''
-    })
+    const [formData, setFormData] = useState({ name: '', url: '', username: '', appPassword: '' })
     const [isTesting, setIsTesting] = useState(false)
     const [connectionError, setConnectionError] = useState('')
 
-    // Load sites on mount
     useEffect(() => {
         fetchSites()
         loadCategoryMappings()
@@ -109,21 +101,14 @@ export default function IntegrationsPage() {
     const loadCategoryMappings = async () => {
         setIsLoadingMappings(true)
         try {
-            console.log('[loadCategoryMappings] Fetching from backend...')
             const data = await fetchWithAuth('/category-mapping')
-            console.log('[loadCategoryMappings] Backend response:', data)
-
             if (Array.isArray(data)) {
-                // Transform backend format to UI format
                 const mappings = data.map((m: any) => ({
                     source: m.sourceCategory,
                     target: m.targetCategoryName,
                     wpCategoryId: parseInt(m.targetCategoryId)
                 }))
-                console.log('[loadCategoryMappings] Transformed mappings:', mappings)
                 setCategoryMappings(mappings)
-            } else {
-                console.warn('[loadCategoryMappings] Data is not an array:', data)
             }
         } catch (error) {
             console.error('Failed to load category mappings:', error)
@@ -139,20 +124,16 @@ export default function IntegrationsPage() {
             const data = await fetchWithAuth('/wordpress/sites')
             if (Array.isArray(data)) {
                 setSites(data)
-
-                // Sync to localStorage for Content Lab to access
                 const sitesForLocalStorage = data.map((site: any) => ({
                     id: site.id,
                     name: site.name,
                     url: site.url,
                     username: site.username,
-                    appPassword: site.appPassword || '', // Backend might not return password for security
+                    appPassword: site.appPassword || '',
                     status: site.status,
                     lastSync: site.lastHealthCheck,
-                    articlesPublished: 0 // Not tracked in backend yet
+                    articlesPublished: 0
                 }))
-
-                // Save to localStorage (sites-store uses 'contently_wp_sites' key)
                 if (sitesForLocalStorage.length > 0) {
                     localStorage.setItem('contently_wp_sites', JSON.stringify(sitesForLocalStorage))
                 }
@@ -168,8 +149,10 @@ export default function IntegrationsPage() {
     const getStatusBadge = (status: string) => {
         switch (status) {
             case 'connected':
-                return <Badge className="bg-green-500/10 text-green-600 hover:bg-green-500/20"><CheckCircle2 className="h-3 w-3 mr-1" />Connected</Badge>
+            case 'CONNECTED':
+                return <Badge className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/20"><CheckCircle2 className="h-3 w-3 mr-1" />Connected</Badge>
             case 'error':
+            case 'ERROR':
                 return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Error</Badge>
             default:
                 return <Badge variant="outline">{status}</Badge>
@@ -190,45 +173,29 @@ export default function IntegrationsPage() {
     }
 
     const handleRefreshCategories = async () => {
-        console.log('[handleRefreshCategories] Starting...')
-        console.log('[handleRefreshCategories] Sites:', sites)
-        console.log('[handleRefreshCategories] Sites statuses:', sites.map(s => ({ name: s.name, status: s.status, statusType: typeof s.status })))
-
-        // Get first connected site (single-site model)
         const targetSite = sites.find(s => s.status === 'CONNECTED' || s.status.toLowerCase() === 'connected')
-
-        console.log('[handleRefreshCategories] Target site found:', targetSite)
-
         if (!targetSite) {
             alert('Please connect a WordPress site first')
             return
         }
-
         setIsRefreshingCategories(true)
-
         try {
-            // Use backend endpoint to sync categories
             const data = await fetchWithAuth(`/wordpress/sites/${targetSite.id}/categories`)
-
             if (data && Array.isArray(data)) {
                 const newMappings = data.map((cat: any) => ({
                     source: cat.slug || cat.name,
                     target: cat.name,
                     wpCategoryId: cat.id
                 }))
-
-                // Save mappings to backend
                 const mappingsToSave = newMappings.map(m => ({
                     source: m.source,
                     targetId: m.wpCategoryId.toString(),
                     targetName: m.target
                 }))
-
                 await fetchWithAuth('/category-mapping', {
                     method: 'POST',
                     body: JSON.stringify({ mappings: mappingsToSave })
                 })
-
                 setCategoryMappings(newMappings)
                 alert(`Successfully fetched and saved categories from ${targetSite.name}`)
             }
@@ -245,18 +212,13 @@ export default function IntegrationsPage() {
             setConnectionError('Please fill in all fields')
             return
         }
-
         setIsTesting(true)
         setConnectionError('')
-
         try {
-            // Ensure URL has protocol
             let wpUrl = formData.url
             if (!wpUrl.startsWith('http')) {
                 wpUrl = `https://${wpUrl}`
             }
-
-            // Add site via backend API
             await fetchWithAuth('/wordpress/sites', {
                 method: 'POST',
                 body: JSON.stringify({
@@ -266,8 +228,6 @@ export default function IntegrationsPage() {
                     appPassword: formData.appPassword
                 })
             })
-
-            // Success - Refresh list
             await fetchSites()
             setIsAddOpen(false)
             setFormData({ name: '', url: '', username: '', appPassword: '' })
@@ -279,25 +239,14 @@ export default function IntegrationsPage() {
         }
     }
 
-
-
     const handleTestConnection = async (site: WordPressSite) => {
         try {
-            // Call backend to verify connection using stored credentials
-            const response = await fetchWithAuth(`/wordpress/sites/${site.id}/test`, {
-                method: 'POST'
-            })
-
-            console.log('[handleTestConnection] Response:', response)
-
+            const response = await fetchWithAuth(`/wordpress/sites/${site.id}/test`, { method: 'POST' })
             if (response.connected) {
                 alert(`Connection to ${site.name} is working perfectly!`)
-
-                // Update local status too
                 setSites(sites.map(s => s.id === site.id ? { ...s, status: 'CONNECTED' } : s))
             } else {
                 alert(`Connection failed: ${response.message || 'Unknown error'}`)
-                // Update local status
                 setSites(sites.map(s => s.id === site.id ? { ...s, status: 'ERROR', error: response.message } : s))
             }
         } catch (error: any) {
@@ -308,13 +257,8 @@ export default function IntegrationsPage() {
 
     const handleRemoveSite = async (id: string) => {
         if (!confirm('Are you sure you want to disconnect this site?')) return
-
         try {
-            await fetchWithAuth(`/wordpress/sites/${id}`, {
-                method: 'DELETE'
-            })
-
-            // Refresh sites list
+            await fetchWithAuth(`/wordpress/sites/${id}`, { method: 'DELETE' })
             await fetchSites()
             alert('Site disconnected successfully')
         } catch (error: any) {
@@ -323,91 +267,97 @@ export default function IntegrationsPage() {
     }
 
     return (
-        <div className="space-y-6">
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="space-y-8"
+        >
             {/* Page Header */}
             <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold">Integrations</h1>
-                    <p className="text-muted-foreground">
-                        Connect and manage your WordPress sites.
+                <div className="space-y-1">
+                    <h1 className="text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
+                        Integrasi
+                    </h1>
+                    <p className="text-slate-500 font-medium">
+                        Hubungkan dan kelola ekosistem WordPress Anda.
                     </p>
                 </div>
                 <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
                     <DialogTrigger asChild>
-                        <Button className="bg-gradient-to-r from-blue-600 to-blue-700">
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Site
+                        <Button className="h-12 px-6 bg-slate-900 hover:bg-black text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-slate-200 dark:shadow-none transition-all hover:scale-[1.02] active:scale-[0.98]">
+                            <Plus className="h-5 w-5 mr-2" />
+                            Tambah Situs
                         </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-md">
                         <DialogHeader>
-                            <DialogTitle>Connect WordPress Site</DialogTitle>
+                            <DialogTitle>Hubungkan WordPress</DialogTitle>
                             <DialogDescription>
-                                Add a new WordPress site to publish content to.
+                                Hubungkan blog Anda untuk publikasi konten secara otomatis.
                             </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4 py-4">
                             <div className="space-y-2">
-                                <Label htmlFor="siteName">Site Name</Label>
+                                <Label>Nama Situs</Label>
                                 <Input
-                                    id="siteName"
-                                    placeholder="e.g., My Blog"
+                                    placeholder="cth., Blog Gaya Hidup"
                                     value={formData.name}
                                     onChange={e => setFormData({ ...formData, name: e.target.value })}
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="siteUrl">WordPress URL</Label>
+                                <Label>WordPress URL</Label>
                                 <Input
-                                    id="siteUrl"
                                     placeholder="https://yourblog.com"
                                     value={formData.url}
                                     onChange={e => setFormData({ ...formData, url: e.target.value })}
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="username">Username</Label>
+                                <Label>Username</Label>
                                 <Input
-                                    id="username"
                                     placeholder="admin"
                                     value={formData.username}
                                     onChange={e => setFormData({ ...formData, username: e.target.value })}
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="appPassword">Application Password</Label>
+                                <Label>Password Aplikasi</Label>
                                 <Input
-                                    id="appPassword"
                                     type="password"
-                                    placeholder="xxxx xxxx xxxx xxxx xxxx"
+                                    placeholder="xxxx xxxx xxxx xxxx"
                                     value={formData.appPassword}
                                     onChange={e => setFormData({ ...formData, appPassword: e.target.value })}
                                 />
-                                <p className="text-xs text-muted-foreground">
-                                    Generate this in your WordPress Admin → Users → Application Passwords
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Dibuat di wp-admin → Users → Profil → Application Passwords
                                 </p>
                             </div>
                             {connectionError && (
-                                <div className="text-xs text-red-600 bg-red-50 p-2 rounded flex items-center gap-2 border border-red-200">
-                                    <XCircle className="h-3 w-3" />
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="text-sm font-medium text-destructive bg-destructive/10 p-3 rounded-md flex items-center gap-2 border border-destructive/20"
+                                >
+                                    <XCircle className="h-4 w-4" />
                                     {connectionError}
-                                </div>
+                                </motion.div>
                             )}
                         </div>
                         <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsAddOpen(false)} disabled={isTesting}>Cancel</Button>
+                            <Button variant="outline" onClick={() => setIsAddOpen(false)} disabled={isTesting}>Batal</Button>
                             <Button
-                                className="bg-gradient-to-r from-blue-600 to-blue-700"
                                 onClick={handleAddSite}
                                 disabled={isTesting}
                             >
                                 {isTesting ? (
                                     <>
                                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                        Testing...
+                                        Menghubungkan
                                     </>
                                 ) : (
-                                    'Test & Connect'
+                                    'Uji & Hubungkan'
                                 )}
                             </Button>
                         </DialogFooter>
@@ -416,138 +366,165 @@ export default function IntegrationsPage() {
             </div>
 
             {/* Connected Sites */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Connected Sites</CardTitle>
-                    <CardDescription>Your WordPress integrations</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {isLoadingSites ? (
-                        <div className="flex justify-center py-12">
-                            <Loader2 className="h-8 w-8 animate-spin !text-blue-600" />
-                        </div>
-                    ) : sites.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground">
-                            <Plug className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                            <p>No sites connected yet. Click "Add Site" to start.</p>
-                        </div>
-                    ) : (
-                        <div className="grid gap-4">
-                            {sites.map((site) => (
-                                <div
-                                    key={site.id}
-                                    className="flex items-center justify-between p-4 rounded-lg border"
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600/20 to-cyan-600/20">
-                                            <Plug className="h-6 w-6 text-blue-600" />
-                                        </div>
-                                        <div>
-                                            <div className="flex items-center gap-2">
-                                                <p className="font-medium">{site.name}</p>
-                                                {getStatusBadge(site.status)}
-                                            </div>
-                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                <span>{site.url}</span>
-                                                <a href={site.url} target="_blank" rel="noopener noreferrer">
-                                                    <ExternalLink className="h-3 w-3" />
-                                                </a>
-                                            </div>
-                                            {site.error && (
-                                                <p className="text-xs text-red-600 mt-1">{site.error}</p>
-                                            )}
-                                        </div>
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="card-clean p-8 space-y-6"
+            >
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h2 className="text-xl font-black tracking-tight">Situs WordPress</h2>
+                        <p className="text-slate-400 text-sm font-medium">Destinasi publikasi Anda yang terhubung</p>
+                    </div>
+                </div>
+
+                {isLoadingSites ? (
+                    <div className="flex justify-center py-20">
+                        <Loader2 className="h-10 w-10 animate-spin text-blue-600 opacity-20" />
+                    </div>
+                ) : sites.length === 0 ? (
+                    <div className="text-center py-16 border-2 border-dashed border-slate-100 rounded-[2rem] bg-slate-50/50">
+                        <Plug className="h-16 w-16 mx-auto mb-4 text-slate-200" />
+                        <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Belum ada situs yang terhubung</p>
+                    </div>
+                ) : (
+                    <div className="grid gap-6">
+                        {sites.map((site, idx) => (
+                            <motion.div
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.2 + idx * 0.05 }}
+                                key={site.id}
+                                className="group flex items-center justify-between p-6 rounded-[2rem] bg-slate-50/50 border border-slate-100 dark:bg-slate-800/20 dark:border-slate-800/40 transition-all hover:bg-white dark:hover:bg-slate-800/40 hover:shadow-md hover:shadow-slate-200/50 dark:hover:shadow-none"
+                            >
+                                <div className="flex items-center gap-6">
+                                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm border border-slate-100 text-blue-600 dark:bg-slate-800 dark:border-slate-700">
+                                        <Plug className="h-7 w-7" />
                                     </div>
-                                    <div className="flex sm:flex-col md:flex-row items-center gap-2 md:gap-4 shrink-0 mt-4 sm:mt-0">
-                                        <div className="text-right sm:text-left md:text-right hidden sm:block">
-                                            <p className="font-medium">{site.articlesPublished} articles</p>
-                                            <p className="text-muted-foreground text-xs md:text-sm whitespace-nowrap">Last sync: {formatTimeAgo(site.lastSync)}</p>
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-3">
+                                            <p className="text-lg font-black tracking-tight">{site.name}</p>
+                                            <Badge className={`rounded-lg px-2 py-0.5 font-bold uppercase text-[9px] tracking-wider ${site.status.toLowerCase() === 'connected'
+                                                ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                                                : 'bg-rose-100 text-rose-700 border border-rose-200'
+                                                }`}>
+                                                {site.status}
+                                            </Badge>
                                         </div>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon">
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => handleTestConnection(site)}>
-                                                    <RefreshCw className="h-4 w-4 mr-2" />
-                                                    Test Connection
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => alert('Settings feature coming soon')}>
-                                                    <Settings className="h-4 w-4 mr-2" />
-                                                    Settings
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem className="text-red-600" onClick={() => handleRemoveSite(site.id)}>
-                                                    <Trash2 className="h-4 w-4 mr-2" />
-                                                    Disconnect
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                        <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
+                                            <span>{site.url}</span>
+                                            <a href={site.url} target="_blank" rel="noopener noreferrer" className="hover:text-blue-600 transition-colors">
+                                                <ExternalLink className="h-3 w-3" />
+                                            </a>
+                                        </div>
+                                        {site.error && (
+                                            <p className="text-[10px] font-bold text-rose-600 mt-1">{site.error}</p>
+                                        )}
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+                                <div className="flex items-center gap-8">
+                                    <div className="text-right hidden md:block space-y-1">
+                                        <p className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tighter">{site.articlesPublished || 0} POSTS</p>
+                                        <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">SYNC: {formatTimeAgo(site.lastSync)}</p>
+                                    </div>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-blue-50 hover:text-blue-600">
+                                                <MoreHorizontal className="h-5 w-5" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="min-w-[160px]">
+                                            <DropdownMenuItem onClick={() => handleTestConnection(site)} className="cursor-pointer">
+                                                <RefreshCw className="h-4 w-4 mr-2" />
+                                                Test Connectivity
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => alert('Settings coming soon')} className="cursor-pointer">
+                                                <Settings className="h-4 w-4 mr-2" />
+                                                Konfigurasi
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem className="text-destructive focus:bg-destructive/10 cursor-pointer" onClick={() => handleRemoveSite(site.id)}>
+                                                <Trash2 className="h-4 w-4 mr-2" />
+                                                Putuskan Situs
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                )}
+            </motion.div>
 
             {/* Category Mappings */}
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.3 }}
+                className="card-clean p-8"
+            >
+                <div className="flex items-center justify-between mb-8">
                     <div>
-                        <CardTitle>Category Mapping</CardTitle>
-                        <CardDescription>Map source categories to your WordPress categories</CardDescription>
+                        <h2 className="text-xl font-black tracking-tight">Routing Kategori</h2>
+                        <p className="text-slate-400 text-sm font-medium">Petakan kategori di sumber konten ke dalam kategori web WordPress Anda.</p>
                     </div>
                     <Button
-                        variant="outline"
-                        size="sm"
+                        variant="ghost"
                         onClick={handleRefreshCategories}
                         disabled={isRefreshingCategories || sites.length === 0}
+                        className="h-11 px-5 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-blue-50 hover:text-blue-600 transition-all active:scale-95"
                     >
-                        <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshingCategories ? 'animate-spin' : ''}`} />
-                        {isRefreshingCategories ? 'Refreshing...' : 'Refresh Categories'}
+                        {isRefreshingCategories ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                        )}
+                        Sinkronisasi Kategori
                     </Button>
-                </CardHeader>
-                <CardContent>
+                </div>
+
+                <div className="rounded-[2rem] overflow-hidden border border-slate-100 dark:border-slate-800">
                     <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Source Category</TableHead>
-                                <TableHead></TableHead>
-                                <TableHead>WordPress Category</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
+                        <TableHeader className="bg-slate-50/50 dark:bg-slate-800/20">
+                            <TableRow className="border-none hover:bg-transparent">
+                                <TableHead className="h-14 font-black text-slate-400 uppercase tracking-widest text-[10px] px-8">Topik Sumber</TableHead>
+                                <TableHead className="h-14 text-center w-20"></TableHead>
+                                <TableHead className="h-14 font-black text-slate-400 uppercase tracking-widest text-[10px]">Destinasi Kategori (Blog)</TableHead>
+                                <TableHead className="h-14 text-right px-8"></TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {isLoadingMappings ? (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="py-12">
-                                        <div className="flex justify-center">
-                                            <Loader2 className="h-8 w-8 animate-spin !text-blue-600" />
-                                        </div>
+                                    <TableCell colSpan={4} className="py-20 text-center">
+                                        <Loader2 className="h-10 w-10 animate-spin text-blue-600 mx-auto opacity-20" />
                                     </TableCell>
                                 </TableRow>
                             ) : categoryMappings.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                                        No category mappings found. Refresh categories to start.
+                                    <TableCell colSpan={4} className="text-center py-16 text-slate-400 font-bold uppercase tracking-widest text-xs">
+                                        Belum ada konfigurasi kategori
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 categoryMappings.map((mapping, index) => (
-                                    <TableRow key={index}>
-                                        <TableCell>
-                                            <Badge variant="outline">{mapping.source}</Badge>
+                                    <TableRow key={index} className="group border-slate-50 dark:border-slate-800 hover:bg-slate-50/50 transition-colors">
+                                        <TableCell className="px-8 font-black text-slate-900 dark:text-white uppercase tracking-tighter text-sm">
+                                            {mapping.source}
+                                        </TableCell>
+                                        <TableCell className="text-center w-20">
+                                            <div className="bg-blue-50 text-blue-600 rounded-full h-8 w-8 flex items-center justify-center mx-auto shadow-inner group-hover:scale-110 transition-transform">
+                                                <ArrowRight className="h-4 w-4" />
+                                            </div>
                                         </TableCell>
                                         <TableCell>
-                                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                                            <Badge className="bg-blue-50 text-blue-700 border border-blue-100 px-3 py-1 rounded-lg font-black uppercase tracking-tighter text-xs">
+                                                {mapping.target}
+                                            </Badge>
                                         </TableCell>
-                                        <TableCell>
-                                            <Badge className="bg-blue-500/10 text-blue-600">{mapping.target}</Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <Button variant="ghost" size="icon" className="text-red-600 hover:text-red-600">
+                                        <TableCell className="text-right px-8">
+                                            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity text-rose-600 hover:bg-rose-50">
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
                                         </TableCell>
@@ -556,8 +533,8 @@ export default function IntegrationsPage() {
                             )}
                         </TableBody>
                     </Table>
-                </CardContent>
-            </Card>
-        </div>
+                </div>
+            </motion.div>
+        </motion.div>
     )
 }

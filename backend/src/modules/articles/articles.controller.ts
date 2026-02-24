@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ArticlesService } from './articles.service';
 import { CreateArticleDto, UpdateArticleDto } from './dto';
@@ -11,46 +21,52 @@ import type { User } from '../../db/types';
 @UseGuards(SessionAuthGuard)
 @Controller('articles')
 export class ArticlesController {
-    constructor(private articlesService: ArticlesService) { }
+  constructor(private articlesService: ArticlesService) {}
 
-    @Get()
-    @ApiOperation({ summary: 'List all articles' })
-    async findAll(
-        @CurrentUser() user: User,
-        @Query('page') page?: number,
-        @Query('limit') limit?: number,
-        @Query('status') status?: string,
-        @Query('wpSiteId') wpSiteId?: string,
-        @Query('search') search?: string,
-    ) {
-        return this.articlesService.findAll(user.id, { page, limit, status, wpSiteId, search });
-    }
+  @Get()
+  @ApiOperation({ summary: 'List all articles' })
+  async findAll(
+    @CurrentUser() user: User,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('status') status?: string,
+    @Query('wpSiteId') wpSiteId?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.articlesService.findAll(user.id, {
+      page,
+      limit,
+      status,
+      wpSiteId,
+      search,
+    });
+  }
 
-    @Get(':id')
-    @ApiOperation({ summary: 'Get article details' })
-    async findById(@CurrentUser() user: User, @Param('id') id: string) {
-        return this.articlesService.findById(user.id, id);
-    }
+  @Get(':id')
+  @ApiOperation({ summary: 'Get article details' })
+  async findById(@CurrentUser() user: User, @Param('id') id: string) {
+    return this.articlesService.findById(user.id, id);
+  }
 
-    @Post()
-    @ApiOperation({ summary: 'Create new article' })
-    async create(@CurrentUser() user: User, @Body() dto: CreateArticleDto) {
-        return this.articlesService.create(user.id, dto);
-    }
+  @Post()
+  @ApiOperation({ summary: 'Create new article' })
+  async create(@CurrentUser() user: User, @Body() dto: CreateArticleDto) {
+    return this.articlesService.create(user.id, dto);
+  }
 
-    @Patch(':id')
-    @ApiOperation({ summary: 'Update article' })
-    async update(
-        @CurrentUser() user: User,
-        @Param('id') id: string,
-        @Body() dto: UpdateArticleDto,
-    ) {
-        return this.articlesService.update(user.id, id, dto);
-    }
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update article' })
+  async update(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body() dto: UpdateArticleDto,
+  ) {
+    return this.articlesService.update(user.id, id, dto);
+  }
 
-    @Delete(':id')
-    @ApiOperation({ summary: 'Delete article' })
-    async delete(@CurrentUser() user: User, @Param('id') id: string) {
-        return this.articlesService.delete(user.id, id);
-    }
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete article' })
+  async delete(@CurrentUser() user: User, @Param('id') id: string) {
+    return this.articlesService.delete(user.id, id);
+  }
 }

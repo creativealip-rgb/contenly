@@ -47,9 +47,9 @@ export default function ForgotPasswordPage() {
 
                 <Card className="border-0 shadow-xl">
                     <CardHeader className="space-y-1 text-center">
-                        <CardTitle className="text-2xl font-bold">Reset Password</CardTitle>
+                        <CardTitle className="text-2xl font-bold">Lupa Kata Sandi</CardTitle>
                         <CardDescription>
-                            Enter your email to receive reset instructions
+                            Masukkan email Anda untuk menerima instruksi reset
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -61,10 +61,10 @@ export default function ForgotPasswordPage() {
                                     </div>
                                 </div>
                                 <p className="text-sm text-muted-foreground">
-                                    If an account exists with that email, we've sent instructions to reset your password.
+                                    Jika akun terdaftar dengan email tersebut, kami telah mengirimkan instruksi untuk mengatur ulang kata sandi Anda.
                                 </p>
                                 <Button asChild className="w-full mt-4" variant="outline">
-                                    <Link href="/login">Return to Login</Link>
+                                    <Link href="/login">Kembali ke Login</Link>
                                 </Button>
                             </div>
                         ) : (
@@ -85,7 +85,7 @@ export default function ForgotPasswordPage() {
                                     className="w-full btn-premium"
                                     disabled={isLoading}
                                 >
-                                    {isLoading ? 'Sending...' : 'Send Reset Link'}
+                                    {isLoading ? 'Mengirim...' : 'Kirim Link Reset'}
                                 </Button>
                             </form>
                         )}
@@ -99,7 +99,7 @@ export default function ForgotPasswordPage() {
                         <div className="text-center">
                             <Link href="/login" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
                                 <ArrowLeft className="mr-2 h-4 w-4" />
-                                Back to Login
+                                Kembali ke Login
                             </Link>
                         </div>
                     </CardContent>

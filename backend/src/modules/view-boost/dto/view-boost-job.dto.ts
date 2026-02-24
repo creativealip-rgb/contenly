@@ -1,4 +1,12 @@
-import { IsUrl, IsInt, Min, Max, IsOptional, IsString, IsEnum } from 'class-validator';
+import {
+  IsUrl,
+  IsInt,
+  Min,
+  Max,
+  IsOptional,
+  IsString,
+  IsEnum,
+} from 'class-validator';
 
 export class CreateViewBoostJobDto {
   @IsUrl()

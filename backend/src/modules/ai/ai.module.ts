@@ -8,14 +8,14 @@ import { ArticlesModule } from '../articles/articles.module';
 import { WordpressModule } from '../wordpress/wordpress.module';
 
 @Module({
-    imports: [
-        BillingModule,
-        AuthModule,
-        forwardRef(() => ArticlesModule),
-        forwardRef(() => WordpressModule)
-    ],
-    controllers: [AiController],
-    providers: [AiService, OpenAiService],
-    exports: [AiService],
+  imports: [
+    BillingModule,
+    AuthModule,
+    forwardRef(() => ArticlesModule),
+    forwardRef(() => WordpressModule),
+  ],
+  controllers: [AiController],
+  providers: [AiService, OpenAiService],
+  exports: [AiService, OpenAiService],
 })
-export class AiModule { }
+export class AiModule {}

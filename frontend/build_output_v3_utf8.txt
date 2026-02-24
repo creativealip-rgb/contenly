@@ -1,0 +1,125 @@
+﻿
+> frontend@0.1.0 build
+> next build
+
+node.exe : ΓÜá Warning: 
+Next.js inferred your 
+workspace root, but it 
+may not be correct.
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo       
+       : NotSpecified:   
+  (ΓÜá Warning: Ne...n   
+ ot be correct.:Strin    
+g) [], RemoteExcepti    
+on
+    + FullyQualifiedErro 
+   rId : NativeCommandE  
+  rror
+ 
+ We detected multiple 
+lockfiles and selected 
+the directory of C:\Users
+\62812\OneDrive\Documents
+\Vibe Coding\Saas\contenl
+y\package-lock.json as 
+the root directory.
+ To silence this 
+warning, set 
+`turbopack.root` in your 
+Next.js config, or 
+consider removing one of 
+the lockfiles if it's 
+not needed.
+   See https://nextjs.org
+/docs/app/api-reference/c
+onfig/next-config-js/turb
+opack#root-directory for 
+more information.
+ Detected additional 
+lockfiles: 
+   * C:\Users\62812\OneDr
+ive\Documents\Vibe Coding
+\Saas\contenly\frontend\p
+ackage-lock.json
+
+Γû▓ Next.js 16.1.1 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 72s
+  Running TypeScript ...
+Failed to compile.
+
+./src/app/(dashboard)/con
+tent-lab/components/Sourc
+eSidebar.tsx:169:136
+Type error: Property 
+'selectedArticle' does 
+not exist on type 
+'ContentLabState'.
+
+[0m [90m 167 |[39m    
+                         
+                        
+transition[33m=[39m{{ 
+delay[33m:[39m idx 
+[33m*[39m 
+[35m0.05[39m }}
+ [90m 168 |[39m        
+                         
+                    
+onClick[33m=[39m{() 
+[33m=>[39m handlers[33
+m.[39mhandleSelectArticl
+e(article)}
+[31m[1m>[22m[39m[90m
+ 169 |[39m              
+                         
+              className[
+33m=[39m{[32m`w-full 
+text-left p-4 
+rounded-2xl text-sm 
+transition-all border ${s
+tate.selectedArticle?.url
+ === article.url[39m
+ [90m     |[39m        
+                         
+                         
+                         
+                         
+                         
+   [31m[1m^[22m[39m
+ [90m 170 |[39m [32m  
+                         
+                         
+    ? 'bg-blue-600 
+text-white 
+border-transparent 
+shadow-lg 
+shadow-blue-200 
+dark:shadow-none 
+translate-x-1'[39m
+ [90m 171 |[39m [32m  
+                         
+                         
+    : 'bg-white/80 
+dark:bg-slate-800/80 
+border-slate-100 
+dark:border-slate-700 
+hover:border-blue-200 
+hover:bg-white'[39m
+ [90m 172 |[39m [32m  
+                         
+                         
+    }`[39m}[0m
+Next.js build worker 
+exited with code: 1 and 
+signal: null

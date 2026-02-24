@@ -5,9 +5,9 @@ import { AuthModule } from '../auth/auth.module';
 import { ArticlesModule } from '../articles/articles.module';
 
 @Module({
-    imports: [AuthModule, ArticlesModule],
-    controllers: [WordpressController],
-    providers: [WordpressService],
-    exports: [WordpressService],
+  imports: [AuthModule, ArticlesModule],
+  controllers: [WordpressController],
+  providers: [WordpressService],
+  exports: [WordpressService],
 })
-export class WordpressModule { }
+export class WordpressModule {}

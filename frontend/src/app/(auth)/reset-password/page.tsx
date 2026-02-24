@@ -24,7 +24,7 @@ function ResetPasswordForm() {
 
     useEffect(() => {
         if (!token) {
-            setError('Invalid or missing reset token.')
+            setError('Token reset tidak valid atau hilang.')
         }
     }, [token])
 
@@ -40,7 +40,7 @@ function ResetPasswordForm() {
         const confirmPassword = formData.get('confirmPassword') as string
 
         if (password !== confirmPassword) {
-            setError('Passwords do not match')
+            setError('Kata sandi tidak cocok')
             setIsLoading(false)
             return
         }
@@ -52,7 +52,7 @@ function ResetPasswordForm() {
             setTimeout(() => router.push('/login'), 3000)
         } catch (error: any) {
             console.error('Reset password error:', error)
-            setError(error.message || 'Failed to reset password')
+            setError(error.message || 'Gagal mengatur ulang kata sandi')
         } finally {
             setIsLoading(false)
         }
@@ -66,12 +66,12 @@ function ResetPasswordForm() {
                         <CheckCircle className="h-6 w-6" />
                     </div>
                 </div>
-                <h3 className="text-lg font-semibold">Password Reset Successful!</h3>
+                <h3 className="text-lg font-semibold">Pengaturan Ulang Kata Sandi Berhasil!</h3>
                 <p className="text-sm text-muted-foreground">
-                    Your password has been updated. You will be redirected to login shortly.
+                    Kata sandi Anda telah diperbarui. Anda akan segera diarahkan ke halaman login.
                 </p>
                 <Button asChild className="w-full mt-4" variant="outline">
-                    <Link href="/login">Go to Login</Link>
+                    <Link href="/login">Pergi ke Login</Link>
                 </Button>
             </div>
         )
@@ -86,13 +86,13 @@ function ResetPasswordForm() {
             )}
 
             <div className="space-y-2">
-                <Label htmlFor="password">New Password</Label>
+                <Label htmlFor="password">Kata Sandi Baru</Label>
                 <div className="relative">
                     <Input
                         id="password"
                         name="password"
                         type={showPassword ? 'text' : 'password'}
-                        placeholder="Enter new password"
+                        placeholder="Masukkan kata sandi baru"
                         required
                         minLength={8}
                     />
@@ -114,7 +114,7 @@ function ResetPasswordForm() {
                     id="confirmPassword"
                     name="confirmPassword"
                     type="password"
-                    placeholder="Confirm new password"
+                    placeholder="Konfirmasi kata sandi baru"
                     required
                     minLength={8}
                 />
@@ -125,7 +125,7 @@ function ResetPasswordForm() {
                 className="w-full btn-premium"
                 disabled={isLoading || !token}
             >
-                {isLoading ? 'Resetting...' : 'Reset Password'}
+                {isLoading ? 'Mengatur ulang...' : 'Atur Ulang Kata Sandi'}
             </Button>
         </form>
     )
@@ -146,9 +146,9 @@ export default function ResetPasswordPage() {
 
                 <Card className="border-0 shadow-xl">
                     <CardHeader className="space-y-1 text-center">
-                        <CardTitle className="text-2xl font-bold">Set New Password</CardTitle>
+                        <CardTitle className="text-2xl font-bold">Atur Kata Sandi Baru</CardTitle>
                         <CardDescription>
-                            Create a strong password for your account
+                            Buat kata sandi yang kuat untuk akun Anda
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -165,7 +165,7 @@ export default function ResetPasswordPage() {
                         <div className="text-center">
                             <Link href="/login" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
                                 <ArrowLeft className="mr-2 h-4 w-4" />
-                                Back to Login
+                                Kembali ke Login
                             </Link>
                         </div>
                     </CardContent>

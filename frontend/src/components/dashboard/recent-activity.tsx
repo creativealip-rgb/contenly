@@ -1,5 +1,7 @@
+import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatDistanceToNow } from 'date-fns'
+import { FileText, Rss, Plug, CreditCard, Clock } from 'lucide-react'
 
 interface Activity {
     id: string
@@ -14,36 +16,11 @@ interface RecentActivityProps {
     isLoading?: boolean
 }
 
-// Custom SVG icons for activities
 const activityIcons = {
-    article_published: (
-        <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4" stroke="currentColor" strokeWidth="1.5">
-            <path d="M4 4h16v16H4z" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M8 8h8M8 12h8M8 16h4" strokeLinecap="round" />
-        </svg>
-    ),
-    feed_added: (
-        <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4" stroke="currentColor" strokeWidth="1.5">
-            <circle cx="6" cy="18" r="2" fill="currentColor" />
-            <path d="M4 4a16 16 0 0116 16M4 10a10 10 0 0110 10" strokeLinecap="round" />
-        </svg>
-    ),
-    site_connected: (
-        <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4" stroke="currentColor" strokeWidth="1.5">
-            <circle cx="6" cy="6" r="3" />
-            <circle cx="18" cy="6" r="3" />
-            <circle cx="6" cy="18" r="3" />
-            <circle cx="18" cy="18" r="3" />
-            <path d="M9 6h6M6 9v6M18 9v6M9 18h6" />
-        </svg>
-    ),
-    tokens_purchased: (
-        <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4" stroke="currentColor" strokeWidth="1.5">
-            <rect x="2" y="5" width="20" height="14" rx="2" />
-            <path d="M2 10h20" />
-            <path d="M6 15h4" />
-        </svg>
-    ),
+    article_published: FileText,
+    feed_added: Rss,
+    site_connected: Plug,
+    tokens_purchased: CreditCard,
 }
 
 const activityStyles = {
@@ -51,31 +28,63 @@ const activityStyles = {
         bg: 'bg-emerald-500/10',
         text: 'text-emerald-600',
         border: 'border-emerald-500/20',
+        icon: 'text-emerald-500',
     },
     feed_added: {
         bg: 'bg-blue-500/10',
         text: 'text-blue-600',
         border: 'border-blue-500/20',
+        icon: 'text-blue-500',
     },
     site_connected: {
-        bg: 'bg-blue-500/10',
-        text: 'text-blue-600',
-        border: 'border-blue-500/20',
+        bg: 'bg-cyan-500/10',
+        text: 'text-cyan-600',
+        border: 'border-cyan-500/20',
+        icon: 'text-cyan-500',
     },
     tokens_purchased: {
         bg: 'bg-amber-500/10',
         text: 'text-amber-600',
         border: 'border-amber-500/20',
+        icon: 'text-amber-500',
     },
 }
 
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1,
+            delayChildren: 0.2
+        }
+    }
+} as const
+
+const itemVariants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: {
+        opacity: 1,
+        x: 0,
+        transition: {
+            type: "spring" as const,
+            stiffness: 100,
+            damping: 15
+        }
+    }
+} as const
+
 export function RecentActivity({ activities, isLoading }: RecentActivityProps) {
     return (
-        <Card className="border-border/50 h-full min-h-[360px] overflow-hidden">
+        <Card variant="glass" className="h-full min-h-[360px] overflow-hidden">
             <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg font-semibold">Recent Activity</CardTitle>
-                    <span className="text-xs text-muted-foreground">{isLoading ? 'Loading...' : `${activities.length} activities`}</span>
+                    <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                        Aktivitas Terkini
+                    </CardTitle>
+                    <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full">
+                        {isLoading ? 'Memuat...' : `${activities.length} aktivitas`}
+                    </span>
                 </div>
             </CardHeader>
             <CardContent className="space-y-4 px-3 sm:px-6">
@@ -93,43 +102,64 @@ export function RecentActivity({ activities, isLoading }: RecentActivityProps) {
                         ))}
                     </div>
                 ) : activities.length === 0 ? (
-                    <div className="text-center py-12">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted mx-auto mb-4 animate-float">
-                            <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6 text-muted-foreground" stroke="currentColor" strokeWidth="1.5">
-                                <circle cx="12" cy="12" r="10" />
-                                <path d="M12 6v6l4 2" strokeLinecap="round" />
-                            </svg>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                            No recent activity
+                    <motion.div
+                        className="text-center py-12"
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ type: "spring", stiffness: 200, damping: 20 }}
+                    >
+                        <motion.div
+                            className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 mx-auto mb-4"
+                            animate={{
+                                y: [0, -5, 0],
+                            }}
+                            transition={{
+                                duration: 3,
+                                repeat: Infinity,
+                                ease: "easeInOut"
+                            }}
+                        >
+                            <Clock className="w-6 h-6 text-muted-foreground" />
+                        </motion.div>
+                        <p className="text-sm text-muted-foreground font-medium">
+                            Belum ada aktivitas
                         </p>
                         <p className="text-xs text-muted-foreground/60 mt-1">
-                            Your activity will appear here
+                            Aktivitas Anda akan muncul di sini
                         </p>
-                    </div>
+                    </motion.div>
                 ) : (
                     <div className="relative">
                         {/* Timeline line */}
-                        <div className="absolute left-[15px] top-3 bottom-3 w-px bg-border/50" />
+                        <div className="absolute left-[15px] top-3 bottom-3 w-px bg-gradient-to-b from-border via-border to-transparent" />
 
-                        <div className="space-y-4">
+                        <motion.div
+                            className="space-y-4"
+                            variants={containerVariants}
+                            initial="hidden"
+                            animate="visible"
+                        >
                             {activities.map((activity, index) => {
                                 const styles = activityStyles[activity.type] || activityStyles.article_published
-                                const icon = activityIcons[activity.type] || activityIcons.article_published
+                                const Icon = activityIcons[activity.type] || activityIcons.article_published
 
                                 return (
-                                    <div
+                                    <motion.div
                                         key={activity.id}
-                                        className="relative flex items-start gap-3 md:gap-4 animate-fade-up w-full overflow-hidden"
-                                        style={{ animationDelay: `${index * 0.1}s`, opacity: 0 }}
+                                        variants={itemVariants}
+                                        className="relative flex items-start gap-3 md:gap-4 w-full overflow-hidden group"
                                     >
                                         {/* Icon */}
-                                        <div className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${styles.bg} ${styles.text} border ${styles.border}`}>
-                                            {icon}
-                                        </div>
+                                        <motion.div
+                                            className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${styles.bg} ${styles.icon} border ${styles.border} backdrop-blur-sm`}
+                                            whileHover={{ scale: 1.1, rotate: 5 }}
+                                            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                                        >
+                                            <Icon className="w-4 h-4" />
+                                        </motion.div>
 
-                                        {/* Content - Using Grid for reliable truncation next to shrinking time */}
-                                        <div className="flex-1 min-w-0 grid grid-cols-[1fr_auto] gap-2 items-start">
+                                        {/* Content */}
+                                        <div className="flex-1 min-w-0 grid grid-cols-[1fr_auto] gap-2 items-start group-hover:translate-x-1 transition-transform duration-200">
                                             <div className="min-w-0">
                                                 <p className="text-sm font-medium truncate leading-tight pr-1" title={activity.title}>
                                                     {activity.title}
@@ -138,14 +168,15 @@ export function RecentActivity({ activities, isLoading }: RecentActivityProps) {
                                                     {activity.description}
                                                 </p>
                                             </div>
-                                            <span className="shrink-0 text-[10px] text-muted-foreground pt-1 whitespace-nowrap">
+                                            <span className="shrink-0 text-[10px] text-muted-foreground pt-1 whitespace-nowrap flex items-center gap-1">
+                                                <Clock className="w-3 h-3" />
                                                 {formatDistanceToNow(activity.timestamp, { addSuffix: true })}
                                             </span>
                                         </div>
-                                    </div>
+                                    </motion.div>
                                 )
                             })}
-                        </div>
+                        </motion.div>
                     </div>
                 )}
             </CardContent>

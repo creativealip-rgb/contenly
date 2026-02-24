@@ -4,55 +4,88 @@ import OpenAI from 'openai';
 
 @Injectable()
 export class OpenAiService {
-    private openai: OpenAI;
-    private model: string;
+  private openai: OpenAI; // Used for OpenRouter or main OpenAI
+  private nativeOpenai: OpenAI | null = null; // Used for native OpenAI (e.g., DALL-E)
+  private model: string;
 
-    constructor(private configService: ConfigService) {
-        console.log('🔍 OpenAiService: Initializing...');
-        console.log('📝 All env vars:', {
-            OPENROUTER_API_KEY: this.configService.get('OPENROUTER_API_KEY') ? 'SET' : 'NOT SET',
-            OPENROUTER_BASE_URL: this.configService.get('OPENROUTER_BASE_URL'),
-            OPENROUTER_MODEL: this.configService.get('OPENROUTER_MODEL'),
-        });
+  constructor(private configService: ConfigService) {
+    console.log('🔍 OpenAiService: Initializing...');
 
-        const apiKey = (this.configService.get('OPENROUTER_API_KEY') || '').trim();
-        const baseURL = (this.configService.get('OPENROUTER_BASE_URL') || 'https://openrouter.ai/api/v1').trim();
+    // Get model preference from env (default to GPT-4o-mini)
+    const preferredModel = (this.configService.get('OPENAI_MODEL') || 'gpt-4o-mini').trim();
 
-        if (!apiKey) {
-            console.error('❌ OPENROUTER_API_KEY is undefined or empty!');
-            throw new Error('OPENROUTER_API_KEY is not set in environment variables');
-        }
+    // Try OpenAI API first
+    let apiKey = (this.configService.get('OPENAI_API_KEY') || '').trim();
+    let baseURL = 'https://api.openai.com/v1';
+    let model = preferredModel;
 
-        console.log('✅ OpenAI client initializing with OpenRouter');
-        console.log(`🔑 API Key Prefix: ${apiKey.substring(0, 10)}...`);
+    // Logic: If model name contains a slash (e.g. 'openai/gpt-5.2'), use OpenRouter
+    // Or if OpenAI API key is missing
+    const useOpenRouter = model.includes('/') || !apiKey;
 
-        this.openai = new OpenAI({
-            apiKey,
-            baseURL,
-        });
-        this.model = this.configService.get('OPENROUTER_MODEL') || 'google/gemini-2.0-flash-exp:free';
-        console.log(`✅ Model set to: ${this.model}`);
+    if (useOpenRouter) {
+      console.log('📝 Switching to OpenRouter (model contains slash or OpenAI key missing)');
+      apiKey = (this.configService.get('OPENROUTER_API_KEY') || apiKey).trim();
+      baseURL = (this.configService.get('OPENROUTER_BASE_URL') || 'https://openrouter.ai/api/v1').trim();
+
+      // If we are using OpenRouter, check if there's a specific OpenRouter model set
+      if (this.configService.get('OPENROUTER_MODEL')) {
+        model = this.configService.get('OPENROUTER_MODEL');
+      }
     }
 
-    async generateContent(
-        originalContent: string,
-        options: {
-            tone?: string;
-            length?: 'short' | 'medium' | 'long';
-            keywords?: string[];
-            targetLanguage?: string;
-            mode?: 'rewrite' | 'idea';
-        }
-    ): Promise<{ title: string; content: string; metaDescription: string; slug: string }> {
-        const lengthGuide = {
-            short: '300-500 words',
-            medium: '600-900 words',
-            long: '1000-1500 words',
-        };
+    if (!apiKey) {
+      console.error('❌ No API key found! Set either OPENAI_API_KEY or OPENROUTER_API_KEY');
+      throw new Error('No AI API key configured. Set OPENAI_API_KEY or OPENROUTER_API_KEY in environment variables');
+    }
 
-        const isIdeaMode = options.mode === 'idea';
+    this.openai = new OpenAI({
+      apiKey,
+      baseURL,
+    });
+    this.model = model;
 
-        const systemPrompt = `You are an expert article writer and SEO professional. Your task is to:
+    console.log(`✅ Model set to: ${this.model} via ${useOpenRouter ? 'OpenRouter' : 'OpenAI'}`);
+
+    // Explicitly check for native OpenAI key for DALL-E if not already set
+    if (!this.nativeOpenai) {
+      const nativeApiKey = (this.configService.get('OPENAI_API_KEY') || '').trim();
+      if (nativeApiKey) {
+        this.nativeOpenai = new OpenAI({ apiKey: nativeApiKey });
+      }
+    }
+
+    console.log(`✅ Model set to: ${this.model}`);
+  }
+
+  async generateContent(
+    originalContent: string,
+    options: {
+      tone?: string;
+      length?: 'short' | 'medium' | 'long';
+      keywords?: string[];
+      targetLanguage?: string;
+      mode?: 'rewrite' | 'idea' | 'custom';
+      systemPrompt?: string;
+    },
+  ): Promise<any> {
+    const lengthGuide = {
+      short: '300-500 words',
+      medium: '600-900 words',
+      long: '1000-1500 words',
+    };
+
+    const isIdeaMode = options.mode === 'idea';
+    const isCustomMode = options.mode === 'custom';
+
+    let systemPrompt = '';
+    let userPrompt = '';
+
+    if (isCustomMode && options.systemPrompt) {
+      systemPrompt = options.systemPrompt;
+      userPrompt = originalContent;
+    } else {
+      systemPrompt = `You are an expert article writer and SEO professional. Your task is to:
 1. ${isIdeaMode ? 'Generate a high-quality, comprehensive article based on the provided ideas/keywords.' : 'Completely rewrite the given content to make it unique while preserving factual accuracy.'}
 2. Use a ${options.tone || 'professional'} tone.
 3. Target length: ${lengthGuide[options.length || 'medium']}.
@@ -68,56 +101,60 @@ export class OpenAiService {
 9. Ensure the article reaches a natural and complete conclusion. DO NOT cut off.
 10. Return ONLY the JSON object.`;
 
-        const userPrompt = isIdeaMode
-            ? `Generate an article based on these ideas/keywords:\n\n${originalContent}`
-            : `Rewrite this content and provide a new title and SEO metadata:\n\n${originalContent}`;
-
-        try {
-            const response = await this.openai.chat.completions.create({
-                model: this.model,
-                messages: [
-                    { role: 'system', content: systemPrompt },
-                    { role: 'user', content: userPrompt },
-                ],
-                temperature: 0.7,
-                max_tokens: 4000,
-                response_format: { type: 'json_object' },
-            });
-
-            const result = JSON.parse(response.choices[0]?.message?.content || '{}');
-            
-            // Fix nested <ul> structure
-            let fixedContent = result.content || '';
-            fixedContent = fixedContent.replace(/<ul>\s*<ul>/g, '<ul>');
-            fixedContent = fixedContent.replace(/<\/ul>\s*<\/ul>/g, '</ul>');
-            fixedContent = fixedContent.replace(/<ul>\s*<li>(.*?)<\/li>\s*<\/ul>/g, '<li>$1</li>');
-            
-            return {
-                title: result.title || '',
-                content: fixedContent,
-                metaDescription: result.metaDescription || '',
-                slug: result.slug || '',
-            };
-        } catch (error: any) {
-            console.error('[OpenAiService] Generation failed:', {
-                status: error.status,
-                message: error.message,
-                model: this.model,
-            });
-            throw error;
-        }
+      userPrompt = isIdeaMode
+        ? `Generate an article based on these ideas/keywords:\n\n${originalContent}`
+        : `Rewrite this content and provide a new title and SEO metadata:\n\n${originalContent}`;
     }
 
-    async generateSeoMetadata(
-        title: string,
-        content: string,
-        keywords?: string[]
-    ): Promise<{
-        metaTitle: string;
-        metaDescription: string;
-        slug: string;
-    }> {
-        const prompt = `Generate SEO metadata for this article:
+    try {
+      const response = await this.openai.chat.completions.create({
+        model: this.model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.7,
+        max_tokens: 4000,
+        response_format: { type: 'json_object' },
+      });
+
+      const result = JSON.parse(response.choices[0]?.message?.content || '{}');
+
+      if (isCustomMode) {
+        return result;
+      }
+
+      // Fix nested <ul> structure
+      let fixedContent = result.content || '';
+      fixedContent = fixedContent.replace(/<ul>\s*<ul>/g, '<ul>');
+      fixedContent = fixedContent.replace(/<\/ul>\s*<\/ul>/g, '</ul>');
+      fixedContent = fixedContent.replace(
+        /<ul>\s*<li>(.*?)<\/li>\s*<\/ul>/g,
+        '<li>$1</li>',
+      );
+
+      return {
+        title: result.title || '',
+        content: fixedContent,
+        metaDescription: result.metaDescription || '',
+        slug: result.slug || '',
+      };
+    } catch (error: any) {
+      console.error('[OpenAiService] Generation failed:', error);
+      throw error;
+    }
+  }
+
+  async generateSeoMetadata(
+    title: string,
+    content: string,
+    keywords?: string[],
+  ): Promise<{
+    metaTitle: string;
+    metaDescription: string;
+    slug: string;
+  }> {
+    const prompt = `Generate SEO metadata for this article:
 
 Title: ${title}
 Content Preview: ${content.substring(0, 500)}
@@ -128,41 +165,158 @@ Return JSON with:
 - metaDescription: Compelling description (150-160 characters)
 - slug: URL-friendly slug`;
 
-        const response = await this.openai.chat.completions.create({
-            model: this.model,
-            messages: [
-                { role: 'system', content: 'You are an SEO expert. Return only valid JSON.' },
-                { role: 'user', content: prompt },
+    const response = await this.openai.chat.completions.create({
+      model: this.model,
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an SEO expert. Return only valid JSON.',
+        },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.5,
+      response_format: { type: 'json_object' },
+    });
+
+    const result = JSON.parse(response.choices[0]?.message?.content || '{}');
+    return {
+      metaTitle: result.metaTitle || title,
+      metaDescription: result.metaDescription || content.substring(0, 160),
+      slug: result.slug || this.generateSlug(title),
+    };
+  }
+
+  async generateImage(prompt: string): Promise<string> {
+    if (!this.nativeOpenai) {
+      throw new Error('OPENAI_API_KEY is missing. Image generation requires a direct OpenAI API Key (DALL-E 3 is not supported via OpenRouter). Please add OPENAI_API_KEY to your VPS .env file.');
+    }
+
+    const client = this.nativeOpenai;
+    const response = await client.images.generate({
+      model: 'dall-e-3',
+      prompt: `Create a professional, high-quality featured image for an article about: ${prompt}. The image should be clean, modern, and suitable for a blog post.`,
+      n: 1,
+      size: '1024x1024',
+      quality: 'standard',
+    });
+
+    return response.data[0]?.url || '';
+  }
+
+  async analyzeTrend(content: string, title: string): Promise<any> {
+    const prompt = `Analyze this trending content and provide viral insights:
+    
+    TITLE: ${title}
+    CONTENT: ${content.substring(0, 3000)}
+    
+    Return a VALID JSON object with:
+    - "score": A number from 1-100 indicating viral potential.
+    - "reason": A brief explanation of why this is trending.
+    - "hooks": An array of 3 catchy hooks/angles for a new article.
+    - "strategy": A one-sentence content strategy for this topic.
+    - "keywords": An array of 5 high-value SEO keywords.
+    - "sentiment": "positive", "negative", or "neutral".
+    
+    LANGUAGE: Indonesian (Bahasa Indonesia).
+    Return ONLY the JSON.`;
+
+    try {
+      const response = await this.openai.chat.completions.create({
+        model: this.model,
+        messages: [
+          { role: 'system', content: 'You are a viral content strategist. Return only valid JSON.' },
+          { role: 'user', content: prompt },
+        ],
+        temperature: 0.7,
+        response_format: { type: 'json_object' },
+      });
+
+      return JSON.parse(response.choices[0]?.message?.content || '{}');
+    } catch (error) {
+      console.error('[OpenAiService] Trend analysis failed:', error);
+      return {
+        score: 50,
+        reason: 'Gagal menganalisis tren.',
+        hooks: ['Gagal memuat hook'],
+        strategy: 'Kembangkan konten berdasarkan topik ini.',
+        keywords: [],
+        sentiment: 'neutral'
+      };
+    }
+  }
+
+  async analyzeImageLayout(imageUrl: string, text: string): Promise<{ layoutPosition: string; fontColor: string; headerText: string; bodyText: string }> {
+    const prompt = `Analyze this image and the text that will be overlaid on it: "${text}".
+    
+    1. Determine the best position for the text so it is readable and does not cover important subjects (like faces or main objects). Look for "negative space" or uncluttered areas.
+    2. Determine the best font color (either #FFFFFF or #000000) that will contrast well with the background at that specific position.
+    3. Separate the provided text into a short, punchy "headerText" (max 5-7 words, e.g. the main point or hook) and "bodyText" (the remaining explanation). If the text is very short, put it all in "headerText" and leave "bodyText" empty.
+    
+    Return a VALID JSON object with exactly these keys:
+    - "layoutPosition": Must be exactly one of ["center", "top", "bottom", "top-left", "top-right", "bottom-left", "bottom-right", "left", "right"].
+    - "fontColor": Must be exactly "#FFFFFF" or "#000000".
+    - "headerText": The extracted short header.
+    - "bodyText": The remaining explanation.
+    
+    Return ONLY the JSON.`;
+
+    try {
+      // Use the native client if available for guaranteed vision support, otherwise fallback to standard
+      const client = this.nativeOpenai || this.openai;
+      // Force a vision-capable model if using native, else trust the configured OpenRouter model
+      const targetModel = this.nativeOpenai ? 'gpt-4o-mini' : this.model;
+
+      const response = await client.chat.completions.create({
+        model: targetModel,
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert graphic designer and layout AI. Return only valid JSON.',
+          },
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: prompt },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: imageUrl,
+                },
+              },
             ],
-            temperature: 0.5,
-            response_format: { type: 'json_object' },
-        });
+          },
+        ],
+        temperature: 0.2,
+        max_tokens: 150,
+        response_format: { type: 'json_object' },
+      });
 
-        const result = JSON.parse(response.choices[0]?.message?.content || '{}');
-        return {
-            metaTitle: result.metaTitle || title,
-            metaDescription: result.metaDescription || content.substring(0, 160),
-            slug: result.slug || this.generateSlug(title),
-        };
+      const result = JSON.parse(response.choices[0]?.message?.content || '{}');
+      console.log(`[OpenAiService] Vision layout analysis complete: ${JSON.stringify(result)}`);
+
+      return {
+        layoutPosition: result.layoutPosition || 'center',
+        fontColor: result.fontColor || '#FFFFFF',
+        headerText: result.headerText || text,
+        bodyText: result.bodyText || '',
+      };
+    } catch (error) {
+      console.error('[OpenAiService] Vision layout analysis failed:', error.message);
+      // Fallback defaults if vision fails (e.g., URL unaccessible or API error)
+      return {
+        layoutPosition: 'center',
+        fontColor: '#FFFFFF',
+        headerText: text, // Fallback to entire text as header
+        bodyText: '',
+      };
     }
+  }
 
-    async generateImage(prompt: string): Promise<string> {
-        const response = await this.openai.images.generate({
-            model: 'dall-e-3',
-            prompt: `Create a professional, high-quality featured image for an article about: ${prompt}. The image should be clean, modern, and suitable for a blog post.`,
-            n: 1,
-            size: '1792x1024',
-            quality: 'standard',
-        });
-
-        return response.data[0]?.url || '';
-    }
-
-    private generateSlug(title: string): string {
-        return title
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-|-$/g, '')
-            .substring(0, 60);
-    }
+  private generateSlug(title: string): string {
+    return title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      .substring(0, 60);
+  }
 }

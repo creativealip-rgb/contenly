@@ -1,0 +1,43 @@
+﻿git : To https://github.c
+om/creativealip-rgb/conte
+nly.git
+At line:1 char:1
++ git push > 
+push_result.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~
+    + CategoryInfo       
+       : NotSpecified:   
+  (To https://gith...g   
+ b/contenly.git:Strin    
+g) [], RemoteExcepti    
+on
+    + FullyQualifiedErro 
+   rId : NativeCommandE  
+  rror
+ 
+ ! [rejected]        
+contenly-deploy -> 
+contenly-deploy (fetch 
+first)
+error: failed to push 
+some refs to 'https://git
+hub.com/creativealip-rgb/
+contenly.git'
+hint: Updates were 
+rejected because the 
+remote contains work 
+that you do not
+hint: have locally. This 
+is usually caused by 
+another repository 
+pushing to
+hint: the same ref. If 
+you want to integrate 
+the remote changes, use
+hint: 'git pull' before 
+pushing again.
+hint: See the 'Note 
+about fast-forwards' in 
+'git push --help' for 
+details.

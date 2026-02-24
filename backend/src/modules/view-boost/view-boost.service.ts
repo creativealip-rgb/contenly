@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import axios from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { CreateViewBoostJobDto } from './dto/view-boost-job.dto';
 import { DrizzleService } from '../../db/drizzle.service';
@@ -7,10 +7,9 @@ import { viewBoostJobs } from '../../db/schema';
 import { eq, and } from 'drizzle-orm';
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import { ViewBoostJob, ViewBoostStatus, ViewBoostJobUpdate } from '../../db/types';
 
 puppeteer.use(StealthPlugin());
-
-export type ViewBoostStatus = 'pending' | 'running' | 'completed' | 'failed' | 'paused';
 
 @Injectable()
 export class ViewBoostService {
@@ -34,7 +33,7 @@ export class ViewBoostService {
         serviceType: dto.serviceType || 'standard',
         delayMin: dto.delayMin || 5,
         delayMax: dto.delayMax || 30,
-        status: 'pending',
+        status: 'pending' as ViewBoostStatus,
         currentViews: 0,
       })
       .returning();
@@ -71,7 +70,7 @@ export class ViewBoostService {
 
     await this.db
       .update(viewBoostJobs)
-      .set({ status: 'running', startedAt: new Date() })
+      .set({ status: 'running' as ViewBoostStatus, startedAt: new Date() })
       .where(eq(viewBoostJobs.id, jobId));
 
     this.activeJobs.set(jobId, true);
@@ -93,7 +92,7 @@ export class ViewBoostService {
     this.activeJobs.set(jobId, false);
     await this.db
       .update(viewBoostJobs)
-      .set({ status: 'paused' })
+      .set({ status: 'paused' as ViewBoostStatus })
       .where(eq(viewBoostJobs.id, jobId));
   }
 
@@ -104,30 +103,30 @@ export class ViewBoostService {
     }
 
     this.activeJobs.set(jobId, false);
-    await this.db
-      .delete(viewBoostJobs)
-      .where(eq(viewBoostJobs.id, jobId));
+    await this.db.delete(viewBoostJobs).where(eq(viewBoostJobs.id, jobId));
   }
 
-  private async runStandardJob(job: any): Promise<void> {
-    const proxies = this.parseProxies(job.proxyList);
+  private async runStandardJob(job: ViewBoostJob): Promise<void> {
+    const proxies = this.parseProxies(job.proxyList || '');
     const userAgents = this.getUserAgents();
-    let currentViews = job.currentViews;
+    let currentViews = job.currentViews || 0;
 
     while (this.activeJobs.get(job.id) && currentViews < job.targetViews) {
       try {
-        const userAgent = userAgents[Math.floor(Math.random() * userAgents.length)];
+        const userAgent =
+          userAgents[Math.floor(Math.random() * userAgents.length)];
         const proxy = this.getRandomItem(proxies);
 
-        const config: any = {
+        const config: AxiosRequestConfig = {
           method: 'GET',
           url: job.url,
           headers: {
             'User-Agent': userAgent,
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            Accept:
+              'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.5',
-            'DNT': '1',
-            'Connection': 'keep-alive',
+            DNT: '1',
+            Connection: 'keep-alive',
           },
           timeout: 30000,
         };
@@ -141,8 +140,8 @@ export class ViewBoostService {
         await this.updateProgress(job.id, currentViews);
 
         this.logger.log(`Job ${job.id} (Standard): View ${currentViews}/${job.targetViews}`);
-        await this.sleep(this.getRandomDelay(job.delayMin, job.delayMax));
-      } catch (error) {
+        await this.sleep(this.getRandomDelay(job.delayMin || 5, job.delayMax || 30));
+      } catch (error: any) {
         this.logger.error(`Job ${job.id} Standard error: ${error.message}`);
         await this.sleep(5000);
       }
@@ -151,9 +150,9 @@ export class ViewBoostService {
     await this.finalizeJob(job, currentViews);
   }
 
-  private async runPremiumJob(job: any): Promise<void> {
-    const proxies = this.parseProxies(job.proxyList);
-    let currentViews = job.currentViews;
+  private async runPremiumJob(job: ViewBoostJob): Promise<void> {
+    const proxies = this.parseProxies(job.proxyList || '');
+    let currentViews = job.currentViews || 0;
 
     while (this.activeJobs.get(job.id) && currentViews < job.targetViews) {
       let browser;
@@ -206,7 +205,7 @@ export class ViewBoostService {
             'facebook.com/tr',
           ];
 
-          if (adPatterns.some(pattern => url.includes(pattern))) {
+          if (adPatterns.some((pattern) => url.includes(pattern))) {
             return request.abort();
           }
 
@@ -221,14 +220,14 @@ export class ViewBoostService {
         });
 
         // Set random User-Agent if not using proxy or if proxy doesn't handle it
-        await page.setUserAgent(this.getRandomItem(this.getUserAgents()));
+        await page.setUserAgent(this.getRandomItem(this.getUserAgents()) || '');
 
         this.logger.log(`Job ${job.id} (Premium): Navigating to ${job.url}`);
 
         // Navigate with realistic timeout and wait conditions
         await page.goto(job.url, {
           waitUntil: 'networkidle2',
-          timeout: 60000
+          timeout: 60000,
         });
 
         // Simulasikan aktivitas sedikit (scrolling)
@@ -253,13 +252,15 @@ export class ViewBoostService {
 
         currentViews++;
         await this.updateProgress(job.id, currentViews);
-        this.logger.log(`Job ${job.id} (Premium): View ${currentViews}/${job.targetViews}`);
+        this.logger.log(
+          `Job ${job.id} (Premium): View ${currentViews}/${job.targetViews}`,
+        );
 
         await browser.close();
         browser = null;
 
-        await this.sleep(this.getRandomDelay(job.delayMin, job.delayMax));
-      } catch (error) {
+        await this.sleep(this.getRandomDelay(job.delayMin || 5, job.delayMax || 30));
+      } catch (error: any) {
         this.logger.error(`Job ${job.id} Premium error: ${error.message}`);
         if (browser) await browser.close();
         await this.sleep(5000);
@@ -270,7 +271,7 @@ export class ViewBoostService {
   }
 
   private parseProxies(proxyList: string): string[] {
-    return proxyList ? proxyList.split('\n').filter(p => p.trim()) : [];
+    return proxyList ? proxyList.split('\n').filter((p) => p.trim()) : [];
   }
 
   private getUserAgents(): string[] {
@@ -283,31 +284,41 @@ export class ViewBoostService {
   }
 
   private getRandomItem<T>(items: T[]): T | null {
-    return items.length > 0 ? items[Math.floor(Math.random() * items.length)] : null;
+    return items.length > 0
+      ? items[Math.floor(Math.random() * items.length)]
+      : null;
   }
 
   private getRandomDelay(min: number, max: number): number {
     return Math.floor(Math.random() * (max - min + 1) + min) * 1000;
   }
 
-  private async updateProgress(jobId: string, currentViews: number): Promise<void> {
+  private async updateProgress(
+    jobId: string,
+    currentViews: number,
+  ): Promise<void> {
     await this.db
       .update(viewBoostJobs)
       .set({ currentViews })
       .where(eq(viewBoostJobs.id, jobId));
   }
 
-  private async finalizeJob(job: any, currentViews: number): Promise<void> {
+  private async finalizeJob(job: ViewBoostJob, currentViews: number): Promise<void> {
     if (currentViews >= job.targetViews) {
+      const updateData: ViewBoostJobUpdate = {
+        status: 'completed' as ViewBoostStatus,
+        completedAt: new Date(),
+        updatedAt: new Date(),
+      };
       await this.db
         .update(viewBoostJobs)
-        .set({ status: 'completed', completedAt: new Date() })
+        .set(updateData)
         .where(eq(viewBoostJobs.id, job.id));
     }
     this.activeJobs.delete(job.id);
   }
 
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

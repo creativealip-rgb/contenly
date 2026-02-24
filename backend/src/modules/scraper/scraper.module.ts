@@ -5,9 +5,9 @@ import { AdvancedScraperService } from './advanced-scraper.service';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
-    imports: [AuthModule],
-    controllers: [ScraperController],
-    providers: [ScraperService, AdvancedScraperService],
-    exports: [ScraperService, AdvancedScraperService],
+  imports: [AuthModule],
+  controllers: [ScraperController],
+  providers: [ScraperService, AdvancedScraperService],
+  exports: [ScraperService, AdvancedScraperService],
 })
-export class ScraperModule { }
+export class ScraperModule {}

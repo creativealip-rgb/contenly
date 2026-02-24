@@ -31,10 +31,12 @@ export default function SettingsPage() {
     return (
         <div className="space-y-6">
             {/* Page Header */}
-            <div>
-                <h1 className="text-3xl font-bold">Settings</h1>
-                <p className="text-muted-foreground">
-                    Manage your account settings and preferences.
+            <div className="space-y-1">
+                <h1 className="text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
+                    Pengaturan
+                </h1>
+                <p className="text-slate-500 font-medium">
+                    Kelola pengaturan akun dan preferensi Anda.
                 </p>
             </div>
 
@@ -42,33 +44,33 @@ export default function SettingsPage() {
                 <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
                     <TabsTrigger value="profile" className="gap-2">
                         <User className="h-4 w-4" />
-                        <span className="hidden sm:inline">Profile</span>
+                        <span className="hidden sm:inline">Profil</span>
                     </TabsTrigger>
                     <TabsTrigger value="security" className="gap-2">
                         <Shield className="h-4 w-4" />
-                        <span className="hidden sm:inline">Security</span>
+                        <span className="hidden sm:inline">Keamanan</span>
                     </TabsTrigger>
                     <TabsTrigger value="api-keys" className="gap-2">
                         <Key className="h-4 w-4" />
-                        <span className="hidden sm:inline">API Keys</span>
+                        <span className="hidden sm:inline">Kunci API</span>
                     </TabsTrigger>
                     <TabsTrigger value="notifications" className="gap-2">
                         <Bell className="h-4 w-4" />
-                        <span className="hidden sm:inline">Notifications</span>
+                        <span className="hidden sm:inline">Notifikasi</span>
                     </TabsTrigger>
                     <TabsTrigger value="connections" className="gap-2">
                         <Link2 className="h-4 w-4" />
-                        <span className="hidden sm:inline">Connections</span>
+                        <span className="hidden sm:inline">Koneksi</span>
                     </TabsTrigger>
                 </TabsList>
 
                 {/* Profile Tab */}
                 <TabsContent value="profile">
-                    <Card>
+                    <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                         <CardHeader>
-                            <CardTitle>Profile Information</CardTitle>
+                            <CardTitle>Informasi Profil</CardTitle>
                             <CardDescription>
-                                Update your personal information and profile photo.
+                                Perbarui informasi pribadi dan foto profil Anda.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
@@ -83,10 +85,10 @@ export default function SettingsPage() {
                                 <div className="space-y-2">
                                     <Button variant="outline" size="sm">
                                         <Camera className="h-4 w-4 mr-2" />
-                                        Change Photo
+                                        Ganti Foto
                                     </Button>
                                     <p className="text-xs text-muted-foreground">
-                                        JPG, PNG or GIF. Max size 2MB.
+                                        JPG, PNG, atau GIF. Ukuran maks 2MB.
                                     </p>
                                 </div>
                             </div>
@@ -96,7 +98,7 @@ export default function SettingsPage() {
                             {/* Form Fields */}
                             <div className="grid gap-4 md:grid-cols-2">
                                 <div className="space-y-2">
-                                    <Label htmlFor="fullName">Full Name</Label>
+                                    <Label htmlFor="fullName">Nama Lengkap</Label>
                                     <Input id="fullName" placeholder="John Doe" defaultValue="John Doe" />
                                 </div>
                                 <div className="space-y-2">
@@ -107,7 +109,7 @@ export default function SettingsPage() {
                                     <Label htmlFor="bio">Bio</Label>
                                     <Textarea
                                         id="bio"
-                                        placeholder="Tell us about yourself..."
+                                        placeholder="Ceritakan tentang diri Anda..."
                                         className="min-h-[100px]"
                                     />
                                 </div>
@@ -115,7 +117,7 @@ export default function SettingsPage() {
 
                             <div className="flex justify-end">
                                 <Button className="bg-gradient-to-r from-blue-600 to-blue-700">
-                                    Save Changes
+                                    Simpan Perubahan
                                 </Button>
                             </div>
                         </CardContent>
@@ -124,22 +126,22 @@ export default function SettingsPage() {
 
                 {/* Security Tab */}
                 <TabsContent value="security">
-                    <Card>
+                    <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                         <CardHeader>
-                            <CardTitle>Password & Security</CardTitle>
+                            <CardTitle>Sandi & Keamanan</CardTitle>
                             <CardDescription>
-                                Keep your account secure with a strong password.
+                                Jaga keamanan akun Anda dengan kata sandi yang kuat.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <div className="grid gap-4 max-w-md">
                                 <div className="space-y-2">
-                                    <Label htmlFor="currentPassword">Current Password</Label>
+                                    <Label htmlFor="currentPassword">Kata Sandi Saat Ini</Label>
                                     <div className="relative">
                                         <Input
                                             id="currentPassword"
                                             type={showCurrentPassword ? 'text' : 'password'}
-                                            placeholder="Enter current password"
+                                            placeholder="Masukkan kata sandi saat ini"
                                         />
                                         <Button
                                             type="button"
@@ -153,12 +155,12 @@ export default function SettingsPage() {
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="newPassword">New Password</Label>
+                                    <Label htmlFor="newPassword">Kata Sandi Baru</Label>
                                     <div className="relative">
                                         <Input
                                             id="newPassword"
                                             type={showNewPassword ? 'text' : 'password'}
-                                            placeholder="Enter new password"
+                                            placeholder="Masukkan kata sandi baru"
                                         />
                                         <Button
                                             type="button"
@@ -172,14 +174,14 @@ export default function SettingsPage() {
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                                    <Input id="confirmPassword" type="password" placeholder="Confirm new password" />
+                                    <Label htmlFor="confirmPassword">Konfirmasi Kata Sandi Baru</Label>
+                                    <Input id="confirmPassword" type="password" placeholder="Konfirmasi kata sandi baru" />
                                 </div>
                             </div>
 
                             <div className="flex justify-end">
                                 <Button className="bg-gradient-to-r from-blue-600 to-blue-700">
-                                    Update Password
+                                    Perbarui Kata Sandi
                                 </Button>
                             </div>
                         </CardContent>
@@ -188,17 +190,17 @@ export default function SettingsPage() {
 
                 {/* API Keys Tab */}
                 <TabsContent value="api-keys">
-                    <Card>
+                    <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                         <CardHeader className="flex flex-row items-center justify-between">
                             <div>
-                                <CardTitle>API Keys</CardTitle>
+                                <CardTitle>Kunci API</CardTitle>
                                 <CardDescription>
-                                    Manage API keys for external integrations.
+                                    Kelola kunci API untuk integrasi eksternal.
                                 </CardDescription>
                             </div>
                             <Button className="bg-gradient-to-r from-blue-600 to-blue-700">
                                 <Plus className="h-4 w-4 mr-2" />
-                                Generate Key
+                                Buat Kunci
                             </Button>
                         </CardHeader>
                         <CardContent>
@@ -207,14 +209,14 @@ export default function SettingsPage() {
                                 <div className="flex items-center justify-between p-4 rounded-lg border">
                                     <div className="space-y-1">
                                         <div className="flex items-center gap-2">
-                                            <span className="font-medium">Production Key</span>
-                                            <Badge variant="secondary">Active</Badge>
+                                            <span className="font-medium">Kunci Produksi</span>
+                                            <Badge variant="secondary">Aktif</Badge>
                                         </div>
                                         <code className="text-sm text-muted-foreground font-mono">
                                             sk_live_****************************abc1
                                         </code>
                                         <p className="text-xs text-muted-foreground">
-                                            Created Jan 10, 2026 • Last used: 2 hours ago
+                                            Dibuat 10 Jan 2026 • Terakhir digunakan: 2 jam lalu
                                         </p>
                                     </div>
                                     <div className="flex gap-2">
@@ -230,14 +232,14 @@ export default function SettingsPage() {
                                 <div className="flex items-center justify-between p-4 rounded-lg border">
                                     <div className="space-y-1">
                                         <div className="flex items-center gap-2">
-                                            <span className="font-medium">Development Key</span>
-                                            <Badge variant="outline">Test</Badge>
+                                            <span className="font-medium">Kunci Pengembangan</span>
+                                            <Badge variant="outline">Uji</Badge>
                                         </div>
                                         <code className="text-sm text-muted-foreground font-mono">
                                             sk_test_****************************xyz2
                                         </code>
                                         <p className="text-xs text-muted-foreground">
-                                            Created Jan 5, 2026 • Never used
+                                            Dibuat 5 Jan 2026 • Belum pernah digunakan
                                         </p>
                                     </div>
                                     <div className="flex gap-2">
@@ -256,20 +258,20 @@ export default function SettingsPage() {
 
                 {/* Notifications Tab */}
                 <TabsContent value="notifications">
-                    <Card>
+                    <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                         <CardHeader>
-                            <CardTitle>Notification Preferences</CardTitle>
+                            <CardTitle>Preferensi Notifikasi</CardTitle>
                             <CardDescription>
-                                Choose how you want to be notified.
+                                Pilih bagaimana Anda ingin diberi tahu.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <div className="space-y-4">
                                 {[
-                                    { label: 'Article Published', description: 'When an article is successfully published to WordPress' },
-                                    { label: 'Low Token Balance', description: 'When your token balance falls below 10' },
-                                    { label: 'RSS Feed Errors', description: 'When there are issues polling your feeds' },
-                                    { label: 'Weekly Summary', description: 'A weekly report of your content performance' },
+                                    { label: 'Artikel Diterbitkan', description: 'Ketika sebuah artikel berhasil diterbitkan ke WordPress' },
+                                    { label: 'Saldo Token Rendah', description: 'Ketika saldo token Anda kurang dari 10' },
+                                    { label: 'Kesalahan Umpan RSS', description: 'Ketika terjadi masalah saat melakukan polling pada umpan Anda' },
+                                    { label: 'Ringkasan Mingguan', description: 'Laporan mingguan tentang performa konten Anda' },
                                 ].map((item, index) => (
                                     <div key={index} className="flex items-center justify-between p-4 rounded-lg border">
                                         <div>
@@ -295,11 +297,11 @@ export default function SettingsPage() {
 
                 {/* Connections Tab */}
                 <TabsContent value="connections">
-                    <Card>
+                    <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                         <CardHeader>
-                            <CardTitle>Connected Accounts</CardTitle>
+                            <CardTitle>Akun Terhubung</CardTitle>
                             <CardDescription>
-                                Manage your OAuth connections.
+                                Kelola koneksi OAuth Anda.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -317,16 +319,16 @@ export default function SettingsPage() {
                                             {provider.connected ? (
                                                 <p className="text-sm text-muted-foreground">{provider.email}</p>
                                             ) : (
-                                                <p className="text-sm text-muted-foreground">Not connected</p>
+                                                <p className="text-sm text-muted-foreground">Tidak terhubung</p>
                                             )}
                                         </div>
                                     </div>
                                     {provider.connected ? (
                                         <Button variant="outline" className="text-red-600 hover:text-red-600">
-                                            Disconnect
+                                            Putuskan Hubungan
                                         </Button>
                                     ) : (
-                                        <Button variant="outline">Connect</Button>
+                                        <Button variant="outline">Hubungkan</Button>
                                     )}
                                 </div>
                             ))}

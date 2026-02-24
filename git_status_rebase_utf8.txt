@@ -1,0 +1,142 @@
+﻿interactive rebase in progress; onto 85ac87f
+Last command done (1 command done):
+   pick c1209c3 # feat: global styling refresh, layout fixes, and build error resolution
+No commands remaining.
+You are currently rebasing branch 'contenly-deploy' on '85ac87f'.
+  (fix conflicts and then run "git rebase --continue")
+  (use "git rebase --skip" to skip this patch)
+  (use "git rebase --abort" to check out the original branch)
+
+Changes to be committed:
+  (use "git restore --staged <file>..." to unstage)
+	new file:   backend/ai_response_log.txt
+	modified:   backend/src/app.module.ts
+	modified:   backend/src/common/decorators/current-user.decorator.ts
+	modified:   backend/src/common/guards/auth.guard.ts
+	modified:   backend/src/common/guards/jwt-auth.guard.ts
+	modified:   backend/src/common/guards/session-auth.guard.ts
+	modified:   backend/src/common/guards/super-admin.guard.ts
+	modified:   backend/src/create-admin.ts
+	modified:   backend/src/db/drizzle.module.ts
+	modified:   backend/src/db/drizzle.service.ts
+	modified:   backend/src/db/index.ts
+	modified:   backend/src/db/schema.ts
+	modified:   backend/src/main.ts
+	modified:   backend/src/modules/ai/ai.module.ts
+	modified:   backend/src/modules/ai/dto/index.ts
+	modified:   backend/src/modules/analytics/analytics.controller.ts
+	modified:   backend/src/modules/analytics/analytics.module.ts
+	modified:   backend/src/modules/analytics/analytics.service.ts
+	modified:   backend/src/modules/articles/articles.controller.ts
+	modified:   backend/src/modules/articles/articles.module.ts
+	modified:   backend/src/modules/articles/dto/index.ts
+	modified:   backend/src/modules/auth/auth.controller.ts
+	modified:   backend/src/modules/auth/auth.module.ts
+	modified:   backend/src/modules/auth/dto/index.ts
+	modified:   backend/src/modules/auth/strategies/jwt.strategy.ts
+	modified:   backend/src/modules/auth/supabase.service.ts
+	modified:   backend/src/modules/billing/billing.module.ts
+	modified:   backend/src/modules/category-mapping/category-mapping.controller.ts
+	modified:   backend/src/modules/category-mapping/category-mapping.module.ts
+	modified:   backend/src/modules/category-mapping/category-mapping.service.ts
+	modified:   backend/src/modules/feeds/feed-poll.processor.ts
+	modified:   backend/src/modules/feeds/feed-poller.service.ts
+	modified:   backend/src/modules/feeds/feeds.controller.ts
+	new file:   backend/src/modules/instagram-studio/dto/index.ts
+	new file:   backend/src/modules/instagram-studio/instagram-studio.controller.ts
+	new file:   backend/src/modules/instagram-studio/instagram-studio.module.ts
+	new file:   backend/src/modules/instagram-studio/instagram-studio.service.ts
+	new file:   backend/src/modules/instagram-studio/services/export.service.ts
+	new file:   backend/src/modules/instagram-studio/services/font.service.ts
+	new file:   backend/src/modules/instagram-studio/services/storyboard.service.ts
+	modified:   backend/src/modules/integrations/dto/create-mapping.dto.ts
+	modified:   backend/src/modules/integrations/dto/create-site.dto.ts
+	modified:   backend/src/modules/integrations/dto/update-site.dto.ts
+	modified:   backend/src/modules/integrations/integrations.controller.ts
+	modified:   backend/src/modules/integrations/integrations.module.ts
+	modified:   backend/src/modules/notifications/notifications.controller.ts
+	modified:   backend/src/modules/scraper/advanced-scraper.service.ts
+	modified:   backend/src/modules/scraper/dto/index.ts
+	modified:   backend/src/modules/scraper/scraper.controller.ts
+	modified:   backend/src/modules/scraper/scraper.module.ts
+	modified:   backend/src/modules/scraper/scraper.service.ts
+	modified:   backend/src/modules/users/dto/index.ts
+	modified:   backend/src/modules/users/users.controller.ts
+	modified:   backend/src/modules/users/users.module.ts
+	modified:   backend/src/modules/users/users.service.ts
+	new file:   backend/src/modules/video-script/video-script.controller.ts
+	new file:   backend/src/modules/video-script/video-script.dto.ts
+	new file:   backend/src/modules/video-script/video-script.module.ts
+	new file:   backend/src/modules/video-script/video-script.service.ts
+	modified:   backend/src/modules/view-boost/dto/view-boost-job.dto.ts
+	modified:   backend/src/modules/view-boost/view-boost.controller.ts
+	modified:   backend/src/modules/view-boost/view-boost.module.ts
+	modified:   backend/src/modules/wordpress/dto/publish-article.dto.ts
+	modified:   backend/src/modules/wordpress/wordpress.controller.ts
+	modified:   backend/src/modules/wordpress/wordpress.module.ts
+	modified:   backend/src/scripts/get-reset-token.ts
+	new file:   backend/test-db-connection.ts
+	new file:   frontend/build_output.txt
+	new file:   frontend/build_output_utf8.txt
+	new file:   frontend/build_output_v2.txt
+	new file:   frontend/build_output_v2_utf8.txt
+	new file:   frontend/build_output_v3.txt
+	new file:   frontend/build_output_v3_utf8.txt
+	new file:   frontend/build_output_v4.txt
+	new file:   frontend/build_output_v4_utf8.txt
+	new file:   frontend/build_output_v5.txt
+	new file:   frontend/build_output_v5_utf8.txt
+	new file:   frontend/build_output_v6.txt
+	new file:   frontend/build_output_v6_utf8.txt
+	new file:   frontend/build_output_v7.txt
+	new file:   frontend/build_output_v7_utf8.txt
+	new file:   frontend/build_output_v8.txt
+	new file:   frontend/build_output_v9.txt
+	new file:   frontend/src/app/(dashboard)/content-lab/components/ContentEditor.tsx
+	new file:   frontend/src/app/(dashboard)/content-lab/components/SourceSidebar.tsx
+	new file:   frontend/src/app/(dashboard)/content-lab/components/ToolsPanel.tsx
+	new file:   frontend/src/app/(dashboard)/content-lab/components/types.ts
+	new file:   frontend/src/app/(dashboard)/instagram-studio/[id]/page.tsx
+	new file:   frontend/src/app/(dashboard)/instagram-studio/page.tsx
+	new file:   frontend/src/app/(dashboard)/video-scripts/[id]/page.tsx
+	new file:   frontend/src/app/(dashboard)/video-scripts/page.tsx
+	modified:   frontend/src/components/layout/navbar.tsx
+	modified:   frontend/src/components/layout/sidebar.tsx
+	modified:   frontend/src/components/ui/textarea.tsx
+
+Unmerged paths:
+  (use "git restore --staged <file>..." to unstage)
+  (use "git add <file>..." to mark resolution)
+	both modified:   backend/src/auth/auth.config.ts
+	both modified:   backend/src/modules/ai/ai.controller.ts
+	both modified:   backend/src/modules/ai/ai.service.ts
+	both modified:   backend/src/modules/ai/services/openai.service.ts
+	both modified:   backend/src/modules/articles/articles.service.ts
+	both modified:   backend/src/modules/auth/auth.service.ts
+	both modified:   backend/src/modules/billing/billing.controller.ts
+	both modified:   backend/src/modules/billing/billing.service.ts
+	both modified:   backend/src/modules/feeds/feeds.module.ts
+	both modified:   backend/src/modules/feeds/feeds.service.ts
+	both modified:   backend/src/modules/integrations/integrations.service.ts
+	both modified:   backend/src/modules/notifications/notifications.module.ts
+	both modified:   backend/src/modules/notifications/notifications.service.ts
+	both modified:   backend/src/modules/view-boost/view-boost.service.ts
+	both modified:   backend/src/modules/wordpress/wordpress.service.ts
+	both modified:   frontend/package-lock.json
+	both modified:   frontend/package.json
+	both modified:   frontend/src/app/(dashboard)/articles/page.tsx
+	both modified:   frontend/src/app/(dashboard)/content-lab/page.tsx
+	both modified:   frontend/src/app/(dashboard)/feeds/page.tsx
+	both modified:   frontend/src/app/(dashboard)/integrations/page.tsx
+	both modified:   frontend/src/app/globals.css
+	both modified:   frontend/src/components/layout/dashboard-layout.tsx
+	both modified:   package-lock.json
+	both added:      package.json
+	both added:      style_guide.md
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	git_status_rebase.txt
+	push_result.txt
+	push_result_utf8.txt
+

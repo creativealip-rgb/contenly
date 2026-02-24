@@ -9,4 +9,4 @@ import { AuthModule } from '../auth/auth.module';
   providers: [ViewBoostService],
   exports: [ViewBoostService],
 })
-export class ViewBoostModule { }
+export class ViewBoostModule {}

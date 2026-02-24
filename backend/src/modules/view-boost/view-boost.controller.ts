@@ -18,11 +18,14 @@ import type { User } from '../../db/types';
 @Controller('view-boost')
 @UseGuards(SessionAuthGuard)
 export class ViewBoostController {
-  constructor(private readonly viewBoostService: ViewBoostService) { }
+  constructor(private readonly viewBoostService: ViewBoostService) {}
 
   @Post('jobs')
   @ApiOperation({ summary: 'Create a new view boost job' })
-  async createJob(@Body() dto: CreateViewBoostJobDto, @CurrentUser() user: User) {
+  async createJob(
+    @Body() dto: CreateViewBoostJobDto,
+    @CurrentUser() user: User,
+  ) {
     const job = await this.viewBoostService.createJob(user.id, dto);
     return {
       success: true,
@@ -36,7 +39,7 @@ export class ViewBoostController {
     const jobs = await this.viewBoostService.getJobs(user.id);
     return {
       success: true,
-      data: jobs.map(job => ({
+      data: jobs.map((job) => ({
         ...job,
         progress: Math.round((job.currentViews / job.targetViews) * 100),
       })),
@@ -73,4 +76,3 @@ export class ViewBoostController {
     };
   }
 }
-

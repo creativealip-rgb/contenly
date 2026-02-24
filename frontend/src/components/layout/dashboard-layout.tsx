@@ -3,6 +3,7 @@
 import { useSidebarStore } from '@/stores'
 import { Navbar } from './navbar'
 import { Sidebar } from './sidebar'
+import { BottomNav } from './bottom-nav'
 import { cn } from '@/lib/utils'
 
 interface DashboardLayoutProps {
@@ -18,14 +19,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <Sidebar />
             <main
                 className={cn(
-                    "min-h-[calc(100vh-4rem)] pt-4 transition-all duration-300 max-w-full overflow-x-hidden",
-                    isCollapsed ? "md:ml-16" : "md:ml-64"
+                    "min-h-[calc(100vh-5rem)] pt-20 transition-all duration-300 max-w-full overflow-x-hidden",
+                    isCollapsed ? "md:ml-[112px]" : "md:ml-[320px]"
                 )}
             >
-                <div className="container mx-auto px-4 pb-8 md:px-6">
+                <div className="w-full px-4 pb-8 md:px-10">
                     {children}
                 </div>
             </main>
+            <BottomNav />
         </div>
     )
 }

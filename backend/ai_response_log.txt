@@ -1,0 +1,35 @@
+{
+  "total_slides": 5,
+  "slides": [
+    {
+      "slide_number": 1,
+      "text_content": "**10 Link Biru, Tamat**\n\nGoogle AI Mode bikin pencarian berubah: pengguna dapat “jawaban jadi” dari AI, bukan daftar tautan. Artinya, klik bisa turun—dan SEO bukan lagi soal ranking saja, tapi soal dipercaya dan disitasi.",
+      "visual_prompt": "Minimalist futuristic editorial style, photorealistic 8k render, high-contrast look with subtle film grain, deep black and charcoal background, neon cyan and electric purple accents with small white highlights, sleek glass UI elements floating. Cinematic wide shot of a search bar dissolving into an AI summary card, faint data streams, soft volumetric lighting, crisp rim light, clean composition. Ample negative space on the upper-left for text overlay, no clutter, no readable text, no logos.\n~4:5",
+      "layout_position": "top-left"
+    },
+    {
+      "slide_number": 2,
+      "text_content": "**Apa Itu AI Mode?**\n\nAI Mode adalah pengalaman “AI-first” di Google Search—mirip asisten riset yang nempel langsung di mesin pencari dan ditenagai Gemini 2.5. Biasanya muncul sebagai tab khusus (atau lewat google.com/aimode) untuk eksplorasi yang lebih dalam.",
+      "visual_prompt": "Minimalist futuristic editorial style, photorealistic 8k render, high-contrast look with subtle film grain, deep black and charcoal background, neon cyan and electric purple accents with small white highlights, sleek glass UI panels. Cinematic medium shot of a floating browser-like interface showing layered AI cards and a discrete tab strip, glowing edge lights, soft volumetric lighting and controlled reflections. Clean background with ample negative space on the right for text overlay, no clutter, no readable text, no logos.\n~4:5",
+      "layout_position": "center-right"
+    },
+    {
+      "slide_number": 3,
+      "text_content": "**Beda Dengan AI Overviews**\n\nAI Overviews muncul di SERP biasa untuk ringkasan cepat—cenderung statis. AI Mode itu “percakapan”: bisa follow-up, membandingkan opsi, menjaga konteks, dan bahkan multimodal (teks, suara, gambar).",
+      "visual_prompt": "Minimalist futuristic editorial style, photorealistic 8k render, high-contrast look with subtle film grain, deep black and charcoal background, neon cyan and electric purple accents with small white highlights. Cinematic split-composition: left side a compact AI overview card, right side a conversational thread of stacked prompt-and-response bubbles with subtle icons, glowing separators, soft volumetric lighting, crisp rim light. Clean background with ample negative space at the top-center for text overlay, no readable text, no logos.\n~4:5",
+      "layout_position": "top-center"
+    },
+    {
+      "slide_number": 4,
+      "text_content": "**Ranking Tak Menjamin Dipilih**\n\nRiset Semrush menemukan sidebar AI Mode menampilkan sekitar 7 domain unik dan tidak selalu meniru top 10 organik. Tumpang tindih domain sering di bawah 50%, bahkan URL persis bisa di bawah 30%—halaman yang kamu “optimasi mati-matian” belum tentu yang disitasi AI.",
+      "visual_prompt": "Minimalist futuristic editorial style, photorealistic 8k render, high-contrast look with subtle film grain, deep black and charcoal background, neon cyan and electric purple accents with small white highlights. Cinematic close-up of a floating vertical sidebar with seven glowing domain tiles as abstract placeholders, alongside a faint top-10 list blurred out, connected by thin holographic lines showing low overlap. Soft volumetric lighting, sharp highlights, clean background with ample negative space bottom-left for text overlay, no readable text, no logos.\n~4:5",
+      "layout_position": "bottom-left"
+    },
+    {
+      "slide_number": 5,
+      "text_content": "**SEO Baru: Reputasi & Sitasi**\n\nAI Mode memilih sumber berdasarkan trust, relevansi, dan “mudah dibaca mesin”—termasuk kutip UGC seperti Reddit. Plus, AI Mode bisa menampilkan iklan untuk kueri tertentu: artinya Google sedang menyiapkan inventaris baru, dan brand yang paling sering dirujuk akan menang.",
+      "visual_prompt": "Minimalist futuristic editorial style, photorealistic 8k render, high-contrast look with subtle film grain, deep black and charcoal background, neon cyan and electric purple accents with small white highlights. Cinematic low-angle shot of a glowing “trust network” graph: nodes as abstract website cards (one resembling a community thread), plus a small ad-badge placeholder icon, all connected with luminous lines. Soft volumetric lighting, controlled reflections, clean background with ample negative space on the upper-right for text overlay, no readable text, no logos.\n~4:5",
+      "layout_position": "top-right"
+    }
+  ]
+}

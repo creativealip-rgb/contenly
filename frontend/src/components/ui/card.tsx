@@ -1,15 +1,25 @@
 import * as React from "react"
-
 import { cn } from "@/lib/utils"
 
-function Card({ className, ...props }: React.ComponentProps<"div">) {
+interface CardProps extends React.ComponentProps<"div"> {
+  variant?: "default" | "glass" | "clean"
+  hover?: boolean
+}
+
+function Card({ className, variant = "default", hover = false, ...props }: CardProps) {
+  const baseClasses = cn(
+    "text-card-foreground flex flex-col gap-6 rounded-xl py-6",
+    variant === "default" && "bg-card border shadow-sm",
+    variant === "glass" && "glass-card",
+    variant === "clean" && "card-clean",
+    hover && "transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02]",
+    className
+  )
+
   return (
     <div
       data-slot="card"
-      className={cn(
-        "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm",
-        className
-      )}
+      className={baseClasses}
       {...props}
     />
   )
@@ -32,7 +42,7 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-title"
-      className={cn("leading-none font-semibold", className)}
+      className={cn("leading-none font-semibold tracking-tight", className)}
       {...props}
     />
   )
@@ -90,3 +100,4 @@ export {
   CardDescription,
   CardContent,
 }
+export type { CardProps }
