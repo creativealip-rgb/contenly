@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/stores'
 import { authClient } from '@/lib/auth-client'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { motion } from 'framer-motion'
 import {
@@ -131,9 +132,10 @@ export function Navbar() {
                     </Button>
 
                     {/* Desktop Logo - visible on md+, hidden on mobile */}
-                    <Link href="/dashboard" className="hidden md:flex items-center gap-3">
-                        <div className="flex items-center justify-center overflow-hidden">
-                            <Image src="/logo-full.png" alt="Contently Logo" width={140} height={40} className="object-contain h-9 w-auto" />
+                    <Link href="/dashboard" className="hidden md:flex items-center gap-3 group">
+                        <div className="relative flex items-center justify-center overflow-hidden">
+                            <div className="absolute -inset-4 bg-gradient-to-r from-blue-600/10 to-transparent blur-2xl opacity-0 group-hover:opacity-100 transition-all duration-700" />
+                            <Image src="/logo-full.png" alt="Contently Logo" width={140} height={40} className="relative object-contain h-9 w-auto transform transition-transform duration-500 group-hover:scale-[1.02]" />
                         </div>
                     </Link>
                 </div>
@@ -141,7 +143,10 @@ export function Navbar() {
                 {/* Center: Logo (Mobile Only) */}
                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 md:hidden flex items-center gap-3">
                     <Link href="/dashboard" className="flex items-center justify-center overflow-hidden">
-                        <Image src="/logo-full.png" alt="Contently Logo" width={140} height={40} className="object-contain h-8 w-auto" />
+                        <div className="relative group">
+                            <div className="absolute -inset-2 bg-gradient-to-r from-blue-600/20 to-cyan-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-all duration-500" />
+                            <Image src="/logo-full.png" alt="Contently Logo" width={140} height={40} className="relative object-contain h-8 w-auto transform transition-transform duration-500 group-hover:scale-105" />
+                        </div>
                     </Link>
                 </div>
 
@@ -175,38 +180,63 @@ export function Navbar() {
                                 </Avatar>
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-56 rounded-xl p-2" align="end" forceMount>
-                            <DropdownMenuLabel className="font-normal px-3 py-2">
-                                <div className="flex flex-col space-y-1">
-                                    <p className="text-sm font-semibold leading-none">{user?.fullName || 'User'}</p>
-                                    <p className="text-xs leading-none text-muted-foreground">
+                        <DropdownMenuContent className="w-64 rounded-[2rem] p-3 glass border-2 border-white/60 dark:border-white/10 shadow-2xl shadow-slate-200/50 dark:shadow-none" align="end" forceMount>
+                            <DropdownMenuLabel className="font-normal px-4 py-4 mb-2">
+                                <div className="flex flex-col space-y-2">
+                                    <div className="flex items-center gap-3 mb-1">
+                                        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center text-white font-black text-xs shadow-lg shadow-blue-500/20">
+                                            {user?.fullName?.substring(0, 2).toUpperCase() || 'U'}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-black tracking-tight leading-none text-slate-900 dark:text-white">{user?.fullName || 'User Account'}</p>
+                                            <Badge variant="secondary" className="mt-1 text-[9px] font-black uppercase tracking-widest h-4 bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 border-none">
+                                                Premium Account
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                    <p className="text-[11px] font-medium leading-none text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg truncate">
                                         {user?.email || 'user@example.com'}
                                     </p>
                                 </div>
                             </DropdownMenuLabel>
-                            <DropdownMenuSeparator className="my-2" />
-                            <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
-                                <Link href="/settings" className="flex items-center gap-3 px-3 py-2">
-                                    {icons.user}
-                                    Profil
-                                </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
-                                <Link href="/settings" className="flex items-center gap-3 px-3 py-2">
-                                    {icons.settings}
-                                    Pengaturan
-                                </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator className="my-2" />
-                            <DropdownMenuItem
-                                onClick={handleLogout}
-                                className="rounded-lg cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-500/10 px-3 py-2"
-                            >
-                                <span className="flex items-center gap-3">
-                                    {icons.logout}
-                                    Keluar
-                                </span>
-                            </DropdownMenuItem>
+
+                            <DropdownMenuSeparator className="mx-2 bg-slate-100 dark:bg-slate-800" />
+
+                            <div className="space-y-1 p-1">
+                                <DropdownMenuItem asChild className="rounded-xl cursor-pointer hover:bg-white/60 dark:hover:bg-slate-800/80 transition-all duration-300">
+                                    <Link href="/settings" className="flex items-center gap-3 px-3 py-2.5">
+                                        <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:text-blue-600">
+                                            {icons.user}
+                                        </div>
+                                        <span className="font-bold text-sm tracking-tight">Profil Saya</span>
+                                    </Link>
+                                </DropdownMenuItem>
+
+                                <DropdownMenuItem asChild className="rounded-xl cursor-pointer hover:bg-white/60 dark:hover:bg-slate-800/80 transition-all duration-300">
+                                    <Link href="/settings" className="flex items-center gap-3 px-3 py-2.5">
+                                        <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:text-amber-600">
+                                            {icons.settings}
+                                        </div>
+                                        <span className="font-bold text-sm tracking-tight">Pengaturan</span>
+                                    </Link>
+                                </DropdownMenuItem>
+                            </div>
+
+                            <DropdownMenuSeparator className="mx-2 bg-slate-100 dark:bg-slate-800" />
+
+                            <div className="p-1">
+                                <DropdownMenuItem
+                                    onClick={handleLogout}
+                                    className="rounded-xl cursor-pointer text-red-600 focus:text-white focus:bg-red-600 px-3 py-2.5 transition-all duration-300 group"
+                                >
+                                    <span className="flex items-center gap-3 w-full">
+                                        <div className="p-2 rounded-lg bg-red-50 dark:bg-red-500/10 text-red-600 group-focus:text-white">
+                                            {icons.logout}
+                                        </div>
+                                        <span className="font-bold text-sm tracking-tight">Keluar Sesi</span>
+                                    </span>
+                                </DropdownMenuItem>
+                            </div>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
