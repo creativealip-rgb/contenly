@@ -80,10 +80,10 @@ export default function RegisterPage() {
 
                     <div className="mt-auto pb-12">
                         <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight mb-6 leading-tight">
-                            Create engaging <br />content at scale.
+                            Buat konten menarik <br />dalam skala besar.
                         </h1>
                         <p className="text-lg text-blue-100 max-w-md font-medium leading-relaxed">
-                            Join thousands of creators using Contenly's advanced AI toolset to automate articles, social media, and more.
+                            Bergabunglah dengan ribuan kreator yang menggunakan alat AI canggih Contenly untuk mengotomatiskan artikel, media sosial, dan lainnya.
                         </p>
                     </div>
 
@@ -99,7 +99,7 @@ export default function RegisterPage() {
                                 +2k
                             </div>
                         </div>
-                        <p className="text-sm font-medium text-blue-200">Trusted by over 2,000+ content creators</p>
+                        <p className="text-sm font-medium text-blue-200">Dipercaya oleh lebih dari 2.000+ pembuat konten</p>
                     </div>
                 </div>
             </div>
@@ -117,9 +117,9 @@ export default function RegisterPage() {
                 </div>
 
                 <div className="w-full max-w-[420px] animate-in fade-in slide-in-from-bottom-4 duration-500 my-auto py-12">
-                    <div className="space-y-2 mb-8 text-left">
-                        <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-50">Create an account</h2>
-                        <p className="text-gray-500 dark:text-gray-400">Join us to start automating your content immediately.</p>
+                    <div className="space-y-2 mb-8 text-center">
+                        <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-50">Buat akun baru</h2>
+                        <p className="text-gray-500 dark:text-gray-400">Bergabunglah dengan kami untuk mulai mengotomatiskan konten Anda segera.</p>
                     </div>
 
                     {error && (
@@ -131,7 +131,7 @@ export default function RegisterPage() {
 
                     <form onSubmit={handleSubmit} className="space-y-5">
                         <div className="space-y-2">
-                            <Label htmlFor="name" className="font-semibold text-gray-700 dark:text-gray-300">Full Name</Label>
+                            <Label htmlFor="name" className="font-semibold text-gray-700 dark:text-gray-300">Nama Lengkap</Label>
                             <Input
                                 id="name"
                                 name="name"
@@ -144,7 +144,7 @@ export default function RegisterPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="email" className="font-semibold text-gray-700 dark:text-gray-300">Email Address</Label>
+                            <Label htmlFor="email" className="font-semibold text-gray-700 dark:text-gray-300">Alamat Email</Label>
                             <Input
                                 id="email"
                                 name="email"
@@ -157,13 +157,13 @@ export default function RegisterPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="password" className="font-semibold text-gray-700 dark:text-gray-300">Password</Label>
+                            <Label htmlFor="password" className="font-semibold text-gray-700 dark:text-gray-300">Kata Sandi</Label>
                             <div className="relative">
                                 <Input
                                     id="password"
                                     name="password"
                                     type={showPassword ? 'text' : 'password'}
-                                    placeholder="Create a secure password"
+                                    placeholder="Buat kata sandi yang aman"
                                     required
                                     disabled={isLoading}
                                     minLength={8}
@@ -191,7 +191,7 @@ export default function RegisterPage() {
                                     <Loader2 className="h-5 w-5 animate-spin" />
                                 </div>
                             )}
-                            <span>{isLoading ? 'Creating account...' : 'Create Account'}</span>
+                            <span>{isLoading ? 'Membuat akun...' : 'Buat Akun'}</span>
                         </Button>
                     </form>
 
@@ -202,7 +202,7 @@ export default function RegisterPage() {
                             </div>
                             <div className="relative flex justify-center text-sm uppercase">
                                 <span className="bg-white dark:bg-gray-950 px-3 flex items-center gap-2 text-gray-500 dark:text-gray-400 font-medium">
-                                    or continue with
+                                    atau lanjutkan dengan
                                 </span>
                             </div>
                         </div>
@@ -238,15 +238,15 @@ export default function RegisterPage() {
                                         </svg>
                                     )}
                                 </div>
-                                <span>{isGoogleLoading ? 'Connecting...' : 'Continue with Google'}</span>
+                                <span>{isGoogleLoading ? 'Menghubungkan...' : 'Lanjutkan dengan Google'}</span>
                             </Button>
                         </div>
                     </div>
 
                     <p className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                        Already have an account?{' '}
+                        Sudah punya akun?{' '}
                         <Link href="/login" className="font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
-                            Sign in here
+                            Masuk di sini
                         </Link>
                     </p>
                 </div>

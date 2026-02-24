@@ -23,23 +23,25 @@ const authRoutes = [
     '/reset-password',
 ]
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl
 
     // Check if the path is a protected route
-    const isProtectedRoute = protectedRoutes.some(route => 
+    const isProtectedRoute = protectedRoutes.some(route =>
         pathname.startsWith(`/${route}`) || pathname === `/${route}`
     )
 
     // Check if the path is an auth route
-    const isAuthRoute = authRoutes.some(route => 
+    const isAuthRoute = authRoutes.some(route =>
         pathname.startsWith(`/${route}`) || pathname === `/${route}`
     )
 
     // Get session token from cookies
     // Better Auth uses 'better-auth.session_token' or similar cookie name
-    const sessionToken = request.cookies.get('better-auth.session_token')?.value ||
-                         request.cookies.get('session_token')?.value
+    // In Next.js 16, request.cookies is asynchronous in the proxy
+    const cookies = await request.cookies
+    const sessionToken = cookies.get('better-auth.session_token')?.value ||
+        cookies.get('session_token')?.value
 
     // If trying to access protected route without session, redirect to login
     if (isProtectedRoute && !sessionToken) {

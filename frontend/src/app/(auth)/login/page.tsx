@@ -82,10 +82,10 @@ export default function LoginPage() {
 
                     <div className="mt-auto pb-12">
                         <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight mb-6 leading-tight">
-                            Create engaging <br />content at scale.
+                            Buat konten menarik <br />dalam skala besar.
                         </h1>
                         <p className="text-lg text-blue-100 max-w-md font-medium leading-relaxed">
-                            Join thousands of creators using Contenly's advanced AI toolset to automate articles, social media, and more.
+                            Bergabunglah dengan ribuan kreator yang menggunakan alat AI canggih Contenly untuk mengotomatiskan artikel, media sosial, dan lainnya.
                         </p>
                     </div>
 
@@ -101,7 +101,7 @@ export default function LoginPage() {
                                 +2k
                             </div>
                         </div>
-                        <p className="text-sm font-medium text-blue-200">Trusted by over 2,000+ content creators</p>
+                        <p className="text-sm font-medium text-blue-200">Dipercaya oleh lebih dari 2.000+ pembuat konten</p>
                     </div>
                 </div>
             </div>
@@ -119,9 +119,9 @@ export default function LoginPage() {
                 </div>
 
                 <div className="w-full max-w-[420px] animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="space-y-2 mb-8 text-left">
-                        <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-50">Welcome back</h2>
-                        <p className="text-gray-500 dark:text-gray-400">Enter your credentials to access your workspace</p>
+                    <div className="space-y-2 mb-8 text-center">
+                        <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-50">Selamat datang kembali</h2>
+                        <p className="text-gray-500 dark:text-gray-400">Masukkan kredensial Anda untuk mengakses ruang kerja</p>
                     </div>
 
                     {error && (
@@ -133,7 +133,7 @@ export default function LoginPage() {
 
                     <form onSubmit={handleSubmit} className="space-y-5">
                         <div className="space-y-2">
-                            <Label htmlFor="email" className="font-semibold text-gray-700 dark:text-gray-300">Email Address</Label>
+                            <Label htmlFor="email" className="font-semibold text-gray-700 dark:text-gray-300">Alamat Email</Label>
                             <Input
                                 id="email"
                                 name="email"
@@ -147,12 +147,12 @@ export default function LoginPage() {
 
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                                <Label htmlFor="password" className="font-semibold text-gray-700 dark:text-gray-300">Password</Label>
+                                <Label htmlFor="password" className="font-semibold text-gray-700 dark:text-gray-300">Kata Sandi</Label>
                                 <Link
                                     href="/forgot-password"
                                     className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline font-medium transition-colors"
                                 >
-                                    Forgot password?
+                                    Lupa kata sandi?
                                 </Link>
                             </div>
                             <div className="relative">
@@ -160,7 +160,7 @@ export default function LoginPage() {
                                     id="password"
                                     name="password"
                                     type={showPassword ? 'text' : 'password'}
-                                    placeholder="Enter your password"
+                                    placeholder="Masukkan kata sandi Anda"
                                     required
                                     disabled={isLoading}
                                     className="h-12 bg-gray-50 border-gray-200 focus:bg-white focus:ring-2 focus:ring-blue-500/20 dark:bg-gray-900 dark:border-gray-800 dark:focus:bg-gray-900 rounded-xl transition-all pr-10"
@@ -187,7 +187,7 @@ export default function LoginPage() {
                                     <Loader2 className="h-5 w-5 animate-spin" />
                                 </div>
                             )}
-                            <span>{isLoading ? 'Signing in...' : 'Sign In'}</span>
+                            <span>{isLoading ? 'Masuk...' : 'Masuk'}</span>
                         </Button>
                     </form>
 
@@ -198,7 +198,7 @@ export default function LoginPage() {
                             </div>
                             <div className="relative flex justify-center text-sm uppercase">
                                 <span className="bg-white dark:bg-gray-950 px-3 flex items-center gap-2 text-gray-500 dark:text-gray-400 bg-white font-medium">
-                                    or continue with
+                                    atau lanjutkan dengan
                                 </span>
                             </div>
                         </div>
@@ -234,7 +234,7 @@ export default function LoginPage() {
                                         </svg>
                                     )}
                                 </div>
-                                <span>{isGoogleLoading ? 'Connecting...' : 'Continue with Google'}</span>
+                                <span>{isGoogleLoading ? 'Menghubungkan...' : 'Lanjutkan dengan Google'}</span>
                             </Button>
                         </div>
                     </div>
