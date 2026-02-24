@@ -25,6 +25,7 @@ import { ViewBoostModule } from './modules/view-boost/view-boost.module';
 import { InstagramStudioModule } from './modules/instagram-studio/instagram-studio.module';
 import { VideoScriptModule } from './modules/video-script/video-script.module';
 import { TrendRadarModule } from './modules/trend-radar/trend-radar.module';
+import { TelegramBotModule } from './modules/telegram-bot/telegram-bot.module';
 
 @Module({
   imports: [
@@ -71,6 +72,7 @@ import { TrendRadarModule } from './modules/trend-radar/trend-radar.module';
     InstagramStudioModule,
     VideoScriptModule,
     TrendRadarModule,
+    TelegramBotModule,
   ],
   controllers: [AppController],
   providers: [AppService],
