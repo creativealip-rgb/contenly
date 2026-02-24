@@ -75,10 +75,29 @@ export default function SettingsPage() {
         'weekly_digest': true
     })
 
+    // Connections State
+    const [accounts, setAccounts] = useState<any[]>([])
+    const [isLoadingAccounts, setIsLoadingAccounts] = useState(false)
+    const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false)
+    const [avatarUrlInput, setAvatarUrlInput] = useState(user?.avatarUrl || '')
+
     useEffect(() => {
         fetchUserProfile()
         fetchApiKeys()
+        fetchAccounts()
     }, [])
+
+    const fetchAccounts = async () => {
+        setIsLoadingAccounts(true)
+        try {
+            const { data } = await authClient.listAccounts()
+            setAccounts(data || [])
+        } catch (error) {
+            console.error('Failed to fetch accounts:', error)
+        } finally {
+            setIsLoadingAccounts(false)
+        }
+    }
 
     const fetchUserProfile = async () => {
         try {
@@ -210,6 +229,55 @@ export default function SettingsPage() {
         }
     }
 
+    const handleLinkAccount = async (provider: 'google' | 'github') => {
+        try {
+            await authClient.signIn.social({
+                provider,
+                callbackURL: window.location.href
+            })
+        } catch (error: any) {
+            toast.error(`Gagal menghubungkan ${provider}: ${error.message}`)
+        }
+    }
+
+    const handleUnlinkAccount = async (id: string) => {
+        if (!confirm('Apakah Anda yakin ingin memutuskan hubungan akun ini?')) return
+        try {
+            const { error } = await authClient.unlinkAccount({
+                accountID: id
+            })
+            if (error) throw error
+            toast.success('Akun berhasil diputuskan')
+            fetchAccounts()
+        } catch (error: any) {
+            toast.error(`Gagal memutuskan hubungan: ${error.message}`)
+        }
+    }
+
+    const handleUpdateAvatar = async () => {
+        setIsSavingProfile(true)
+        try {
+            const updated = await api.patch<any>('/users/me', {
+                image: avatarUrlInput
+            })
+
+            if (user) {
+                setUser({
+                    ...user,
+                    avatarUrl: updated.image
+                })
+            }
+
+            setProfileData(prev => ({ ...prev, image: updated.image }))
+            setIsAvatarDialogOpen(false)
+            toast.success('Foto profil berhasil diperbarui')
+        } catch (error: any) {
+            toast.error(error.message || 'Gagal memperbarui foto profil')
+        } finally {
+            setIsSavingProfile(false)
+        }
+    }
+
     return (
         <div className="space-y-6">
             {/* Page Header */}
@@ -265,12 +333,50 @@ export default function SettingsPage() {
                                     </AvatarFallback>
                                 </Avatar>
                                 <div className="space-y-2">
-                                    <Button variant="outline" size="sm">
-                                        <Camera className="h-4 w-4 mr-2" />
-                                        Ganti Foto
-                                    </Button>
+                                    <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
+                                        <DialogTrigger asChild>
+                                            <Button variant="outline" size="sm">
+                                                <Camera className="h-4 w-4 mr-2" />
+                                                Ganti Foto
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent>
+                                            <DialogHeader>
+                                                <DialogTitle>Perbarui Foto Profil</DialogTitle>
+                                                <DialogDescription>
+                                                    Masukkan URL gambar untuk mengganti foto profil Anda.
+                                                </DialogDescription>
+                                            </DialogHeader>
+                                            <div className="py-4 space-y-4">
+                                                <div className="flex justify-center">
+                                                    <Avatar className="h-24 w-24 border-4 border-blue-100 dark:border-blue-900 shadow-xl">
+                                                        <AvatarImage src={avatarUrlInput} />
+                                                        <AvatarFallback className="text-3xl bg-blue-600 text-white">
+                                                            {profileData.name?.substring(0, 1).toUpperCase()}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="avatarUrl">URL Gambar</Label>
+                                                    <Input
+                                                        id="avatarUrl"
+                                                        placeholder="https://example.com/photo.jpg"
+                                                        value={avatarUrlInput}
+                                                        onChange={(e) => setAvatarUrlInput(e.target.value)}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <DialogFooter>
+                                                <Button variant="outline" onClick={() => setIsAvatarDialogOpen(false)}>Batal</Button>
+                                                <Button onClick={handleUpdateAvatar} disabled={isSavingProfile}>
+                                                    {isSavingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                    Simpan
+                                                </Button>
+                                            </DialogFooter>
+                                        </DialogContent>
+                                    </Dialog>
                                     <p className="text-xs text-muted-foreground">
-                                        JPG, PNG, atau GIF. Ukuran maks 2MB.
+                                        Gunakan URL gambar publik (HTTPS).
                                     </p>
                                 </div>
                             </div>
@@ -553,33 +659,54 @@ export default function SettingsPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {[
-                                { name: 'Google', connected: true, email: 'john@gmail.com' },
-                                { name: 'GitHub', connected: false, email: null },
-                            ].map((provider) => (
-                                <div key={provider.name} className="flex items-center justify-between p-4 rounded-lg border">
-                                    <div className="flex items-center gap-4">
-                                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                                            <span className="text-lg font-bold">{provider.name[0]}</span>
-                                        </div>
-                                        <div>
-                                            <p className="font-medium">{provider.name}</p>
-                                            {provider.connected ? (
-                                                <p className="text-sm text-muted-foreground">{provider.email}</p>
+                            {isLoadingAccounts ? (
+                                <div className="py-8 flex justify-center">
+                                    <Loader2 className="h-6 w-6 animate-spin opacity-40" />
+                                </div>
+                            ) : (
+                                ['google', 'github'].map((providerName) => {
+                                    const providerAccount = accounts.find(a => a.providerId === providerName)
+                                    const isConnected = !!providerAccount
+
+                                    return (
+                                        <div key={providerName} className="flex items-center justify-between p-4 rounded-2xl border bg-slate-50/50 dark:bg-slate-800/20">
+                                            <div className="flex items-center gap-4">
+                                                <div className={`flex h-12 w-12 items-center justify-center rounded-xl font-black text-xl shadow-sm border ${providerName === 'google' ? 'bg-white text-blue-600 border-blue-50' : 'bg-slate-900 text-white border-slate-700'
+                                                    }`}>
+                                                    {providerName === 'google' ? 'G' : 'Git'}
+                                                </div>
+                                                <div>
+                                                    <p className="font-black capitalize tracking-tight">{providerName}</p>
+                                                    {isConnected ? (
+                                                        <p className="text-xs font-medium text-blue-600 dark:text-blue-400">Terhubung</p>
+                                                    ) : (
+                                                        <p className="text-xs font-medium text-slate-400">Tidak terhubung</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            {isConnected ? (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="rounded-xl border-red-100 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900/30"
+                                                    onClick={() => handleUnlinkAccount(providerAccount.id)}
+                                                >
+                                                    Putuskan
+                                                </Button>
                                             ) : (
-                                                <p className="text-sm text-muted-foreground">Tidak terhubung</p>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="rounded-xl border-blue-100 text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:border-blue-900/30"
+                                                    onClick={() => handleLinkAccount(providerName as any)}
+                                                >
+                                                    Hubungkan
+                                                </Button>
                                             )}
                                         </div>
-                                    </div>
-                                    {provider.connected ? (
-                                        <Button variant="outline" className="text-red-600 hover:text-red-600">
-                                            Putuskan Hubungan
-                                        </Button>
-                                    ) : (
-                                        <Button variant="outline">Hubungkan</Button>
-                                    )}
-                                </div>
-                            ))}
+                                    )
+                                })
+                            )}
                         </CardContent>
                     </Card>
                 </TabsContent>
