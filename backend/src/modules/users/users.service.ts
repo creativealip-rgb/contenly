@@ -113,6 +113,35 @@ export class UsersService {
     return { message: 'API key revoked' };
   }
 
+  async validateApiKey(rawKey: string) {
+    if (!rawKey || !rawKey.startsWith('cam_')) {
+      return null;
+    }
+
+    const keyPrefix = rawKey.substring(0, 12);
+    const keys = await this.db.query.apiKey.findMany({
+      where: eq(apiKey.keyPrefix, keyPrefix),
+      with: {
+        user: true,
+      },
+    });
+
+    for (const key of keys) {
+      const isValid = await bcrypt.compare(rawKey, key.keyHash);
+      if (isValid) {
+        // Update last used at
+        await this.db
+          .update(apiKey)
+          .set({ lastUsedAt: new Date() })
+          .where(eq(apiKey.id, key.id));
+
+        return key.user;
+      }
+    }
+
+    return null;
+  }
+
   // ==========================================
   // SUPER ADMIN METHODS
   // ==========================================
