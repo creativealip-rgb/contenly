@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { FileText, Rss, Sparkles, Plug, Zap, TrendingUp, ArrowRight } from 'lucide-react'
 import { KpiCard, RecentActivity, QuickActions } from '@/components/dashboard'
 import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 export default function DashboardPage() {
     const [stats, setStats] = useState({
