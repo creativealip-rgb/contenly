@@ -277,92 +277,87 @@ export default function IntegrationsPage() {
             <div className="flex items-center justify-between">
                 <div className="space-y-1">
                     <h1 className="text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
-                        Integrations
+                        Integrasi
                     </h1>
                     <p className="text-slate-500 font-medium">
-                        Connect and manage your WordPress ecosystem.
+                        Hubungkan dan kelola ekosistem WordPress Anda.
                     </p>
                 </div>
                 <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
                     <DialogTrigger asChild>
                         <Button className="h-12 px-6 bg-slate-900 hover:bg-black text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-slate-200 dark:shadow-none transition-all hover:scale-[1.02] active:scale-[0.98]">
                             <Plus className="h-5 w-5 mr-2" />
-                            Add Site
+                            Tambah Situs
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="glass border-none max-w-md">
+                    <DialogContent className="sm:max-w-md">
                         <DialogHeader>
-                            <DialogTitle className="text-2xl font-black tracking-tight">Connect WordPress</DialogTitle>
-                            <DialogDescription className="font-medium">
-                                Sync your blog to automate publishing.
+                            <DialogTitle>Hubungkan WordPress</DialogTitle>
+                            <DialogDescription>
+                                Hubungkan blog Anda untuk publikasi konten secara otomatis.
                             </DialogDescription>
                         </DialogHeader>
-                        <div className="space-y-4 py-6">
+                        <div className="space-y-4 py-4">
                             <div className="space-y-2">
-                                <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 ml-1">Site Name</Label>
+                                <Label>Nama Situs</Label>
                                 <Input
-                                    placeholder="e.g., Lifestyle Blog"
-                                    className="h-12 rounded-xl bg-white/50 border-slate-200 focus:ring-blue-400"
+                                    placeholder="cth., Blog Gaya Hidup"
                                     value={formData.name}
                                     onChange={e => setFormData({ ...formData, name: e.target.value })}
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 ml-1">WordPress URL</Label>
+                                <Label>WordPress URL</Label>
                                 <Input
                                     placeholder="https://yourblog.com"
-                                    className="h-12 rounded-xl bg-white/50 border-slate-200 focus:ring-blue-400"
                                     value={formData.url}
                                     onChange={e => setFormData({ ...formData, url: e.target.value })}
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 ml-1">Username</Label>
+                                <Label>Username</Label>
                                 <Input
                                     placeholder="admin"
-                                    className="h-12 rounded-xl bg-white/50 border-slate-200 focus:ring-blue-400"
                                     value={formData.username}
                                     onChange={e => setFormData({ ...formData, username: e.target.value })}
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 ml-1">Application Password</Label>
+                                <Label>Password Aplikasi</Label>
                                 <Input
                                     type="password"
                                     placeholder="xxxx xxxx xxxx xxxx"
-                                    className="h-12 rounded-xl bg-white/50 border-slate-200 focus:ring-blue-400"
                                     value={formData.appPassword}
                                     onChange={e => setFormData({ ...formData, appPassword: e.target.value })}
                                 />
-                                <p className="text-[10px] font-medium text-slate-400 px-1 pt-1">
-                                    Generated in WordPress → Users → Application Passwords
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Dibuat di wp-admin → Users → Profil → Application Passwords
                                 </p>
                             </div>
                             {connectionError && (
                                 <motion.div
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
-                                    className="text-[11px] font-bold text-rose-600 bg-rose-50 p-3 rounded-xl flex items-center gap-2 border border-rose-100"
+                                    className="text-sm font-medium text-destructive bg-destructive/10 p-3 rounded-md flex items-center gap-2 border border-destructive/20"
                                 >
                                     <XCircle className="h-4 w-4" />
                                     {connectionError}
                                 </motion.div>
                             )}
                         </div>
-                        <DialogFooter className="gap-2">
-                            <Button variant="ghost" className="rounded-xl font-bold" onClick={() => setIsAddOpen(false)} disabled={isTesting}>Cancel</Button>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsAddOpen(false)} disabled={isTesting}>Batal</Button>
                             <Button
-                                className="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-blue-100"
                                 onClick={handleAddSite}
                                 disabled={isTesting}
                             >
                                 {isTesting ? (
                                     <>
                                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                        Connecting
+                                        Menghubungkan
                                     </>
                                 ) : (
-                                    'Test & Connect'
+                                    'Uji & Hubungkan'
                                 )}
                             </Button>
                         </DialogFooter>
@@ -379,8 +374,8 @@ export default function IntegrationsPage() {
             >
                 <div className="flex items-center justify-between">
                     <div>
-                        <h2 className="text-xl font-black tracking-tight">WordPress Sites</h2>
-                        <p className="text-slate-400 text-sm font-medium">Your connected publishing destinations</p>
+                        <h2 className="text-xl font-black tracking-tight">Situs WordPress</h2>
+                        <p className="text-slate-400 text-sm font-medium">Destinasi publikasi Anda yang terhubung</p>
                     </div>
                 </div>
 
@@ -391,7 +386,7 @@ export default function IntegrationsPage() {
                 ) : sites.length === 0 ? (
                     <div className="text-center py-16 border-2 border-dashed border-slate-100 rounded-[2rem] bg-slate-50/50">
                         <Plug className="h-16 w-16 mx-auto mb-4 text-slate-200" />
-                        <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No destinations connected</p>
+                        <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Belum ada situs yang terhubung</p>
                     </div>
                 ) : (
                     <div className="grid gap-6">
@@ -439,19 +434,19 @@ export default function IntegrationsPage() {
                                                 <MoreHorizontal className="h-5 w-5" />
                                             </Button>
                                         </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="glass border-none min-w-[160px]">
-                                            <DropdownMenuItem onClick={() => handleTestConnection(site)} className="font-bold py-2.5 cursor-pointer">
+                                        <DropdownMenuContent align="end" className="min-w-[160px]">
+                                            <DropdownMenuItem onClick={() => handleTestConnection(site)} className="cursor-pointer">
                                                 <RefreshCw className="h-4 w-4 mr-2" />
                                                 Test Connectivity
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => alert('Settings coming soon')} className="font-bold py-2.5 cursor-pointer">
+                                            <DropdownMenuItem onClick={() => alert('Settings coming soon')} className="cursor-pointer">
                                                 <Settings className="h-4 w-4 mr-2" />
-                                                Configurations
+                                                Konfigurasi
                                             </DropdownMenuItem>
-                                            <DropdownMenuSeparator className="opacity-50" />
-                                            <DropdownMenuItem className="text-rose-600 font-extrabold py-2.5 cursor-pointer" onClick={() => handleRemoveSite(site.id)}>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem className="text-destructive focus:bg-destructive/10 cursor-pointer" onClick={() => handleRemoveSite(site.id)}>
                                                 <Trash2 className="h-4 w-4 mr-2" />
-                                                Disconnect Site
+                                                Putuskan Situs
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
@@ -471,8 +466,8 @@ export default function IntegrationsPage() {
             >
                 <div className="flex items-center justify-between mb-8">
                     <div>
-                        <h2 className="text-xl font-black tracking-tight">Post Routing</h2>
-                        <p className="text-slate-400 text-sm font-medium">Map source topics to blog categories</p>
+                        <h2 className="text-xl font-black tracking-tight">Routing Kategori</h2>
+                        <p className="text-slate-400 text-sm font-medium">Petakan kategori di sumber konten ke dalam kategori web WordPress Anda.</p>
                     </div>
                     <Button
                         variant="ghost"
@@ -485,7 +480,7 @@ export default function IntegrationsPage() {
                         ) : (
                             <RefreshCw className="h-4 w-4 mr-2" />
                         )}
-                        Sync Categories
+                        Sinkronisasi Kategori
                     </Button>
                 </div>
 
@@ -493,9 +488,9 @@ export default function IntegrationsPage() {
                     <Table>
                         <TableHeader className="bg-slate-50/50 dark:bg-slate-800/20">
                             <TableRow className="border-none hover:bg-transparent">
-                                <TableHead className="h-14 font-black text-slate-400 uppercase tracking-widest text-[10px] px-8">Source Topic</TableHead>
+                                <TableHead className="h-14 font-black text-slate-400 uppercase tracking-widest text-[10px] px-8">Topik Sumber</TableHead>
                                 <TableHead className="h-14 text-center w-20"></TableHead>
-                                <TableHead className="h-14 font-black text-slate-400 uppercase tracking-widest text-[10px]">Target Destination</TableHead>
+                                <TableHead className="h-14 font-black text-slate-400 uppercase tracking-widest text-[10px]">Destinasi Kategori (Blog)</TableHead>
                                 <TableHead className="h-14 text-right px-8"></TableHead>
                             </TableRow>
                         </TableHeader>
@@ -509,7 +504,7 @@ export default function IntegrationsPage() {
                             ) : categoryMappings.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={4} className="text-center py-16 text-slate-400 font-bold uppercase tracking-widest text-xs">
-                                        No routing patterns defined
+                                        Belum ada konfigurasi kategori
                                     </TableCell>
                                 </TableRow>
                             ) : (

@@ -103,66 +103,66 @@ export function ToolsPanel({
                     <div className="p-2 bg-blue-100 text-blue-600 rounded-lg dark:bg-blue-900/30 dark:text-blue-400">
                         <Settings2 className="h-5 w-5" />
                     </div>
-                    <h3 className="text-lg font-bold tracking-tight">AI Settings</h3>
+                    <h3 className="text-lg font-bold tracking-tight">Pengaturan AI</h3>
                 </div>
 
                 <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
-                            <Label className="text-[10px] uppercase font-black text-slate-400 tracking-[0.15em] ml-1">Tone</Label>
+                            <Label className="text-[10px] uppercase font-black text-slate-400 tracking-[0.15em] ml-1">Gaya Bahasa</Label>
                             <Select value={aiTone} onValueChange={(v: any) => setAiTone(v)}>
                                 <SelectTrigger className="h-10 text-xs bg-white border-slate-200 rounded-xl font-bold shadow-sm">
                                     <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent className="glass border-none">
-                                    <SelectItem value="professional">Professional</SelectItem>
-                                    <SelectItem value="casual">Casual</SelectItem>
-                                    <SelectItem value="creative">Creative</SelectItem>
-                                    <SelectItem value="technical">Technical</SelectItem>
+                                <SelectContent>
+                                    <SelectItem value="professional">Profesional</SelectItem>
+                                    <SelectItem value="casual">Santai</SelectItem>
+                                    <SelectItem value="creative">Kreatif</SelectItem>
+                                    <SelectItem value="technical">Teknis</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                         <div className="space-y-1.5">
-                            <Label className="text-[10px] uppercase font-black text-slate-400 tracking-[0.15em] ml-1">Style</Label>
+                            <Label className="text-[10px] uppercase font-black text-slate-400 tracking-[0.15em] ml-1">Gaya Penulisan</Label>
                             <Select value={aiStyle} onValueChange={(v: any) => setAiStyle(v)}>
                                 <SelectTrigger className="h-10 text-xs bg-white border-slate-200 rounded-xl font-bold shadow-sm">
                                     <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent className="glass border-none">
-                                    <SelectItem value="blog">Blog Post</SelectItem>
-                                    <SelectItem value="news">News Article</SelectItem>
+                                <SelectContent>
+                                    <SelectItem value="blog">Artikel Blog</SelectItem>
+                                    <SelectItem value="news">Artikel Berita</SelectItem>
                                     <SelectItem value="tutorial">Tutorial</SelectItem>
-                                    <SelectItem value="review">Review</SelectItem>
+                                    <SelectItem value="review">Ulasan</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                     </div>
 
                     <div className="space-y-1.5">
-                        <Label className="text-[10px] uppercase font-black text-slate-400 tracking-[0.15em] ml-1">Length</Label>
+                        <Label className="text-[10px] uppercase font-black text-slate-400 tracking-[0.15em] ml-1">Panjang</Label>
                         <Select value={aiLength} onValueChange={(v: any) => setAiLength(v)}>
                             <SelectTrigger className="h-10 text-xs bg-white border-slate-200 rounded-xl font-bold shadow-sm">
                                 <SelectValue />
                             </SelectTrigger>
-                            <SelectContent className="glass border-none">
-                                <SelectItem value="shorter">Short (~600 words)</SelectItem>
-                                <SelectItem value="same">Medium (~1200 words)</SelectItem>
-                                <SelectItem value="longer">Long (~2000 words)</SelectItem>
+                            <SelectContent>
+                                <SelectItem value="shorter">Pendek (~600 kata)</SelectItem>
+                                <SelectItem value="same">Sedang (~1200 kata)</SelectItem>
+                                <SelectItem value="longer">Panjang (~2000 kata)</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
 
                     <div className="space-y-1.5">
-                        <Label className="text-[10px] uppercase font-black text-slate-400 tracking-[0.15em] ml-1">Category</Label>
+                        <Label className="text-[10px] uppercase font-black text-slate-400 tracking-[0.15em] ml-1">Kategori</Label>
                         <Select
                             value={state.selectedCategory?.toString() || ''}
                             onValueChange={(val) => handlers.setSelectedCategory(parseInt(val))}
                             disabled={state.isFetchingCategories}
                         >
                             <SelectTrigger className={`h-10 text-xs bg-white border-slate-200 rounded-xl font-bold shadow-sm ${!state.selectedCategory ? 'ring-2 ring-amber-400/20 border-amber-200' : ''}`}>
-                                <SelectValue placeholder="Select target category" />
+                                <SelectValue placeholder="Pilih kategori target" />
                             </SelectTrigger>
-                            <SelectContent className="glass border-none">
+                            <SelectContent>
                                 {state.wpCategories.map(cat => (
                                     <SelectItem key={cat.id} value={cat.id.toString()}>{cat.name}</SelectItem>
                                 ))}
@@ -180,7 +180,7 @@ export function ToolsPanel({
                         ) : (
                             <>
                                 <Sparkles className="h-4 w-4 mr-2" />
-                                Generate
+                                Buat Konten
                             </>
                         )}
                     </Button>
@@ -208,7 +208,7 @@ export function ToolsPanel({
                     <Input
                         value={metaTitle || generatedTitle || ""}
                         onChange={(e) => setMetaTitle(e.target.value)}
-                        placeholder="SEO Title"
+                        placeholder="Judul SEO"
                         className="h-9 text-[11px] bg-white border-slate-100 rounded-lg focus:ring-1 focus:ring-blue-400"
                     />
                     <Input
@@ -220,7 +220,7 @@ export function ToolsPanel({
                     <Textarea
                         value={metaDescription}
                         onChange={(e) => setMetaDescription(e.target.value)}
-                        placeholder="Meta description..."
+                        placeholder="Deskripsi Meta..."
                         className="text-[11px] bg-white border-slate-100 rounded-lg focus:ring-1 focus:ring-blue-400 h-16 min-h-0 py-2 resize-none"
                     />
                 </div>
@@ -231,7 +231,7 @@ export function ToolsPanel({
                             <img src={featuredImage} alt="Featured" className="w-full h-full object-cover" />
                             <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-sm">
                                 <Button variant="secondary" size="sm" className="h-8 text-[10px] font-bold rounded-lg" onClick={() => document.getElementById('image-input')?.click()}>
-                                    Replace
+                                    Ganti
                                 </Button>
                                 <Button variant="destructive" size="sm" className="h-8 w-8 p-0 rounded-lg" onClick={() => setFeaturedImage('')}>
                                     <Trash2 className="h-4 w-4" />
@@ -244,7 +244,7 @@ export function ToolsPanel({
                                 <div className="p-3 bg-white text-blue-600 rounded-full w-fit mx-auto mb-2 shadow-sm border border-slate-100">
                                     <ImageIcon className="h-5 w-5" />
                                 </div>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-blue-600/60">Featured Image</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-blue-600/60">Gambar Utama</p>
                             </div>
 
                             {generatedTitle && (
@@ -260,7 +260,7 @@ export function ToolsPanel({
                                     ) : (
                                         <Sparkles className="h-3 w-3 mr-1" />
                                     )}
-                                    Generate via AI (2T)
+                                    Buat via AI (2T)
                                 </Button>
                             )}
                         </div>
@@ -293,7 +293,7 @@ export function ToolsPanel({
                             </div>
                             {publishResult.link && (
                                 <a href={publishResult.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center font-black uppercase tracking-tighter underline hover:text-emerald-900 mt-1">
-                                    View Post <ExternalLink className="h-3 w-3 ml-1" />
+                                    Lihat Postingan <ExternalLink className="h-3 w-3 ml-1" />
                                 </a>
                             )}
                         </motion.div>
@@ -323,29 +323,29 @@ export function ToolsPanel({
                     className="w-full h-10 text-xs font-bold text-slate-400 hover:text-blue-600 rounded-xl"
                     onClick={() => setIsScheduleOpen(true)}
                 >
-                    <Calendar className="h-4 w-4 mr-2" /> Schedule Post
+                    <Calendar className="h-4 w-4 mr-2" /> Jadwalkan Postingan
                 </Button>
 
                 <Dialog open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
-                    <DialogContent className="glass border-none">
+                    <DialogContent className="sm:max-w-md">
                         <DialogHeader>
-                            <DialogTitle>Schedule Publication</DialogTitle>
-                            <DialogDescription>Set a future date and time for this article.</DialogDescription>
+                            <DialogTitle>Jadwal Publikasi</DialogTitle>
+                            <DialogDescription>Tentukan tanggal dan waktu untuk mempublikasikan artikel ini.</DialogDescription>
                         </DialogHeader>
                         <div className="grid grid-cols-2 gap-4 py-6">
                             <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Date</Label>
+                                <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Tanggal</Label>
                                 <Input type="date" value={scheduleDate} onChange={(e) => setScheduleDate(e.target.value)} className="h-11 rounded-xl bg-white/50" />
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Time</Label>
+                                <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Waktu</Label>
                                 <Input type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} className="h-11 rounded-xl bg-white/50" />
                             </div>
                         </div>
                         <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsScheduleOpen(false)}>Cancel</Button>
+                            <Button variant="outline" onClick={() => setIsScheduleOpen(false)}>Batal</Button>
                             <Button onClick={handleSchedulePublish} disabled={!scheduleDate || !scheduleTime || isPublishing} className="bg-blue-600 font-bold rounded-xl h-11 px-8">
-                                Confirm Schedule
+                                Konfirmasi Jadwal
                             </Button>
                         </DialogFooter>
                     </DialogContent>

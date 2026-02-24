@@ -20,7 +20,12 @@ export class AiService {
     // Check token balance
     const hasBalance = await this.billingService.checkBalance(userId, 1);
     if (!hasBalance) {
-      throw new BadRequestException('Insufficient token balance');
+      throw new BadRequestException('Saldo kredit Anda tidak mencukupi untuk request ini.');
+    }
+
+    const withinDailyLimit = await this.billingService.checkDailyLimit(userId, 'ARTICLE_GENERATION');
+    if (!withinDailyLimit) {
+      throw new BadRequestException('Daily limit reached for Article Generation on your current plan. Please upgrade or try again tomorrow.');
     }
 
     // Generate content
@@ -64,8 +69,9 @@ export class AiService {
       this.logger.error('Failed to inject internal links', linkError);
     }
 
-    // Deduct tokens
+    // Deduct tokens and increment usage
     await this.billingService.deductTokens(userId, 1, 'Article generation');
+    await this.billingService.incrementDailyUsage(userId, 'ARTICLE_GENERATION');
 
     // Save generated content as a draft article
     let articleId = null;

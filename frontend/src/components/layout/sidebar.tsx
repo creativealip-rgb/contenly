@@ -105,19 +105,19 @@ const icons = {
 
 const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: icons.dashboard },
-    { href: '/trend-radar', label: 'Trend Radar', icon: icons.radar },
+    { href: '/trend-radar', label: 'Radar Tren', icon: icons.radar },
     { href: '/content-lab', label: 'Content Lab', icon: icons.contentLab },
     { href: '/instagram-studio', label: 'Instagram Studio', icon: icons.instagram },
     { href: '/video-scripts', label: 'Video Scripts', icon: icons.video },
-    { href: '/feeds', label: 'Web Sources', icon: icons.rss },
-    { href: '/articles', label: 'Articles', icon: icons.articles },
+    { href: '/feeds', label: 'Sumber Web', icon: icons.rss },
+    { href: '/articles', label: 'Artikel', icon: icons.articles },
     { href: '/view-boost', label: 'View Boost', icon: icons.analytics },
-    { href: '/integrations', label: 'Integrations', icon: icons.integrations },
-    { href: '/billing', label: 'Billing', icon: icons.billing },
-    { href: '/super-admin/users', label: 'Users', icon: icons.userManagement, role: 'SUPER_ADMIN' },
+    { href: '/integrations', label: 'Integrasi', icon: icons.integrations },
+    { href: '/billing', label: 'Tagihan', icon: icons.billing },
+    { href: '/super-admin/users', label: 'Pengguna', icon: icons.userManagement, role: 'SUPER_ADMIN' },
     // Temporarily disabled
-    // { href: '/analytics', label: 'Analytics', icon: icons.analytics },
-    // { href: '/settings', label: 'Settings', icon: icons.settings },
+    // { href: '/analytics', label: 'Analitik', icon: icons.analytics },
+    // { href: '/settings', label: 'Pengaturan', icon: icons.settings },
 ]
 
 export function Sidebar() {
@@ -227,7 +227,7 @@ export function Sidebar() {
                             )}
                         >
                             {isCollapsed ? icons.chevronRight : icons.chevronLeft}
-                            {!isCollapsed && <span className="ml-2">Collapse</span>}
+                            {!isCollapsed && <span className="ml-2">Kecilkan</span>}
                         </Button>
                     </div>
                 </div>

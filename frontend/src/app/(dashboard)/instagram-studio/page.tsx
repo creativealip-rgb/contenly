@@ -141,7 +141,7 @@ export default function InstagramStudioPage() {
 
     const handleFetchUrl = async () => {
         if (!newProject.sourceUrl) {
-            alert('Please enter a Source URL first')
+            alert('Harap masukkan URL Sumber terlebih dahulu')
             return
         }
 
@@ -159,18 +159,18 @@ export default function InstagramStudioPage() {
                     sourceContent: data.content || prev.sourceContent
                 }))
             } else {
-                alert('Failed to fetch URL content')
+                alert('Gagal mengambil konten URL')
             }
         } catch (error) {
             console.error('Failed to fetch URL:', error)
-            alert('An error occurred while fetching the URL')
+            alert('Terjadi kesalahan saat mengambil URL')
         } finally {
             setIsFetchingUrl(false)
         }
     }
 
     const handleDeleteProject = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this project?')) return
+        if (!confirm('Apakah Anda yakin ingin menghapus proyek ini?')) return
 
         try {
             await fetch(`${API_BASE_URL}/instagram-studio/projects/${id}`, {
@@ -214,34 +214,34 @@ export default function InstagramStudioPage() {
                         Instagram Studio
                     </h1>
                     <p className="text-slate-500 font-medium">
-                        Create AI-powered Instagram carousels from your content
+                        Buat carousel Instagram berbasis AI dari konten Anda
                     </p>
                 </div>
                 <Dialog open={isNewProjectOpen} onOpenChange={setIsNewProjectOpen}>
                     <DialogTrigger asChild>
                         <Button className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700">
                             <Plus className="h-4 w-4 mr-2" />
-                            New Project
+                            Proyek Baru
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-2xl">
                         <DialogHeader>
-                            <DialogTitle>Create New Carousel Project</DialogTitle>
+                            <DialogTitle>Buat Proyek Carousel Baru</DialogTitle>
                             <DialogDescription>
-                                Start by providing content or a URL to generate your Instagram carousel
+                                Mulai dengan memasukkan konten atau URL untuk membuat carousel Instagram Anda
                             </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4 py-4">
                             <div className="space-y-2">
-                                <Label>Project Title</Label>
+                                <Label>Judul Proyek</Label>
                                 <Input
-                                    placeholder="My Instagram Carousel"
+                                    placeholder="Carousel Instagram Saya"
                                     value={newProject.title}
                                     onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label>Source URL (Optional)</Label>
+                                <Label>URL Sumber (Opsional)</Label>
                                 <div className="flex gap-2">
                                     <Input
                                         placeholder="https://example.com/article"
@@ -255,14 +255,14 @@ export default function InstagramStudioPage() {
                                         disabled={isFetchingUrl || !newProject.sourceUrl}
                                     >
                                         {isFetchingUrl ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-                                        Fetch News
+                                        Tarik Berita
                                     </Button>
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <Label>Content</Label>
+                                <Label>Konten</Label>
                                 <Textarea
-                                    placeholder="Paste your article content here, or enter a URL above to scrape..."
+                                    placeholder="Tempelkan konten artikel Anda di sini, atau masukkan URL di atas untuk menarik data..."
                                     value={newProject.sourceContent}
                                     onChange={(e) => setNewProject({ ...newProject, sourceContent: e.target.value })}
                                     className="min-h-[150px]"
@@ -270,7 +270,7 @@ export default function InstagramStudioPage() {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label>Visual Style</Label>
+                                    <Label>Gaya Visual</Label>
                                     <Select
                                         value={newProject.globalStyle}
                                         onValueChange={(v) => setNewProject({ ...newProject, globalStyle: v })}
@@ -288,7 +288,7 @@ export default function InstagramStudioPage() {
                                     </Select>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Font Family</Label>
+                                    <Label>Jenis Huruf</Label>
                                     <Select
                                         value={newProject.fontFamily}
                                         onValueChange={(v) => setNewProject({ ...newProject, fontFamily: v })}
@@ -309,18 +309,18 @@ export default function InstagramStudioPage() {
                         </div>
                         <DialogFooter>
                             <Button variant="outline" onClick={() => setIsNewProjectOpen(false)}>
-                                Cancel
+                                Batal
                             </Button>
                             <Button onClick={handleCreateProject} disabled={isCreating || !newProject.title}>
                                 {isCreating ? (
                                     <>
                                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                        Creating...
+                                        Membuat...
                                     </>
                                 ) : (
                                     <>
                                         <Sparkles className="h-4 w-4 mr-2" />
-                                        Create Project
+                                        Buat Proyek
                                     </>
                                 )}
                             </Button>
@@ -333,13 +333,13 @@ export default function InstagramStudioPage() {
                 <Card className="border-dashed">
                     <CardContent className="flex flex-col items-center justify-center py-12">
                         <Instagram className="h-16 w-16 text-muted-foreground/50 mb-4" />
-                        <h3 className="text-lg font-medium mb-2">No projects yet</h3>
+                        <h3 className="text-lg font-medium mb-2">Belum ada proyek</h3>
                         <p className="text-muted-foreground text-center max-w-sm mb-4">
-                            Create your first Instagram carousel project to get started
+                            Buat proyek carousel Instagram pertama Anda untuk memulai
                         </p>
                         <Button onClick={() => setIsNewProjectOpen(true)}>
                             <Plus className="h-4 w-4 mr-2" />
-                            Create First Project
+                            Buat Proyek Pertama
                         </Button>
                     </CardContent>
                 </Card>
@@ -362,7 +362,7 @@ export default function InstagramStudioPage() {
                                 </div>
                                 <CardDescription className="text-xs font-bold text-slate-400 group-hover:text-slate-500 transition-colors mt-2">
                                     <span className="flex items-center gap-1.5">
-                                        {project.totalSlides} slides • {project.globalStyle}
+                                        {project.totalSlides} slide • {project.globalStyle}
                                     </span>
                                 </CardDescription>
                             </CardHeader>

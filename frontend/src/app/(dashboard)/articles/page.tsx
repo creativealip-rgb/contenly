@@ -99,7 +99,7 @@ export default function ArticlesPage() {
     }
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this article?')) return
+        if (!confirm('Apakah Anda yakin ingin menghapus artikel ini?')) return
         try {
             const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
             const response = await fetch(`${API_BASE_URL}/articles/${id}`, {
@@ -107,13 +107,13 @@ export default function ArticlesPage() {
                 credentials: 'include'
             })
             if (response.ok) {
-                toast.success('Article deleted')
+                toast.success('Artikel dihapus')
                 fetchArticles()
             } else {
-                toast.error('Failed to delete article')
+                toast.error('Gagal menghapus artikel')
             }
         } catch (error) {
-            toast.error('Error deleting article')
+            toast.error('Kesalahan saat menghapus artikel')
         }
     }
 
@@ -123,7 +123,7 @@ export default function ArticlesPage() {
         } else if (article.sourceUrl) {
             window.open(article.sourceUrl, '_blank')
         } else {
-            toast.info('No URL available for this article')
+            toast.info('Tidak ada URL yang tersedia untuk artikel ini')
         }
     }
 
@@ -132,7 +132,7 @@ export default function ArticlesPage() {
             const editUrl = `${article.wpSite.url}/wp-admin/post.php?post=${article.wpPostId}&action=edit`
             window.open(editUrl, '_blank')
         } else {
-            toast.info('This article is not yet published to WordPress.')
+            toast.info('Artikel ini belum dipublikasikan ke WordPress.')
         }
     }
 
@@ -145,13 +145,13 @@ export default function ArticlesPage() {
                 credentials: 'include'
             })
             if (response.ok) {
-                toast.success('Status synchronization completed')
+                toast.success('Sinkronisasi status selesai')
                 fetchArticles()
             } else {
-                toast.error('Failed to sync statuses')
+                toast.error('Gagal menyinkronkan status')
             }
         } catch (error) {
-            toast.error('Error during synchronization')
+            toast.error('Kesalahan selama sinkronisasi')
         } finally {
             setIsLoading(false)
         }
@@ -164,14 +164,14 @@ export default function ArticlesPage() {
     const getStatusBadge = (status: string) => {
         switch (status) {
             case 'PUBLISHED':
-                return <Badge className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/20"><CheckCircle2 className="h-3 w-3 mr-1" />Published</Badge>
+                return <Badge className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/20"><CheckCircle2 className="h-3 w-3 mr-1" />Diterbitkan</Badge>
             case 'DRAFT':
-                return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" />Draft</Badge>
+                return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" />Draf</Badge>
             case 'FUTURE':
             case 'SCHEDULED':
-                return <Badge className="bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-500/20"><Clock className="h-3 w-3 mr-1" />Scheduled</Badge>
+                return <Badge className="bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-500/20"><Clock className="h-3 w-3 mr-1" />Dijadwalkan</Badge>
             case 'FAILED':
-                return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Failed</Badge>
+                return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Gagal</Badge>
             default:
                 return <Badge variant="outline">{status}</Badge>
         }
@@ -187,10 +187,10 @@ export default function ArticlesPage() {
             <div className="flex items-center justify-between">
                 <div className="space-y-1">
                     <h1 className="text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
-                        Article Lab
+                        Lab Artikel
                     </h1>
                     <p className="text-slate-500 font-medium">
-                        Archive and management of your AI-generated assets.
+                        Arsip dan manajemen aset berbasis AI Anda.
                     </p>
                 </div>
                 <div className="flex gap-4">
@@ -201,7 +201,7 @@ export default function ArticlesPage() {
                         className="h-12 px-6 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-white/40 glass border-none transition-all active:scale-95"
                     >
                         <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                        Sync WP
+                        Sinkronisasi WP
                     </Button>
                     <Button
                         className="h-12 px-6 bg-slate-900 hover:bg-black text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-slate-200 transition-all hover:scale-[1.02] active:scale-[0.98]"
@@ -209,12 +209,11 @@ export default function ArticlesPage() {
                         disabled={isLoading}
                     >
                         <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                        Refresh
+                        Segarkan
                     </Button>
                 </div>
             </div>
 
-            {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                 <motion.div whileHover={{ y: -2 }} className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl p-6">
                     <div className="flex items-center gap-4">
@@ -223,7 +222,7 @@ export default function ArticlesPage() {
                         </div>
                         <div className="min-w-0">
                             <p className="text-2xl font-black tracking-tighter">{stats.total}</p>
-                            <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Total Assets</p>
+                            <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Total Aset</p>
                         </div>
                     </div>
                 </motion.div>
@@ -234,7 +233,7 @@ export default function ArticlesPage() {
                         </div>
                         <div className="min-w-0">
                             <p className="text-2xl font-black tracking-tighter">{stats.published}</p>
-                            <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Live</p>
+                            <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Aktif</p>
                         </div>
                     </div>
                 </motion.div>
@@ -245,7 +244,7 @@ export default function ArticlesPage() {
                         </div>
                         <div className="min-w-0">
                             <p className="text-2xl font-black tracking-tighter">{stats.draft}</p>
-                            <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Drafts</p>
+                            <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Draf</p>
                         </div>
                     </div>
                 </motion.div>
@@ -256,7 +255,7 @@ export default function ArticlesPage() {
                         </div>
                         <div className="min-w-0">
                             <p className="text-2xl font-black tracking-tighter">{stats.scheduled}</p>
-                            <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Queued</p>
+                            <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Dalam Antrean</p>
                         </div>
                     </div>
                 </motion.div>
@@ -268,7 +267,7 @@ export default function ArticlesPage() {
                     <div className="relative flex-1">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
                         <Input
-                            placeholder="Filter by title or keyword..."
+                            placeholder="Filter berdasarkan judul atau kata kunci..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             className="h-12 pl-12 rounded-2xl bg-white/40 border-none focus-visible:ring-blue-400 font-bold dark:bg-slate-800/40"
@@ -282,11 +281,11 @@ export default function ArticlesPage() {
                                     <SelectValue placeholder="Status" />
                                 </div>
                             </SelectTrigger>
-                            <SelectContent className="glass border-none">
-                                <SelectItem value="all">All Content</SelectItem>
-                                <SelectItem value="published">Published</SelectItem>
-                                <SelectItem value="draft">Drafts Only</SelectItem>
-                                <SelectItem value="scheduled">Scheduled</SelectItem>
+                            <SelectContent>
+                                <SelectItem value="all">Semua Konten</SelectItem>
+                                <SelectItem value="published">Diterbitkan</SelectItem>
+                                <SelectItem value="draft">Hanya Draf</SelectItem>
+                                <SelectItem value="scheduled">Dijadwalkan</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -302,11 +301,11 @@ export default function ArticlesPage() {
             >
                 <div className="flex items-center justify-between mb-8">
                     <div>
-                        <h2 className="text-xl font-black tracking-tight">Recent Activity</h2>
-                        <p className="text-slate-400 text-sm font-medium">Timeline of generated narratives</p>
+                        <h2 className="text-xl font-black tracking-tight">Aktivitas Terbaru</h2>
+                        <p className="text-slate-400 text-sm font-medium">Garis waktu narasi yang dihasilkan</p>
                     </div>
                     <Badge variant="outline" className="h-8 px-4 border-slate-100 dark:border-slate-800 rounded-xl font-bold uppercase text-[10px] tracking-widest text-slate-400">
-                        {articles.length} Items
+                        {articles.length} Item
                     </Badge>
                 </div>
 
@@ -314,11 +313,11 @@ export default function ArticlesPage() {
                     <Table>
                         <TableHeader className="bg-slate-50/50 dark:bg-slate-800/20">
                             <TableRow className="border-none hover:bg-transparent">
-                                <TableHead className="h-16 font-black text-slate-400 uppercase tracking-widest text-[10px] px-8">NARRATIVE TITLE</TableHead>
+                                <TableHead className="h-16 font-black text-slate-400 uppercase tracking-widest text-[10px] px-8">JUDUL NARASI</TableHead>
                                 <TableHead className="h-16 font-black text-slate-400 uppercase tracking-widest text-[10px]">Status</TableHead>
-                                <TableHead className="h-16 font-black text-slate-400 uppercase tracking-widest text-[10px]">DESTINATION site</TableHead>
-                                <TableHead className="h-16 font-black text-slate-400 uppercase tracking-widest text-[10px]">CREDITS</TableHead>
-                                <TableHead className="h-16 font-black text-slate-400 uppercase tracking-widest text-[10px]">Timestamp</TableHead>
+                                <TableHead className="h-16 font-black text-slate-400 uppercase tracking-widest text-[10px]">Situs TUJUAN</TableHead>
+                                <TableHead className="h-16 font-black text-slate-400 uppercase tracking-widest text-[10px]">KREDIT</TableHead>
+                                <TableHead className="h-16 font-black text-slate-400 uppercase tracking-widest text-[10px]">Waktu</TableHead>
                                 <TableHead className="h-16 text-right px-8"></TableHead>
                             </TableRow>
                         </TableHeader>
@@ -332,7 +331,7 @@ export default function ArticlesPage() {
                             ) : articles.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={6} className="text-center py-20 text-slate-400 font-bold uppercase tracking-widest text-xs">
-                                        Archive is empty
+                                        Arsip kosong
                                     </TableCell>
                                 </TableRow>
                             ) : (
@@ -359,7 +358,7 @@ export default function ArticlesPage() {
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex flex-col">
-                                                <span className="text-sm font-bold text-slate-600">{article.wpSite?.name || 'Local Storage'}</span>
+                                                <span className="text-sm font-bold text-slate-600">{article.wpSite?.name || 'Penyimpanan Lokal'}</span>
                                                 <span className="text-[10px] text-slate-400 font-mono">{article.wpSite?.url?.replace('https://', '') || '—'}</span>
                                             </div>
                                         </TableCell>
@@ -378,26 +377,26 @@ export default function ArticlesPage() {
                                                         <MoreHorizontal className="h-5 w-5" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="glass border-none min-w-[170px]">
-                                                    <DropdownMenuItem onClick={() => handleView(article)} className="font-bold py-2.5">
+                                                <DropdownMenuContent align="end" className="min-w-[170px]">
+                                                    <DropdownMenuItem onClick={() => handleView(article)} className="cursor-pointer">
                                                         <Eye className="h-4 w-4 mr-2" />
-                                                        View Asset
+                                                        Lihat Aset
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem
                                                         onClick={() => handleEdit(article)}
                                                         disabled={!article.wpPostId}
-                                                        className="font-bold py-2.5"
+                                                        className="cursor-pointer"
                                                     >
                                                         <Edit className="h-4 w-4 mr-2" />
-                                                        Edit in WP
+                                                        Edit di WP
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuSeparator className="opacity-50" />
+                                                    <DropdownMenuSeparator />
                                                     <DropdownMenuItem
-                                                        className="text-rose-600 font-extrabold py-2.5"
+                                                        className="text-destructive focus:bg-destructive/10 cursor-pointer"
                                                         onClick={() => handleDelete(article.id)}
                                                     >
                                                         <Trash2 className="h-4 w-4 mr-2" />
-                                                        Purge Asset
+                                                        Hapus Aset
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>

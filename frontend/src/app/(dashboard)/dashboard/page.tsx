@@ -50,39 +50,39 @@ export default function DashboardPage() {
                     {/* Decorative elements */}
                     <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
                     <div className="absolute bottom-0 left-0 w-48 h-48 bg-cyan-400/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
-                    
+
                     <CardContent className="relative z-10 py-8 px-6">
                         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                             <div className="space-y-2">
-                                <motion.div 
+                                <motion.div
                                     className="flex items-center gap-2 text-blue-100"
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: 0.2 }}
                                 >
                                     <Zap className="w-4 h-4" />
-                                    <span className="text-xs font-medium uppercase tracking-wider">Dashboard Overview</span>
+                                    <span className="text-xs font-medium uppercase tracking-wider">Ringkasan Dashboard</span>
                                 </motion.div>
-                                <motion.h1 
+                                <motion.h1
                                     className="text-2xl md:text-3xl font-bold tracking-tight"
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.3 }}
                                 >
-                                    Welcome back!
+                                    Selamat datang kembali!
                                 </motion.h1>
-                                <motion.p 
+                                <motion.p
                                     className="text-blue-100 text-sm max-w-md"
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.4 }}
                                 >
-                                    Here&apos;s an overview of your content automation and performance metrics.
+                                    Berikut ringkasan otomatisasi konten dan metrik performa Anda.
                                 </motion.p>
                             </div>
-                            
+
                             {/* Quick Stats */}
-                            <motion.div 
+                            <motion.div
                                 className="flex gap-4"
                                 initial={{ opacity: 0, x: 20 }}
                                 animate={{ opacity: 1, x: 0 }}
@@ -90,11 +90,11 @@ export default function DashboardPage() {
                             >
                                 <div className="glass-subtle rounded-xl px-4 py-3 text-center">
                                     <div className="text-2xl font-bold tabular-nums">{isLoading ? '...' : stats.totalArticles}</div>
-                                    <div className="text-xs text-blue-100 uppercase tracking-wider">Articles</div>
+                                    <div className="text-xs text-blue-100 uppercase tracking-wider">Artikel</div>
                                 </div>
                                 <div className="glass-subtle rounded-xl px-4 py-3 text-center">
                                     <div className="text-2xl font-bold tabular-nums">{isLoading ? '...' : stats.publishedArticles}</div>
-                                    <div className="text-xs text-blue-100 uppercase tracking-wider">Published</div>
+                                    <div className="text-xs text-blue-100 uppercase tracking-wider">Terbit</div>
                                 </div>
                             </motion.div>
                         </div>
@@ -105,32 +105,32 @@ export default function DashboardPage() {
             {/* KPI Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <KpiCard
-                    title="Active RSS Feeds"
+                    title="RSS Feed Aktif"
                     value={isLoading ? '...' : stats.activeFeeds}
                     icon={Rss}
-                    description={`${stats.activeFeeds} feeds configured`}
+                    description={`${stats.activeFeeds} feed terhubung`}
                     delay={0}
                 />
                 <KpiCard
-                    title="Tokens Remaining"
+                    title="Sisa Token"
                     value={isLoading ? '...' : stats.tokenBalance}
                     icon={Sparkles}
-                    description="Available tokens"
+                    description="Token yang dapat digunakan"
                     trend={{ value: 12, isPositive: true }}
                     delay={1}
                 />
                 <KpiCard
-                    title="Connected Sites"
+                    title="Situs Terhubung"
                     value={isLoading ? '...' : stats.connectedSites}
                     icon={Plug}
-                    description="WordPress sites"
+                    description="Situs WordPress"
                     delay={2}
                 />
             </div>
 
             {/* Activity & Quick Actions */}
             <div className="grid gap-6 lg:grid-cols-3">
-                <motion.div 
+                <motion.div
                     className="lg:col-span-2"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}

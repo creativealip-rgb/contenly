@@ -74,9 +74,9 @@ export default function BillingPage() {
             <div className="flex items-center justify-between">
                 <div className="space-y-1">
                     <h1 className="text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
-                        Billing
+                        Penagihan
                     </h1>
-                    <p className="text-slate-500 font-medium">Manage your tokens and usage.</p>
+                    <p className="text-slate-500 font-medium">Kelola token dan penggunaan Anda.</p>
                 </div>
             </div>
 
@@ -91,7 +91,7 @@ export default function BillingPage() {
                     <CardContent className="relative z-10 py-10 px-6">
                         <div className="flex items-center gap-2 text-blue-100 mb-4">
                             <Zap className="w-4 h-4" />
-                            <span className="text-xs font-medium uppercase tracking-wider">Token Balance</span>
+                            <span className="text-xs font-medium uppercase tracking-wider">Saldo Token</span>
                         </div>
 
                         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
@@ -104,7 +104,7 @@ export default function BillingPage() {
                                 >
                                     {loading ? '...' : (balance !== null ? balance.toLocaleString() : 0)}
                                 </motion.div>
-                                <p className="text-blue-100 mt-2 text-lg">tokens remaining</p>
+                                <p className="text-blue-100 mt-2 text-lg">token tersisa</p>
 
                                 {/* Usage indicator */}
                                 <div className="mt-4 flex items-center gap-3">
@@ -116,7 +116,7 @@ export default function BillingPage() {
                                             transition={{ delay: 0.5, duration: 1, ease: "easeOut" }}
                                         />
                                     </div>
-                                    <span className="text-xs text-blue-100">{balance || 0} available</span>
+                                    <span className="text-xs text-blue-100">{balance || 0} tersedia</span>
                                 </div>
                             </div>
 
@@ -125,16 +125,16 @@ export default function BillingPage() {
                                 <div className="text-center px-4 border-r border-white/20">
                                     <div className="flex items-center justify-center gap-1 text-blue-100 mb-1">
                                         <TrendingUp className="w-3 h-3" />
-                                        <span className="text-xs uppercase tracking-wider">Usage</span>
+                                        <span className="text-xs uppercase tracking-wider">Penggunaan</span>
                                     </div>
                                     <div className="text-2xl font-bold tabular-nums">--</div>
                                 </div>
                                 <div className="text-center px-4">
                                     <div className="flex items-center justify-center gap-1 text-blue-100 mb-1">
                                         <Sparkles className="w-3 h-3" />
-                                        <span className="text-xs uppercase tracking-wider">Plan</span>
+                                        <span className="text-xs uppercase tracking-wider">Paket</span>
                                     </div>
-                                    <div className="text-2xl font-bold">Starter</div>
+                                    <div className="text-2xl font-bold">Pemula</div>
                                 </div>
                             </div>
                         </div>
@@ -151,15 +151,15 @@ export default function BillingPage() {
                                 <Plus className="h-6 w-6" />
                             </div>
                             <div className="flex-1">
-                                <h3 className="font-semibold mb-1">Buy Extra Tokens</h3>
+                                <h3 className="font-semibold mb-1">Beli Token Tambahan</h3>
                                 <p className="text-sm text-muted-foreground mb-4">
-                                    Purchase additional tokens to continue generating content.
+                                    Beli token tambahan untuk melanjutkan pembuatan konten.
                                 </p>
                                 <WhatsAppActionModal
                                     trigger={
                                         <Button className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600">
                                             <Plus className="h-4 w-4 mr-2" />
-                                            Buy Tokens
+                                            Beli Token
                                         </Button>
                                     }
                                 />
@@ -175,15 +175,15 @@ export default function BillingPage() {
                                 <CreditCard className="h-6 w-6" />
                             </div>
                             <div className="flex-1">
-                                <h3 className="font-semibold mb-1">Manage Payment</h3>
+                                <h3 className="font-semibold mb-1">Kelola Pembayaran</h3>
                                 <p className="text-sm text-muted-foreground mb-4">
-                                    Update your payment method or view billing history.
+                                    Perbarui metode pembayaran atau lihat riwayat penagihan.
                                 </p>
                                 <WhatsAppActionModal
                                     trigger={
                                         <Button variant="outline" className="border-blue-500/20 hover:bg-blue-500/10">
                                             <CreditCard className="h-4 w-4 mr-2" />
-                                            Manage Payment
+                                            Kelola Pembayaran
                                         </Button>
                                     }
                                 />
@@ -197,35 +197,35 @@ export default function BillingPage() {
             <motion.div variants={itemVariants}>
                 <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                     <CardHeader>
-                        <CardTitle className="text-sm uppercase tracking-wider text-muted-foreground font-semibold">About Tokens</CardTitle>
+                        <CardTitle className="text-sm uppercase tracking-wider text-muted-foreground font-semibold">Tentang Token</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid gap-4 md:grid-cols-3">
                             <div className="p-4 rounded-xl bg-muted/50">
                                 <div className="flex items-center gap-2 mb-2">
                                     <Sparkles className="h-4 w-4 text-[var(--brand-primary)]" />
-                                    <span className="font-medium text-sm">Content Generation</span>
+                                    <span className="font-medium text-sm">Pembuatan Konten</span>
                                 </div>
                                 <p className="text-xs text-muted-foreground">
-                                    Each article generation uses approximately 1,000 tokens depending on length.
+                                    Setiap pembuatan artikel menggunakan sekitar 1.000 token tergantung pada panjangnya.
                                 </p>
                             </div>
                             <div className="p-4 rounded-xl bg-muted/50">
                                 <div className="flex items-center gap-2 mb-2">
                                     <Zap className="h-4 w-4 text-[var(--brand-primary)]" />
-                                    <span className="font-medium text-sm">Image Generation</span>
+                                    <span className="font-medium text-sm">Pembuatan Gambar</span>
                                 </div>
                                 <p className="text-xs text-muted-foreground">
-                                    AI image generation uses 500 tokens per image.
+                                    Pembuatan gambar AI menggunakan 500 token per gambar.
                                 </p>
                             </div>
                             <div className="p-4 rounded-xl bg-muted/50">
                                 <div className="flex items-center gap-2 mb-2">
                                     <TrendingUp className="h-4 w-4 text-[var(--brand-primary)]" />
-                                    <span className="font-medium text-sm">SEO Analysis</span>
+                                    <span className="font-medium text-sm">Analisis SEO</span>
                                 </div>
                                 <p className="text-xs text-muted-foreground">
-                                    SEO meta generation costs 200 tokens per request.
+                                    Pembuatan meta SEO membutuhkan 200 token per permintaan.
                                 </p>
                             </div>
                         </div>

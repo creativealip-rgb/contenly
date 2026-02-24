@@ -64,6 +64,7 @@ export const transactionStatusEnum = pgEnum('transaction_status', [
   'REFUNDED',
 ]);
 export const subscriptionPlanEnum = pgEnum('subscription_plan', [
+  'FREE',
   'FREE_TRIAL',
   'PRO',
   'ENTERPRISE',
@@ -91,6 +92,10 @@ export const viewBoostStatusEnum = pgEnum('view_boost_status', [
 export const viewBoostServiceTypeEnum = pgEnum('view_boost_service_type', [
   'standard',
   'premium',
+]);
+export const featureTypeEnum = pgEnum('feature_type', [
+  'ARTICLE_GENERATION',
+  'INSTAGRAM_GENERATION',
 ]);
 
 // ==========================================
@@ -314,12 +319,12 @@ export const subscription = pgTable('subscription', {
   userId: text('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
-  plan: subscriptionPlanEnum('plan').notNull(),
+  plan: subscriptionPlanEnum('plan').notNull().default('FREE'),
   stripeSubscriptionId: varchar('stripe_subscription_id', { length: 255 }),
   status: subscriptionStatusEnum('status').default('ACTIVE'),
-  tokensPerMonth: integer('tokens_per_month').notNull(),
-  currentPeriodStart: timestamp('current_period_start').notNull(),
-  currentPeriodEnd: timestamp('current_period_end').notNull(),
+  tokensPerMonth: integer('tokens_per_month').notNull().default(0),
+  currentPeriodStart: timestamp('current_period_start').notNull().defaultNow(),
+  currentPeriodEnd: timestamp('current_period_end').notNull().defaultNow(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   canceledAt: timestamp('canceled_at'),
 });
@@ -340,6 +345,26 @@ export const notification = pgTable('notification', {
   isRead: boolean('is_read').default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
+
+// ==========================================
+// DAILY USAGE LIMITS
+// ==========================================
+
+export const dailyUsage = pgTable('daily_usage', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  date: timestamp('date').notNull().defaultNow(), // Intended to store just the date part ideally
+  featureType: featureTypeEnum('feature_type').notNull(),
+  count: integer('count').default(0),
+}, (table) => ({
+  uniqueDailyUserFeature: uniqueIndex('unique_daily_user_feature').on(
+    table.userId,
+    table.date,
+    table.featureType
+  ),
+}));
 
 // ==========================================
 // VIEW BOOST TABLE
@@ -557,4 +582,5 @@ export const schema = {
   stylePreset,
   scriptProject,
   scriptScene,
+  dailyUsage,
 };

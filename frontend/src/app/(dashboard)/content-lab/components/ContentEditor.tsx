@@ -43,8 +43,8 @@ export function ContentEditor({ state, handlers, copied, handleCopy }: ContentEd
         >
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-2xl font-black tracking-tighter text-slate-900 dark:text-white uppercase italic">Article Lab</h2>
-                    <p className="text-xs font-medium text-slate-400 uppercase tracking-widest">Draft and refine your unique content</p>
+                    <h2 className="text-2xl font-black tracking-tighter text-slate-900 dark:text-white uppercase italic">Lab Artikel</h2>
+                    <p className="text-xs font-medium text-slate-400 uppercase tracking-widest">Tulis dan sempurnakan konten unik Anda</p>
                 </div>
                 <div className="flex gap-2">
                     <Button
@@ -72,16 +72,16 @@ export function ContentEditor({ state, handlers, copied, handleCopy }: ContentEd
                 <Tabs defaultValue="editor" className="flex-1 flex flex-col">
                     <TabsList className="w-fit bg-slate-100/50 dark:bg-slate-800/50 p-1 rounded-xl mb-4">
                         <TabsTrigger value="editor" className="text-xs px-6 py-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold">Editor</TabsTrigger>
-                        <TabsTrigger value="source" className="text-xs px-6 py-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold">Reference</TabsTrigger>
+                        <TabsTrigger value="source" className="text-xs px-6 py-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold">Referensi</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="editor" className="flex-1 flex flex-col gap-6 mt-0">
                         <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600/70 ml-1">Article Title</Label>
+                            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600/70 ml-1">Judul Artikel</Label>
                             <Input
                                 value={generatedTitle}
                                 onChange={(e) => setGeneratedTitle(e.target.value)}
-                                placeholder="Click generate to get a title..."
+                                placeholder="Klik buat untuk mendapatkan judul..."
                                 className="text-2xl font-black tracking-tight h-16 border-none bg-white hover:bg-blue-50/10 focus-visible:bg-white transition-all shadow-xl shadow-slate-200/40 dark:shadow-none px-6 rounded-2xl"
                             />
                         </div>
@@ -90,7 +90,7 @@ export function ContentEditor({ state, handlers, copied, handleCopy }: ContentEd
                             <Textarea
                                 value={generatedContent}
                                 onChange={(e) => setGeneratedContent(e.target.value)}
-                                placeholder="AI-generated content will appear here..."
+                                placeholder="Konten yang dibuat AI akan muncul di sini..."
                                 className="absolute inset-0 w-full h-full min-h-[500px] resize-none border-none bg-white shadow-2xl shadow-slate-200/50 dark:shadow-none p-8 rounded-[32px] text-lg leading-relaxed custom-scrollbar focus-visible:ring-0"
                             />
                             {state.isRewriting && (
@@ -105,8 +105,8 @@ export function ContentEditor({ state, handlers, copied, handleCopy }: ContentEd
                                         <Sparkles className="absolute inset-0 m-auto h-8 w-8 text-blue-600 animate-bounce" />
                                     </div>
                                     <div className="text-center space-y-2">
-                                        <p className="text-xl font-black text-slate-900 tracking-tight">AI is Writing...</p>
-                                        <p className="text-sm text-slate-400 font-medium max-w-[200px]">Crafting your SEO-optimized masterpiece</p>
+                                        <p className="text-xl font-black text-slate-900 tracking-tight">AI Sedang Menulis...</p>
+                                        <p className="text-sm text-slate-400 font-medium max-w-[200px]">Menulis artikel yang dioptimasi SEO Anda</p>
                                     </div>
                                 </motion.div>
                             )}
@@ -118,12 +118,12 @@ export function ContentEditor({ state, handlers, copied, handleCopy }: ContentEd
                             {state.isScanning || state.isScraping ? (
                                 <div className="h-full flex flex-col items-center justify-center space-y-4 py-20">
                                     <Loader2 className="h-10 w-10 animate-spin text-slate-300" />
-                                    <p className="text-sm text-slate-400 font-bold uppercase tracking-widest">Scanning source...</p>
+                                    <p className="text-sm text-slate-400 font-bold uppercase tracking-widest">Memindai sumber...</p>
                                 </div>
                             ) : sourceContent ? (
                                 <div className="space-y-6">
                                     <div className="flex items-center gap-3">
-                                        <Badge variant="outline" className="bg-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter">Source URL</Badge>
+                                        <Badge variant="outline" className="bg-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter">URL Sumber</Badge>
                                         <span className="text-xs font-mono text-slate-400 truncate">{selectedArticle?.url}</span>
                                     </div>
                                     <pre className="whitespace-pre-wrap text-sm font-medium text-slate-600 dark:text-slate-400 leading-loose">
@@ -136,8 +136,8 @@ export function ContentEditor({ state, handlers, copied, handleCopy }: ContentEd
                                         <FileText className="h-12 w-12 text-slate-400" />
                                     </div>
                                     <div className="text-center space-y-1">
-                                        <p className="text-sm font-black uppercase tracking-widest text-slate-500">No reference yet</p>
-                                        <p className="text-xs font-medium text-slate-400">Select an article from the left sidebar</p>
+                                        <p className="text-sm font-black uppercase tracking-widest text-slate-500">Belum ada referensi</p>
+                                        <p className="text-xs font-medium text-slate-400">Pilih artikel dari sidebar kiri</p>
                                     </div>
                                 </div>
                             )}

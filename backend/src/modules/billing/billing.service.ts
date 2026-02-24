@@ -2,7 +2,8 @@ import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { eq, sql, and } from 'drizzle-orm';
 import { DrizzleService } from '../../db/drizzle.service';
-import { tokenBalance, transaction, subscription } from '../../db/schema';
+import { tokenBalance, transaction, subscription, dailyUsage } from '../../db/schema';
+import { BILLING_TIERS } from './billing.constants';
 import Stripe from 'stripe';
 
 @Injectable()
@@ -59,6 +60,63 @@ export class BillingService {
     return balance;
   }
 
+  // ==========================================
+  // HYBRID TIER LIMITS & USAGE
+  // ==========================================
+
+  async getSubscriptionTier(userId: string) {
+    const sub = await this.getSubscription(userId);
+    return sub?.plan || 'FREE';
+  }
+
+  async checkDailyLimit(userId: string, featureType: 'ARTICLE_GENERATION' | 'INSTAGRAM_GENERATION'): Promise<boolean> {
+    const tier = await this.getSubscriptionTier(userId);
+    const limit = BILLING_TIERS[tier]?.dailyLimits?.[featureType] || 0;
+
+    // Get today's start and end date objects
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const usageRow = await this.db.query.dailyUsage.findFirst({
+      where: and(
+        eq(dailyUsage.userId, userId),
+        eq(dailyUsage.featureType, featureType),
+        sql`DATE(${dailyUsage.date}) = DATE(${today.toISOString()})`
+      ),
+    });
+
+    const currentUsage = usageRow?.count || 0;
+    return currentUsage < limit;
+  }
+
+  async incrementDailyUsage(userId: string, featureType: 'ARTICLE_GENERATION' | 'INSTAGRAM_GENERATION') {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    await this.db.transaction(async (tx) => {
+      const existing = await tx.query.dailyUsage.findFirst({
+        where: and(
+          eq(dailyUsage.userId, userId),
+          eq(dailyUsage.featureType, featureType),
+          sql`DATE(${dailyUsage.date}) = DATE(${today.toISOString()})`
+        ),
+      });
+
+      if (existing) {
+        await tx.update(dailyUsage)
+          .set({ count: sql`${dailyUsage.count} + 1` })
+          .where(eq(dailyUsage.id, existing.id));
+      } else {
+        await tx.insert(dailyUsage).values({
+          userId,
+          featureType,
+          date: today,
+          count: 1,
+        });
+      }
+    });
+  }
+
   async checkBalance(userId: string, required: number): Promise<boolean> {
     const balance = await this.getBalance(userId);
     return (balance?.balance || 0) >= required;
@@ -93,7 +151,7 @@ export class BillingService {
     });
   }
 
-  async addTokens(userId: string, amount: number, stripePaymentId?: string) {
+  async addTokens(userId: string, amount: number, stripePaymentId?: string, isReset: boolean = false) {
     await this.db.transaction(async (tx) => {
       // Upsert token balance
       const existing = await tx.query.tokenBalance.findFirst({
@@ -101,14 +159,24 @@ export class BillingService {
       });
 
       if (existing) {
-        await tx
-          .update(tokenBalance)
-          .set({
-            balance: sql`${tokenBalance.balance} + ${amount}`,
-            totalPurchased: sql`${tokenBalance.totalPurchased} + ${amount}`,
-            updatedAt: new Date(),
-          })
-          .where(eq(tokenBalance.userId, userId));
+        if (isReset) {
+          await tx
+            .update(tokenBalance)
+            .set({
+              balance: amount, // RESET balance completely for new cycle
+              updatedAt: new Date(),
+            })
+            .where(eq(tokenBalance.userId, userId));
+        } else {
+          await tx
+            .update(tokenBalance)
+            .set({
+              balance: sql`${tokenBalance.balance} + ${amount}`,
+              totalPurchased: sql`${tokenBalance.totalPurchased} + ${amount}`,
+              updatedAt: new Date(),
+            })
+            .where(eq(tokenBalance.userId, userId));
+        }
       } else {
         await tx.insert(tokenBalance).values({
           userId,
@@ -225,8 +293,8 @@ export class BillingService {
       currentPeriodEnd: new Date((stripeSubscription as any).current_period_end * 1000),
     });
 
-    // Add initial monthly tokens
-    await this.addTokens(userId, tokensPerMonth, subscriptionId);
+    // Add initial monthly tokens (reset)
+    await this.addTokens(userId, tokensPerMonth, subscriptionId, true);
 
     this.logger.log(`Subscription created for user ${userId} with ${tokensPerMonth} tokens/month`);
   }
@@ -249,8 +317,8 @@ export class BillingService {
     });
 
     if (sub) {
-      // Add monthly tokens
-      await this.addTokens(userId, sub.tokensPerMonth, invoice.id);
+      // Add monthly tokens (reset for new cycle)
+      await this.addTokens(userId, sub.tokensPerMonth, invoice.id, true);
 
       // Update subscription period
       await this.db

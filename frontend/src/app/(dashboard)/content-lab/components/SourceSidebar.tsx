@@ -58,7 +58,7 @@ export function SourceSidebar({ state, handlers }: SourceSidebarProps) {
                 <div className="p-2.5 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-200 dark:shadow-none">
                     <Rss className="h-5 w-5" />
                 </div>
-                <h2 className="text-xl font-bold tracking-tight">Sources</h2>
+                <h2 className="text-xl font-bold tracking-tight">Sumber Daya</h2>
             </div>
 
             <div className="flex-1 space-y-6">
@@ -68,13 +68,13 @@ export function SourceSidebar({ state, handlers }: SourceSidebarProps) {
                 }} className="w-full">
                     <TabsList className="grid w-full grid-cols-3 bg-slate-100/50 dark:bg-slate-800/50 p-1 rounded-xl">
                         <TabsTrigger value="rss" className="text-xs py-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                            Feeds
+                            Feed
                         </TabsTrigger>
                         <TabsTrigger value="url" className="text-xs py-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
                             URL
                         </TabsTrigger>
                         <TabsTrigger value="idea" className="text-xs py-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                            Idea
+                            Ide
                         </TabsTrigger>
                     </TabsList>
 
@@ -90,32 +90,32 @@ export function SourceSidebar({ state, handlers }: SourceSidebarProps) {
                             <TabsContent value="rss" className="space-y-4 m-0">
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between">
-                                        <Label className="text-xs font-bold uppercase tracking-wider text-slate-400">Select Source</Label>
+                                        <Label className="text-xs font-bold uppercase tracking-wider text-slate-400">Pilih Sumber</Label>
                                         <Dialog open={state.isAddFeedOpen} onOpenChange={handlers.setIsAddFeedOpen}>
                                             <DialogTrigger asChild>
                                                 <Button variant="ghost" size="sm" className="h-7 text-blue-600 px-2 hover:bg-transparent hover:text-blue-700">
-                                                    <Plus className="h-3.5 w-3.5 mr-1" /> Add
+                                                    <Plus className="h-3.5 w-3.5 mr-1" /> Tambah
                                                 </Button>
                                             </DialogTrigger>
-                                            <DialogContent className="glass border-none">
+                                            <DialogContent className="sm:max-w-md">
                                                 <DialogHeader>
-                                                    <DialogTitle>Add New Web Source</DialogTitle>
+                                                    <DialogTitle>Tambah Sumber Web Baru</DialogTitle>
                                                     <DialogDescription>
-                                                        Enter the URL of the feed you want to follow.
+                                                        Masukkan URL feed yang ingin Anda ikuti.
                                                     </DialogDescription>
                                                 </DialogHeader>
                                                 <div className="space-y-4 py-4">
                                                     <div className="space-y-2">
-                                                        <Label>Source Name</Label>
+                                                        <Label>Nama Sumber</Label>
                                                         <Input
-                                                            placeholder="e.g. TechCrunch"
+                                                            placeholder="cth: Detikcom"
                                                             value={state.newFeedName}
                                                             onChange={(e) => handlers.setNewFeedName(e.target.value)}
                                                             className="bg-white/50"
                                                         />
                                                     </div>
                                                     <div className="space-y-2">
-                                                        <Label>Source URL</Label>
+                                                        <Label>URL Sumber</Label>
                                                         <Input
                                                             placeholder="https://example.com/feed"
                                                             value={state.newFeedUrl}
@@ -125,8 +125,8 @@ export function SourceSidebar({ state, handlers }: SourceSidebarProps) {
                                                     </div>
                                                 </div>
                                                 <DialogFooter>
-                                                    <Button variant="outline" onClick={() => handlers.setIsAddFeedOpen(false)}>Cancel</Button>
-                                                    <Button onClick={handlers.handleAddFeed} disabled={!state.newFeedName || !state.newFeedUrl} className="bg-blue-600">Add Source</Button>
+                                                    <Button variant="outline" onClick={() => handlers.setIsAddFeedOpen(false)}>Batal</Button>
+                                                    <Button onClick={handlers.handleAddFeed} disabled={!state.newFeedName || !state.newFeedUrl} className="bg-blue-600">Tambah Sumber</Button>
                                                 </DialogFooter>
                                             </DialogContent>
                                         </Dialog>
@@ -135,9 +135,9 @@ export function SourceSidebar({ state, handlers }: SourceSidebarProps) {
                                         handlers.setSelectedFeed(val)
                                     }}>
                                         <SelectTrigger className="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-slate-200 dark:border-slate-700 h-11 rounded-xl">
-                                            <SelectValue placeholder="Select a feed..." />
+                                            <SelectValue placeholder="Pilih feed..." />
                                         </SelectTrigger>
-                                        <SelectContent className="glass border-none">
+                                        <SelectContent>
                                             {state.feeds.map((feed) => (
                                                 <SelectItem key={feed.id} value={feed.id}>
                                                     <div className="flex flex-col items-start text-left py-1">
@@ -151,12 +151,12 @@ export function SourceSidebar({ state, handlers }: SourceSidebarProps) {
                                 </div>
 
                                 <div className="space-y-3">
-                                    <Label className="text-xs font-bold uppercase tracking-wider text-slate-400">Select Article</Label>
+                                    <Label className="text-xs font-bold uppercase tracking-wider text-slate-400">Pilih Artikel</Label>
                                     <div className="space-y-2 max-h-[450px] overflow-y-auto pr-2 custom-scrollbar">
                                         {state.isFetchingRSS ? (
                                             <div className="flex flex-col items-center justify-center py-12 space-y-3 opacity-60">
                                                 <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
-                                                <p className="text-xs font-medium">Fetching articles...</p>
+                                                <p className="text-xs font-medium">Mengambil artikel...</p>
                                             </div>
                                         ) : state.articles.length > 0 ? (
                                             state.articles.map((article, idx) => (
@@ -182,7 +182,7 @@ export function SourceSidebar({ state, handlers }: SourceSidebarProps) {
                                         ) : (
                                             <div className="p-8 text-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-3xl opacity-50">
                                                 <Globe className="h-8 w-8 mx-auto mb-2 text-slate-300" />
-                                                <p className="text-xs font-medium">Select a source above</p>
+                                                <p className="text-xs font-medium">Pilih sumber di atas</p>
                                             </div>
                                         )}
                                     </div>
@@ -191,7 +191,7 @@ export function SourceSidebar({ state, handlers }: SourceSidebarProps) {
 
                             <TabsContent value="url" className="space-y-4 m-0">
                                 <div className="space-y-3">
-                                    <Label className="text-xs font-bold uppercase tracking-wider text-slate-400">Direct URL</Label>
+                                    <Label className="text-xs font-bold uppercase tracking-wider text-slate-400">URL Langsung</Label>
                                     <div className="flex flex-col gap-3">
                                         <Input
                                             placeholder="https://example.com/blog-post"
@@ -204,7 +204,7 @@ export function SourceSidebar({ state, handlers }: SourceSidebarProps) {
                                             disabled={state.isScraping || !scrapeUrl}
                                             className="w-full h-11 bg-blue-600 hover:bg-blue-700 rounded-xl shadow-lg shadow-blue-100 font-bold"
                                         >
-                                            {state.isScraping ? <Loader2 className="h-5 w-5 animate-spin" /> : "Scrape Content"}
+                                            {state.isScraping ? <Loader2 className="h-5 w-5 animate-spin" /> : "Tarik Konten"}
                                         </Button>
                                     </div>
                                 </div>
@@ -212,9 +212,9 @@ export function SourceSidebar({ state, handlers }: SourceSidebarProps) {
 
                             <TabsContent value="idea" className="space-y-4 m-0">
                                 <div className="space-y-3">
-                                    <Label className="text-xs font-bold uppercase tracking-wider text-slate-400">Describe your Idea</Label>
+                                    <Label className="text-xs font-bold uppercase tracking-wider text-slate-400">Deskripsikan Ide Anda</Label>
                                     <Textarea
-                                        placeholder="e.g. 5 tips for morning productivity or The future of web development..."
+                                        placeholder="cth: 5 tips produktivitas pagi atau Masa depan web development..."
                                         value={articleIdea}
                                         onChange={(e) => setArticleIdea(e.target.value)}
                                         className="min-h-[200px] bg-white/50 backdrop-blur-sm border-slate-200 rounded-2xl p-4 resize-none focus:ring-blue-500"

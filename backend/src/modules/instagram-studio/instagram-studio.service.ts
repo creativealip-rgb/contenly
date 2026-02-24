@@ -166,6 +166,11 @@ export class InstagramStudioService {
             throw new BadRequestException('Insufficient token balance');
         }
 
+        const withinDailyLimit = await this.billingService.checkDailyLimit(userId, 'INSTAGRAM_GENERATION');
+        if (!withinDailyLimit) {
+            throw new BadRequestException('Daily limit reached for Instagram Content Generation on your current plan. Please upgrade or try again tomorrow.');
+        }
+
         let content = dto.content || project.sourceContent;
         if (!content && project.sourceUrl) {
             try {
@@ -223,6 +228,7 @@ export class InstagramStudioService {
             .where(eq(instagramProject.id, projectId));
 
         await this.billingService.deductTokens(userId, 1, 'Storyboard generation');
+        await this.billingService.incrementDailyUsage(userId, 'INSTAGRAM_GENERATION');
 
         return this.getProject(userId, projectId);
     }
@@ -251,6 +257,11 @@ export class InstagramStudioService {
             );
         }
 
+        const withinDailyLimit = await this.billingService.checkDailyLimit(userId, 'INSTAGRAM_GENERATION');
+        if (!withinDailyLimit) {
+            throw new BadRequestException('Daily limit reached for Instagram Image Generation on your current plan.');
+        }
+
         const project = await this.getProject(userId, slide.projectId);
 
         // Combine prompts for the AI
@@ -270,6 +281,7 @@ export class InstagramStudioService {
                 2,
                 'Slide image generation',
             );
+            await this.billingService.incrementDailyUsage(userId, 'INSTAGRAM_GENERATION');
 
             return updated;
         } catch (error: any) {
@@ -305,6 +317,11 @@ export class InstagramStudioService {
         const hasBalance = await this.billingService.checkBalance(userId, 1);
         if (!hasBalance) {
             throw new BadRequestException('Insufficient token balance. You need 1 token to add text.');
+        }
+
+        const withinDailyLimit = await this.billingService.checkDailyLimit(userId, 'INSTAGRAM_GENERATION');
+        if (!withinDailyLimit) {
+            throw new BadRequestException('Daily limit reached for Instagram Text Generation on your current plan.');
         }
 
         this.logger.log(`[Text Overlay] Analyzing image layout for slide ${slideId} using Vision AI.`);
@@ -349,6 +366,7 @@ export class InstagramStudioService {
                 1,
                 'Slide text generation',
             );
+            await this.billingService.incrementDailyUsage(userId, 'INSTAGRAM_GENERATION');
 
             return {
                 success: true,

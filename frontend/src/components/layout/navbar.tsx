@@ -156,7 +156,7 @@ export function Navbar() {
                             {icons.tokens}
                         </div>
                         <div className="flex flex-col leading-tight">
-                            <span className="text-[10px] uppercase tracking-widest text-amber-500/60 font-black">Balance</span>
+                            <span className="text-[10px] uppercase tracking-widest text-amber-500/60 font-black">Saldo</span>
                             <span>{tokenBalance !== null ? tokenBalance.toLocaleString() : '---'}</span>
                         </div>
                     </motion.div>
@@ -188,13 +188,13 @@ export function Navbar() {
                             <DropdownMenuItem disabled className="rounded-lg opacity-50 cursor-not-allowed">
                                 <div className="flex items-center gap-3 px-3 py-2">
                                     {icons.user}
-                                    Profile (Soon)
+                                    Profil (Segera)
                                 </div>
                             </DropdownMenuItem>
                             <DropdownMenuItem disabled className="rounded-lg opacity-50 cursor-not-allowed">
                                 <div className="flex items-center gap-3 px-3 py-2">
                                     {icons.settings}
-                                    Settings (Soon)
+                                    Pengaturan (Segera)
                                 </div>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="my-2" />
@@ -204,7 +204,7 @@ export function Navbar() {
                             >
                                 <span className="flex items-center gap-3">
                                     {icons.logout}
-                                    Log out
+                                    Keluar
                                 </span>
                             </DropdownMenuItem>
                         </DropdownMenuContent>

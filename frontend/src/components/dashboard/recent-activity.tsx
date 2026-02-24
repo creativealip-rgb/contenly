@@ -63,8 +63,8 @@ const containerVariants = {
 
 const itemVariants = {
     hidden: { opacity: 0, x: -20 },
-    visible: { 
-        opacity: 1, 
+    visible: {
+        opacity: 1,
         x: 0,
         transition: {
             type: "spring" as const,
@@ -80,10 +80,10 @@ export function RecentActivity({ activities, isLoading }: RecentActivityProps) {
             <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                        Recent Activity
+                        Aktivitas Terkini
                     </CardTitle>
                     <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full">
-                        {isLoading ? 'Loading...' : `${activities.length} activities`}
+                        {isLoading ? 'Memuat...' : `${activities.length} aktivitas`}
                     </span>
                 </div>
             </CardHeader>
@@ -102,18 +102,18 @@ export function RecentActivity({ activities, isLoading }: RecentActivityProps) {
                         ))}
                     </div>
                 ) : activities.length === 0 ? (
-                    <motion.div 
+                    <motion.div
                         className="text-center py-12"
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ type: "spring", stiffness: 200, damping: 20 }}
                     >
-                        <motion.div 
+                        <motion.div
                             className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 mx-auto mb-4"
-                            animate={{ 
+                            animate={{
                                 y: [0, -5, 0],
                             }}
-                            transition={{ 
+                            transition={{
                                 duration: 3,
                                 repeat: Infinity,
                                 ease: "easeInOut"
@@ -122,10 +122,10 @@ export function RecentActivity({ activities, isLoading }: RecentActivityProps) {
                             <Clock className="w-6 h-6 text-muted-foreground" />
                         </motion.div>
                         <p className="text-sm text-muted-foreground font-medium">
-                            No recent activity
+                            Belum ada aktivitas
                         </p>
                         <p className="text-xs text-muted-foreground/60 mt-1">
-                            Your activity will appear here
+                            Aktivitas Anda akan muncul di sini
                         </p>
                     </motion.div>
                 ) : (
@@ -133,7 +133,7 @@ export function RecentActivity({ activities, isLoading }: RecentActivityProps) {
                         {/* Timeline line */}
                         <div className="absolute left-[15px] top-3 bottom-3 w-px bg-gradient-to-b from-border via-border to-transparent" />
 
-                        <motion.div 
+                        <motion.div
                             className="space-y-4"
                             variants={containerVariants}
                             initial="hidden"
@@ -150,7 +150,7 @@ export function RecentActivity({ activities, isLoading }: RecentActivityProps) {
                                         className="relative flex items-start gap-3 md:gap-4 w-full overflow-hidden group"
                                     >
                                         {/* Icon */}
-                                        <motion.div 
+                                        <motion.div
                                             className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${styles.bg} ${styles.icon} border ${styles.border} backdrop-blur-sm`}
                                             whileHover={{ scale: 1.1, rotate: 5 }}
                                             transition={{ type: "spring", stiffness: 400, damping: 17 }}

@@ -7,39 +7,39 @@ import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores'
 
 // Icons using Lucide for consistency
-import { 
-  LayoutDashboard, 
-  FlaskConical, 
-  FileText, 
-  Plug, 
-  CreditCard 
+import {
+  LayoutDashboard,
+  FlaskConical,
+  FileText,
+  Plug,
+  CreditCard
 } from 'lucide-react'
 
 const navItems = [
-  { 
-    href: '/dashboard', 
-    label: 'Dashboard', 
-    icon: LayoutDashboard 
+  {
+    href: '/dashboard',
+    label: 'Dashboard',
+    icon: LayoutDashboard
   },
-  { 
-    href: '/content-lab', 
-    label: 'Lab', 
-    icon: FlaskConical 
+  {
+    href: '/content-lab',
+    label: 'Lab',
+    icon: FlaskConical
   },
-  { 
-    href: '/articles', 
-    label: 'Articles', 
-    icon: FileText 
+  {
+    href: '/articles',
+    label: 'Artikel',
+    icon: FileText
   },
-  { 
-    href: '/integrations', 
-    label: 'Connect', 
-    icon: Plug 
+  {
+    href: '/integrations',
+    label: 'Integrasi',
+    icon: Plug
   },
-  { 
-    href: '/billing', 
-    label: 'Billing', 
-    icon: CreditCard 
+  {
+    href: '/billing',
+    label: 'Tagihan',
+    icon: CreditCard
   },
 ]
 
@@ -52,7 +52,7 @@ export function BottomNav() {
   if (isAuthPage) return null
 
   return (
-    <motion.nav 
+    <motion.nav
       initial={{ y: 100 }}
       animate={{ y: 0 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
@@ -84,11 +84,11 @@ export function BottomNav() {
                   }}
                   transition={{ type: "spring", stiffness: 500, damping: 30 }}
                 >
-                  <Icon 
+                  <Icon
                     className={cn(
                       "w-5 h-5 transition-colors duration-200",
                       isActive ? "text-[var(--brand-primary)]" : "text-muted-foreground"
-                    )} 
+                    )}
                     strokeWidth={isActive ? 2.5 : 2}
                   />
                 </motion.div>

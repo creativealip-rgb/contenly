@@ -61,7 +61,7 @@ export default function ViewBoostPage() {
       setJobs(response.data);
     } catch (error) {
       console.error('Failed to fetch jobs:', error);
-      if (showToast) toast.error('Failed to fetch jobs');
+      if (showToast) toast.error('Gagal mengambil pekerjaan');
     } finally {
       setIsTableLoading(false);
     }
@@ -121,7 +121,7 @@ export default function ViewBoostPage() {
             <h1 className="text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
               View Boost
             </h1>
-            <p className="text-slate-500 font-medium">Boost your article views with automated traffic.</p>
+            <p className="text-slate-500 font-medium">Tingkatkan tayangan artikel Anda dengan lalu lintas otomatis.</p>
           </div>
         </div>
 
@@ -129,25 +129,25 @@ export default function ViewBoostPage() {
         <motion.div variants={itemVariants}>
           <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
             <CardHeader>
-              <CardTitle className="text-sm uppercase tracking-wider text-muted-foreground font-semibold">Create New Job</CardTitle>
+              <CardTitle className="text-sm uppercase tracking-wider text-muted-foreground font-semibold">Buat Pekerjaan Baru</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={createJob} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="url">Target URL *</Label>
+                    <Label htmlFor="url">URL Target *</Label>
                     <Input id="url" type="url" placeholder="https://example.com/article" value={formData.url} onChange={(e) => setFormData({ ...formData, url: e.target.value })} required />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="targetViews">Target Views *</Label>
+                    <Label htmlFor="targetViews">Target Tayangan *</Label>
                     <Input id="targetViews" type="number" min={1} max={10000} value={formData.targetViews} onChange={(e) => setFormData({ ...formData, targetViews: parseInt(e.target.value) || 0 })} required />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="serviceType">Service Type *</Label>
+                    <Label htmlFor="serviceType">Jenis Layanan *</Label>
                     <Select value={formData.serviceType} onValueChange={(value: 'standard' | 'premium') => setFormData({ ...formData, serviceType: value })}>
-                      <SelectTrigger id="serviceType"><SelectValue placeholder="Select service type" /></SelectTrigger>
+                      <SelectTrigger id="serviceType"><SelectValue placeholder="Pilih jenis layanan" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="standard"><div className="flex items-center gap-2"><Zap className="w-4 h-4 text-amber-500" /><span>Standard</span></div></SelectItem>
+                        <SelectItem value="standard"><div className="flex items-center gap-2"><Zap className="w-4 h-4 text-amber-500" /><span>Standar</span></div></SelectItem>
                         <SelectItem value="premium"><div className="flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-blue-500" /><span>Premium</span></div></SelectItem>
                       </SelectContent>
                     </Select>
@@ -155,23 +155,23 @@ export default function ViewBoostPage() {
                 </div>
                 {formData.serviceType === 'premium' && (
                   <div className="space-y-2">
-                    <Label htmlFor="proxyList">Proxy List (optional)</Label>
+                    <Label htmlFor="proxyList">Daftar Proksi (opsional)</Label>
                     <Textarea id="proxyList" placeholder="http://user:pass@proxy1:8080&#10;http://proxy2:8080" value={formData.proxyList} onChange={(e) => setFormData({ ...formData, proxyList: e.target.value })} rows={4} />
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="delayMin">Min Delay (seconds)</Label>
+                    <Label htmlFor="delayMin">Penundaan Minimum (detik)</Label>
                     <Input id="delayMin" type="number" min={1} max={300} value={formData.delayMin} onChange={(e) => setFormData({ ...formData, delayMin: parseInt(e.target.value) })} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="delayMax">Max Delay (seconds)</Label>
+                    <Label htmlFor="delayMax">Penundaan Maksimum (detik)</Label>
                     <Input id="delayMax" type="number" min={1} max={300} value={formData.delayMax} onChange={(e) => setFormData({ ...formData, delayMax: parseInt(e.target.value) })} />
                   </div>
                 </div>
                 <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600">
                   <Plus className="w-4 h-4 mr-2" />
-                  {loading ? 'Creating...' : 'Create Job'}
+                  {loading ? 'Membuat...' : 'Buat Pekerjaan'}
                 </Button>
               </form>
             </CardContent>
@@ -182,25 +182,25 @@ export default function ViewBoostPage() {
         <motion.div variants={itemVariants}>
           <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
             <CardHeader>
-              <CardTitle className="text-sm uppercase tracking-wider text-muted-foreground font-semibold">Active Jobs</CardTitle>
+              <CardTitle className="text-sm uppercase tracking-wider text-muted-foreground font-semibold">Pekerjaan Aktif</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
                     <TableHead>URL</TableHead>
-                    <TableHead>Service</TableHead>
-                    <TableHead>Progress</TableHead>
+                    <TableHead>Layanan</TableHead>
+                    <TableHead>Kemajuan</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>Dibuat</TableHead>
+                    <TableHead>Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isTableLoading ? (
                     <TableRow><TableCell colSpan={6} className="py-12 text-center"><div className="flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-[var(--brand-primary)]" /></div></TableCell></TableRow>
                   ) : jobs.length === 0 ? (
-                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No jobs yet. Create one above!</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Belum ada pekerjaan. Buat satu di atas!</TableCell></TableRow>
                   ) : (
                     jobs.map((job) => (
                       <TableRow key={job.id}>
@@ -209,7 +209,7 @@ export default function ViewBoostPage() {
                           {job.serviceType === 'premium' ? (
                             <div className="flex items-center gap-1 text-blue-500 font-medium"><ShieldCheck className="w-4 h-4" /><span>Premium</span></div>
                           ) : (
-                            <div className="flex items-center gap-1 text-amber-500 font-medium"><Zap className="w-4 h-4" /><span>Standard</span></div>
+                            <div className="flex items-center gap-1 text-amber-500 font-medium"><Zap className="w-4 h-4" /><span>Standar</span></div>
                           )}
                         </TableCell>
                         <TableCell>

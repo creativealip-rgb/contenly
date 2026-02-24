@@ -230,7 +230,7 @@ export default function ContentLabPage() {
     const handleAIRewrite = async () => {
         const hasSource = activeTab === 'idea' ? articleIdea.trim() : sourceContent.trim();
         if (!hasSource) {
-            alert(activeTab === 'idea' ? 'Please enter your idea first' : 'Please select an article first')
+            alert(activeTab === 'idea' ? 'Harap masukkan ide Anda terlebih dahulu' : 'Harap pilih artikel terlebih dahulu')
             return
         }
         if (!selectedCategory) {
@@ -309,7 +309,7 @@ export default function ContentLabPage() {
 
     const handleRefreshSEO = async () => {
         if (!generatedContent || !generatedTitle) {
-            alert('Please generate content first')
+            alert('Harap buat konten terlebih dahulu')
             return
         }
 
@@ -374,20 +374,20 @@ export default function ContentLabPage() {
                     message: status === 'publish' ? 'Artikel berhasil dipublish!' : 'Draft berhasil disimpan!',
                     link: data.post.link,
                 })
-                toast.success(status === 'publish' ? 'Published!' : 'Draft saved!')
+                toast.success(status === 'publish' ? 'Berhasil dipublish!' : 'Draft tersimpan!')
             } else {
                 setPublishResult({
                     success: false,
                     message: data.error || 'Gagal mempublish artikel',
                 })
-                toast.error('Publish failed')
+                toast.error('Gagal mempublish')
             }
         } catch (error: any) {
             setPublishResult({
                 success: false,
                 message: error.message || 'Terjadi kesalahan',
             })
-            toast.error('An error occurred')
+            toast.error('Terjadi kesalahan')
         } finally {
             setIsPublishing(false)
         }
@@ -428,20 +428,20 @@ export default function ContentLabPage() {
                     link: data.post.link,
                 })
                 setIsScheduleOpen(false)
-                toast.success('Scheduled successfully!')
+                toast.success('Berhasil dijadwalkan!')
             } else {
                 setPublishResult({
                     success: false,
                     message: data.error || 'Gagal menjadwalkan artikel',
                 })
-                toast.error('Scheduling failed')
+                toast.error('Gagal menjadwalkan')
             }
         } catch (error: any) {
             setPublishResult({
                 success: false,
                 message: error.message || 'Terjadi kesalahan',
             })
-            toast.error('An error occurred')
+            toast.error('Terjadi kesalahan')
         } finally {
             setIsPublishing(false)
         }
@@ -449,7 +449,7 @@ export default function ContentLabPage() {
 
     const handleGenerateImage = async () => {
         if (!generatedTitle) {
-            toast.error('Please generate content first')
+            toast.error('Harap buat konten terlebih dahulu')
             return
         }
 
@@ -466,16 +466,16 @@ export default function ContentLabPage() {
             const data = await response.json()
             if (data.success && data.data?.imageUrl) {
                 setFeaturedImage(data.data.imageUrl)
-                toast.success('Generated featured image!')
+                toast.success('Berhasil membuat gambar utama!')
             } else if (data.imageUrl) { // Support both API formats found in conflicts
                 setFeaturedImage(data.imageUrl)
-                toast.success('Generated featured image!')
+                toast.success('Berhasil membuat gambar utama!')
             } else {
-                toast.error('Failed to generate image')
+                toast.error('Gagal membuat gambar')
             }
         } catch (error) {
             console.error('Image Gen error:', error)
-            toast.error('Failed to generate image')
+            toast.error('Gagal membuat gambar')
         } finally {
             setIsGeneratingImage(false)
         }
@@ -484,7 +484,7 @@ export default function ContentLabPage() {
     const handleCopy = () => {
         navigator.clipboard.writeText(generatedContent)
         setCopied(true)
-        toast.success('Copied to clipboard!')
+        toast.success('Disalin ke papan klip!')
         setTimeout(() => setCopied(false), 2000)
     }
 
@@ -518,13 +518,13 @@ export default function ContentLabPage() {
                                     value="sources"
                                     className="rounded-xl font-bold data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all"
                                 >
-                                    Sources
+                                    Sumber Daya
                                 </TabsTrigger>
                                 <TabsTrigger
                                     value="tools"
                                     className="rounded-xl font-bold data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all"
                                 >
-                                    AI Tools
+                                    Alat AI
                                 </TabsTrigger>
                             </TabsList>
                         </div>

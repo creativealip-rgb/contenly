@@ -85,7 +85,7 @@ export default function VideoScriptsPage() {
 
     const handleDeleteProject = async (e: React.MouseEvent, id: string) => {
         e.stopPropagation()
-        if (!confirm('Are you sure you want to delete this script?')) return
+        if (!confirm('Apakah Anda yakin ingin menghapus script ini?')) return
 
         try {
             const response = await fetch(`${API_BASE_URL}/video-scripts/projects/${id}`, {
@@ -120,7 +120,7 @@ export default function VideoScriptsPage() {
                     <h1 className="text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
                         Script Studio
                     </h1>
-                    <p className="text-slate-500 font-medium font-outfit">Convert articles into viral hooks and voiceover scripts.</p>
+                    <p className="text-slate-500 font-medium font-outfit">Ubah artikel menjadi hook viral dan naskah pengisi suara (voiceover).</p>
                 </div>
 
                 <div className="flex gap-4">
@@ -131,54 +131,63 @@ export default function VideoScriptsPage() {
                         className="h-12 px-6 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-white/40 glass border-none transition-all active:scale-95"
                     >
                         <Loader2 className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                        Sync
+                        Sinkronisasi
                     </Button>
 
                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                         <DialogTrigger asChild>
                             <Button className="h-12 px-8 bg-slate-900 hover:bg-black text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-slate-200 transition-all hover:scale-[1.02] active:scale-[0.98]">
                                 <Plus className="h-4 w-4 mr-2" />
-                                Create Script
+                                Buat Script
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="glass border-none max-w-md">
+                        <DialogContent className="sm:max-w-md">
                             <DialogHeader>
-                                <DialogTitle className="text-2xl font-black tracking-tight">Generate Narrative</DialogTitle>
-                                <DialogDescription className="font-medium">
-                                    Transform URLs into high-impact video scripts.
+                                <DialogTitle>Buat Proyek Script Baru</DialogTitle>
+                                <DialogDescription>
+                                    Mulai dengan memasukkan judul dan URL sumber untuk script Anda.
                                 </DialogDescription>
                             </DialogHeader>
-                            <div className="space-y-4 py-6">
+                            <div className="space-y-4 py-4">
                                 <div className="space-y-2">
-                                    <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 ml-1">Script Identity</Label>
+                                    <Label>Identitas Script</Label>
                                     <Input
-                                        placeholder="e.g., Apple Vision Pro Roast"
+                                        placeholder="cth: Apple Vision Pro Roast"
                                         value={newTitle}
                                         onChange={(e) => setNewTitle(e.target.value)}
                                         disabled={isCreating}
-                                        className="h-12 rounded-xl bg-white/50 border-slate-200 focus:ring-blue-400 font-bold"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 ml-1">Reference URL</Label>
+                                    <Label>URL Referensi (Opsional)</Label>
                                     <Input
                                         placeholder="https://techcrunch.com/..."
                                         value={newUrl}
                                         onChange={(e) => setNewUrl(e.target.value)}
                                         disabled={isCreating}
-                                        className="h-12 rounded-xl bg-white/50 border-slate-200 focus:ring-blue-400 font-mono text-xs"
                                     />
-                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide px-1 italic">Context is key for better scripts.</p>
+                                    <p className="text-xs text-muted-foreground mt-1">Konteks sangat penting untuk script yang lebih baik.</p>
                                 </div>
                             </div>
-                            <DialogFooter className="gap-2">
-                                <Button variant="ghost" className="rounded-xl font-bold" onClick={() => setIsDialogOpen(false)} disabled={isCreating}>Cancel</Button>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isCreating}>
+                                    Batal
+                                </Button>
                                 <Button
-                                    className="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-blue-100"
                                     onClick={handleCreateProject}
                                     disabled={!newTitle.trim() || isCreating}
                                 >
-                                    {isCreating ? 'Engine Starting...' : 'Ignite Generation'}
+                                    {isCreating ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                            Membuat...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Wand2 className="h-4 w-4 mr-2" />
+                                            Buat Script
+                                        </>
+                                    )}
                                 </Button>
                             </DialogFooter>
                         </DialogContent>
@@ -201,15 +210,15 @@ export default function VideoScriptsPage() {
                     <div className="h-20 w-20 bg-blue-50 rounded-[2.5rem] flex items-center justify-center mb-6 shadow-inner">
                         <Film className="h-10 w-10 text-blue-600" />
                     </div>
-                    <h2 className="text-2xl font-black tracking-tight mb-3">Quiet on the set</h2>
+                    <h2 className="text-2xl font-black tracking-tight mb-3">Belum ada script</h2>
                     <p className="max-w-md text-slate-500 font-medium">
-                        Your production studio is ready. Input a story and we'll craft the performance tools you need.
+                        Studio produksi Anda sudah siap. Masukkan cerita dan kami akan membuat naskah yang Anda butuhkan.
                     </p>
                     <Button
                         className="mt-8 h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-blue-100"
                         onClick={() => setIsDialogOpen(true)}
                     >
-                        Begin First Production
+                        Mulai Proyek Pertama
                     </Button>
                 </motion.div>
             ) : (

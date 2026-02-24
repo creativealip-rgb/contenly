@@ -103,7 +103,7 @@ export default function InstagramStudioEditorPage() {
 
     const handleGenerateStoryboard = async () => {
         if (!project?.sourceContent && !project?.sourceUrl) {
-            alert('Please add content or a URL to generate storyboard')
+            alert('Harap tambahkan konten atau URL untuk membuat storyboard')
             return
         }
 
@@ -175,14 +175,14 @@ export default function InstagramStudioEditorPage() {
                 const data = await response.json().catch(() => null)
                 fetchProject()
                 // You could show a toast here if you have a toast library configured
-                alert('Text generation simulated successfully!')
+                alert('Pembuatan teks berhasil disimulasikan!')
             } else {
                 const errData = await response.json().catch(() => null)
-                alert(`Failed to generate text overlay: ${errData?.message || response.statusText}`)
+                alert(`Gagal membuat teks overlay: ${errData?.message || response.statusText}`)
             }
         } catch (error) {
             console.error('Failed to generate text:', error)
-            alert('An error occurred while generating the text overlay')
+            alert('Terjadi kesalahan saat membuat teks overlay')
         } finally {
             setIsGeneratingText(null)
         }
@@ -260,7 +260,7 @@ export default function InstagramStudioEditorPage() {
     }
 
     const handleDeleteSlide = async (slideId: string) => {
-        if (!confirm('Are you sure you want to delete this slide?')) return
+        if (!confirm('Apakah Anda yakin ingin menghapus slide ini?')) return
         try {
             const response = await fetch(`${API_BASE_URL}/instagram-studio/slides/${slideId}`, {
                 method: 'DELETE',
@@ -300,7 +300,7 @@ export default function InstagramStudioEditorPage() {
     }
 
     const handleApplyStyleToAll = async (updates: Partial<Slide>) => {
-        if (!confirm('Apply this slide\'s font size, font color, and text position to ALL slides?')) return
+        if (!confirm("Terapkan ukuran font, warna font, dan posisi teks slide ini ke SEMUA slide?")) return
         setIsApplyingStyle(true)
         try {
             const response = await fetch(`${API_BASE_URL}/instagram-studio/projects/${projectId}/apply-style-to-all`, {
@@ -332,9 +332,9 @@ export default function InstagramStudioEditorPage() {
     if (!project) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px]">
-                <p className="text-muted-foreground">Project not found</p>
+                <p className="text-muted-foreground">Proyek tidak ditemukan</p>
                 <Button variant="link" onClick={() => router.push('/instagram-studio')}>
-                    Back to projects
+                    Kembali ke proyek
                 </Button>
             </div>
         )
@@ -346,12 +346,12 @@ export default function InstagramStudioEditorPage() {
                 <div className="flex items-center gap-4">
                     <Button variant="ghost" size="sm" onClick={() => router.push('/instagram-studio')}>
                         <ArrowLeft className="h-4 w-4 mr-2" />
-                        Back
+                        Kembali
                     </Button>
                     <div>
                         <h1 className="text-2xl font-bold">{project.title}</h1>
                         <p className="text-muted-foreground text-sm">
-                            {project.totalSlides} slides • {project.globalStyle}
+                            {project.totalSlides} slide • {project.globalStyle}
                         </p>
                     </div>
                 </div>
@@ -366,9 +366,9 @@ export default function InstagramStudioEditorPage() {
                 <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                     <CardContent className="flex flex-col items-center justify-center py-12">
                         <Sparkles className="h-16 w-16 text-muted-foreground/50 mb-4" />
-                        <h3 className="text-lg font-medium mb-2">No slides yet</h3>
+                        <h3 className="text-lg font-medium mb-2">Belum ada slide</h3>
                         <p className="text-muted-foreground text-center max-w-sm mb-4">
-                            Generate a storyboard from your content to create slides
+                            Buat storyboard dari konten Anda untuk membuat slide
                         </p>
                         <Button
                             onClick={handleGenerateStoryboard}
@@ -378,12 +378,12 @@ export default function InstagramStudioEditorPage() {
                             {isGeneratingStoryboard ? (
                                 <>
                                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                    Generating Storyboard...
+                                    Membuat Storyboard...
                                 </>
                             ) : (
                                 <>
                                     <Sparkles className="h-4 w-4 mr-2" />
-                                    Generate Storyboard (1 Token)
+                                    Buat Storyboard (1 Token)
                                 </>
                             )}
                         </Button>
@@ -396,7 +396,7 @@ export default function InstagramStudioEditorPage() {
                             <CardHeader className="pb-3 border-b mb-4">
                                 <div className="flex items-center justify-between">
                                     <CardTitle className="text-lg">
-                                        Slide {currentSlideIndex + 1} of {project.slides.length}
+                                        Slide {currentSlideIndex + 1} dari {project.slides.length}
                                     </CardTitle>
                                     <div className="flex items-center gap-2">
                                         <Button
@@ -404,7 +404,7 @@ export default function InstagramStudioEditorPage() {
                                             size="icon"
                                             onClick={() => setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1))}
                                             disabled={currentSlideIndex === 0}
-                                            title="Previous Slide"
+                                            title="Slide Sebelumnya"
                                         >
                                             <ChevronLeft className="h-4 w-4" />
                                         </Button>
@@ -413,7 +413,7 @@ export default function InstagramStudioEditorPage() {
                                             size="icon"
                                             onClick={() => setCurrentSlideIndex(Math.min(project.slides.length - 1, currentSlideIndex + 1))}
                                             disabled={currentSlideIndex === project.slides.length - 1}
-                                            title="Next Slide"
+                                            title="Slide Berikutnya"
                                         >
                                             <ChevronRight className="h-4 w-4" />
                                         </Button>
@@ -423,7 +423,7 @@ export default function InstagramStudioEditorPage() {
                                             size="icon"
                                             onClick={() => handleReorderSlide(currentSlide!.id, 'left')}
                                             disabled={currentSlideIndex === 0}
-                                            title="Move Left"
+                                            title="Pindah Kiri"
                                         >
                                             <MoveLeft className="h-4 w-4" />
                                         </Button>
@@ -432,7 +432,7 @@ export default function InstagramStudioEditorPage() {
                                             size="icon"
                                             onClick={() => handleReorderSlide(currentSlide!.id, 'right')}
                                             disabled={currentSlideIndex === project.slides.length - 1}
-                                            title="Move Right"
+                                            title="Pindah Kanan"
                                         >
                                             <MoveRight className="h-4 w-4" />
                                         </Button>
@@ -441,7 +441,7 @@ export default function InstagramStudioEditorPage() {
                                             size="icon"
                                             onClick={() => handleDeleteSlide(currentSlide!.id)}
                                             disabled={project.slides.length <= 1}
-                                            title="Delete Slide"
+                                            title="Hapus Slide"
                                         >
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
@@ -452,7 +452,7 @@ export default function InstagramStudioEditorPage() {
                                 {currentSlide && (
                                     <>
                                         <div className="space-y-2">
-                                            <Label>Text Content</Label>
+                                            <Label>Teks Konten</Label>
                                             <Textarea
                                                 value={editedContent}
                                                 onChange={(e) => {
@@ -469,7 +469,7 @@ export default function InstagramStudioEditorPage() {
                                         </div>
 
                                         <div className="space-y-2">
-                                            <Label>Visual Prompt</Label>
+                                            <Label>Prompt Visual</Label>
                                             <Textarea
                                                 value={currentSlide.visualPrompt || ''}
                                                 onChange={(e) => handleUpdateSlide(currentSlide.id, { visualPrompt: e.target.value })}
@@ -478,7 +478,7 @@ export default function InstagramStudioEditorPage() {
                                         </div>
 
                                         <div className="space-y-4">
-                                            <Label>Solid Background Color</Label>
+                                            <Label>Warna Latar Solid</Label>
                                             <div className="flex gap-2 items-center">
                                                 <Input
                                                     type="color"
@@ -487,7 +487,7 @@ export default function InstagramStudioEditorPage() {
                                                     className="h-10 w-20 cursor-pointer"
                                                 />
                                                 <p className="text-xs text-muted-foreground flex-1">
-                                                    Pick a color to instantly use a solid background instead of AI image.
+                                                    Pilih warna untuk menggunakan latar belakang solid daripada gambar AI.
                                                 </p>
                                             </div>
                                         </div>
@@ -502,17 +502,17 @@ export default function InstagramStudioEditorPage() {
                                                 {isGeneratingImage === currentSlide.id ? (
                                                     <>
                                                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                                        Generating Image...
+                                                        Membuat Gambar...
                                                     </>
                                                 ) : currentSlide.imageUrl ? (
                                                     <>
                                                         <RefreshCw className="h-4 w-4 mr-2" />
-                                                        Regenerate Image (2 Tokens)
+                                                        Buat Ulang Gambar (2 Token)
                                                     </>
                                                 ) : (
                                                     <>
                                                         <ImageIcon className="h-4 w-4 mr-2" />
-                                                        Generate Base Image (2 Tokens)
+                                                        Buat Gambar Dasar (2 Token)
                                                     </>
                                                 )}
                                             </Button>
@@ -525,12 +525,12 @@ export default function InstagramStudioEditorPage() {
                                                 {isGeneratingText === currentSlide.id ? (
                                                     <>
                                                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                                        Adding Text...
+                                                        Menambahkan Teks...
                                                     </>
                                                 ) : (
                                                     <>
                                                         <Type className="h-4 w-4 mr-2" />
-                                                        Burn Text to Image (1 Token) <Badge className="ml-2 bg-yellow-500 hover:bg-yellow-600 text-white border-0 text-[10px] px-1 py-0 h-4 rounded-full">NEW</Badge>
+                                                        Bakar Teks ke Gambar (1 Token) <Badge className="ml-2 bg-yellow-500 hover:bg-yellow-600 text-white border-0 text-[10px] px-1 py-0 h-4 rounded-full">BARU</Badge>
                                                     </>
                                                 )}
                                             </Button>
@@ -548,8 +548,8 @@ export default function InstagramStudioEditorPage() {
                                 className="flex-1 relative overflow-hidden"
                             >
                                 <ImageIcon className="h-4 w-4 mr-2" />
-                                Generate Missing Images
-                                <Badge className="ml-2 bg-yellow-500 hover:bg-yellow-600 text-white border-0 text-[10px] px-1 py-0 h-4">SOON</Badge>
+                                Buat Gambar yang Hilang
+                                <Badge className="ml-2 bg-yellow-500 hover:bg-yellow-600 text-white border-0 text-[10px] px-1 py-0 h-4">SEGERA</Badge>
                             </Button>
                             <Button
                                 onClick={handleExport}
@@ -559,12 +559,12 @@ export default function InstagramStudioEditorPage() {
                                 {isExporting ? (
                                     <>
                                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                        Exporting...
+                                        Mengekspor...
                                     </>
                                 ) : (
                                     <>
                                         <Download className="h-4 w-4 mr-2" />
-                                        Export Carousel
+                                        Ekspor Korsel
                                     </>
                                 )}
                             </Button>
@@ -574,7 +574,7 @@ export default function InstagramStudioEditorPage() {
                     <div className="space-y-4">
                         <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                             <CardHeader className="pb-3">
-                                <CardTitle className="text-lg">Preview</CardTitle>
+                                <CardTitle className="text-lg">Pratinjau</CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <div className="relative aspect-[4/5] rounded-lg overflow-hidden bg-slate-900 border border-slate-800 shadow-inner">
@@ -592,7 +592,7 @@ export default function InstagramStudioEditorPage() {
                                     ) : (
                                         <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center p-6 text-slate-500">
                                             <ImageIcon className="h-16 w-16 mb-4 opacity-20" />
-                                            <p className="opacity-50 text-sm">No Image Available</p>
+                                            <p className="opacity-50 text-sm">Gambar Tidak Tersedia</p>
                                         </div>
                                     )}
                                 </div>
@@ -601,7 +601,7 @@ export default function InstagramStudioEditorPage() {
 
                         <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                             <CardHeader className="pb-3">
-                                <CardTitle className="text-lg">All Slides</CardTitle>
+                                <CardTitle className="text-lg">Semua Slide</CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <div className="grid grid-cols-5 gap-2">
@@ -637,7 +637,7 @@ export default function InstagramStudioEditorPage() {
                                         onClick={handleAddSlide}
                                     >
                                         <Plus className="h-6 w-6 mb-1" />
-                                        <span className="text-xs font-medium">Add</span>
+                                        <span className="text-xs font-medium">Tambah</span>
                                     </div>
                                 </div>
                             </CardContent>

@@ -221,68 +221,65 @@ export default function FeedsPage() {
             <div className="flex items-center justify-between">
                 <div className="space-y-1">
                     <h1 className="text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
-                        Web Sources
+                        Sumber Web
                     </h1>
                     <p className="text-slate-500 font-medium">
-                        Automate content fetching from your favorite RSS feeds.
+                        Otomatiskan pengambilan konten dari RSS feed favorit Anda.
                     </p>
                 </div>
                 <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
                     <DialogTrigger asChild>
                         <Button className="h-12 px-6 bg-slate-900 hover:bg-black text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-slate-200 dark:shadow-none transition-all hover:scale-[1.02] active:scale-[0.98]">
                             <Plus className="h-5 w-5 mr-2" />
-                            New Source
+                            Tambah Sumber
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="glass border-none max-w-md">
+                    <DialogContent className="sm:max-w-md">
                         <DialogHeader>
-                            <DialogTitle className="text-2xl font-black tracking-tight">{editingFeedId ? 'Update Source' : 'Connect Source'}</DialogTitle>
-                            <DialogDescription className="font-medium">
-                                Configure a new RSS feed for auto-scraping.
+                            <DialogTitle>{editingFeedId ? 'Perbarui Sumber' : 'Hubungkan Sumber'}</DialogTitle>
+                            <DialogDescription>
+                                Atur RSS feed baru untuk penarikan konten otomatis (auto-scraping).
                             </DialogDescription>
                         </DialogHeader>
-                        <div className="space-y-4 py-6">
+                        <div className="space-y-4 py-4">
                             <div className="space-y-2">
-                                <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 ml-1">Source Name</Label>
+                                <Label>Nama Sumber</Label>
                                 <Input
-                                    placeholder="e.g., TechCrunch News"
-                                    className="h-12 rounded-xl bg-white/50 border-slate-200 focus:ring-blue-400 font-bold"
+                                    placeholder="cth., TechCrunch News"
                                     value={newFeedName}
                                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewFeedName(e.target.value)}
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 ml-1">Feed URL</Label>
+                                <Label>URL Feed</Label>
                                 <Input
                                     placeholder="https://example.com/feed"
-                                    className="h-12 rounded-xl bg-white/50 border-slate-200 focus:ring-blue-400 font-mono text-xs"
                                     value={newFeedUrl}
                                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewFeedUrl(e.target.value)}
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 ml-1">Polling Frequency</Label>
+                                <Label>Frekuensi Penarikan</Label>
                                 <Select value={pollingInterval} onValueChange={setPollingInterval}>
-                                    <SelectTrigger className="h-12 rounded-xl bg-white/50 border-slate-200 font-bold">
+                                    <SelectTrigger>
                                         <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent className="glass border-none">
-                                        <SelectItem value="5">Turbo (5 min)</SelectItem>
-                                        <SelectItem value="15">Frequent (15 min)</SelectItem>
-                                        <SelectItem value="30">Normal (30 min)</SelectItem>
-                                        <SelectItem value="60">Daily (1 hour)</SelectItem>
+                                    <SelectContent>
+                                        <SelectItem value="5">Turbo (5 menit)</SelectItem>
+                                        <SelectItem value="15">Sering (15 menit)</SelectItem>
+                                        <SelectItem value="30">Normal (30 menit)</SelectItem>
+                                        <SelectItem value="60">Harian (1 jam)</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                         </div>
-                        <DialogFooter className="gap-2">
-                            <Button variant="ghost" className="rounded-xl font-bold" onClick={() => { setIsAddOpen(false); resetForm(); }}>Cancel</Button>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => { setIsAddOpen(false); resetForm(); }}>Batal</Button>
                             <Button
-                                className="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-blue-100"
                                 onClick={handleAddFeed}
                                 disabled={!newFeedName || !newFeedUrl}
                             >
-                                {editingFeedId ? 'Update' : 'Add Source'}
+                                {editingFeedId ? 'Perbarui' : 'Tambah Sumber'}
                             </Button>
                         </DialogFooter>
                     </DialogContent>
@@ -302,7 +299,7 @@ export default function FeedsPage() {
                             </div>
                             <div className="min-w-0">
                                 <p className="text-3xl font-black tracking-tighter">{feeds.length}</p>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Sources</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Sumber</p>
                             </div>
                         </div>
                     </Card>
@@ -318,7 +315,7 @@ export default function FeedsPage() {
                             </div>
                             <div className="min-w-0">
                                 <p className="text-3xl font-black tracking-tighter">{feeds.filter(f => f.status?.toUpperCase() === 'ACTIVE').length}</p>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Syncing</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Aktif</p>
                             </div>
                         </div>
                     </Card>
@@ -334,7 +331,7 @@ export default function FeedsPage() {
                             </div>
                             <div className="min-w-0">
                                 <p className="text-3xl font-black tracking-tighter">{feeds.reduce((acc, f) => acc + (f.itemsFetched || 0), 0)}</p>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Articles Scraped</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Artikel Ditarik</p>
                             </div>
                         </div>
                     </Card>
@@ -349,19 +346,19 @@ export default function FeedsPage() {
                 className="card-clean p-8"
             >
                 <div className="mb-8">
-                    <h2 className="text-xl font-black tracking-tight">Active Stream</h2>
-                    <p className="text-slate-400 text-sm font-medium">Monitoring sources in real-time</p>
+                    <h2 className="text-xl font-black tracking-tight">Stream Aktif</h2>
+                    <p className="text-slate-400 text-sm font-medium">Memantau sumber daya secara real-time</p>
                 </div>
 
                 <div className="rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-slate-800">
                     <Table>
                         <TableHeader className="bg-slate-50/50 dark:bg-slate-800/20">
                             <TableRow className="border-none hover:bg-transparent">
-                                <TableHead className="h-16 font-black text-slate-400 uppercase tracking-widest text-[10px] px-8">Source Name</TableHead>
+                                <TableHead className="h-16 font-black text-slate-400 uppercase tracking-widest text-[10px] px-8">Nama Sumber</TableHead>
                                 <TableHead className="h-16 font-black text-slate-400 uppercase tracking-widest text-[10px]">Status</TableHead>
-                                <TableHead className="h-16 font-black text-slate-400 uppercase tracking-widest text-[10px]">Freq</TableHead>
-                                <TableHead className="h-16 font-black text-slate-400 uppercase tracking-widest text-[10px]">Last Synced</TableHead>
-                                <TableHead className="h-16 font-black text-slate-400 uppercase tracking-widest text-[10px]">Count</TableHead>
+                                <TableHead className="h-16 font-black text-slate-400 uppercase tracking-widest text-[10px]">Frekuensi</TableHead>
+                                <TableHead className="h-16 font-black text-slate-400 uppercase tracking-widest text-[10px]">Sinkronisasi Terakhir</TableHead>
+                                <TableHead className="h-16 font-black text-slate-400 uppercase tracking-widest text-[10px]">Jumlah</TableHead>
                                 <TableHead className="h-16 text-right px-8"></TableHead>
                             </TableRow>
                         </TableHeader>
@@ -375,7 +372,7 @@ export default function FeedsPage() {
                             ) : feeds.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={6} className="text-center py-20 text-slate-400 font-bold uppercase tracking-widest text-xs">
-                                        No data streams found
+                                        Tidak ada sumber web yang ditemukan
                                     </TableCell>
                                 </TableRow>
                             ) : (
@@ -409,37 +406,37 @@ export default function FeedsPage() {
                                                         <MoreHorizontal className="h-5 w-5" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="glass border-none min-w-[170px]">
+                                                <DropdownMenuContent align="end" className="min-w-[170px]">
                                                     <DropdownMenuItem
                                                         onClick={() => handlePollNow(feed.id)}
                                                         disabled={isPolling === feed.id}
-                                                        className="font-bold py-2.5"
+                                                        className="cursor-pointer"
                                                     >
                                                         <RefreshCw className={`h-4 w-4 mr-2 ${isPolling === feed.id ? 'animate-spin' : ''}`} />
-                                                        {isPolling === feed.id ? 'Fetching...' : 'Manual Sync'}
+                                                        {isPolling === feed.id ? 'Menarik data...' : 'Sinkronisasi Manual'}
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => handleEditClick(feed)} className="font-bold py-2.5">
+                                                    <DropdownMenuItem onClick={() => handleEditClick(feed)} className="cursor-pointer">
                                                         <Edit className="h-4 w-4 mr-2" />
-                                                        Configurations
+                                                        Konfigurasi
                                                     </DropdownMenuItem>
                                                     {(feed.status || 'ACTIVE').toUpperCase() === 'ACTIVE' ? (
-                                                        <DropdownMenuItem onClick={() => handleToggleStatus(feed)} className="font-bold py-2.5 text-amber-600">
+                                                        <DropdownMenuItem onClick={() => handleToggleStatus(feed)} className="text-amber-600 focus:bg-amber-100 cursor-pointer">
                                                             <Pause className="h-4 w-4 mr-2" />
-                                                            Pause Stream
+                                                            Jeda Stream
                                                         </DropdownMenuItem>
                                                     ) : (
-                                                        <DropdownMenuItem onClick={() => handleToggleStatus(feed)} className="font-bold py-2.5 text-emerald-600">
+                                                        <DropdownMenuItem onClick={() => handleToggleStatus(feed)} className="text-emerald-600 focus:bg-emerald-100 cursor-pointer">
                                                             <Play className="h-4 w-4 mr-2" />
-                                                            Resume Stream
+                                                            Lanjutkan Stream
                                                         </DropdownMenuItem>
                                                     )}
-                                                    <DropdownMenuSeparator className="opacity-50" />
+                                                    <DropdownMenuSeparator />
                                                     <DropdownMenuItem
-                                                        className="text-rose-600 font-extrabold py-2.5"
+                                                        className="text-destructive focus:bg-destructive/10 cursor-pointer"
                                                         onClick={() => handleRemoveFeed(feed.id)}
                                                     >
                                                         <Trash2 className="h-4 w-4 mr-2" />
-                                                        Kill Stream
+                                                        Hapus Stream
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>

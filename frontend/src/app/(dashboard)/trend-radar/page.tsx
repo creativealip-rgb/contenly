@@ -141,13 +141,13 @@ export default function TrendRadarPage() {
                 >
                     <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest mb-4">
                         <Sparkles className="h-3.5 w-3.5 mr-2" />
-                        AI Discovery
+                        Penemuan AI
                     </Badge>
                     <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter leading-[0.9]">
-                        Trend Radar <span className="text-blue-500">.</span>
+                        Radar Tren <span className="text-blue-500">.</span>
                     </h1>
                     <p className="text-slate-400 text-lg md:text-xl font-medium tracking-tight max-w-2xl mx-auto">
-                        Research the most viral topics on the internet and transform them into high-performing articles instantly.
+                        Lakukan riset topik paling sedang dibicarakan di internet dan ubah menjadi artikel berkualitas tinggi secara instan.
                     </p>
 
                     <form onSubmit={handleSearch} className="relative max-w-2xl mx-auto pt-6 group">
@@ -159,7 +159,7 @@ export default function TrendRadarPage() {
                             <Input
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
-                                placeholder="What's trending in 'Artificial Intelligence'..."
+                                placeholder="Apa yang sedang viral tentang 'Kecerdasan Buatan'..."
                                 className="border-none bg-transparent focus-visible:ring-0 text-lg h-14 font-bold"
                             />
                             <Button
@@ -167,7 +167,7 @@ export default function TrendRadarPage() {
                                 disabled={isSearching}
                                 className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl h-12 px-8 font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-500/25"
                             >
-                                {isSearching ? <Loader2 className="h-5 w-5 animate-spin" /> : "Discover"}
+                                {isSearching ? <Loader2 className="h-5 w-5 animate-spin" /> : "Temukan"}
                             </Button>
                         </div>
                     </form>
@@ -187,7 +187,7 @@ export default function TrendRadarPage() {
                                 <div className="h-20 w-20 rounded-full border-4 border-slate-100 border-t-blue-600 animate-spin" />
                                 <TrendingUp className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-8 w-8 text-blue-600" />
                             </div>
-                            <p className="font-black uppercase tracking-[0.2em] text-slate-400 text-xs text-center ml-2">Scanning Global Trends...</p>
+                            <p className="font-black uppercase tracking-[0.2em] text-slate-400 text-xs text-center ml-2">Memindai Tren Global...</p>
                         </motion.div>
                     ) : results.length > 0 ? (
                         <motion.div
@@ -229,7 +229,7 @@ export default function TrendRadarPage() {
                                                 </div>
                                                 <div className="flex items-center gap-1.5 text-emerald-500">
                                                     <Zap className="h-3.5 w-3.5" />
-                                                    High Viral Potential
+                                                    Potensi Viral Tinggi
                                                 </div>
                                             </div>
 
@@ -238,7 +238,7 @@ export default function TrendRadarPage() {
                                                 className="w-full h-12 rounded-2xl font-black uppercase tracking-widest text-xs bg-slate-50 hover:bg-blue-50 hover:text-blue-600 transition-all border-none shadow-none"
                                                 onClick={() => handleAnalyze(trend)}
                                             >
-                                                AI Insight
+                                                Insight AI
                                             </Button>
                                         </CardContent>
                                     </Card>
@@ -255,8 +255,8 @@ export default function TrendRadarPage() {
                                 <SearchX className="h-16 w-16 opacity-20" />
                             </div>
                             <div className="text-center space-y-2">
-                                <h3 className="text-xl font-black text-slate-600 dark:text-slate-300">Ready to Discover?</h3>
-                                <p className="text-sm font-bold opacity-60">Enter a keyword above to find viral content across the web.</p>
+                                <h3 className="text-xl font-black text-slate-600 dark:text-slate-300">Penasaran dengan Tren Saat Ini?</h3>
+                                <p className="text-sm font-bold opacity-60">Pindai topik viral populer di internet hari ini dengan kotak pencarian.</p>
                             </div>
                         </motion.div>
                     )}
@@ -274,12 +274,12 @@ export default function TrendRadarPage() {
                             <SheetHeader className="text-left space-y-4">
                                 <div className="flex items-center justify-between">
                                     <Badge className="bg-blue-500 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border-none">
-                                        Trend Analysis
+                                        Analisis Tren
                                     </Badge>
                                     {analysis && (
                                         <div className="flex items-center gap-2">
                                             <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                                            <span className="text-[10px] font-black uppercase text-emerald-500">Viral Match: {analysis.score}%</span>
+                                            <span className="text-[10px] font-black uppercase text-emerald-500">Skor Viralitas: {analysis.score}%</span>
                                         </div>
                                     )}
                                 </div>
@@ -312,13 +312,13 @@ export default function TrendRadarPage() {
                                     {/* Score & Sentiment */}
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-[2rem] text-center border border-white/40">
-                                            <p className="text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Sentiment</p>
+                                            <p className="text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Sentimen</p>
                                             <p className={`text-xl font-black capitalize ${analysis.sentiment === 'positive' ? 'text-emerald-500' : analysis.sentiment === 'negative' ? 'text-rose-500' : 'text-slate-500'}`}>
-                                                {analysis.sentiment}
+                                                {analysis.sentiment === 'positive' ? 'Positif' : analysis.sentiment === 'negative' ? 'Negatif' : 'Netral'}
                                             </p>
                                         </div>
                                         <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-[2rem] text-center border border-blue-100/40">
-                                            <p className="text-[10px] font-black uppercase text-blue-400 mb-2 tracking-widest">Viral Score</p>
+                                            <p className="text-[10px] font-black uppercase text-blue-400 mb-2 tracking-widest">Skor Viral</p>
                                             <p className="text-3xl font-black text-blue-600 leading-none">
                                                 {analysis.score}<span className="text-xs">%</span>
                                             </p>
@@ -328,7 +328,7 @@ export default function TrendRadarPage() {
                                     {/* Hooks */}
                                     <div className="space-y-4">
                                         <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                                            <Zap className="h-3 w-3 text-amber-500" /> AI Suggestions (Hooks)
+                                            <Zap className="h-3 w-3 text-amber-500" /> Saran Pembuatan (Hooks) AI
                                         </h4>
                                         <div className="space-y-3">
                                             {analysis.hooks.map((hook, i) => (
@@ -344,7 +344,7 @@ export default function TrendRadarPage() {
 
                                     {/* Strategy */}
                                     <div className="space-y-4">
-                                        <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-400">Content Strategy</h4>
+                                        <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-400">Strategi Konten</h4>
                                         <div className="p-6 bg-slate-950 text-slate-300 rounded-[2rem] border border-white/5 italic font-medium leading-relaxed">
                                             "{analysis.strategy}"
                                         </div>
@@ -352,7 +352,7 @@ export default function TrendRadarPage() {
 
                                     {/* Keywords */}
                                     <div className="space-y-4">
-                                        <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-400">Target Keywords</h4>
+                                        <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-400">Kata Kunci Target</h4>
                                         <div className="flex flex-wrap gap-2">
                                             {analysis.keywords.map((kw, i) => (
                                                 <Badge key={i} variant="outline" className="rounded-xl px-4 py-2 border-slate-200 font-bold text-slate-600">
@@ -371,7 +371,7 @@ export default function TrendRadarPage() {
                                 className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-blue-500/20"
                                 disabled={isAnalyzing}
                             >
-                                <Zap className="h-4 w-4 mr-2" /> Ignite in Content Lab
+                                <Zap className="h-4 w-4 mr-2" /> Buat Artikel di Content Lab
                             </Button>
                         </div>
                     </div>

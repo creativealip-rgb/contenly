@@ -61,7 +61,7 @@ export default function VideoScriptEditorPage() {
 
     const handleGenerateScript = async () => {
         if (!editedContent.trim()) {
-            alert('Please provide some source content first.')
+            alert('Harap berikan beberapa konten sumber terlebih dahulu.')
             return
         }
 
@@ -81,11 +81,11 @@ export default function VideoScriptEditorPage() {
                 await fetchProject()
             } else {
                 const errorData = await response.json()
-                alert(`Error generating script: ${errorData.message || 'Unknown error'}`)
+                alert(`Kesalahan membuat skrip: ${errorData.message || 'Kesalahan tidak diketahui'}`)
             }
         } catch (error) {
             console.error('Failed to generate script:', error)
-            alert('A network error occurred while generating the script.')
+            alert('Terjadi kesalahan jaringan saat membuat skrip.')
         } finally {
             setIsGenerating(false)
         }
@@ -95,11 +95,11 @@ export default function VideoScriptEditorPage() {
         if (!project?.scenes || project.scenes.length === 0) return
 
         const fullScript = project.scenes.map(s =>
-            `--- SCENE ${s.sceneNumber} ---\n[Visual]: ${s.visualContext}\n[Voiceover]: ${s.voiceoverText}\n`
+            `--- ADEGAN ${s.sceneNumber} ---\n[Visual]: ${s.visualContext}\n[Voiceover]: ${s.voiceoverText}\n`
         ).join('\n')
 
         navigator.clipboard.writeText(fullScript).then(() => {
-            alert('Script copied to clipboard!')
+            alert('Skrip disalin ke papan klip!')
         })
     }
 
@@ -114,8 +114,8 @@ export default function VideoScriptEditorPage() {
     if (!project) {
         return (
             <div className="container mx-auto p-6 text-center">
-                <h1 className="text-2xl font-bold mb-4">Project Not Found</h1>
-                <Button onClick={() => router.push('/video-scripts')}>Return to Dashboard</Button>
+                <h1 className="text-2xl font-bold mb-4">Proyek Tidak Ditemukan</h1>
+                <Button onClick={() => router.push('/video-scripts')}>Kembali ke Dashboard</Button>
             </div>
         )
     }
@@ -134,7 +134,7 @@ export default function VideoScriptEditorPage() {
                         <h1 className="text-2xl font-bold leading-tight">{project.title}</h1>
                         {project.sourceUrl && (
                             <a href={project.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
-                                Source: {new URL(project.sourceUrl).hostname}
+                                Sumber: {new URL(project.sourceUrl).hostname}
                             </a>
                         )}
                     </div>
@@ -148,19 +148,19 @@ export default function VideoScriptEditorPage() {
                         disabled={isGenerating || !editedContent.trim()}
                     >
                         {isGenerating ? (
-                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</>
+                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Membuat...</>
                         ) : (
-                            <><Wand2 className="mr-2 h-4 w-4" /> {hasScenes ? "Regenerate Script" : "Generate Script (1 Token)"}</>
+                            <><Wand2 className="mr-2 h-4 w-4" /> {hasScenes ? "Buat Ulang Skrip" : "Buat Skrip (1 Token)"}</>
                         )}
                     </Button>
 
                     {hasScenes && (
                         <>
                             <Button variant="secondary" onClick={handleCopyScript} className="whitespace-nowrap">
-                                <Copy className="mr-2 h-4 w-4" /> Copy All
+                                <Copy className="mr-2 h-4 w-4" /> Salin Semua
                             </Button>
                             <Button variant="outline" disabled className="whitespace-nowrap border-indigo-200 text-indigo-700 bg-indigo-50/50">
-                                <PlayCircle className="mr-2 h-4 w-4" /> Generate Voiceover <Badge variant="secondary" className="ml-2 text-[10px] h-4 px-1 bg-indigo-100 text-indigo-800">SOON</Badge>
+                                <PlayCircle className="mr-2 h-4 w-4" /> Buat Voiceover <Badge variant="secondary" className="ml-2 text-[10px] h-4 px-1 bg-indigo-100 text-indigo-800">SEGERA</Badge>
                             </Button>
                         </>
                     )}
@@ -173,15 +173,15 @@ export default function VideoScriptEditorPage() {
                     <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl sticky top-6">
                         <CardHeader className="pb-3 bg-indigo-50/50 rounded-t-xl">
                             <CardTitle className="text-lg flex items-center">
-                                <AlignLeft className="h-4 w-4 mr-2 text-indigo-500" /> Source Content
+                                <AlignLeft className="h-4 w-4 mr-2 text-indigo-500" /> Konten Sumber
                             </CardTitle>
                             <CardDescription>
-                                The text below will be converted into a fast-paced video script. You can edit this before generating.
+                                Teks di bawah ini akan diubah menjadi skrip video yang bergerak cepat. Anda dapat mengeditnya sebelum membuat skrip.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="pt-4">
                             <Textarea
-                                placeholder="Paste your article or raw content here..."
+                                placeholder="Tempel artikel atau konten mentah Anda di sini..."
                                 className="min-h-[500px] resize-y"
                                 value={editedContent}
                                 onChange={(e) => setEditedContent(e.target.value)}
@@ -195,9 +195,9 @@ export default function VideoScriptEditorPage() {
                     {!hasScenes ? (
                         <div className="h-full min-h-[400px] flex flex-col items-center justify-center border-2 border-dashed rounded-xl border-slate-200 bg-slate-50/50 p-12 text-center">
                             <Wand2 className="h-12 w-12 text-slate-300 mb-4" />
-                            <h3 className="text-xl font-medium text-slate-700 mb-2">No script generated yet</h3>
+                            <h3 className="text-xl font-medium text-slate-700 mb-2">Belum ada skrip yang dibuat</h3>
                             <p className="text-slate-500 max-w-sm">
-                                Review your source content on the left, then click Generate Script to let AI create your visual hooks and voiceover!
+                                Tinjau konten sumber Anda di sebelah kiri, lalu klik Buat Skrip untuk membiarkan AI membuat hook visual dan voiceover Anda!
                             </p>
                         </div>
                     ) : (
@@ -206,9 +206,9 @@ export default function VideoScriptEditorPage() {
                                 <Card key={scene.id} className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                                     <div className="bg-slate-900 text-slate-100 px-4 py-2 flex items-center justify-between">
                                         <div className="font-semibold tracking-wide text-sm">
-                                            SCENE {scene.sceneNumber}
-                                            {index === 0 && <Badge variant="secondary" className="ml-3 bg-pink-500/20 text-pink-300 border-none">The Hook</Badge>}
-                                            {index === project.scenes.length - 1 && <Badge variant="secondary" className="ml-3 bg-blue-500/20 text-blue-300 border-none">The Call to Action</Badge>}
+                                            ADEGAN {scene.sceneNumber}
+                                            {index === 0 && <Badge variant="secondary" className="ml-3 bg-pink-500/20 text-pink-300 border-none">Hook</Badge>}
+                                            {index === project.scenes.length - 1 && <Badge variant="secondary" className="ml-3 bg-blue-500/20 text-blue-300 border-none">Ajakan Bertindak</Badge>}
                                         </div>
                                     </div>
 
@@ -217,7 +217,7 @@ export default function VideoScriptEditorPage() {
                                             {/* Visual Context Column */}
                                             <div className="p-5 bg-slate-50/50">
                                                 <div className="flex items-center text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
-                                                    <Eye className="h-3.5 w-3.5 mr-1.5" /> Visuals / B-Roll
+                                                    <Eye className="h-3.5 w-3.5 mr-1.5" /> Visual / B-Roll
                                                 </div>
                                                 <p className="text-sm text-slate-700 leading-relaxed font-medium">
                                                     {scene.visualContext}
@@ -227,7 +227,7 @@ export default function VideoScriptEditorPage() {
                                             {/* Voiceover Column */}
                                             <div className="p-5">
                                                 <div className="flex items-center text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
-                                                    <PlayCircle className="h-3.5 w-3.5 mr-1.5" /> Voiceover Text
+                                                    <PlayCircle className="h-3.5 w-3.5 mr-1.5" /> Teks Voiceover
                                                 </div>
                                                 <p className="text-base text-slate-900 leading-relaxed">
                                                     "{scene.voiceoverText}"

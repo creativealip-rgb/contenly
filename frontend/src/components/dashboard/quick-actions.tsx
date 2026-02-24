@@ -6,24 +6,24 @@ import { FlaskConical, Rss, Plug, ArrowRight } from 'lucide-react'
 
 const quickActions = [
     {
-        label: 'New Content',
-        description: 'Generate AI content from URL',
+        label: 'Konten Baru',
+        description: 'Buat konten AI dari struktur tautan',
         href: '/content-lab',
         icon: FlaskConical,
         gradient: 'from-blue-600 to-blue-400',
         delay: 0,
     },
     {
-        label: 'Add Source',
-        description: 'Set up auto-fetching',
+        label: 'Tambah Sumber',
+        description: 'Atur pengambilan otomatis (RSS)',
         href: '/feeds',
         icon: Rss,
         gradient: 'from-cyan-500 to-blue-500',
         delay: 1,
     },
     {
-        label: 'Connect Site',
-        description: 'Add WordPress site',
+        label: 'Hubungkan Situs',
+        description: 'Tambah situs WordPress',
         href: '/integrations',
         icon: Plug,
         gradient: 'from-blue-500 to-cyan-500',
@@ -40,7 +40,7 @@ export function QuickActions({ isLoading }: QuickActionsProps) {
         <Card variant="glass" className="overflow-hidden">
             <CardHeader className="pb-4">
                 <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                    Quick Actions
+                    Aksi Cepat
                 </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3 px-3 sm:px-6 pb-6">
@@ -63,7 +63,7 @@ export function QuickActions({ isLoading }: QuickActionsProps) {
                                 key={action.href}
                                 initial={{ opacity: 0, x: 20 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                transition={{ 
+                                transition={{
                                     delay: action.delay * 0.1 + 0.3,
                                     type: "spring",
                                     stiffness: 100,
@@ -76,12 +76,12 @@ export function QuickActions({ isLoading }: QuickActionsProps) {
                                         animate={false}
                                         className="group w-full h-auto p-3 hover:bg-white/60 dark:hover:bg-white/5 transition-all duration-200 rounded-xl overflow-hidden border-white/40 dark:border-white/10"
                                     >
-                                        <motion.div 
+                                        <motion.div
                                             className="flex items-center gap-3 w-full min-w-0"
                                             whileHover={{ x: 4 }}
                                             transition={{ type: "spring", stiffness: 400, damping: 25 }}
                                         >
-                                            <motion.div 
+                                            <motion.div
                                                 className={`flex-shrink-0 flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-xl bg-gradient-to-br ${action.gradient} text-white shadow-lg`}
                                                 whileHover={{ scale: 1.1, rotate: 5 }}
                                                 transition={{ type: "spring", stiffness: 400, damping: 17 }}
@@ -93,7 +93,7 @@ export function QuickActions({ isLoading }: QuickActionsProps) {
                                                     <div className="font-semibold truncate text-xs md:text-sm">{action.label}</div>
                                                     <div className="text-[10px] md:text-xs text-muted-foreground truncate opacity-80">{action.description}</div>
                                                 </div>
-                                                <motion.div 
+                                                <motion.div
                                                     className="flex-shrink-0 text-muted-foreground/50 group-hover:text-[var(--brand-primary)] transition-colors"
                                                     initial={{ x: 0 }}
                                                     whileHover={{ x: 4 }}
