@@ -5,7 +5,7 @@ import { DrizzleService } from '../../db/drizzle.service';
 import { wpSite, categoryMapping, article } from '../../db/schema';
 import { ArticlesService } from '../articles/articles.service';
 import axios from 'axios';
-import * as sharp from 'sharp';
+import sharp from 'sharp';
 import { validate as uuidValidate } from 'uuid';
 import { WpCategory, WpPostData, WpPostResponse, ArticleStatus, ArticleUpdateData } from '../../db/types';
 import { BillingService } from '../billing/billing.service';

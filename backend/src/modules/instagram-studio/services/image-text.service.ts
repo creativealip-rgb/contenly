@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as sharp from 'sharp';
+import sharp from 'sharp';
 import axios from 'axios';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 

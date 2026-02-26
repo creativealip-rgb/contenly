@@ -58,6 +58,15 @@ export class OpenAiService {
     console.log(`✅ Model set to: ${this.model}`);
   }
 
+  // Getter for accessing the OpenAI client
+  getClient(): OpenAI {
+    return this.openai;
+  }
+
+  getModel(): string {
+    return this.model;
+  }
+
   async generateContent(
     originalContent: string,
     options: {
