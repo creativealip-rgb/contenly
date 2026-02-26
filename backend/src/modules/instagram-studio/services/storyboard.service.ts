@@ -16,12 +16,13 @@ interface StoryboardResult {
 
 @Injectable()
 export class StoryboardService {
-  constructor(private openAiService: OpenAiService) {}
+  constructor(private openAiService: OpenAiService) { }
 
   async generateStoryboard(
     content: string,
     style: string = 'modern minimal',
     targetSlides?: number,
+    model?: string,
   ): Promise<StoryboardResult> {
     const systemPrompt = this.buildSystemPrompt(style, targetSlides);
     const userPrompt = this.buildUserPrompt(content);
@@ -30,6 +31,7 @@ export class StoryboardService {
       mode: 'custom',
       systemPrompt,
       responseFormat: 'json',
+      model,
     } as any);
 
     return this.parseResponse(response);

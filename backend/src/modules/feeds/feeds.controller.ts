@@ -13,12 +13,15 @@ import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { User } from '../../db/types';
 
+import { CreateFeedDto } from './dto/create-feed.dto';
+import { UpdateFeedDto } from './dto/update-feed.dto';
+
 @ApiTags('feeds')
 @ApiBearerAuth()
 @UseGuards(SessionAuthGuard)
 @Controller('feeds')
 export class FeedsController {
-  constructor(private feedsService: FeedsService) {}
+  constructor(private feedsService: FeedsService) { }
 
   @Get()
   @ApiOperation({ summary: 'List all RSS feeds' })
@@ -30,7 +33,7 @@ export class FeedsController {
   @ApiOperation({ summary: 'Add new RSS feed' })
   async create(
     @CurrentUser() user: User,
-    @Body() dto: { name: string; url: string; pollingIntervalMinutes?: number },
+    @Body() dto: CreateFeedDto,
   ) {
     return this.feedsService.create(user.id, dto);
   }
@@ -46,13 +49,7 @@ export class FeedsController {
   async update(
     @CurrentUser() user: User,
     @Param('id') id: string,
-    @Body()
-    dto: {
-      name?: string;
-      url?: string;
-      pollingIntervalMinutes?: number;
-      status?: string;
-    },
+    @Body() dto: UpdateFeedDto,
   ) {
     return this.feedsService.update(user.id, id, dto);
   }

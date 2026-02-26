@@ -5,10 +5,12 @@ import { FeedsService } from './feeds.service';
 import { FeedPollerService } from './feed-poller.service';
 import { FeedPollProcessor } from './feed-poll.processor';
 import { AuthModule } from '../auth/auth.module';
+import { BillingModule } from '../billing/billing.module';
 
 @Module({
   imports: [
     AuthModule,
+    BillingModule,
     BullModule.registerQueue({
       name: 'feed-polling',
     }),

@@ -5,105 +5,54 @@ import { DrizzleService } from '../../db/drizzle.service';
 import { wpSite, categoryMapping, article } from '../../db/schema';
 import { ArticlesService } from '../articles/articles.service';
 import axios from 'axios';
-import * as crypto from 'crypto';
 import sharp from 'sharp';
 import { validate as uuidValidate } from 'uuid';
 import { WpCategory, WpPostData, WpPostResponse, ArticleStatus, ArticleUpdateData } from '../../db/types';
+import { BillingService } from '../billing/billing.service';
+import { BILLING_TIERS } from '../billing/billing.constants';
 import * as path from 'path';
 import * as fs from 'fs';
+import { Cron, Timeout } from '@nestjs/schedule';
+import { EncryptionService } from '../security/encryption.service';
 
 @Injectable()
 export class WordpressService implements OnModuleInit {
   private readonly logger = new Logger(WordpressService.name);
-  private encryptionKey: string | null = null;
 
   constructor(
     private drizzle: DrizzleService,
     private configService: ConfigService,
     private articlesService: ArticlesService,
-  ) {
-    const key = this.configService.get<string>('ENCRYPTION_KEY') || 'default-encryption-key-32-bytes!!';
-    if (!key || key.length < 32) {
-      this.logger.warn(
-        'ENCRYPTION_KEY environment variable is not set or is too short (minimum 32 characters). ' +
-        'WordPress integration will not work. Generate one with: ' +
-        'node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
-      );
-    }
-    this.encryptionKey = key;
-  }
-
-  private getEncryptionKey(): string {
-    if (!this.encryptionKey) {
-      throw new Error(
-        'ENCRYPTION_KEY is not configured. Please set the ENCRYPTION_KEY environment variable. '
-      );
-    }
-    return this.encryptionKey;
-  }
+    private billingService: BillingService,
+    private encryptionService: EncryptionService,
+  ) { }
 
   async onModuleInit() {
-    this.logger.log('Initializing scheduled article sync...');
-    // Run sync every 30 minutes
-    setInterval(() => {
-      this.syncScheduledArticles().catch(err =>
-        this.logger.error('Error in automated sync', err.message)
-      );
-    }, 30 * 60 * 1000);
+    this.logger.log('WordpressService initialized.');
+  }
 
-    // Also run once on startup after a small delay
-    setTimeout(() => this.syncScheduledArticles(), 10000);
+  @Cron('0 */30 * * * *') // Run every 30 minutes
+  async handleScheduledSync() {
+    this.logger.log('Running automated sync (Cron)...');
+    try {
+      await this.syncScheduledArticles();
+    } catch (err: any) {
+      this.logger.error('Error in automated sync', err.message);
+    }
+  }
+
+  @Timeout(10000) // Run once 10 seconds after startup
+  async handleStartupSync() {
+    this.logger.log('Running initial sync after startup (Timeout)...');
+    try {
+      await this.syncScheduledArticles();
+    } catch (err: any) {
+      this.logger.error('Error in startup sync', err.message);
+    }
   }
 
   get db() {
     return this.drizzle.db;
-  }
-
-  // Encryption helpers
-  private encrypt(text: string): string {
-    const key = this.getEncryptionKey();
-    const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(key.substring(0, 32)), iv);
-    let encrypted = cipher.update(text);
-    encrypted = Buffer.concat([encrypted, cipher.final()]);
-    return iv.toString('hex') + ':' + encrypted.toString('hex');
-  }
-
-  private decrypt(text: string): string {
-    if (!text || typeof text !== 'string') {
-      throw new Error('Encrypted text is empty or invalid');
-    }
-
-    const parts = text.split(':');
-    if (parts.length !== 2) {
-      throw new Error(`Invalid encrypted text format. Expected format: iv:encrypted, got ${parts.length} parts`);
-    }
-
-    const [ivHex, encryptedHex] = parts;
-
-    if (!ivHex || !encryptedHex) {
-      throw new Error('Invalid encrypted text: missing IV or encrypted data');
-    }
-
-    try {
-      const iv = Buffer.from(ivHex, 'hex');
-      const encrypted = Buffer.from(encryptedHex, 'hex');
-
-      if (iv.length !== 16) {
-        throw new Error(`Invalid IV length: expected 16 bytes, got ${iv.length}`);
-      }
-
-      const key = this.getEncryptionKey();
-      const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(key.substring(0, 32)), iv);
-      let decrypted = decipher.update(encrypted);
-      decrypted = Buffer.concat([decrypted, decipher.final()]);
-      return decrypted.toString();
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(`Decryption failed: ${error.message}`);
-      }
-      throw new Error('Decryption failed: unknown error');
-    }
   }
 
   async getSites(userId: string) {
@@ -122,6 +71,15 @@ export class WordpressService implements OnModuleInit {
   }
 
   async connectSite(userId: string, data: { name: string; url: string; username: string; appPassword: string }) {
+    // Check tier limits
+    const tier = await this.billingService.getSubscriptionTier(userId);
+    const limit = BILLING_TIERS[tier]?.maxWpSites || 1;
+
+    const existingSites = await this.getSites(userId);
+    if (existingSites.length >= limit) {
+      throw new BadRequestException(`Tier ${tier} limit reached. Maximum ${limit} WordPress sites allowed.`);
+    }
+
     // Test connection first
     const isValid = await this.testConnection(data.url, data.username, data.appPassword);
     if (!isValid) {
@@ -129,7 +87,7 @@ export class WordpressService implements OnModuleInit {
     }
 
     // Encrypt the app password
-    const encryptedPassword = this.encrypt(data.appPassword);
+    const encryptedPassword = this.encryptionService.encrypt(data.appPassword);
 
     // Create the site
     const [site] = await this.db
@@ -180,7 +138,7 @@ export class WordpressService implements OnModuleInit {
     this.logger.log(`Verifying connection for site: ${site.name} (${site.url})`);
 
     try {
-      const appPassword = this.decrypt(site.appPasswordEncrypted);
+      const appPassword = this.encryptionService.decrypt(site.appPasswordEncrypted);
       const isConnected = await this.testConnection(site.url, site.username, appPassword);
 
       // Update last health check
@@ -218,7 +176,7 @@ export class WordpressService implements OnModuleInit {
     }
 
     try {
-      const appPassword = this.decrypt(site.appPasswordEncrypted);
+      const appPassword = this.encryptionService.decrypt(site.appPasswordEncrypted);
       const auth = Buffer.from(`${site.username}:${appPassword}`).toString('base64');
 
       this.logger.log('Fetching categories from WordPress API');
@@ -260,7 +218,7 @@ export class WordpressService implements OnModuleInit {
 
     if (!site) throw new NotFoundException('Site not found');
 
-    const appPassword = this.decrypt(site.appPasswordEncrypted);
+    const appPassword = this.encryptionService.decrypt(site.appPasswordEncrypted);
     const auth = Buffer.from(`${site.username}:${appPassword}`).toString('base64');
 
     // Create the post
@@ -303,7 +261,7 @@ export class WordpressService implements OnModuleInit {
     });
     if (!site) throw new NotFoundException('Site not found');
 
-    const appPassword = this.decrypt(site.appPasswordEncrypted);
+    const appPassword = this.encryptionService.decrypt(site.appPasswordEncrypted);
     const auth = Buffer.from(`${site.username}:${appPassword}`).toString('base64');
 
     try {
@@ -368,7 +326,7 @@ export class WordpressService implements OnModuleInit {
     });
     if (!site) throw new NotFoundException('Site not found');
 
-    const appPassword = this.decrypt(site.appPasswordEncrypted);
+    const appPassword = this.encryptionService.decrypt(site.appPasswordEncrypted);
     const auth = Buffer.from(`${site.username}:${appPassword}`).toString('base64');
 
     try {
@@ -431,7 +389,7 @@ export class WordpressService implements OnModuleInit {
     this.logger.log(`Publish request - User: ${userId}, ArticleId: ${dto.articleId}, Title: ${dto.title}`);
 
     try {
-      const appPassword = this.decrypt(site.appPasswordEncrypted);
+      const appPassword = this.encryptionService.decrypt(site.appPasswordEncrypted);
       const auth = Buffer.from(`${site.username}:${appPassword}`).toString('base64');
 
       // Handle featured image if provided as URL (from AI generation or external source)
@@ -555,7 +513,7 @@ export class WordpressService implements OnModuleInit {
     if (!site) return [];
 
     try {
-      const appPassword = this.decrypt(site.appPasswordEncrypted);
+      const appPassword = this.encryptionService.decrypt(site.appPasswordEncrypted);
       const auth = Buffer.from(`${site.username}:${appPassword}`).toString('base64');
 
       const fetchPosts = async (catId?: number) => {
@@ -619,7 +577,7 @@ export class WordpressService implements OnModuleInit {
         const site = wpSiteData[0];
 
         try {
-          const appPassword = this.decrypt(site.appPasswordEncrypted);
+          const appPassword = this.encryptionService.decrypt(site.appPasswordEncrypted);
           const auth = Buffer.from(`${site.username}:${appPassword}`).toString('base64');
 
           // Check post status on WordPress

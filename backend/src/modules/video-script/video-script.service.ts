@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { eq, desc } from 'drizzle-orm';
 import { schema } from '../../db/schema';
 import { DrizzleService } from '../../db/drizzle.service';
 import { CreateScriptProjectDto, GenerateScriptDto, UpdateScriptSceneDto } from './video-script.dto';
 import { OpenAiService } from '../ai/services/openai.service';
 import { AdvancedScraperService } from '../scraper/advanced-scraper.service';
+import { BillingService } from '../billing/billing.service';
+import { BILLING_TIERS } from '../billing/billing.constants';
 
 @Injectable()
 export class VideoScriptService {
@@ -12,6 +14,7 @@ export class VideoScriptService {
         private readonly drizzle: DrizzleService,
         private readonly openAiService: OpenAiService,
         private readonly scraperService: AdvancedScraperService,
+        private readonly billingService: BillingService,
     ) { }
 
     async createProject(userId: string, dto: CreateScriptProjectDto) {
@@ -74,6 +77,17 @@ export class VideoScriptService {
     async generateScript(userId: string, projectId: string, dto: GenerateScriptDto) {
         const project = await this.getProject(userId, projectId);
 
+        // Check token balance and daily limit
+        const hasBalance = await this.billingService.checkBalance(userId, 1);
+        if (!hasBalance) {
+            throw new BadRequestException('Saldo kredit Anda tidak mencukupi untuk request ini.');
+        }
+
+        const withinDailyLimit = await this.billingService.checkDailyLimit(userId, 'VIDEO_GENERATION');
+        if (!withinDailyLimit) {
+            throw new BadRequestException('Daily limit reached for Video Script Generation on your current plan. Please upgrade or try again tomorrow.');
+        }
+
         // Update Project status to generating
         await this.drizzle.db
             .update(schema.scriptProject)
@@ -83,9 +97,12 @@ export class VideoScriptService {
         try {
             const systemPrompt = this.buildSystemPrompt(dto.targetDurationSeconds);
 
+            const tier = await this.billingService.getSubscriptionTier(userId);
+            const model = BILLING_TIERS[tier]?.aiModel;
+
             const result = await this.openAiService.generateContent(
                 dto.content,
-                { mode: 'custom', systemPrompt }
+                { mode: 'custom', systemPrompt, model }
             );
 
             if (!result || !result.scenes || !Array.isArray(result.scenes)) {
@@ -113,6 +130,10 @@ export class VideoScriptService {
                 .update(schema.scriptProject)
                 .set({ status: 'ready', sourceContent: dto.content })
                 .where(eq(schema.scriptProject.id, projectId));
+
+            // Deduct tokens and increment usage
+            await this.billingService.deductTokens(userId, 1, 'Video script generation');
+            await this.billingService.incrementDailyUsage(userId, 'VIDEO_GENERATION');
 
             return this.getProject(userId, projectId);
         } catch (error) {

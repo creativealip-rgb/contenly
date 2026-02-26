@@ -14,6 +14,7 @@ import { api } from '@/lib/api';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AdminGuard } from '@/components/guards';
 import { toast } from 'sonner';
+import { useBilling } from '@/hooks/use-billing';
 
 interface ViewBoostJob {
   id: string;
@@ -40,6 +41,8 @@ export default function ViewBoostPage() {
   const [jobs, setJobs] = useState<ViewBoostJob[]>([]);
   const [loading, setLoading] = useState(false);
   const [isTableLoading, setIsTableLoading] = useState(true);
+  const { data: billingData } = useBilling();
+  const isFreeTier = billingData?.tier === 'FREE';
   const [formData, setFormData] = useState({
     url: '',
     targetViews: 100,
@@ -169,10 +172,26 @@ export default function ViewBoostPage() {
                     <Input id="delayMax" type="number" min={1} max={300} value={formData.delayMax} onChange={(e) => setFormData({ ...formData, delayMax: parseInt(e.target.value) })} />
                   </div>
                 </div>
-                <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600">
+                <Button
+                  type="submit"
+                  disabled={loading || isFreeTier}
+                  className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 relative overflow-hidden group"
+                >
                   <Plus className="w-4 h-4 mr-2" />
-                  {loading ? 'Membuat...' : 'Buat Pekerjaan'}
+                  {loading ? 'Membuat...' : isFreeTier ? 'Upgrade to PRO to Access' : 'Buat Pekerjaan'}
+                  {isFreeTier && (
+                    <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Zap className="w-4 h-4 mr-2 text-amber-500 fill-amber-500" />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Available on PRO</span>
+                    </div>
+                  )}
                 </Button>
+                {isFreeTier && (
+                  <p className="text-center text-[10px] font-bold text-amber-600 uppercase tracking-widest pt-2">
+                    <Zap className="w-3 h-3 inline mr-1" />
+                    Buka fitur View Boost dengan berlangganan Paket PRO.
+                  </p>
+                )}
               </form>
             </CardContent>
           </Card>

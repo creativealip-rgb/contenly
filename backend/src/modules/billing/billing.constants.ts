@@ -4,20 +4,41 @@ export const BILLING_TIERS = {
         dailyLimits: {
             ARTICLE_GENERATION: 2,
             INSTAGRAM_GENERATION: 2,
+            VIDEO_GENERATION: 2,
         },
+        maxWpSites: 1,
+        aiModel: 'gpt-3.5-turbo',
+        canAutoSync: false,
+        minSyncInterval: 0,
+        canAccessViewBoost: false,
+        canAnalyzeTrends: false,
     },
     PRO: {
-        monthlyTokens: 500, // or whatever the stripe metadata says, this is a fallback
+        monthlyTokens: 500,
         dailyLimits: {
-            ARTICLE_GENERATION: 50,
-            INSTAGRAM_GENERATION: 50,
+            ARTICLE_GENERATION: 20,
+            INSTAGRAM_GENERATION: 20,
+            VIDEO_GENERATION: 20,
         },
+        maxWpSites: 2,
+        aiModel: 'gpt-4o',
+        canAutoSync: true,
+        minSyncInterval: 60, // 60 minutes
+        canAccessViewBoost: true,
+        canAnalyzeTrends: true,
     },
     ENTERPRISE: {
-        monthlyTokens: 5000,
+        monthlyTokens: 2000,
         dailyLimits: {
-            ARTICLE_GENERATION: 500,
-            INSTAGRAM_GENERATION: 500,
+            ARTICLE_GENERATION: 70,
+            INSTAGRAM_GENERATION: 70,
+            VIDEO_GENERATION: 70,
         },
+        maxWpSites: 5,
+        aiModel: 'gpt-4o',
+        canAutoSync: true,
+        minSyncInterval: 15, // 15 minutes
+        canAccessViewBoost: true,
+        canAnalyzeTrends: true,
     },
 };

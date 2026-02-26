@@ -1,102 +1,49 @@
 import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { Request } from 'express';
+import { UsersService } from '../../modules/users/users.service';
 import { auth } from '../../auth/auth.config';
-import { DrizzleService } from '../../db/drizzle.service';
-import { apiKey } from '../../db/schema';
-import { eq } from 'drizzle-orm';
-import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-    constructor(private drizzle: DrizzleService) {}
+  constructor(private readonly usersService?: UsersService) { }
 
-    get db() {
-        return this.drizzle.db;
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest<Request>();
+
+    // 1. Check for Session (Better Auth)
+    try {
+      const session = await auth.api.getSession({
+        headers: request.headers as any,
+      });
+
+      if (session && session.user) {
+        (request as any).user = session.user;
+        (request as any).session = session.session;
+        return true;
+      }
+    } catch (error) {
+      // Session check failed, move to API key check
     }
 
-    async canActivate(context: ExecutionContext): Promise<boolean> {
-        const request = context.switchToHttp().getRequest<Request>();
+    // 2. Check for API Key
+    const authHeader = request.headers['authorization'] as string;
+    const apiKeyHeader = request.headers['x-api-key'] as string;
+    let rawKey: string | null = null;
 
-        // Try session auth first (Better Auth)
-        try {
-            const session = await auth.api.getSession({
-                headers: request.headers as any,
-            });
-
-            if (session && session.user) {
-                (request as any).user = session.user;
-                (request as any).session = session.session;
-                return true;
-            }
-        } catch (error) {
-            // Session auth failed, try API key
-        }
-
-        // Try API key auth
-        const apiKeyValue = this.extractApiKey(request);
-        if (apiKeyValue) {
-            const keyRecord = await this.validateApiKey(apiKeyValue);
-            
-            if (keyRecord) {
-                // Check expiration
-                if (keyRecord.expiresAt && new Date() > new Date(keyRecord.expiresAt)) {
-                    throw new UnauthorizedException('API key expired');
-                }
-
-                // Update last used
-                await this.db
-                    .update(apiKey)
-                    .set({ lastUsedAt: new Date() })
-                    .where(eq(apiKey.id, keyRecord.id));
-
-                (request as any).user = { id: keyRecord.userId };
-                (request as any).apiKeyId = keyRecord.id;
-                return true;
-            }
-        }
-
-        throw new UnauthorizedException('Authentication required');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      rawKey = authHeader.substring(7);
+    } else if (apiKeyHeader) {
+      rawKey = apiKeyHeader;
     }
 
-    private extractApiKey(request: Request): string | null {
-        // Check Authorization: Bearer <key>
-        const authHeader = request.headers['authorization'];
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-            return authHeader.substring(7);
-        }
-
-        // Check X-API-Key header
-        const apiKeyHeader = request.headers['x-api-key'];
-        if (apiKeyHeader) {
-            return apiKeyHeader as string;
-        }
-
-        // Check query param ?api_key=...
-        const queryKey = request.query.api_key;
-        if (queryKey) {
-            return queryKey as string;
-        }
-
-        return null;
+    if (rawKey && this.usersService) {
+      const validatedUser = await this.usersService.validateApiKey(rawKey);
+      if (validatedUser) {
+        (request as any).user = validatedUser;
+        return true;
+      }
     }
 
-    private async validateApiKey(keyValue: string): Promise<any> {
-        // Get prefix from key (first 12 chars: cam_ + 8 chars)
-        const keyPrefix = keyValue.substring(0, 12);
-
-        // Find keys with matching prefix
-        const keys = await this.db.query.apiKey.findMany({
-            where: eq(apiKey.keyPrefix, keyPrefix),
-        });
-
-        // Check each key with bcrypt
-        for (const key of keys) {
-            const isValid = await bcrypt.compare(keyValue, key.keyHash);
-            if (isValid) {
-                return key;
-            }
-        }
-
-        return null;
-    }
+    throw new UnauthorizedException('Authentication required');
+  }
 }

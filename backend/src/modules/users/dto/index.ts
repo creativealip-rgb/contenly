@@ -17,12 +17,17 @@ export class UpdateUserDto {
   @ApiPropertyOptional()
   @IsString()
   @IsOptional()
-  fullName?: string;
+  name?: string;
 
   @ApiPropertyOptional()
   @IsString()
   @IsOptional()
-  avatarUrl?: string;
+  image?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  bio?: string;
 }
 
 export class CreateApiKeyDto {

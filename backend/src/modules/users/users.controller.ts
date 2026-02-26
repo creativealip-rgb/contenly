@@ -21,7 +21,7 @@ import type { Request } from 'express';
 @UseGuards(AuthGuard)
 @Controller('users')
 export class UsersController {
-  constructor(private usersService: UsersService) {}
+  constructor(private usersService: UsersService) { }
 
   @Get('me')
   @ApiOperation({ summary: 'Get current user profile' })
@@ -117,6 +117,16 @@ export class UsersController {
   @ApiOperation({ summary: 'Add tokens to user (Super Admin only)' })
   async addTokens(@Param('id') id: string, @Body('amount') amount: number) {
     return this.usersService.addTokens(id, amount);
+  }
+
+  @Patch('admin/:id/tier')
+  @UseGuards(SuperAdminGuard)
+  @ApiOperation({ summary: 'Update user tier (Super Admin only)' })
+  async updateTier(
+    @Param('id') id: string,
+    @Body('tier') tier: 'FREE' | 'PRO' | 'ENTERPRISE',
+  ) {
+    return this.usersService.updateTier(id, tier);
   }
 
   @Delete('admin/:id')

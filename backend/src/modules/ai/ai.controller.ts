@@ -6,6 +6,7 @@ import {
   GenerateContentDto,
   GenerateSeoDto,
   AiGenerateImageDto,
+  GeneratePromptDto,
 } from './dto';
 import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -44,5 +45,12 @@ export class AiController {
     @Body() dto: AiGenerateImageDto,
   ) {
     return this.aiService.generateImage(user.id, dto);
+  }
+
+  @Post('prompt-generator')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @ApiOperation({ summary: 'Generate prompt from everyday language' })
+  async generatePrompt(@Body() dto: GeneratePromptDto) {
+    return this.aiService.generatePrompt(dto);
   }
 }

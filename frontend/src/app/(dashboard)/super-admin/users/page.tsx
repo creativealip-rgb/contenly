@@ -49,6 +49,10 @@ import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 
 interface TokenBalance { balance: number }
+interface Subscription {
+    plan: string
+    status: string
+}
 interface UserData {
     id: string
     name: string
@@ -56,6 +60,7 @@ interface UserData {
     role: string
     createdAt: string
     tokenBalance?: TokenBalance
+    subscriptions?: Subscription[]
 }
 
 const containerVariants = {
@@ -144,6 +149,17 @@ export default function UserManagementPage() {
         }
     }
 
+    const handleUpdateTier = async (userId: string, newTier: string) => {
+        try {
+            await api.patch(`/users/admin/${userId}/tier`, { tier: newTier })
+            toast.success(`Tier user berhasil diubah ke ${newTier}`)
+            fetchUsers()
+        } catch (error) {
+            console.error('Failed to update tier:', error)
+            toast.error('Gagal mengubah tier user')
+        }
+    }
+
     const handleDeleteUser = async (userId: string) => {
         if (!confirm('Apakah Anda yakin ingin menghapus user ini?')) return
         try {
@@ -164,6 +180,18 @@ export default function UserManagementPage() {
                 return <Badge className="bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-500/20"><ShieldCheck className="w-3 h-3 mr-1" /> Admin</Badge>
             default:
                 return <Badge variant="secondary"><User className="w-3 h-3 mr-1" /> User</Badge>
+        }
+    }
+
+    const getTierBadge = (user: UserData) => {
+        const plan = user.subscriptions?.[0]?.plan || 'FREE'
+        switch (plan) {
+            case 'ENTERPRISE':
+                return <Badge className="bg-purple-500/10 text-purple-600 hover:bg-purple-500/20 border-purple-500/20">Enterprise</Badge>
+            case 'PRO':
+                return <Badge className="bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/20">Pro</Badge>
+            default:
+                return <Badge variant="outline" className="text-slate-500">Free</Badge>
         }
     }
 
@@ -253,6 +281,7 @@ export default function UserManagementPage() {
                                         <TableHead>Nama</TableHead>
                                         <TableHead>Email</TableHead>
                                         <TableHead>Role</TableHead>
+                                        <TableHead>Tier</TableHead>
                                         <TableHead>Tokens</TableHead>
                                         <TableHead>Terdaftar</TableHead>
                                         <TableHead className="text-right">Aksi</TableHead>
@@ -277,6 +306,7 @@ export default function UserManagementPage() {
                                                 <TableCell className="font-medium">{user.name}</TableCell>
                                                 <TableCell>{user.email}</TableCell>
                                                 <TableCell>{getRoleBadge(user.role)}</TableCell>
+                                                <TableCell>{getTierBadge(user)}</TableCell>
                                                 <TableCell>
                                                     <div className="flex items-center gap-2">
                                                         <Coins className="w-4 h-4 text-amber-500" />
@@ -295,6 +325,10 @@ export default function UserManagementPage() {
                                                             <DropdownMenuItem onClick={() => handleUpdateRole(user.id, 'USER')}>Ubah ke USER</DropdownMenuItem>
                                                             <DropdownMenuItem onClick={() => handleUpdateRole(user.id, 'ADMIN')}>Ubah ke ADMIN</DropdownMenuItem>
                                                             <DropdownMenuItem onClick={() => handleUpdateRole(user.id, 'SUPER_ADMIN')}>Ubah ke SUPER_ADMIN</DropdownMenuItem>
+                                                            <DropdownMenuSeparator />
+                                                            <DropdownMenuItem onClick={() => handleUpdateTier(user.id, 'FREE')}>Ubah ke FREE Tier</DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => handleUpdateTier(user.id, 'PRO')}>Ubah ke PRO Tier</DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => handleUpdateTier(user.id, 'ENTERPRISE')}>Ubah ke ENTERPRISE Tier</DropdownMenuItem>
                                                             <DropdownMenuSeparator />
                                                             <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => handleDeleteUser(user.id)}><Trash2 className="w-4 h-4 mr-2" /> Hapus User</DropdownMenuItem>
                                                         </DropdownMenuContent>

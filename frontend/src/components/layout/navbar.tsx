@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/stores'
 import { authClient } from '@/lib/auth-client'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { motion } from 'framer-motion'
 import {
@@ -131,9 +132,10 @@ export function Navbar() {
                     </Button>
 
                     {/* Desktop Logo - visible on md+, hidden on mobile */}
-                    <Link href="/dashboard" className="hidden md:flex items-center gap-3">
-                        <div className="flex items-center justify-center overflow-hidden">
-                            <Image src="/logo-full.png" alt="Contently Logo" width={140} height={40} className="object-contain h-9 w-auto" />
+                    <Link href="/dashboard" className="hidden md:flex items-center gap-3 group">
+                        <div className="relative flex items-center justify-center overflow-hidden">
+                            <div className="absolute -inset-4 bg-gradient-to-r from-blue-600/10 to-transparent blur-2xl opacity-0 group-hover:opacity-100 transition-all duration-700" />
+                            <Image src="/logo-full.png" alt="Contently Logo" width={140} height={40} className="relative object-contain h-9 w-auto transform transition-transform duration-500 group-hover:scale-[1.02]" />
                         </div>
                     </Link>
                 </div>
@@ -141,7 +143,10 @@ export function Navbar() {
                 {/* Center: Logo (Mobile Only) */}
                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 md:hidden flex items-center gap-3">
                     <Link href="/dashboard" className="flex items-center justify-center overflow-hidden">
-                        <Image src="/logo-full.png" alt="Contently Logo" width={140} height={40} className="object-contain h-8 w-auto" />
+                        <div className="relative group">
+                            <div className="absolute -inset-2 bg-gradient-to-r from-blue-600/20 to-cyan-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-all duration-500" />
+                            <Image src="/logo-full.png" alt="Contently Logo" width={140} height={40} className="relative object-contain h-8 w-auto transform transition-transform duration-500 group-hover:scale-105" />
+                        </div>
                     </Link>
                 </div>
 
@@ -175,38 +180,81 @@ export function Navbar() {
                                 </Avatar>
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-56 rounded-xl p-2" align="end" forceMount>
-                            <DropdownMenuLabel className="font-normal px-3 py-2">
-                                <div className="flex flex-col space-y-1">
-                                    <p className="text-sm font-semibold leading-none">{user?.fullName || 'User'}</p>
-                                    <p className="text-xs leading-none text-muted-foreground">
-                                        {user?.email || 'user@example.com'}
-                                    </p>
+                        <DropdownMenuContent
+                            className="w-72 rounded-[2.5rem] p-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl border-2 border-white/60 dark:border-slate-800/80 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)]"
+                            align="end"
+                            forceMount
+                        >
+                            <DropdownMenuLabel className="font-normal px-4 py-6 mb-3 rounded-[1.8rem] bg-gradient-to-br from-blue-50/50 to-cyan-50/30 dark:from-blue-900/20 dark:to-cyan-900/10 border border-white/40 dark:border-white/5">
+                                <div className="flex flex-col space-y-3">
+                                    <div className="flex items-center gap-4">
+                                        <div className="relative">
+                                            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl blur-md opacity-20" />
+                                            <div className="relative h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center text-white font-black text-xl shadow-xl">
+                                                {user?.fullName?.substring(0, 1).toUpperCase() || 'U'}
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <p className="text-base font-black tracking-tight leading-none text-slate-900 dark:text-white">
+                                                {user?.fullName || 'User Account'}
+                                            </p>
+                                            <Badge variant="secondary" className="mt-2 text-[10px] font-black uppercase tracking-widest h-5 bg-blue-600 text-white border-none shadow-md shadow-blue-500/20">
+                                                Premium
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                    <div className="px-3 py-2 rounded-xl bg-white/60 dark:bg-slate-900/40 border border-white/40 dark:border-white/5">
+                                        <p className="text-xs font-bold leading-none text-slate-500 dark:text-slate-400 truncate">
+                                            {user?.email || 'user@example.com'}
+                                        </p>
+                                    </div>
                                 </div>
                             </DropdownMenuLabel>
-                            <DropdownMenuSeparator className="my-2" />
-                            <DropdownMenuItem disabled className="rounded-lg opacity-50 cursor-not-allowed">
-                                <div className="flex items-center gap-3 px-3 py-2">
-                                    {icons.user}
-                                    Profil (Segera)
-                                </div>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem disabled className="rounded-lg opacity-50 cursor-not-allowed">
-                                <div className="flex items-center gap-3 px-3 py-2">
-                                    {icons.settings}
-                                    Pengaturan (Segera)
-                                </div>
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator className="my-2" />
-                            <DropdownMenuItem
-                                onClick={handleLogout}
-                                className="rounded-lg cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-500/10 px-3 py-2"
-                            >
-                                <span className="flex items-center gap-3">
-                                    {icons.logout}
-                                    Keluar
-                                </span>
-                            </DropdownMenuItem>
+
+                            <div className="space-y-2 px-1">
+                                <DropdownMenuItem asChild className="rounded-2xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all duration-300 p-1">
+                                    <Link href="/settings" className="flex items-center gap-4 px-4 py-3">
+                                        <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 shadow-sm border border-blue-100/50 dark:border-blue-500/20">
+                                            {icons.user}
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="font-black text-sm tracking-tight text-slate-900 dark:text-slate-100">Profil Saya</span>
+                                            <span className="text-[10px] text-slate-400 font-medium tracking-tight">Kelola informasi publik</span>
+                                        </div>
+                                    </Link>
+                                </DropdownMenuItem>
+
+                                <DropdownMenuItem asChild className="rounded-2xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all duration-300 p-1">
+                                    <Link href="/settings" className="flex items-center gap-4 px-4 py-3">
+                                        <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 shadow-sm border border-amber-100/50 dark:border-amber-500/20">
+                                            {icons.settings}
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="font-black text-sm tracking-tight text-slate-900 dark:text-slate-100">Pengaturan</span>
+                                            <span className="text-[10px] text-slate-400 font-medium tracking-tight">Kunci API & Keamanan</span>
+                                        </div>
+                                    </Link>
+                                </DropdownMenuItem>
+                            </div>
+
+                            <DropdownMenuSeparator className="my-4 mx-4 bg-slate-100/50 dark:bg-slate-800/50" />
+
+                            <div className="px-1 pb-1">
+                                <DropdownMenuItem
+                                    onClick={handleLogout}
+                                    className="rounded-2xl cursor-pointer text-red-600 focus:text-white focus:bg-red-600 px-4 py-3.5 transition-all duration-300 group"
+                                >
+                                    <span className="flex items-center gap-4 w-full">
+                                        <div className="p-2.5 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-600 group-focus:text-white border border-red-100/50 dark:border-red-500/20">
+                                            {icons.logout}
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="font-black text-sm tracking-tight">Keluar Sesi</span>
+                                            <span className="text-[10px] opacity-70 font-medium tracking-tight">Sampai jumpa lagi</span>
+                                        </div>
+                                    </span>
+                                </DropdownMenuItem>
+                            </div>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>

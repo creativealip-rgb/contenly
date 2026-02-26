@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { DrizzleService } from '../../db/drizzle.service';
-import { user, apiKey, tokenBalance } from '../../db/schema';
+import { user, apiKey, tokenBalance, subscription } from '../../db/schema';
+import { BILLING_TIERS } from '../billing/billing.constants';
 import { UpdateUserDto } from './dto';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
@@ -9,7 +10,7 @@ import { auth } from '../../auth/auth.config';
 
 @Injectable()
 export class UsersService {
-  constructor(private drizzle: DrizzleService) {}
+  constructor(private drizzle: DrizzleService) { }
 
   get db() {
     return this.drizzle.db;
@@ -20,6 +21,11 @@ export class UsersService {
       where: eq(user.id, id),
       with: {
         tokenBalance: true,
+        subscriptions: {
+          where: eq(subscription.status, 'ACTIVE'),
+          orderBy: (s, { desc }) => [desc(s.createdAt)],
+          limit: 1,
+        },
       },
     });
     return result;
@@ -107,6 +113,35 @@ export class UsersService {
     return { message: 'API key revoked' };
   }
 
+  async validateApiKey(rawKey: string) {
+    if (!rawKey || !rawKey.startsWith('cam_')) {
+      return null;
+    }
+
+    const keyPrefix = rawKey.substring(0, 12);
+    const keys = await this.db.query.apiKey.findMany({
+      where: eq(apiKey.keyPrefix, keyPrefix),
+      with: {
+        user: true,
+      },
+    });
+
+    for (const key of keys) {
+      const isValid = await bcrypt.compare(rawKey, key.keyHash);
+      if (isValid) {
+        // Update last used at
+        await this.db
+          .update(apiKey)
+          .set({ lastUsedAt: new Date() })
+          .where(eq(apiKey.id, key.id));
+
+        return key.user;
+      }
+    }
+
+    return null;
+  }
+
   // ==========================================
   // SUPER ADMIN METHODS
   // ==========================================
@@ -116,6 +151,11 @@ export class UsersService {
     const users = await this.db.query.user.findMany({
       with: {
         tokenBalance: true,
+        subscriptions: {
+          where: eq(subscription.status, 'ACTIVE'),
+          orderBy: (s, { desc }) => [desc(s.createdAt)],
+          limit: 1,
+        },
       },
       orderBy: (user, { desc }) => [desc(user.createdAt)],
     });
@@ -188,6 +228,59 @@ export class UsersService {
       .where(eq(tokenBalance.userId, userId))
       .returning();
     return updated;
+  }
+
+  async updateTier(userId: string, plan: 'FREE' | 'PRO' | 'ENTERPRISE') {
+    const tierData = BILLING_TIERS[plan];
+    if (!tierData) {
+      throw new Error(`Invalid plan: ${plan}`);
+    }
+    const tokens = tierData.monthlyTokens;
+
+    await this.db.transaction(async (tx) => {
+      // Deactivate current subscriptions
+      await tx
+        .update(subscription)
+        .set({ status: 'CANCELED', updatedAt: new Date() })
+        .where(
+          and(
+            eq(subscription.userId, userId),
+            eq(subscription.status, 'ACTIVE'),
+          ),
+        );
+
+      // Create new subscription if not FREE
+      if (plan !== 'FREE') {
+        await tx.insert(subscription).values({
+          userId,
+          plan,
+          status: 'ACTIVE',
+          tokensPerMonth: tokens,
+          stripeSubscriptionId: `manual_${uuidv4()}`,
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+        });
+      }
+
+      // Reset tokens
+      const existingBalance = await tx.query.tokenBalance.findFirst({
+        where: eq(tokenBalance.userId, userId),
+      });
+
+      if (existingBalance) {
+        await tx
+          .update(tokenBalance)
+          .set({ balance: tokens, updatedAt: new Date() })
+          .where(eq(tokenBalance.userId, userId));
+      } else {
+        await tx.insert(tokenBalance).values({
+          userId,
+          balance: tokens,
+        });
+      }
+    });
+
+    return { success: true, plan, tokens };
   }
 
   async delete(id: string) {

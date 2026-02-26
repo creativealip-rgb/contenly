@@ -7,17 +7,29 @@ import {
   wpSite,
   tokenBalance,
   transaction,
+  subscription,
 } from '../../db/schema';
 
 @Injectable()
 export class AnalyticsService {
-  constructor(private drizzle: DrizzleService) {}
+  constructor(private drizzle: DrizzleService) { }
 
   get db() {
     return this.drizzle.db;
   }
 
   async getDashboardStats(userId: string) {
+    // Get current subscription tier
+    const sub = await this.db.query.subscription.findFirst({
+      where: and(
+        eq(subscription.userId, userId),
+        eq(subscription.status, 'ACTIVE'),
+      ),
+      orderBy: (s, { desc }) => [desc(s.createdAt)],
+    });
+
+    const currentTier = sub?.plan || 'FREE';
+
     // Get counts
     const [articles] = await this.db
       .select({ count: sql<number>`count(*)` })
@@ -57,13 +69,6 @@ export class AnalyticsService {
       balance = newBalance;
     }
 
-    console.log('Dashboard Stats Debug:', {
-      userId,
-      articlesCount: articles.count,
-      feedsCount: feeds.count,
-      sitesCount: wpSites.count,
-      tokenBalance: balance,
-    });
 
     // Get recent activity
     const recentArticles = await this.db.query.article.findMany({
@@ -132,6 +137,7 @@ export class AnalyticsService {
       activeFeeds: Number(feeds.count),
       connectedSites: Number(wpSites.count),
       tokenBalance: balance.balance,
+      currentTier,
       recentActivity: activity,
     };
   }

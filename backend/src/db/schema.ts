@@ -96,6 +96,7 @@ export const viewBoostServiceTypeEnum = pgEnum('view_boost_service_type', [
 export const featureTypeEnum = pgEnum('feature_type', [
   'ARTICLE_GENERATION',
   'INSTAGRAM_GENERATION',
+  'VIDEO_GENERATION',
 ]);
 
 // ==========================================
@@ -108,6 +109,7 @@ export const user = pgTable('user', {
   email: text('email').notNull().unique(),
   emailVerified: boolean('email_verified').notNull().default(false),
   image: text('image'),
+  bio: text('bio'),
   role: userRoleEnum('role').default('USER'),
   banned: boolean('banned').default(false),
   preferences: jsonb('preferences').default({}),
@@ -326,6 +328,7 @@ export const subscription = pgTable('subscription', {
   currentPeriodStart: timestamp('current_period_start').notNull().defaultNow(),
   currentPeriodEnd: timestamp('current_period_end').notNull().defaultNow(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
   canceledAt: timestamp('canceled_at'),
 });
 

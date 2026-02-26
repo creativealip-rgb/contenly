@@ -8,6 +8,7 @@ import { eq, and, desc } from 'drizzle-orm';
 import { DrizzleService } from '../../db/drizzle.service';
 import { instagramProject, instagramSlide, stylePreset } from '../../db/schema';
 import { BillingService } from '../billing/billing.service';
+import { BILLING_TIERS } from '../billing/billing.constants';
 import { StoryboardService } from './services/storyboard.service';
 import { OpenAiService } from '../ai/services/openai.service';
 import { FontService } from './services/font.service';
@@ -198,10 +199,14 @@ export class InstagramStudioService {
             );
         }
 
+        const tier = await this.billingService.getSubscriptionTier(userId);
+        const model = BILLING_TIERS[tier]?.aiModel;
+
         const storyboard = await this.storyboardService.generateStoryboard(
             content,
             dto.style || project.globalStyle,
             dto.targetSlides,
+            model,
         );
 
         await this.drizzle.db
@@ -328,7 +333,10 @@ export class InstagramStudioService {
 
         let layoutSuggestion = { layoutPosition: undefined, fontColor: undefined, headerText: undefined, bodyText: undefined };
         try {
-            layoutSuggestion = await this.openAiService.analyzeImageLayout(slide.imageUrl, slide.textContent || '');
+            const tier = await this.billingService.getSubscriptionTier(userId);
+            const model = BILLING_TIERS[tier]?.aiModel;
+
+            layoutSuggestion = await this.openAiService.analyzeImageLayout(slide.imageUrl, slide.textContent || '', model);
             this.logger.log(`[Text Overlay] Vision AI suggested: Position ${layoutSuggestion.layoutPosition}, Color ${layoutSuggestion.fontColor}`);
         } catch (error) {
             this.logger.warn(`[Text Overlay] Vision AI layout analysis failed, falling back to defaults: ${error.message}`);

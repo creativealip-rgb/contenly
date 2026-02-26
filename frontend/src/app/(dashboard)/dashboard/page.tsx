@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { FileText, Rss, Sparkles, Plug, Zap, TrendingUp, ArrowRight } from 'lucide-react'
 import { KpiCard, RecentActivity, QuickActions } from '@/components/dashboard'
 import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 export default function DashboardPage() {
     const [stats, setStats] = useState({
@@ -14,6 +15,7 @@ export default function DashboardPage() {
         activeFeeds: 0,
         connectedSites: 0,
         tokenBalance: 0,
+        currentTier: 'FREE',
         recentActivity: [] as any[]
     })
     const [isLoading, setIsLoading] = useState(true)
@@ -80,6 +82,16 @@ export default function DashboardPage() {
                                 >
                                     Berikut ringkasan otomatisasi konten dan metrik performa Anda.
                                 </motion.p>
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.5 }}
+                                    className="pt-2"
+                                >
+                                    <span className="inline-flex items-center px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-[10px] font-black uppercase tracking-widest text-white shadow-xl">
+                                        Plan: {isLoading ? '...' : stats.currentTier}
+                                    </span>
+                                </motion.div>
                             </div>
 
                             {/* Quick Stats */}

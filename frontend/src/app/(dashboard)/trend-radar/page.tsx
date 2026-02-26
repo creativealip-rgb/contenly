@@ -28,6 +28,8 @@ import {
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { useContentLabStore } from '@/stores/content-lab-store'
+import { useBilling } from '@/hooks/use-billing'
+import { Lock } from 'lucide-react'
 
 interface TrendItem {
     id: string;
@@ -59,6 +61,8 @@ export default function TrendRadarPage() {
     const [isAnalyzing, setIsAnalyzing] = useState(false)
     const [analysis, setAnalysis] = useState<TrendAnalysis | null>(null)
     const [isSheetOpen, setIsSheetOpen] = useState(false)
+    const { data: billingData } = useBilling()
+    const isFreeTier = billingData?.tier === 'FREE'
 
     const handleSearch = async (e?: React.FormEvent) => {
         if (e) e.preventDefault()
@@ -88,6 +92,17 @@ export default function TrendRadarPage() {
     }
 
     const handleAnalyze = async (trend: TrendItem) => {
+        if (isFreeTier) {
+            toast.error('Gagal', {
+                description: 'Analisis AI Trend hanya tersedia untuk paket PRO ke atas. Silakan upgrade paket Anda.',
+                action: {
+                    label: 'Upgrade',
+                    onClick: () => router.push('/billing')
+                }
+            })
+            return
+        }
+
         setSelectedTrend(trend)
         setIsAnalyzing(true)
         setIsSheetOpen(true)
@@ -235,10 +250,15 @@ export default function TrendRadarPage() {
 
                                             <Button
                                                 variant="secondary"
-                                                className="w-full h-12 rounded-2xl font-black uppercase tracking-widest text-xs bg-slate-50 hover:bg-blue-50 hover:text-blue-600 transition-all border-none shadow-none"
+                                                className={`w-full h-12 rounded-2xl font-black uppercase tracking-widest text-xs transition-all border-none shadow-none ${isFreeTier
+                                                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-70'
+                                                        : 'bg-slate-50 hover:bg-blue-50 hover:text-blue-600'
+                                                    }`}
                                                 onClick={() => handleAnalyze(trend)}
                                             >
+                                                {isFreeTier && <Lock className="w-3.5 h-3.5 mr-2" />}
                                                 Insight AI
+                                                {isFreeTier && <span className="ml-2 text-[10px] text-blue-600 opacity-60">(PRO)</span>}
                                             </Button>
                                         </CardContent>
                                     </Card>
