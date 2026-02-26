@@ -225,6 +225,16 @@ export default function InstagramStudioPage() {
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-2xl">
+                        {(isCreating || isFetchingUrl) && (
+                            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+                                <div className="flex flex-col items-center gap-3">
+                                    <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                                    <p className="text-sm font-medium text-muted-foreground">
+                                        {isFetchingUrl ? 'Mengambil konten dari URL...' : 'Membuat proyek...'}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                         <DialogHeader>
                             <DialogTitle>Buat Proyek Carousel Baru</DialogTitle>
                             <DialogDescription>
@@ -311,7 +321,7 @@ export default function InstagramStudioPage() {
                             <Button variant="outline" onClick={() => setIsNewProjectOpen(false)}>
                                 Batal
                             </Button>
-                            <Button onClick={handleCreateProject} disabled={isCreating || !newProject.title}>
+                            <Button onClick={handleCreateProject} disabled={isCreating || isFetchingUrl || !newProject.title}>
                                 {isCreating ? (
                                     <>
                                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />

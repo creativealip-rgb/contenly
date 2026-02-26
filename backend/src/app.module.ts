@@ -1,8 +1,9 @@
-import { Module } from '@nestjs/common';
+import { Module, Global } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { BullModule } from '@nestjs/bull';
 import { ScheduleModule } from '@nestjs/schedule';
+import { Reflector } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -25,6 +26,10 @@ import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { CategoryMappingModule } from './modules/category-mapping/category-mapping.module';
 import { ViewBoostModule } from './modules/view-boost/view-boost.module';
 import { HealthModule } from './modules/health/health.module';
+import { InstagramStudioModule } from './modules/instagram-studio/instagram-studio.module';
+import { VideoScriptModule } from './modules/video-script/video-script.module';
+import { TrendRadarModule } from './modules/trend-radar/trend-radar.module';
+import { TelegramBotModule } from './modules/telegram-bot/telegram-bot.module';
 
 @Module({
   imports: [
@@ -34,8 +39,8 @@ import { HealthModule } from './modules/health/health.module';
       envFilePath: '.env',
     }),
 
-    // Scheduling
-    ScheduleModule.forRoot(),
+    // Scheduling - commented out due to NestJS 11 compatibility issue
+    // ScheduleModule.forRoot(),
 
     // Rate Limiting
     ThrottlerModule.forRoot([
@@ -75,8 +80,18 @@ import { HealthModule } from './modules/health/health.module';
     IntegrationsModule,
     CategoryMappingModule,
     ViewBoostModule,
+    InstagramStudioModule,
+    VideoScriptModule,
+    TrendRadarModule,
+    TelegramBotModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: Reflector,
+      useValue: new Reflector(),
+    },
+  ],
 })
 export class AppModule { }

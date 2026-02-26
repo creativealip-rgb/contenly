@@ -20,7 +20,7 @@ export function useBilling() {
                 const balanceRes = await api.get<{ balance: number }>('/billing/balance');
 
                 setData({
-                    tier: subRes.tier || 'FREE',
+                    tier: subRes?.plan || 'FREE',
                     balance: balanceRes.balance,
                     subscription: subRes,
                 });

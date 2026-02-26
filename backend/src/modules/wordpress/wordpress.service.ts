@@ -12,7 +12,7 @@ import { BillingService } from '../billing/billing.service';
 import { BILLING_TIERS } from '../billing/billing.constants';
 import * as path from 'path';
 import * as fs from 'fs';
-import { Cron, Timeout } from '@nestjs/schedule';
+// import { Cron, Timeout } from '@nestjs/schedule';
 import { EncryptionService } from '../security/encryption.service';
 
 @Injectable()
@@ -31,7 +31,7 @@ export class WordpressService implements OnModuleInit {
     this.logger.log('WordpressService initialized.');
   }
 
-  @Cron('0 */30 * * * *') // Run every 30 minutes
+  // @Cron('0 */30 * * * *') // Run every 30 minutes
   async handleScheduledSync() {
     this.logger.log('Running automated sync (Cron)...');
     try {
@@ -41,7 +41,7 @@ export class WordpressService implements OnModuleInit {
     }
   }
 
-  @Timeout(10000) // Run once 10 seconds after startup
+  // @Timeout(10000) // Run once 10 seconds after startup
   async handleStartupSync() {
     this.logger.log('Running initial sync after startup (Timeout)...');
     try {

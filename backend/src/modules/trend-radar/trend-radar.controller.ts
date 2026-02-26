@@ -24,8 +24,10 @@ export class TrendRadarController {
         const tier = await this.billingService.getSubscriptionTier(user.id);
         const tierConfig = BILLING_TIERS[tier];
 
+        console.log(`[TrendRadar] User: ${user.id}, Tier: ${tier}`);
+
         if (!tierConfig.canAnalyzeTrends) {
-            throw new Error(`Analisis Tren mendalam hanya tersedia untuk paket PRO ke atas.`);
+            throw new Error(`Analisis Tren mendalam hanya tersedia untuk paket PRO ke atas. Tier saat ini: ${tier}`);
         }
 
         return this.trendRadarService.analyzeTrend(url);

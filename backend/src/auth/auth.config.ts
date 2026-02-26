@@ -62,16 +62,24 @@ export const auth = betterAuth({
     requireEmailVerification: false, // Set to true in production
   },
 
-  // OAuth providers
+  // OAuth providers - only include if credentials are provided
   socialProviders: {
-    google: {
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    },
-    github: {
-      clientId: process.env.GITHUB_CLIENT_ID || '',
-      clientSecret: process.env.GITHUB_CLIENT_SECRET || '',
-    },
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? {
+          google: {
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          },
+        }
+      : {}),
+    ...(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET
+      ? {
+          github: {
+            clientId: process.env.GITHUB_CLIENT_ID,
+            clientSecret: process.env.GITHUB_CLIENT_SECRET,
+          },
+        }
+      : {}),
   },
 
   // Session configuration
@@ -145,6 +153,12 @@ console.log('📍 Google OAuth:', {
   enabled: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
   clientId: process.env.GOOGLE_CLIENT_ID
     ? `${process.env.GOOGLE_CLIENT_ID.substring(0, 10)}...`
+    : 'MISSING',
+});
+console.log('📍 GitHub OAuth:', {
+  enabled: !!(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET),
+  clientId: process.env.GITHUB_CLIENT_ID
+    ? `${process.env.GITHUB_CLIENT_ID.substring(0, 10)}...`
     : 'MISSING',
 });
 
