@@ -1,5 +1,8 @@
 FROM node:20-alpine AS builder
 
+# Install Python and build tools for canvas
+RUN apk add --no-cache python3 make g++ pkgconfig pixman-dev cairo-dev pango-dev libjpeg-turbo-dev giflib-dev
+
 WORKDIR /app
 
 # Copy package files from the backend directory
@@ -16,7 +19,7 @@ RUN npm run build
 # Second stage for runtime
 FROM node:20-alpine
 
-# Install Chromium, wget, and dependencies for Puppeteer
+# Install Chromium, wget, and dependencies for Puppeteer + canvas runtime deps
 RUN apk add --no-cache \
     chromium \
     nss \
@@ -24,7 +27,11 @@ RUN apk add --no-cache \
     harfbuzz \
     ca-certificates \
     ttf-freefont \
-    wget
+    wget \
+    cairo \
+    pango \
+    libjpeg-turbo \
+    giflib
 
 # Tell Puppeteer to skip downloading Chrome and use the system's chromium
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
