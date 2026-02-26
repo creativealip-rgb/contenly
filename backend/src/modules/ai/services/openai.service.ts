@@ -80,7 +80,6 @@ export class OpenAiService {
       }
     }
   }
-  }
 
   // Getter for accessing the OpenAI client
   getClient(): OpenAI {
