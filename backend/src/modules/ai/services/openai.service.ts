@@ -131,6 +131,8 @@ export class OpenAiService {
     }
 
     try {
+      console.log(`[OpenAiService] Generating content with model: ${options.model || this.model}`);
+      
       const response = await this.openai.chat.completions.create({
         model: options.model || this.model,
         messages: [
@@ -164,7 +166,19 @@ export class OpenAiService {
         slug: result.slug || '',
       };
     } catch (error: any) {
-      console.error('[OpenAiService] Generation failed:', error);
+      console.error('[OpenAiService] Generation failed:', {
+        message: error.message,
+        status: error.status,
+        type: error.type,
+        code: error.code,
+      });
+      
+      // If it's an API error, provide more context
+      if (error.status === 401) {
+        console.error('[OpenAiService] 401 Error - Check API key and headers configuration');
+        console.error('[OpenAiService] Current baseURL:', this.openai.baseURL);
+      }
+      
       throw error;
     }
   }
