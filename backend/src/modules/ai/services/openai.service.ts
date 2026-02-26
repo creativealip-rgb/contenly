@@ -39,13 +39,27 @@ export class OpenAiService {
       throw new Error('No AI API key configured. Set OPENAI_API_KEY or OPENROUTER_API_KEY in environment variables');
     }
 
+    // Debug: Show API key prefix (safe to log)
+    const keyPrefix = apiKey.substring(0, 10) + '...';
+    console.log(`🔑 Using API Key: ${keyPrefix}`);
+
+    // OpenRouter requires additional headers
+    const defaultHeaders = useOpenRouter ? {
+      'HTTP-Referer': this.configService.get('APP_URL') || 'https://contenly.web.id',
+      'X-Title': 'Contently AI Platform',
+    } : undefined;
+
     this.openai = new OpenAI({
       apiKey,
       baseURL,
+      defaultHeaders,
     });
     this.model = model;
 
     console.log(`✅ Model set to: ${this.model} via ${useOpenRouter ? 'OpenRouter' : 'OpenAI'}`);
+    if (useOpenRouter) {
+      console.log(`🔑 OpenRouter headers configured`);
+    }
 
     // Explicitly check for native OpenAI key for DALL-E if not already set
     if (!this.nativeOpenai) {
