@@ -124,6 +124,14 @@ const icons = {
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
     ),
+    tools: (
+        <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth="1.5">
+            <path d="M21 7l-9-5L3 7" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M21 7v10l-9 5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M12 12l-9 5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M3 7l9 5 9-5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+    ),
 }
 
 interface NavItem {
@@ -169,11 +177,13 @@ const navGroups: NavGroup[] = [
         ],
     },
     {
-        id: 'view-boost',
-        label: 'View Boost',
-        icon: icons.analytics,
-        items: [{ href: '/view-boost', label: 'View Boost', icon: icons.analytics }],
-        role: 'ADMIN',
+        id: 'tools',
+        label: 'Tools',
+        icon: icons.tools,
+        items: [
+            { href: '/view-boost', label: 'View Boost', icon: icons.analytics, role: 'ADMIN' },
+            { href: '/prompt-generator', label: 'Prompt Generator', icon: icons.createContent },
+        ],
     },
     {
         id: 'admin',
@@ -192,7 +202,7 @@ export function Sidebar() {
     const pathname = usePathname()
     const { isCollapsed, setCollapsed, isOpen, setOpen } = useSidebarStore()
     const { user } = useAuthStore()
-    const [openGroups, setOpenGroups] = useState<string[]>(['create-content', 'discovery', 'admin'])
+    const [openGroups, setOpenGroups] = useState<string[]>(['create-content', 'discovery', 'tools', 'admin'])
 
     const toggleGroup = (groupId: string) => {
         setOpenGroups(prev =>
@@ -290,7 +300,7 @@ export function Sidebar() {
                                 if (item.role === 'SUPER_ADMIN' && user?.role !== 'SUPER_ADMIN') {
                                     return false
                                 }
-                                if (group.role === 'ADMIN' && !isAdmin) {
+                                if (item.role === 'ADMIN' && !isAdmin) {
                                     return false
                                 }
                                 return true

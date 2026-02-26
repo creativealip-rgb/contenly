@@ -88,3 +88,13 @@ export class AiGenerateImageDto {
   @IsString()
   prompt: string;
 }
+
+export class GeneratePromptDto {
+  @ApiProperty({ description: 'Text description in everyday language' })
+  @IsString()
+  text: string;
+
+  @ApiProperty({ enum: ['image', 'video'] })
+  @IsEnum(['image', 'video'])
+  mode: 'image' | 'video';
+}

@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { OpenAiService } from './services/openai.service';
 import { BillingService } from '../billing/billing.service';
-import { GenerateContentDto, GenerateSeoDto, AiGenerateImageDto } from './dto';
+import { GenerateContentDto, GenerateSeoDto, AiGenerateImageDto, GeneratePromptDto } from './dto';
 import { ArticlesService } from '../articles/articles.service';
 import { WordpressService } from '../wordpress/wordpress.service';
 import { BILLING_TIERS } from '../billing/billing.constants';
@@ -238,5 +238,57 @@ export class AiService {
       imageUrl,
       tokensUsed: 2,
     };
+  }
+
+  async generatePrompt(dto: GeneratePromptDto) {
+    this.logger.log(`Generating ${dto.mode} prompt from: ${dto.text}`);
+
+    const systemPrompt = dto.mode === 'image'
+      ? `You are an AI image prompt generator. Convert the user's everyday language description into a structured JSON prompt for AI image generation (like Midjourney, DALL-E, or Stable Diffusion).
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "subject": "The main subject of the image",
+  "style": "Art style (e.g., photorealistic, anime, watercolor, 3D render, etc.)",
+  "lighting": "Lighting conditions (e.g., golden hour, dramatic, soft, neon, etc.)",
+  "composition": "How the image is composed (e.g., close-up, wide shot, rule of thirds, centered, etc.)",
+  "colors": "Color palette or dominant colors (e.g., warm tones, cool blues, vibrant, muted, etc.)",
+  "mood": "The mood or atmosphere (e.g., peaceful, dramatic, mysterious, joyful, etc.)",
+  "additionalDetails": "Extra details like background, texture, specific elements, etc."
+}
+
+Keep each field concise but descriptive. Use English.`
+      : `You are an AI video prompt generator. Convert the user's everyday language description into a structured JSON prompt for AI video generation (like Runway, Pika, or Sora).
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "subject": "The main subject of the video",
+  "action": "What the subject is doing or the main action",
+  "scene": "The setting or environment",
+  "cameraMovement": "Camera motion (e.g., static, pan left, zoom in, tracking shot, drone view, etc.)",
+  "duration": "Approximate shot duration (e.g., 2-3 seconds, 5 seconds, continuous, etc.)",
+  "style": "Visual style (e.g., cinematic, documentary, anime, animation, etc.)",
+  "mood": "The mood or atmosphere (e.g., energetic, calm, dramatic, joyful, etc.)",
+  "additionalDetails": "Extra details like weather, time of day, specific movements, etc."
+}
+
+Keep each field concise but descriptive. Use English.`;
+
+    const response = await this.openAiService.openai.chat.completions.create({
+      model: this.openAiService['model'] || 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: dto.text },
+      ],
+      temperature: 0.7,
+    });
+
+    const prompt = response.choices[0]?.message?.content?.trim();
+    
+    if (!prompt) {
+      throw new BadRequestException('Failed to generate prompt');
+    }
+
+    return { prompt };
   }
 }
