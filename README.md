@@ -1,6 +1,6 @@
 # Contenly - AI Content Automation Platform
 
-[![Live Demo](https://img.shields.io/badge/demo-live-green?style=for-the-badge)](https://demo.contenly.app)
+[![Live Demo](https://img.shields.io/badge/demo-live-green?style=for-the-badge)](https://contenly.web.id)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](LICENSE)
 
 > **All-in-one platform untuk kreator konten, blogger, dan digital marketer.**
@@ -9,7 +9,7 @@
 
 ## 🌐 Live Demo
 
-🚀 **Coba Demo**: [https://demo.contenly.app](https://demo.contenly.app)
+🚀 **Coba Demo**: [https://contenly.web.id](https://contenly.web.id)
 
 > Demo menampilkan semua fitur utama dengan data simulasi. Untuk full access dengan WordPress integration dan AI generation, silakan deploy instance sendiri.
 
