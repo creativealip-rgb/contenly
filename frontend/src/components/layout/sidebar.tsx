@@ -154,7 +154,7 @@ export function Sidebar() {
             >
                 <div className="flex h-full flex-col">
                     {/* Navigation */}
-                    <nav className="flex-1 space-y-1.5 p-4">
+                    <nav className="flex-1 space-y-1.5 p-4 overflow-y-auto">
                         {navItems.map((item: any) => {
                             // Only admins can see View Boost
                             if (item.href === '/view-boost' && user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN') {
