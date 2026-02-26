@@ -4,10 +4,10 @@ import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { useSidebarStore, useAuthStore } from '@/stores'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { usePathname } from 'next/navigation'
+import { useState } from 'react'
 
-// Custom SVG icons for a unique look
 const icons = {
     dashboard: (
         <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth="1.5">
@@ -101,35 +101,167 @@ const icons = {
             <path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
     ),
+    chevronDown: (
+        <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4" stroke="currentColor" strokeWidth="2">
+            <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+    ),
+    createContent: (
+        <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth="1.5">
+            <path d="M12 5v14M5 12h14" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M17 8l4-4-4-4M21 8H12" strokeLinecap="round" />
+        </svg>
+    ),
+    discovery: (
+        <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth="1.5">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
+            <path d="M2 12h20" />
+        </svg>
+    ),
+    admin: (
+        <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth="1.5">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+    ),
 }
 
-const navItems = [
-    { href: '/dashboard', label: 'Dashboard', icon: icons.dashboard },
-    { href: '/trend-radar', label: 'Radar Tren', icon: icons.radar },
-    { href: '/content-lab', label: 'Content Lab', icon: icons.contentLab },
-    { href: '/instagram-studio', label: 'Instagram Studio', icon: icons.instagram },
-    { href: '/video-scripts', label: 'Video Scripts', icon: icons.video },
-    { href: '/feeds', label: 'Sumber Web', icon: icons.rss },
-    { href: '/articles', label: 'Artikel', icon: icons.articles },
-    { href: '/view-boost', label: 'View Boost', icon: icons.analytics },
-    { href: '/integrations', label: 'Integrasi', icon: icons.integrations },
-    { href: '/billing', label: 'Tagihan', icon: icons.billing },
-    { href: '/super-admin/users', label: 'Pengguna', icon: icons.userManagement, role: 'SUPER_ADMIN' },
-    // Temporarily disabled
-    // { href: '/analytics', label: 'Analitik', icon: icons.analytics },
-    { href: '/settings', label: 'Pengaturan', icon: icons.settings },
+interface NavItem {
+    href: string
+    label: string
+    icon: React.ReactNode
+    role?: string
+}
+
+interface NavGroup {
+    id: string
+    label: string
+    icon: React.ReactNode
+    items: NavItem[]
+    role?: string
+}
+
+const navGroups: NavGroup[] = [
+    {
+        id: 'dashboard',
+        label: 'Dashboard',
+        icon: icons.dashboard,
+        items: [{ href: '/dashboard', label: 'Dashboard', icon: icons.dashboard }],
+    },
+    {
+        id: 'create-content',
+        label: 'Buat Konten',
+        icon: icons.createContent,
+        items: [
+            { href: '/content-lab', label: 'Content Lab', icon: icons.contentLab },
+            { href: '/instagram-studio', label: 'Instagram Studio', icon: icons.instagram },
+            { href: '/video-scripts', label: 'Video Scripts', icon: icons.video },
+            { href: '/articles', label: 'Artikel', icon: icons.articles },
+        ],
+    },
+    {
+        id: 'discovery',
+        label: 'Discovery',
+        icon: icons.discovery,
+        items: [
+            { href: '/trend-radar', label: 'Radar Tren', icon: icons.radar },
+            { href: '/feeds', label: 'Sumber Web', icon: icons.rss },
+        ],
+    },
+    {
+        id: 'view-boost',
+        label: 'View Boost',
+        icon: icons.analytics,
+        items: [{ href: '/view-boost', label: 'View Boost', icon: icons.analytics }],
+        role: 'ADMIN',
+    },
+    {
+        id: 'admin',
+        label: 'Admin',
+        icon: icons.admin,
+        items: [
+            { href: '/integrations', label: 'Integrasi', icon: icons.integrations },
+            { href: '/billing', label: 'Tagihan', icon: icons.billing },
+            { href: '/settings', label: 'Pengaturan', icon: icons.settings },
+            { href: '/super-admin/users', label: 'Pengguna', icon: icons.userManagement, role: 'SUPER_ADMIN' },
+        ],
+    },
 ]
 
 export function Sidebar() {
     const pathname = usePathname()
     const { isCollapsed, setCollapsed, isOpen, setOpen } = useSidebarStore()
     const { user } = useAuthStore()
+    const [openGroups, setOpenGroups] = useState<string[]>(['create-content', 'discovery', 'admin'])
 
-    // Handle mobile close on navigation
+    const toggleGroup = (groupId: string) => {
+        setOpenGroups(prev =>
+            prev.includes(groupId)
+                ? prev.filter(id => id !== groupId)
+                : [...prev, groupId]
+        )
+    }
+
     const handleMobileLinkClick = () => {
         if (window.innerWidth < 768) {
             setOpen(false)
         }
+    }
+
+    const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN'
+
+    const renderNavItem = (item: NavItem, isSubItem: boolean = false) => {
+        if (item.role === 'SUPER_ADMIN' && user?.role !== 'SUPER_ADMIN') {
+            return null
+        }
+
+        const isViewBoost = item.href === '/view-boost'
+        const isDisabled = isViewBoost && !isAdmin
+        const isActive = !isDisabled && (pathname === item.href || pathname.startsWith(item.href + '/'))
+
+        if (isDisabled) {
+            return null
+        }
+
+        return (
+            <motion.div
+                key={item.href}
+                whileHover={isSubItem ? {} : { x: 4 }}
+                whileTap={isSubItem ? {} : { scale: 0.98 }}
+            >
+                <Link
+                    href={item.href}
+                    onClick={handleMobileLinkClick}
+                    className={cn(
+                        "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition-all duration-300",
+                        isActive
+                            ? "bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none"
+                            : "text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-slate-800/80",
+                        isSubItem && "ml-4 py-2"
+                    )}
+                >
+                    <div className={cn(
+                        "shrink-0 transition-colors duration-200",
+                        isActive ? "text-white" : "text-slate-400 group-hover:text-blue-600"
+                    )}>
+                        {item.icon}
+                    </div>
+                    <span className={cn(
+                        "truncate transition-all duration-500",
+                        isCollapsed ? "md:w-0 md:opacity-0" : "md:w-auto md:opacity-100"
+                    )}>
+                        {item.label}
+                    </span>
+
+                    {isActive && !isCollapsed && (
+                        <motion.div
+                            layoutId="active-pill"
+                            className="ml-auto h-1.5 w-1.5 rounded-full bg-white"
+                        />
+                    )}
+                </Link>
+            </motion.div>
+        )
     }
 
     return (
@@ -147,75 +279,90 @@ export function Sidebar() {
                     "fixed left-0 top-20 z-40 h-[calc(100vh-6rem)] transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]",
                     "mx-4 rounded-[2rem] border border-white/40 dark:border-white/10 glass shadow-2xl shadow-slate-200/50 dark:shadow-none",
                     isCollapsed ? "md:w-[80px]" : "md:w-72",
-                    // Mobile behavior: slide in/out
                     "w-72",
                     isOpen ? "translate-x-0" : "-translate-x-[calc(100%+2rem)] md:translate-x-0"
                 )}
             >
                 <div className="flex h-full flex-col">
-                    {/* Navigation */}
                     <nav className="flex-1 space-y-1.5 p-4 overflow-y-auto">
-                        {navItems.map((item: any) => {
-                            // Only admins can see View Boost
-                            if (item.href === '/view-boost' && user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN') {
-                                // Keep this logic if needed, but the previous one was for "Soon" label
-                            }
+                        {navGroups.map((group) => {
+                            const filteredItems = group.items.filter(item => {
+                                if (item.role === 'SUPER_ADMIN' && user?.role !== 'SUPER_ADMIN') {
+                                    return false
+                                }
+                                if (group.role === 'ADMIN' && !isAdmin) {
+                                    return false
+                                }
+                                return true
+                            })
 
-                            // Role restricted items
-                            if (item.role === 'SUPER_ADMIN' && user?.role !== 'SUPER_ADMIN') {
+                            if (filteredItems.length === 0) {
                                 return null
                             }
 
-                            const isViewBoost = item.href === '/view-boost'
-                            const isNonAdmin = user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN'
-                            const isDisabled = isViewBoost && isNonAdmin
-                            const isActive = !isDisabled && (pathname === item.href || pathname.startsWith(item.href + '/'))
+                            const isGroupOpen = openGroups.includes(group.id)
+                            const isSingleItem = filteredItems.length === 1
+
+                            if (isSingleItem) {
+                                return (
+                                    <div key={group.id}>
+                                        {renderNavItem(filteredItems[0])}
+                                    </div>
+                                )
+                            }
 
                             return (
-                                <motion.div
-                                    key={item.href}
-                                    whileHover={{ x: 4 }}
-                                    whileTap={{ scale: 0.98 }}
-                                >
-                                    <Link
-                                        href={item.href}
-                                        onClick={handleMobileLinkClick}
+                                <div key={group.id}>
+                                    <button
+                                        onClick={() => toggleGroup(group.id)}
                                         className={cn(
-                                            "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition-all duration-300",
-                                            isActive
-                                                ? "bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none"
-                                                : "text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-slate-800/80"
+                                            "group flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition-all duration-300",
+                                            "text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-slate-800/80"
                                         )}
                                     >
-                                        <div className={cn(
-                                            "shrink-0 transition-colors duration-200",
-                                            isActive ? "text-white" : "text-slate-400 group-hover:text-blue-600"
-                                        )}>
-                                            {item.icon}
+                                        <div className="shrink-0 text-slate-400 group-hover:text-blue-600 transition-colors duration-200">
+                                            {group.icon}
                                         </div>
                                         <span className={cn(
-                                            "truncate transition-all duration-500",
+                                            "truncate transition-all duration-500 flex-1 text-left",
                                             isCollapsed ? "md:w-0 md:opacity-0" : "md:w-auto md:opacity-100"
                                         )}>
-                                            {item.label}
+                                            {group.label}
                                         </span>
+                                        <AnimatePresence>
+                                            {!isCollapsed && (
+                                                <motion.div
+                                                    initial={{ rotate: 0 }}
+                                                    animate={{ rotate: isGroupOpen ? 180 : 0 }}
+                                                    exit={{ rotate: 0 }}
+                                                    transition={{ duration: 0.2 }}
+                                                    className="text-slate-400"
+                                                >
+                                                    {icons.chevronDown}
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </button>
 
-                                        {isActive && !isCollapsed && (
+                                    <AnimatePresence>
+                                        {isGroupOpen && !isCollapsed && (
                                             <motion.div
-                                                layoutId="active-pill"
-                                                className="ml-auto h-1.5 w-1.5 rounded-full bg-white"
-                                            />
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: 'auto', opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.2 }}
+                                                className="overflow-hidden"
+                                            >
+                                                {filteredItems.map((item) => renderNavItem(item, true))}
+                                            </motion.div>
                                         )}
-                                    </Link>
-                                </motion.div>
+                                    </AnimatePresence>
+                                </div>
                             )
                         })}
                     </nav>
 
                     <div className="mt-auto border-t border-border p-4">
-                        {/* User Profile Removed per user request */}
-
-                        {/* Collapse Toggle (Desktop Only) */}
                         <Button
                             variant="ghost"
                             size="sm"
