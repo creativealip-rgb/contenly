@@ -1,6 +1,6 @@
-# Contently - AI Content Automation Platform
+# Contenly - AI Content Automation Platform
 
-Contently (formerly Camedia) adalah platform otomatisasi konten berbasis AI yang dirancang untuk mem streamline workflow dari penemuan konten hingga publikasi. Platform ini mengintegrasikan kemampuan scraping canggih, AI rewriting, dan publishing ke WordPress dalam satu dashboard terpadu.
+Contenly (formerly Camedia) adalah platform otomatisasi konten berbasis AI yang dirancang untuk mem streamline workflow dari penemuan konten hingga publikasi. Platform ini mengintegrasikan kemampuan scraping canggih, AI rewriting, dan publishing ke WordPress dalam satu dashboard terpadu.
 
 ## 🚀 Fitur Utama
 
@@ -257,7 +257,7 @@ NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3001
 
 ## 🔑 API Key Authentication
 
-Contently mendukung autentikasi via API Key untuk integrasi eksternal:
+Contenly mendukung autentikasi via API Key untuk integrasi eksternal:
 
 ```bash
 curl -H "Authorization: Bearer YOUR_API_KEY" \
