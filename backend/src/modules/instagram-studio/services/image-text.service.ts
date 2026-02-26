@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import sharp from 'sharp';
+import * as sharp from 'sharp';
 import axios from 'axios';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
@@ -27,7 +27,7 @@ export class ImageTextService {
     private async downloadImage(url: string): Promise<Buffer> {
         this.logger.log(`Downloading base image from: ${url}`);
         const response = await axios.get(url, { responseType: 'arraybuffer' });
-        return Buffer.from(response.data, 'binary');
+        return Buffer.from(response.data as ArrayBuffer);
     }
 
     /**
@@ -195,7 +195,7 @@ export class ImageTextService {
                 </svg>
             `;
 
-            const svgBuffer = Buffer.from(svgText);
+            const svgBuffer: Buffer = Buffer.from(svgText);
 
             // Composite the SVG over the base image
             const resultBuffer = await sharp(baseImageBuffer)

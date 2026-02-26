@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import sharp from 'sharp';
+import * as sharp from 'sharp';
 
 interface SlideExportData {
   imageUrl: string;
