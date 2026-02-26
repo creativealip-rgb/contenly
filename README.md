@@ -1,6 +1,32 @@
 # Contenly - AI Content Automation Platform
 
-Contenly (formerly Camedia) adalah platform otomatisasi konten berbasis AI yang dirancang untuk mem streamline workflow dari penemuan konten hingga publikasi. Platform ini mengintegrasikan kemampuan scraping canggih, AI rewriting, dan publishing ke WordPress dalam satu dashboard terpadu.
+[![Live Demo](https://img.shields.io/badge/demo-live-green?style=for-the-badge)](https://demo.contenly.app)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](LICENSE)
+
+> **All-in-one platform untuk kreator konten, blogger, dan digital marketer.**
+>
+> Transformasi ide menjadi konten siap publish dalam hitungan menit — dari riset tren, penulisan AI, desain visual, hingga publishing otomatis ke WordPress.
+
+## 🌐 Live Demo
+
+🚀 **Coba Demo**: [https://demo.contenly.app](https://demo.contenly.app)
+
+> Demo menampilkan semua fitur utama dengan data simulasi. Untuk full access dengan WordPress integration dan AI generation, silakan deploy instance sendiri.
+
+---
+
+## 📖 Tentang Contenly
+
+**Contenly** adalah platform otomasi konten berbasis AI yang dirancang untuk mempercepat workflow content creation dari riset hingga publikasi. Dibangun untuk kreator konten, blogger, dan digital marketer yang ingin:
+
+- ⚡ **Produksi konten 10x lebih cepat** dengan AI-powered writing tools
+- 🎯 **Tingkatkan engagement** dengan konten yang selalu relevan dan trending  
+- 🔗 **Automatisasi publishing** ke multiple WordPress sites dari satu dashboard
+- 💰 **Monetisasi efisien** dengan sistem token-based yang transparan
+
+Dari scraping berita terkini, menulis ulang dengan AI, membuat carousel Instagram, generate video script, hingga publish otomatis — semua dalam satu platform terpadu.
+
+---
 
 ## 🚀 Fitur Utama
 
