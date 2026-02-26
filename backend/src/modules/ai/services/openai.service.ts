@@ -39,37 +39,47 @@ export class OpenAiService {
       throw new Error('No AI API key configured. Set OPENAI_API_KEY or OPENROUTER_API_KEY in environment variables');
     }
 
-    // Debug: Show API key prefix (safe to log)
-    const keyPrefix = apiKey.substring(0, 10) + '...';
-    console.log(`🔑 Using API Key: ${keyPrefix}`);
+    // Debug: Show API key info (safe to log)
+    const keyPrefix = apiKey.substring(0, 15) + '...';
+    console.log(`🔑 Using API Key prefix: ${keyPrefix}`);
+    console.log(`🔑 API Key length: ${apiKey.length}`);
+    console.log(`🌐 Base URL: ${baseURL}`);
 
     // OpenRouter requires additional headers
-    const defaultHeaders = useOpenRouter ? {
-      'HTTP-Referer': this.configService.get('APP_URL') || 'https://contenly.web.id',
-      'X-Title': 'Contently AI Platform',
-    } : undefined;
+    let defaultHeaders: Record<string, string> | undefined;
+    if (useOpenRouter) {
+      defaultHeaders = {
+        'HTTP-Referer': this.configService.get('APP_URL') || 'https://contenly.web.id',
+        'X-Title': 'Contently AI Platform',
+      };
+      console.log(`🔑 OpenRouter headers:`, defaultHeaders);
+    }
 
-    this.openai = new OpenAI({
-      apiKey,
-      baseURL,
-      defaultHeaders,
-    });
+    // Initialize OpenAI client
+    try {
+      this.openai = new OpenAI({
+        apiKey,
+        baseURL,
+        ...(defaultHeaders && { defaultHeaders }),
+      });
+      console.log(`✅ OpenAI client initialized successfully`);
+    } catch (initError) {
+      console.error('❌ Failed to initialize OpenAI client:', initError);
+      throw initError;
+    }
     this.model = model;
 
     console.log(`✅ Model set to: ${this.model} via ${useOpenRouter ? 'OpenRouter' : 'OpenAI'}`);
-    if (useOpenRouter) {
-      console.log(`🔑 OpenRouter headers configured`);
-    }
 
     // Explicitly check for native OpenAI key for DALL-E if not already set
     if (!this.nativeOpenai) {
       const nativeApiKey = (this.configService.get('OPENAI_API_KEY') || '').trim();
       if (nativeApiKey) {
         this.nativeOpenai = new OpenAI({ apiKey: nativeApiKey });
+        console.log(`✅ Native OpenAI client initialized for DALL-E`);
       }
     }
-
-    console.log(`✅ Model set to: ${this.model}`);
+  }
   }
 
   // Getter for accessing the OpenAI client
