@@ -16,14 +16,15 @@ RUN npm run build
 # Second stage for runtime
 FROM node:20-alpine
 
-# Install Chromium and dependencies for Puppeteer
+# Install Chromium, wget, and dependencies for Puppeteer
 RUN apk add --no-cache \
     chromium \
     nss \
     freetype \
     harfbuzz \
     ca-certificates \
-    ttf-freefont
+    ttf-freefont \
+    wget
 
 # Tell Puppeteer to skip downloading Chrome and use the system's chromium
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
@@ -46,7 +47,7 @@ RUN chmod +x start.sh
 EXPOSE 3001
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3001/api/health || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=5 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3001/health || exit 1
 
 CMD ["./start.sh"]
