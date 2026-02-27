@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { motion, AnimatePresence } from 'framer-motion'
+import { toast } from 'sonner'
+import { useConfirm } from '@/components/ui/confirm-dialog'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
@@ -25,6 +27,7 @@ interface ScriptProject {
 
 export default function VideoScriptsPage() {
     const router = useRouter()
+    const confirm = useConfirm()
     const [projects, setProjects] = useState<ScriptProject[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [isCreating, setIsCreating] = useState(false)
@@ -85,19 +88,26 @@ export default function VideoScriptsPage() {
 
     const handleDeleteProject = async (e: React.MouseEvent, id: string) => {
         e.stopPropagation()
-        if (!confirm('Apakah Anda yakin ingin menghapus script ini?')) return
-
-        try {
-            const response = await fetch(`${API_BASE_URL}/video-scripts/projects/${id}`, {
-                method: 'DELETE',
-                credentials: 'include'
-            })
-            if (response.ok) {
-                fetchProjects()
-            }
-        } catch (error) {
-            console.error('Failed to delete script:', error)
-        }
+        const confirmed = await confirm({
+            title: 'Hapus Script',
+            description: 'Apakah Anda yakin ingin menghapus script ini?',
+            confirmText: 'Hapus',
+            cancelText: 'Batal',
+            variant: 'destructive',
+            onConfirm: async () => {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/video-scripts/projects/${id}`, {
+                        method: 'DELETE',
+                        credentials: 'include'
+                    })
+                    if (response.ok) {
+                        fetchProjects()
+                    }
+                } catch (error) {
+                    console.error('Failed to delete script:', error)
+                }
+            },
+        })
     }
 
     const getStatusColor = (status: string) => {

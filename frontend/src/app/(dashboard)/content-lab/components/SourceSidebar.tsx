@@ -26,14 +26,7 @@ export function SourceSidebar({ state, handlers }: SourceSidebarProps) {
             animate={{ opacity: 1, x: 0 }}
             className="h-full flex flex-col"
         >
-            <div className="flex items-center gap-2 mb-6">
-                <div className="p-2.5 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-200 dark:shadow-none">
-                    <Rss className="h-5 w-5" />
-                </div>
-                <h2 className="text-xl font-bold tracking-tight">Sumber Daya</h2>
-            </div>
-
-            <div className="flex-1 space-y-6">
+            <div className="flex-1 space-y-4">
                 <Tabs value={activeTab} onValueChange={(v) => {
                     setActiveTab(v);
                     handlers.setActiveTab(v);

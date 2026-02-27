@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
+import { useConfirm } from '@/components/ui/confirm-dialog'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -83,6 +85,7 @@ interface Font {
 
 export default function InstagramStudioPage() {
     const router = useRouter()
+    const confirm = useConfirm()
     const [projects, setProjects] = useState<Project[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [isCreating, setIsCreating] = useState(false)
@@ -141,7 +144,7 @@ export default function InstagramStudioPage() {
 
     const handleFetchUrl = async () => {
         if (!newProject.sourceUrl) {
-            alert('Harap masukkan URL Sumber terlebih dahulu')
+            toast.info('Harap masukkan URL Sumber terlebih dahulu')
             return
         }
 
@@ -159,28 +162,35 @@ export default function InstagramStudioPage() {
                     sourceContent: data.content || prev.sourceContent
                 }))
             } else {
-                alert('Gagal mengambil konten URL')
+                toast.error('Gagal mengambil konten URL')
             }
         } catch (error) {
             console.error('Failed to fetch URL:', error)
-            alert('Terjadi kesalahan saat mengambil URL')
+            toast.error('Terjadi kesalahan saat mengambil URL')
         } finally {
             setIsFetchingUrl(false)
         }
     }
 
     const handleDeleteProject = async (id: string) => {
-        if (!confirm('Apakah Anda yakin ingin menghapus proyek ini?')) return
-
-        try {
-            await fetch(`${API_BASE_URL}/instagram-studio/projects/${id}`, {
-                method: 'DELETE',
-                credentials: 'include',
-            })
-            fetchProjects()
-        } catch (error) {
-            console.error('Failed to delete project:', error)
-        }
+        const confirmed = await confirm({
+            title: 'Hapus Proyek',
+            description: 'Apakah Anda yakin ingin menghapus proyek ini?',
+            confirmText: 'Hapus',
+            cancelText: 'Batal',
+            variant: 'destructive',
+            onConfirm: async () => {
+                try {
+                    await fetch(`${API_BASE_URL}/instagram-studio/projects/${id}`, {
+                        method: 'DELETE',
+                        credentials: 'include',
+                    })
+                    fetchProjects()
+                } catch (error) {
+                    console.error('Failed to delete project:', error)
+                }
+            },
+        })
     }
 
     const getStatusColor = (status: string) => {

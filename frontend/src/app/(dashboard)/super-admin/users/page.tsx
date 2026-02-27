@@ -47,6 +47,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
+import { useConfirm } from '@/components/ui/confirm-dialog'
 
 interface TokenBalance { balance: number }
 interface Subscription {
@@ -74,6 +75,7 @@ const itemVariants = {
 } as const
 
 export default function UserManagementPage() {
+    const confirm = useConfirm()
     const [users, setUsers] = useState<UserData[]>([])
     const [loading, setLoading] = useState(true)
     const [tokenAmount, setTokenAmount] = useState<number>(1000)
@@ -161,15 +163,23 @@ export default function UserManagementPage() {
     }
 
     const handleDeleteUser = async (userId: string) => {
-        if (!confirm('Apakah Anda yakin ingin menghapus user ini?')) return
-        try {
-            await api.delete(`/users/admin/${userId}`)
-            toast.success('User berhasil dihapus')
-            fetchUsers()
-        } catch (error) {
-            console.error('Failed to delete user:', error)
-            toast.error('Gagal menghapus user')
-        }
+        const confirmed = await confirm({
+            title: 'Hapus User',
+            description: 'Apakah Anda yakin ingin menghapus user ini?',
+            confirmText: 'Hapus',
+            cancelText: 'Batal',
+            variant: 'destructive',
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/users/admin/${userId}`)
+                    toast.success('User berhasil dihapus')
+                    fetchUsers()
+                } catch (error) {
+                    console.error('Failed to delete user:', error)
+                    toast.error('Gagal menghapus user')
+                }
+            },
+        })
     }
 
     const getRoleBadge = (role: string) => {

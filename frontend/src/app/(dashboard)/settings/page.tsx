@@ -38,8 +38,10 @@ import { api } from '@/lib/api'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
 import { authClient } from '@/lib/auth-client'
+import { useConfirm } from '@/components/ui/confirm-dialog'
 
 export default function SettingsPage() {
+    const confirm = useConfirm()
     const { user, setUser } = useAuthStore()
     const [showCurrentPassword, setShowCurrentPassword] = useState(false)
     const [showNewPassword, setShowNewPassword] = useState(false)
@@ -174,14 +176,22 @@ export default function SettingsPage() {
     }
 
     const handleRevokeApiKey = async (id: string) => {
-        if (!confirm('Apakah Anda yakin ingin menghapus kunci API ini?')) return
-        try {
-            await api.delete(`/users/me/api-keys/${id}`)
-            toast.success('Kunci API berhasil dihapus')
-            fetchApiKeys()
-        } catch (error: any) {
-            toast.error(error.message || 'Gagal menghapus kunci API')
-        }
+        const confirmed = await confirm({
+            title: 'Hapus Kunci API',
+            description: 'Apakah Anda yakin ingin menghapus kunci API ini?',
+            confirmText: 'Hapus',
+            cancelText: 'Batal',
+            variant: 'destructive',
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/users/me/api-keys/${id}`)
+                    toast.success('Kunci API berhasil dihapus')
+                    fetchApiKeys()
+                } catch (error: any) {
+                    toast.error(error.message || 'Gagal menghapus kunci API')
+                }
+            },
+        })
     }
 
     const handleCopy = (text: string) => {
@@ -241,18 +251,26 @@ export default function SettingsPage() {
     }
 
     const handleUnlinkAccount = async (id: string, providerId: string) => {
-        if (!confirm('Apakah Anda yakin ingin memutuskan hubungan akun ini?')) return
-        try {
-            const { error } = await authClient.unlinkAccount({
-                accountId: id,
-                providerId: providerId
-            })
-            if (error) throw error
-            toast.success('Akun berhasil diputuskan')
-            fetchAccounts()
-        } catch (error: any) {
-            toast.error(`Gagal memutuskan hubungan: ${error.message}`)
-        }
+        const confirmed = await confirm({
+            title: 'Putuskan Hubungan Akun',
+            description: 'Apakah Anda yakin ingin memutuskan hubungan akun ini?',
+            confirmText: 'Putuskan',
+            cancelText: 'Batal',
+            variant: 'destructive',
+            onConfirm: async () => {
+                try {
+                    const { error } = await authClient.unlinkAccount({
+                        accountId: id,
+                        providerId: providerId
+                    })
+                    if (error) throw error
+                    toast.success('Akun berhasil diputuskan')
+                    fetchAccounts()
+                } catch (error: any) {
+                    toast.error(`Gagal memutuskan hubungan: ${error.message}`)
+                }
+            },
+        })
     }
 
     const handleUpdateAvatar = async () => {

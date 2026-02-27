@@ -44,6 +44,7 @@ import {
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { toast } from 'sonner'
+import { useConfirm } from '@/components/ui/confirm-dialog'
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -59,6 +60,7 @@ const itemVariants = {
 } as const
 
 export default function ArticlesPage() {
+    const confirm = useConfirm()
     const [search, setSearch] = useState('')
     const [statusFilter, setStatusFilter] = useState('all')
     const [articles, setArticles] = useState<any[]>([])
@@ -99,22 +101,30 @@ export default function ArticlesPage() {
     }
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Apakah Anda yakin ingin menghapus artikel ini?')) return
-        try {
-            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
-            const response = await fetch(`${API_BASE_URL}/articles/${id}`, {
-                method: 'DELETE',
-                credentials: 'include'
-            })
-            if (response.ok) {
-                toast.success('Artikel dihapus')
-                fetchArticles()
-            } else {
-                toast.error('Gagal menghapus artikel')
-            }
-        } catch (error) {
-            toast.error('Kesalahan saat menghapus artikel')
-        }
+        const confirmed = await confirm({
+            title: 'Hapus Artikel',
+            description: 'Apakah Anda yakin ingin menghapus artikel ini?',
+            confirmText: 'Hapus',
+            cancelText: 'Batal',
+            variant: 'destructive',
+            onConfirm: async () => {
+                try {
+                    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
+                    const response = await fetch(`${API_BASE_URL}/articles/${id}`, {
+                        method: 'DELETE',
+                        credentials: 'include'
+                    })
+                    if (response.ok) {
+                        toast.success('Artikel dihapus')
+                        fetchArticles()
+                    } else {
+                        toast.error('Gagal menghapus artikel')
+                    }
+                } catch (error) {
+                    toast.error('Kesalahan saat menghapus artikel')
+                }
+            },
+        })
     }
 
     const handleView = (article: any) => {

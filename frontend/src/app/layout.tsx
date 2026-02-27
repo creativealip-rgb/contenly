@@ -4,6 +4,7 @@ import { Plus_Jakarta_Sans } from 'next/font/google'
 import { Toaster } from '@/components/ui/sonner'
 import { AuthProvider } from '@/components/providers'
 import NextTopLoader from 'nextjs-toploader'
+import { ConfirmDialogProvider } from '@/components/ui/confirm-dialog'
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -40,8 +41,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={plusJakartaSans.className} suppressHydrationWarning>
         <AuthProvider>
-          <NextTopLoader color="#2563eb" showSpinner={true} shadow="0 0 10px #2563eb,0 0 5px #2563eb" />
-          {children}
+          <ConfirmDialogProvider>
+            <NextTopLoader color="#2563eb" showSpinner={true} shadow="0 0 10px #2563eb,0 0 5px #2563eb" />
+            {children}
+          </ConfirmDialogProvider>
         </AuthProvider>
         <Toaster />
       </body>

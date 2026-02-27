@@ -48,6 +48,7 @@ import {
 import { WordPressSite } from '@/lib/sites-store'
 import { authClient } from '@/lib/auth-client'
 import { toast } from 'sonner'
+import { useConfirm } from '@/components/ui/confirm-dialog'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
 
@@ -83,6 +84,7 @@ async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
 }
 
 export default function IntegrationsPage() {
+    const confirm = useConfirm()
     const [isAddOpen, setIsAddOpen] = useState(false)
     const [sites, setSites] = useState<WordPressSite[]>([])
     const [isLoadingSites, setIsLoadingSites] = useState(true)
@@ -175,7 +177,7 @@ export default function IntegrationsPage() {
     const handleRefreshCategories = async () => {
         const targetSite = sites.find(s => s.status === 'CONNECTED' || s.status.toLowerCase() === 'connected')
         if (!targetSite) {
-            alert('Please connect a WordPress site first')
+            toast.info('Please connect a WordPress site first')
             return
         }
         setIsRefreshingCategories(true)
@@ -197,11 +199,11 @@ export default function IntegrationsPage() {
                     body: JSON.stringify({ mappings: mappingsToSave })
                 })
                 setCategoryMappings(newMappings)
-                alert(`Successfully fetched and saved categories from ${targetSite.name}`)
+                toast.success(`Successfully fetched and saved categories from ${targetSite.name}`)
             }
         } catch (error: any) {
             console.error('Refresh categories error:', error)
-            alert(error.message || 'Failed to refresh categories')
+            toast.error(error.message || 'Failed to refresh categories')
         } finally {
             setIsRefreshingCategories(false)
         }
@@ -231,7 +233,7 @@ export default function IntegrationsPage() {
             await fetchSites()
             setIsAddOpen(false)
             setFormData({ name: '', url: '', username: '', appPassword: '' })
-            alert('Site connected successfully!')
+            toast.success('Site connected successfully!')
         } catch (error: any) {
             setConnectionError(error.message || 'Failed to connect to WordPress site')
         } finally {
@@ -243,27 +245,35 @@ export default function IntegrationsPage() {
         try {
             const response = await fetchWithAuth(`/wordpress/sites/${site.id}/test`, { method: 'POST' })
             if (response.connected) {
-                alert(`Connection to ${site.name} is working perfectly!`)
+                toast.success(`Connection to ${site.name} is working perfectly!`)
                 setSites(sites.map(s => s.id === site.id ? { ...s, status: 'CONNECTED' } : s))
             } else {
-                alert(`Connection failed: ${response.message || 'Unknown error'}`)
+                toast.error(`Connection failed: ${response.message || 'Unknown error'}`)
                 setSites(sites.map(s => s.id === site.id ? { ...s, status: 'ERROR', error: response.message } : s))
             }
         } catch (error: any) {
             console.error('[handleTestConnection] Error:', error)
-            alert(`Network error: ${error.message}`)
+            toast.error(`Network error: ${error.message}`)
         }
     }
 
     const handleRemoveSite = async (id: string) => {
-        if (!confirm('Are you sure you want to disconnect this site?')) return
-        try {
-            await fetchWithAuth(`/wordpress/sites/${id}`, { method: 'DELETE' })
-            await fetchSites()
-            alert('Site disconnected successfully')
-        } catch (error: any) {
-            alert(`Failed to disconnect: ${error.message}`)
-        }
+        const confirmed = await confirm({
+            title: 'Putuskan Situs',
+            description: 'Are you sure you want to disconnect this site?',
+            confirmText: 'Putuskan',
+            cancelText: 'Batal',
+            variant: 'destructive',
+            onConfirm: async () => {
+                try {
+                    await fetchWithAuth(`/wordpress/sites/${id}`, { method: 'DELETE' })
+                    await fetchSites()
+                    toast.success('Site disconnected successfully')
+                } catch (error: any) {
+                    toast.error(`Failed to disconnect: ${error.message}`)
+                }
+            },
+        })
     }
 
     return (
@@ -439,7 +449,7 @@ export default function IntegrationsPage() {
                                                 <RefreshCw className="h-4 w-4 mr-2" />
                                                 Test Connectivity
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => alert('Settings coming soon')} className="cursor-pointer">
+                                            <DropdownMenuItem onClick={() => toast.info('Settings coming soon')} className="cursor-pointer">
                                                 <Settings className="h-4 w-4 mr-2" />
                                                 Konfigurasi
                                             </DropdownMenuItem>

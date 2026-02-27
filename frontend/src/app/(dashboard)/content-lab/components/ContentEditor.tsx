@@ -39,33 +39,27 @@ export function ContentEditor({ state, handlers, copied, handleCopy }: ContentEd
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="h-full flex flex-col gap-6"
+            className="h-full flex flex-col gap-4"
         >
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-2xl font-black tracking-tighter text-slate-900 dark:text-white uppercase italic">Lab Artikel</h2>
-                    <p className="text-xs font-medium text-slate-400 uppercase tracking-widest">Tulis dan sempurnakan konten unik Anda</p>
-                </div>
-                <div className="flex gap-2">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleCopy}
-                        disabled={!generatedContent}
-                        className="h-10 px-4 rounded-xl border-slate-200 bg-white/50 backdrop-blur-sm hover:bg-white transition-all shadow-sm"
-                    >
-                        {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handlers.handleAIRewrite}
-                        disabled={!sourceContent || state.isRewriting}
-                        className="h-10 px-4 rounded-xl border-slate-200 bg-white/50 backdrop-blur-sm hover:bg-white transition-all shadow-sm"
-                    >
-                        <RotateCcw className={`h-4 w-4 ${state.isRewriting ? 'animate-spin' : ''}`} />
-                    </Button>
-                </div>
+            <div className="flex items-center justify-end gap-2">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopy}
+                    disabled={!generatedContent}
+                    className="h-10 px-4 rounded-xl border-slate-200 bg-white/50 backdrop-blur-sm hover:bg-white transition-all shadow-sm"
+                >
+                    {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                </Button>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlers.handleAIRewrite}
+                    disabled={!sourceContent || state.isRewriting}
+                    className="h-10 px-4 rounded-xl border-slate-200 bg-white/50 backdrop-blur-sm hover:bg-white transition-all shadow-sm"
+                >
+                    <RotateCcw className={`h-4 w-4 ${state.isRewriting ? 'animate-spin' : ''}`} />
+                </Button>
             </div>
 
             <div className="flex-1 flex flex-col min-h-0">

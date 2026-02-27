@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
@@ -61,7 +62,7 @@ export default function VideoScriptEditorPage() {
 
     const handleGenerateScript = async () => {
         if (!editedContent.trim()) {
-            alert('Harap berikan beberapa konten sumber terlebih dahulu.')
+            toast.info('Harap berikan beberapa konten sumber terlebih dahulu.')
             return
         }
 
@@ -73,19 +74,20 @@ export default function VideoScriptEditorPage() {
                 credentials: 'include',
                 body: JSON.stringify({
                     content: editedContent,
-                    targetDurationSeconds: 60 // Default target for short-form
+                    targetDurationSeconds: 60
                 })
             })
 
             if (response.ok) {
                 await fetchProject()
+                toast.success('Skrip video berhasil dibuat!')
             } else {
                 const errorData = await response.json()
-                alert(`Kesalahan membuat skrip: ${errorData.message || 'Kesalahan tidak diketahui'}`)
+                toast.error(`Kesalahan membuat skrip: ${errorData.message || 'Kesalahan tidak diketahui'}`)
             }
         } catch (error) {
             console.error('Failed to generate script:', error)
-            alert('Terjadi kesalahan jaringan saat membuat skrip.')
+            toast.error('Terjadi kesalahan jaringan saat membuat skrip.')
         } finally {
             setIsGenerating(false)
         }
@@ -99,7 +101,7 @@ export default function VideoScriptEditorPage() {
         ).join('\n')
 
         navigator.clipboard.writeText(fullScript).then(() => {
-            alert('Skrip disalin ke papan klip!')
+            toast.success('Skrip disalin ke papan klip!')
         })
     }
 

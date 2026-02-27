@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { toast } from 'sonner'
+import { useConfirm } from '@/components/ui/confirm-dialog'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -63,6 +65,7 @@ interface Slide {
 export default function InstagramStudioEditorPage() {
     const params = useParams()
     const router = useRouter()
+    const confirm = useConfirm()
     const projectId = params.id as string
 
     const [project, setProject] = useState<Project | null>(null)
@@ -103,7 +106,7 @@ export default function InstagramStudioEditorPage() {
 
     const handleGenerateStoryboard = async () => {
         if (!project?.sourceContent && !project?.sourceUrl) {
-            alert('Harap tambahkan konten atau URL untuk membuat storyboard')
+            toast.info('Harap tambahkan konten atau URL untuk membuat storyboard')
             return
         }
 
@@ -126,9 +129,11 @@ export default function InstagramStudioEditorPage() {
                 const updatedProject = await response.json()
                 setProject(updatedProject)
                 setCurrentSlideIndex(0)
+                toast.success('Storyboard berhasil dibuat!')
             }
         } catch (error) {
             console.error('Failed to generate storyboard:', error)
+            toast.error('Gagal membuat storyboard')
         } finally {
             setIsGeneratingStoryboard(false)
         }
@@ -151,9 +156,11 @@ export default function InstagramStudioEditorPage() {
 
             if (response.ok) {
                 fetchProject()
+                toast.success('Gambar berhasil dibuat!')
             }
         } catch (error) {
             console.error('Failed to generate image:', error)
+            toast.error('Gagal membuat gambar')
         } finally {
             setIsGeneratingImage(null)
         }
@@ -174,15 +181,14 @@ export default function InstagramStudioEditorPage() {
             if (response.ok) {
                 const data = await response.json().catch(() => null)
                 fetchProject()
-                // You could show a toast here if you have a toast library configured
-                alert('Pembuatan teks berhasil disimulasikan!')
+                toast.success('Pembuatan teks berhasil disimulasikan!')
             } else {
                 const errData = await response.json().catch(() => null)
-                alert(`Gagal membuat teks overlay: ${errData?.message || response.statusText}`)
+                toast.error(`Gagal membuat teks overlay: ${errData?.message || response.statusText}`)
             }
         } catch (error) {
             console.error('Failed to generate text:', error)
-            alert('Terjadi kesalahan saat membuat teks overlay')
+            toast.error('Terjadi kesalahan saat membuat teks overlay')
         } finally {
             setIsGeneratingText(null)
         }
@@ -260,19 +266,27 @@ export default function InstagramStudioEditorPage() {
     }
 
     const handleDeleteSlide = async (slideId: string) => {
-        if (!confirm('Apakah Anda yakin ingin menghapus slide ini?')) return
-        try {
-            const response = await fetch(`${API_BASE_URL}/instagram-studio/slides/${slideId}`, {
-                method: 'DELETE',
-                credentials: 'include'
-            })
-            if (response.ok) {
-                await fetchProject()
-                setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1))
-            }
-        } catch (error) {
-            console.error('Failed to delete slide:', error)
-        }
+        const confirmed = await confirm({
+            title: 'Hapus Slide',
+            description: 'Apakah Anda yakin ingin menghapus slide ini?',
+            confirmText: 'Hapus',
+            cancelText: 'Batal',
+            variant: 'destructive',
+            onConfirm: async () => {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/instagram-studio/slides/${slideId}`, {
+                        method: 'DELETE',
+                        credentials: 'include'
+                    })
+                    if (response.ok) {
+                        await fetchProject()
+                        setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1))
+                    }
+                } catch (error) {
+                    console.error('Failed to delete slide:', error)
+                }
+            },
+        })
     }
 
     const handleReorderSlide = async (slideId: string, direction: 'left' | 'right') => {
@@ -300,23 +314,30 @@ export default function InstagramStudioEditorPage() {
     }
 
     const handleApplyStyleToAll = async (updates: Partial<Slide>) => {
-        if (!confirm("Terapkan ukuran font, warna font, dan posisi teks slide ini ke SEMUA slide?")) return
-        setIsApplyingStyle(true)
-        try {
-            const response = await fetch(`${API_BASE_URL}/instagram-studio/projects/${projectId}/apply-style-to-all`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify(updates)
-            })
-            if (response.ok) {
-                await fetchProject()
-            }
-        } catch (error) {
-            console.error('Failed to apply style to all:', error)
-        } finally {
-            setIsApplyingStyle(false)
-        }
+        const confirmed = await confirm({
+            title: 'Terapkan Gaya ke Semua Slide',
+            description: 'Terapkan ukuran font, warna font, dan posisi teks slide ini ke SEMUA slide?',
+            confirmText: 'Terapkan',
+            cancelText: 'Batal',
+            onConfirm: async () => {
+                setIsApplyingStyle(true)
+                try {
+                    const response = await fetch(`${API_BASE_URL}/instagram-studio/projects/${projectId}/apply-style-to-all`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify(updates)
+                    })
+                    if (response.ok) {
+                        await fetchProject()
+                    }
+                } catch (error) {
+                    console.error('Failed to apply style to all:', error)
+                } finally {
+                    setIsApplyingStyle(false)
+                }
+            },
+        })
     }
 
     const currentSlide = project?.slides?.[currentSlideIndex]

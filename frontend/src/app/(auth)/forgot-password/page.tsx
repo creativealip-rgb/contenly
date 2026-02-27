@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator'
 import { ArrowLeft, Mail } from 'lucide-react'
 import Image from 'next/image'
 import { api } from '@/lib/api'
+import { toast } from 'sonner'
 
 export default function ForgotPasswordPage() {
     const [isLoading, setIsLoading] = useState(false)
@@ -27,7 +28,7 @@ export default function ForgotPasswordPage() {
             setIsSubmitted(true)
         } catch (error: any) {
             console.error('Forgot password error:', error)
-            alert(error.message || 'Failed to process request')
+            toast.error(error.message || 'Failed to process request')
         } finally {
             setIsLoading(false)
         }

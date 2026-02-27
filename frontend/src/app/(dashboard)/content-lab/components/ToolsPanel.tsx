@@ -46,7 +46,7 @@ export function ToolsPanel({
         <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="space-y-8"
+            className="space-y-6"
         >
             <AIConfigSection
                 wpCategories={state.wpCategories}
@@ -57,16 +57,12 @@ export function ToolsPanel({
                 onRewrite={handlers.handleAIRewrite}
             />
 
-            <Separator className="opacity-50" />
-
             <SEOSection
                 isRefreshingSEO={isRefreshingSEO}
                 onRefreshSEO={handleRefreshSEO}
                 isGeneratingImage={isGeneratingImage}
                 onGenerateImage={handleGenerateImage}
             />
-
-            <Separator className="opacity-50" />
 
             <PublishingSection
                 handlePublishNow={handlePublishNow}
