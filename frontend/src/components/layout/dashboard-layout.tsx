@@ -3,6 +3,7 @@
 import { useSidebarStore } from '@/stores'
 import { Navbar } from './navbar'
 import { Sidebar } from './sidebar'
+import { OnboardingModal } from '@/components/onboarding/onboarding-modal'
 import { cn } from '@/lib/utils'
 
 interface DashboardLayoutProps {
@@ -16,6 +17,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="min-h-screen bg-background overflow-x-hidden">
             <Navbar />
             <Sidebar />
+            <OnboardingModal />
             <main
                 className={cn(
                     "min-h-screen pt-20 transition-all duration-300 max-w-full overflow-x-hidden",

@@ -654,6 +654,39 @@ export const scheduledContentRelations = relations(scheduledContent, ({ one }) =
   }),
 }));
 
+// ==========================================
+// CONTENT ANALYTICS (Views, Clicks, Engagement)
+// ==========================================
+
+export const contentAnalytics = pgTable('content_analytics', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  contentType: varchar('content_type', { length: 50 }).notNull(), // 'article', 'carousel', 'video_script'
+  contentId: uuid('content_id').notNull(),
+  date: timestamp('date').notNull().defaultNow(),
+  views: integer('views').default(0),
+  clicks: integer('clicks').default(0),
+  engagement: integer('engagement').default(0), // likes, comments, shares
+  platform: varchar('platform', { length: 50 }), // where it was published
+  metadata: jsonb('metadata'), // additional metrics
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => ({
+  uniqueContentDate: uniqueIndex('unique_content_date').on(
+    table.contentId,
+    table.date
+  ),
+}));
+
+export const contentAnalyticsRelations = relations(contentAnalytics, ({ one }) => ({
+  user: one(user, {
+    fields: [contentAnalytics.userId],
+    references: [user.id],
+  }),
+}));
+
 // Export all schemas for Better Auth
 export const schema = {
   user,
@@ -679,5 +712,6 @@ export const schema = {
   socialAccount,
   brandKit,
   scheduledContent,
+  contentAnalytics,
   dailyUsage,
 };

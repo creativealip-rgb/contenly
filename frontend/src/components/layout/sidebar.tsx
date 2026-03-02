@@ -132,6 +132,12 @@ const icons = {
             <path d="M3 7l9 5 9-5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
     ),
+    calendar: (
+        <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth="1.5">
+            <rect x="3" y="4" width="18" height="18" rx="2" />
+            <path d="M16 2v4M8 2v4M3 10h18" strokeLinecap="round" />
+        </svg>
+    ),
 }
 
 interface NavItem {
@@ -139,6 +145,7 @@ interface NavItem {
     label: string
     icon: React.ReactNode
     role?: string
+    tourId?: string
 }
 
 interface NavGroup {
@@ -161,10 +168,11 @@ const navGroups: NavGroup[] = [
         label: 'Buat Konten',
         icon: icons.createContent,
         items: [
-            { href: '/content-lab', label: 'Content Lab', icon: icons.contentLab },
-            { href: '/instagram-studio', label: 'Instagram Studio', icon: icons.instagram },
-            { href: '/video-scripts', label: 'Video Scripts', icon: icons.video },
+            { href: '/content-lab', label: 'Content Lab', icon: icons.contentLab, tourId: 'content-lab' },
+            { href: '/instagram-studio', label: 'Instagram Studio', icon: icons.instagram, tourId: 'instagram-studio' },
+            { href: '/video-scripts', label: 'Video Scripts', icon: icons.video, tourId: 'video-scripts' },
             { href: '/articles', label: 'Artikel', icon: icons.articles },
+            { href: '/calendar', label: 'Kalender', icon: icons.calendar, tourId: 'calendar' },
         ],
     },
     {
@@ -190,7 +198,7 @@ const navGroups: NavGroup[] = [
         label: 'Admin',
         icon: icons.admin,
         items: [
-            { href: '/integrations', label: 'Integrasi', icon: icons.integrations },
+            { href: '/integrations', label: 'Integrasi', icon: icons.integrations, tourId: 'integrations' },
             { href: '/billing', label: 'Tagihan', icon: icons.billing },
             { href: '/settings', label: 'Pengaturan', icon: icons.settings },
             { href: '/super-admin/users', label: 'Pengguna', icon: icons.userManagement, role: 'SUPER_ADMIN' },
@@ -242,6 +250,7 @@ export function Sidebar() {
                 <Link
                     href={item.href}
                     onClick={handleMobileLinkClick}
+                    data-tour={item.tourId}
                     className={cn(
                         "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition-all duration-300",
                         isActive

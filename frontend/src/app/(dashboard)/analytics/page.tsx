@@ -1,6 +1,8 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
     Select,
@@ -14,98 +16,209 @@ import {
     FileText,
     Sparkles,
     CheckCircle2,
-    XCircle,
     BarChart3,
     PieChart,
-    Activity
+    Activity,
+    Download,
+    Instagram,
+    Video,
+    Globe,
+    Eye,
+    MousePointerClick,
+    ThumbsUp,
+    Calendar,
 } from 'lucide-react'
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+    LineChart,
+    Line,
+    PieChart as RePieChart,
+    Pie,
+    Cell,
+    AreaChart,
+    Area,
+} from 'recharts'
+import { api } from '@/lib/api'
+import { toast } from 'sonner'
+import { format, subDays, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns'
+import { id } from 'date-fns/locale'
 
-// Simple chart components using divs for demo
-function BarChartSimple({ data }: { data: { label: string; value: number }[] }) {
-    const max = Math.max(...data.map(d => d.value))
+interface DashboardStats {
+    totalArticles: number
+    publishedArticles: number
+    activeFeeds: number
+    connectedSites: number
+    totalCarousels: number
+    totalVideoScripts: number
+    totalViews: number
+    totalEngagement: number
+    tokenBalance: number
+    currentTier: string
+    recentActivity: Array<{
+        id: string
+        type: string
+        title: string
+        description: string
+        timestamp: string
+    }>
+}
+
+interface ContentPerformance {
+    articlesByDate: Record<string, { created: number; published: number }>
+    analytics: Array<{
+        date: string
+        views: number
+        clicks: number
+        engagement: number
+    }>
+}
+
+interface PlatformBreakdown {
+    platform: string
+    views: number
+    clicks: number
+    engagement: number
+}
+
+const COLORS = ['#3b82f6', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444']
+
+const platformIcons: Record<string, React.ReactNode> = {
+    wordpress: <Globe className="h-4 w-4" />,
+    instagram: <Instagram className="h-4 w-4" />,
+    linkedin: <LinkedinIcon />,
+    twitter: <TwitterIcon />,
+    unknown: <Globe className="h-4 w-4" />,
+}
+
+function LinkedinIcon() {
     return (
-        <div className="flex items-end gap-2 h-[200px]">
-            {data.map((item, index) => (
-                <div key={index} className="flex-1 flex flex-col items-center gap-2">
-                    <div
-                        className="w-full bg-gradient-to-t from-blue-700 to-blue-500 rounded-t-lg transition-all hover:opacity-80"
-                        style={{ height: `${(item.value / max) * 100}%` }}
-                    />
-                    <span className="text-xs text-muted-foreground">{item.label}</span>
-                </div>
-            ))}
-        </div>
+        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+        </svg>
     )
 }
 
-function DonutChart({ value, total, label }: { value: number; total: number; label: string }) {
-    const percentage = (value / total) * 100
-    const circumference = 2 * Math.PI * 40
-    const strokeDashoffset = circumference - (percentage / 100) * circumference
-
+function TwitterIcon() {
     return (
-        <div className="flex flex-col items-center">
-            <div className="relative">
-                <svg width="120" height="120" viewBox="0 0 100 100">
-                    <circle
-                        cx="50"
-                        cy="50"
-                        r="40"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="10"
-                        className="text-muted"
-                    />
-                    <circle
-                        cx="50"
-                        cy="50"
-                        r="40"
-                        fill="none"
-                        stroke="url(#gradient)"
-                        strokeWidth="10"
-                        strokeLinecap="round"
-                        strokeDasharray={circumference}
-                        strokeDashoffset={strokeDashoffset}
-                        transform="rotate(-90 50 50)"
-                    />
-                    <defs>
-                        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stopColor="#2563eb" />
-                            <stop offset="100%" stopColor="#3b82f6" />
-                        </linearGradient>
-                    </defs>
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-2xl font-bold">{percentage.toFixed(0)}%</span>
-                </div>
-            </div>
-            <span className="mt-2 text-sm text-muted-foreground">{label}</span>
-        </div>
+        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+        </svg>
     )
 }
-
-const weeklyData = [
-    { label: 'Mon', value: 12 },
-    { label: 'Tue', value: 18 },
-    { label: 'Wed', value: 8 },
-    { label: 'Thu', value: 24 },
-    { label: 'Fri', value: 15 },
-    { label: 'Sat', value: 6 },
-    { label: 'Sun', value: 3 },
-]
-
-const monthlyData = [
-    { label: 'W1', value: 45 },
-    { label: 'W2', value: 62 },
-    { label: 'W3', value: 38 },
-    { label: 'W4', value: 55 },
-]
 
 export default function AnalyticsPage() {
+    const [timeRange, setTimeRange] = useState('30')
+    const [stats, setStats] = useState<DashboardStats | null>(null)
+    const [performance, setPerformance] = useState<ContentPerformance | null>(null)
+    const [platformData, setPlatformData] = useState<PlatformBreakdown[]>([])
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        fetchData()
+    }, [timeRange])
+
+    const fetchData = async () => {
+        try {
+            setLoading(true)
+            const days = parseInt(timeRange)
+            
+            const [statsRes, perfRes, platformRes] = await Promise.all([
+                api.get<DashboardStats>('/analytics/dashboard'),
+                api.get<ContentPerformance>(`/analytics/content-performance?days=${days}`),
+                api.get<PlatformBreakdown[]>('/analytics/platform-breakdown'),
+            ])
+            
+            setStats(statsRes)
+            setPerformance(perfRes)
+            setPlatformData(platformRes)
+        } catch (error) {
+            toast.error('Failed to fetch analytics data')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleExport = async (exportFormat: 'csv' | 'json') => {
+        try {
+            const endDate = new Date()
+            const startDate = subDays(endDate, parseInt(timeRange))
+            
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
+            const response = await fetch(
+                `${API_URL}/analytics/export?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}&format=${exportFormat}`,
+                { credentials: 'include' }
+            )
+            
+            if (!response.ok) throw new Error('Export failed')
+            
+            const blob = await response.blob()
+            const url = window.URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `analytics-${format(startDate, 'yyyy-MM-dd')}-to-${format(endDate, 'yyyy-MM-dd')}.${exportFormat}`
+            a.click()
+            window.URL.revokeObjectURL(url)
+            
+            toast.success(`Analytics exported as ${exportFormat.toUpperCase()}`)
+        } catch (error) {
+            toast.error('Failed to export analytics')
+        }
+    }
+
+    // Prepare chart data
+    const prepareTimeSeriesData = () => {
+        if (!performance) return []
+        
+        const days = parseInt(timeRange)
+        const endDate = new Date()
+        const startDate = subDays(endDate, days)
+        const dateRange = eachDayOfInterval({ start: startDate, end: endDate })
+        
+        return dateRange.map(date => {
+            const dateKey = format(date, 'yyyy-MM-dd')
+            const articleData = performance.articlesByDate[dateKey] || { created: 0, published: 0 }
+            const analyticsData = performance.analytics.find(a => 
+                format(new Date(a.date), 'yyyy-MM-dd') === dateKey
+            ) || { views: 0, clicks: 0, engagement: 0 }
+            
+            return {
+                date: format(date, 'dd MMM'),
+                articlesCreated: articleData.created,
+                articlesPublished: articleData.published,
+                views: analyticsData.views,
+                clicks: analyticsData.clicks,
+                engagement: analyticsData.engagement,
+            }
+        })
+    }
+
+    const timeSeriesData = prepareTimeSeriesData()
+
+    const totalPlatformViews = platformData.reduce((sum, p) => sum + p.views, 0) || 1
+    const pieData = platformData.map(p => ({
+        name: p.platform.charAt(0).toUpperCase() + p.platform.slice(1),
+        value: p.views,
+        percentage: ((p.views / totalPlatformViews) * 100).toFixed(1),
+    }))
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-96">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+            </div>
+        )
+    }
+
     return (
         <div className="space-y-6">
             {/* Page Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="space-y-1">
                     <h1 className="text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
                         Analitik
@@ -114,192 +227,276 @@ export default function AnalyticsPage() {
                         Lacak performa dan penggunaan konten Anda.
                     </p>
                 </div>
-                <Select defaultValue="7d">
-                    <SelectTrigger className="w-[150px]">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="7d">7 hari terakhir</SelectItem>
-                        <SelectItem value="30d">30 hari terakhir</SelectItem>
-                        <SelectItem value="90d">90 hari terakhir</SelectItem>
-                    </SelectContent>
-                </Select>
+                <div className="flex items-center gap-2">
+                    <Select value={timeRange} onValueChange={setTimeRange}>
+                        <SelectTrigger className="w-[150px]">
+                            <Calendar className="h-4 w-4 mr-2" />
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="7">7 hari terakhir</SelectItem>
+                            <SelectItem value="30">30 hari terakhir</SelectItem>
+                            <SelectItem value="90">90 hari terakhir</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Button variant="outline" onClick={() => handleExport('csv')}>
+                        <Download className="h-4 w-4 mr-2" />
+                        CSV
+                    </Button>
+                    <Button variant="outline" onClick={() => handleExport('json')}>
+                        JSON
+                    </Button>
+                </div>
             </div>
 
             {/* Stats Overview */}
-            <div className="grid gap-4 md:grid-cols-4">
-                <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/10">
-                                <FileText className="h-6 w-6 text-blue-600" />
+            {stats && (
+                <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+                    <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
+                        <CardContent className="pt-6">
+                            <div className="flex items-center gap-4">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/10">
+                                    <FileText className="h-6 w-6 text-blue-600" />
+                                </div>
+                                <div>
+                                    <p className="text-2xl font-bold">{stats.totalArticles}</p>
+                                    <p className="text-sm text-muted-foreground">Total Artikel</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-2xl font-bold">127</p>
-                                <p className="text-sm text-muted-foreground">Artikel Diterbitkan</p>
+                            <div className="mt-4 flex items-center gap-2 text-sm text-green-600">
+                                <CheckCircle2 className="h-4 w-4" />
+                                <span>{stats.publishedArticles} diterbitkan</span>
                             </div>
-                        </div>
-                        <div className="mt-4 flex items-center gap-2 text-sm text-green-600">
-                            <TrendingUp className="h-4 w-4" />
-                            <span>+12% dari minggu lalu</span>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-500/10">
-                                <Sparkles className="h-6 w-6 text-amber-600" />
+                        </CardContent>
+                    </Card>
+                    
+                    <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
+                        <CardContent className="pt-6">
+                            <div className="flex items-center gap-4">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-pink-500/10">
+                                    <Instagram className="h-6 w-6 text-pink-600" />
+                                </div>
+                                <div>
+                                    <p className="text-2xl font-bold">{stats.totalCarousels}</p>
+                                    <p className="text-sm text-muted-foreground">Carousel</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-2xl font-bold">186</p>
-                                <p className="text-sm text-muted-foreground">Token Digunakan</p>
+                            <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+                                <Video className="h-4 w-4" />
+                                <span>{stats.totalVideoScripts} video scripts</span>
                             </div>
-                        </div>
-                        <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-                            <Activity className="h-4 w-4" />
-                            <span>Rata-rata 26/hari</span>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-500/10">
-                                <CheckCircle2 className="h-6 w-6 text-green-600" />
+                        </CardContent>
+                    </Card>
+                    
+                    <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
+                        <CardContent className="pt-6">
+                            <div className="flex items-center gap-4">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-500/10">
+                                    <Eye className="h-6 w-6 text-green-600" />
+                                </div>
+                                <div>
+                                    <p className="text-2xl font-bold">{stats.totalViews.toLocaleString()}</p>
+                                    <p className="text-sm text-muted-foreground">Total Views</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-2xl font-bold">94%</p>
-                                <p className="text-sm text-muted-foreground">Tingkat Keberhasilan</p>
+                            <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+                                <ThumbsUp className="h-4 w-4" />
+                                <span>{stats.totalEngagement} engagements</span>
                             </div>
-                        </div>
-                        <div className="mt-4 flex items-center gap-2 text-sm text-green-600">
-                            <TrendingUp className="h-4 w-4" />
-                            <span>+2% dari minggu lalu</span>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/10">
-                                <BarChart3 className="h-6 w-6 text-blue-600" />
+                        </CardContent>
+                    </Card>
+                    
+                    <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
+                        <CardContent className="pt-6">
+                            <div className="flex items-center gap-4">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-500/10">
+                                    <Sparkles className="h-6 w-6 text-amber-600" />
+                                </div>
+                                <div>
+                                    <p className="text-2xl font-bold">{stats.tokenBalance}</p>
+                                    <p className="text-sm text-muted-foreground">Token Tersisa</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-2xl font-bold">3</p>
-                                <p className="text-sm text-muted-foreground">Situs Aktif</p>
+                            <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+                                <Activity className="h-4 w-4" />
+                                <span>Plan: {stats.currentTier}</span>
                             </div>
-                        </div>
-                        <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-                            <span>2 situs disinkronkan hari ini</span>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
 
-            {/* Charts */}
+            {/* Charts Row 1 */}
             <div className="grid gap-6 lg:grid-cols-2">
                 <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <BarChart3 className="h-5 w-5" />
-                            Artikel Diterbitkan
+                            Performa Konten
                         </CardTitle>
-                        <CardDescription>Tren penerbitan artikel harian</CardDescription>
+                        <CardDescription>Views, clicks, dan engagement per hari</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <BarChartSimple data={weeklyData} />
+                        <div className="h-[300px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={timeSeriesData}>
+                                    <defs>
+                                        <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                                        </linearGradient>
+                                        <linearGradient id="colorEngagement" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                                            <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                                    <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                                    <YAxis tick={{ fontSize: 12 }} />
+                                    <Tooltip 
+                                        contentStyle={{ 
+                                            backgroundColor: 'hsl(var(--background))',
+                                            border: '1px solid hsl(var(--border))',
+                                            borderRadius: '8px',
+                                        }}
+                                    />
+                                    <Area 
+                                        type="monotone" 
+                                        dataKey="views" 
+                                        stroke="#3b82f6" 
+                                        fillOpacity={1} 
+                                        fill="url(#colorViews)" 
+                                        name="Views"
+                                    />
+                                    <Area 
+                                        type="monotone" 
+                                        dataKey="engagement" 
+                                        stroke="#10b981" 
+                                        fillOpacity={1} 
+                                        fill="url(#colorEngagement)" 
+                                        name="Engagement"
+                                    />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
                     </CardContent>
                 </Card>
 
                 <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            <Sparkles className="h-5 w-5" />
-                            Penggunaan Token
+                            <FileText className="h-5 w-5" />
+                            Produksi Artikel
                         </CardTitle>
-                        <CardDescription>Konsumsi token mingguan</CardDescription>
+                        <CardDescription>Artikel dibuat vs diterbitkan</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <BarChartSimple data={monthlyData} />
+                        <div className="h-[300px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={timeSeriesData}>
+                                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                                    <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                                    <YAxis tick={{ fontSize: 12 }} />
+                                    <Tooltip 
+                                        contentStyle={{ 
+                                            backgroundColor: 'hsl(var(--background))',
+                                            border: '1px solid hsl(var(--border))',
+                                            borderRadius: '8px',
+                                        }}
+                                    />
+                                    <Bar dataKey="articlesCreated" fill="#3b82f6" name="Dibuat" radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="articlesPublished" fill="#10b981" name="Diterbitkan" radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* Success Rate & Breakdown */}
+            {/* Charts Row 2 */}
             <div className="grid gap-6 lg:grid-cols-3">
                 <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <PieChart className="h-5 w-5" />
-                            Keberhasilan Pembuatan AI
+                            Distribusi Platform
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="flex justify-center py-4">
-                        <DonutChart value={94} total={100} label="Tingkat Keberhasilan" />
+                    <CardContent>
+                        <div className="h-[250px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <RePieChart>
+                                    <Pie
+                                        data={pieData}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={80}
+                                        paddingAngle={5}
+                                        dataKey="value"
+                                    >
+                                        {pieData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip />
+                                </RePieChart>
+                            </ResponsiveContainer>
+                        </div>
+                        <div className="mt-4 space-y-2">
+                            {pieData.map((entry, index) => (
+                                <div key={entry.name} className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <div 
+                                            className="w-3 h-3 rounded-full" 
+                                            style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                                        />
+                                        <span className="text-sm">{entry.name}</span>
+                                    </div>
+                                    <span className="text-sm font-medium">{entry.percentage}%</span>
+                                </div>
+                            ))}
+                        </div>
                     </CardContent>
                 </Card>
 
-                <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
+                <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl lg:col-span-2">
                     <CardHeader>
-                        <CardTitle>Status Sinkronisasi WordPress</CardTitle>
+                        <CardTitle className="flex items-center gap-2">
+                            <TrendingUp className="h-5 w-5" />
+                            Ringkasan Platform
+                        </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex items-center justify-between p-3 rounded-lg bg-green-500/10">
-                            <div className="flex items-center gap-2">
-                                <CheckCircle2 className="h-5 w-5 text-green-600" />
-                                <span className="font-medium">Berhasil</span>
-                            </div>
-                            <Badge className="bg-green-500/20 text-green-600">118</Badge>
-                        </div>
-                        <div className="flex items-center justify-between p-3 rounded-lg bg-amber-500/10">
-                            <div className="flex items-center gap-2">
-                                <Activity className="h-5 w-5 text-amber-600" />
-                                <span className="font-medium">Dalam Antrean</span>
-                            </div>
-                            <Badge className="bg-amber-500/20 text-amber-600">7</Badge>
-                        </div>
-                        <div className="flex items-center justify-between p-3 rounded-lg bg-red-500/10">
-                            <div className="flex items-center gap-2">
-                                <XCircle className="h-5 w-5 text-red-600" />
-                                <span className="font-medium">Gagal</span>
-                            </div>
-                            <Badge className="bg-red-500/20 text-red-600">2</Badge>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
-                    <CardHeader>
-                        <CardTitle>Rincian Token</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                                <span>Pembuatan Artikel</span>
-                                <span className="font-medium">127 token</span>
-                            </div>
-                            <div className="h-2 rounded-full bg-muted overflow-hidden">
-                                <div className="h-full bg-blue-700" style={{ width: '68%' }} />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                                <span>Pembuatan Gambar</span>
-                                <span className="font-medium">48 token</span>
-                            </div>
-                            <div className="h-2 rounded-full bg-muted overflow-hidden">
-                                <div className="h-full bg-blue-500" style={{ width: '26%' }} />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                                <span>Pengecekan Plagiarisme</span>
-                                <span className="font-medium">11 token</span>
-                            </div>
-                            <div className="h-2 rounded-full bg-muted overflow-hidden">
-                                <div className="h-full bg-blue-600" style={{ width: '6%' }} />
-                            </div>
+                    <CardContent>
+                        <div className="space-y-4">
+                            {platformData.map((platform) => (
+                                <div key={platform.platform} className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10">
+                                        {platformIcons[platform.platform] || platformIcons.unknown}
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="font-semibold capitalize">{platform.platform}</span>
+                                            <Badge variant="secondary">{platform.views.toLocaleString()} views</Badge>
+                                        </div>
+                                        <div className="flex gap-4 text-sm text-muted-foreground">
+                                            <span className="flex items-center gap-1">
+                                                <MousePointerClick className="h-3 w-3" />
+                                                {platform.clicks} clicks
+                                            </span>
+                                            <span className="flex items-center gap-1">
+                                                <ThumbsUp className="h-3 w-3" />
+                                                {platform.engagement} engagements
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            {platformData.length === 0 && (
+                                <div className="text-center py-8 text-muted-foreground">
+                                    Belum ada data platform
+                                </div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>

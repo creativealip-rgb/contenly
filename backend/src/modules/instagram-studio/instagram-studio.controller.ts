@@ -8,7 +8,9 @@ import {
   Param,
   Query,
   UseGuards,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -122,6 +124,35 @@ export class InstagramStudioController {
     @Body() dto: ExportCarouselDto,
   ) {
     return this.service.exportCarousel(user.id, id, dto);
+  }
+
+  @Post('projects/:id/export/zip')
+  @ApiOperation({ summary: 'Export carousel as ZIP file' })
+  async exportCarouselZip(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body() dto: ExportCarouselDto,
+    @Res() res: Response,
+  ) {
+    const result = await this.service.exportCarouselZip(user.id, id, dto);
+    
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+    res.send(result.buffer);
+  }
+
+  @Post('batch-export')
+  @ApiOperation({ summary: 'Export multiple projects as batch' })
+  async batchExport(
+    @CurrentUser() user: User,
+    @Body() dto: { projectIds: string[]; format: 'png' | 'jpg' | 'pdf' },
+    @Res() res: Response,
+  ) {
+    const result = await this.service.batchExport(user.id, dto.projectIds, dto.format);
+    
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+    res.send(result.buffer);
   }
 
   @Get('fonts')

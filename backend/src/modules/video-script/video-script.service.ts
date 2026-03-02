@@ -334,4 +334,48 @@ OUTPUT FORMAT (JSON only, no markdown, no conversational text):
             fullScript: allVoiceover,
         });
     }
+
+    async exportAudio(
+        userId: string,
+        projectId: string,
+        voice: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer' = 'alloy',
+    ) {
+        const project = await this.getProject(userId, projectId);
+
+        if (!project.scenes || project.scenes.length === 0) {
+            throw new BadRequestException('No scenes to generate audio from');
+        }
+
+        // Check token balance
+        const hasBalance = await this.billingService.checkBalance(userId, 1);
+        if (!hasBalance) {
+            throw new BadRequestException('Saldo kredit Anda tidak mencukupi untuk request ini.');
+        }
+
+        // Combine all voiceover texts
+        const fullScript = project.scenes
+            .map((scene: any) => scene.voiceoverText)
+            .filter((text: string) => text && text.trim().length > 0)
+            .join('. ');
+
+        if (!fullScript || fullScript.trim().length === 0) {
+            throw new BadRequestException('No voiceover text found in scenes');
+        }
+
+        try {
+            // Generate TTS using OpenAI
+            const mp3Buffer = await this.openAiService.generateSpeech(fullScript, voice);
+
+            // Deduct tokens
+            await this.billingService.deductTokens(userId, 1, 'TTS Voiceover Generation');
+
+            return {
+                buffer: mp3Buffer,
+                filename: `${project.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}-voiceover.mp3`,
+            };
+        } catch (error) {
+            console.error('TTS generation error:', error);
+            throw new BadRequestException('Failed to generate audio: ' + error.message);
+        }
+    }
 }

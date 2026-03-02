@@ -367,4 +367,31 @@ Return JSON with:
       .replace(/^-|-$/g, '')
       .substring(0, 60);
   }
+
+  async generateSpeech(
+    text: string,
+    voice: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer' = 'alloy',
+  ): Promise<Buffer> {
+    if (!this.nativeOpenai) {
+      throw new Error('OPENAI_API_KEY is missing. Text-to-Speech requires a direct OpenAI API Key. Please add OPENAI_API_KEY to your environment variables.');
+    }
+
+    try {
+      const response = await this.nativeOpenai.audio.speech.create({
+        model: 'tts-1',
+        voice,
+        input: text,
+        response_format: 'mp3',
+      });
+
+      const buffer = Buffer.from(await response.arrayBuffer());
+      return buffer;
+    } catch (error: any) {
+      console.error('[OpenAiService] TTS generation failed:', {
+        message: error.message,
+        status: error.status,
+      });
+      throw error;
+    }
+  }
 }

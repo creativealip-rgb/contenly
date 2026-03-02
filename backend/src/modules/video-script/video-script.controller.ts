@@ -8,7 +8,9 @@ import {
   Param,
   Query,
   UseGuards,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -82,5 +84,20 @@ export class VideoScriptController {
     @Query('format') format: 'json' | 'srt' | 'txt' | 'caption',
   ) {
     return this.service.exportScript(user.id, id, format || 'json');
+  }
+
+  @Post('projects/:id/export/audio')
+  @ApiOperation({ summary: 'Export video script as MP3 voiceover using TTS' })
+  async exportAudio(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body() body: { voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer' },
+    @Res() res: Response,
+  ) {
+    const result = await this.service.exportAudio(user.id, id, body.voice || 'alloy');
+    
+    res.setHeader('Content-Type', 'audio/mpeg');
+    res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+    res.send(result.buffer);
   }
 }
