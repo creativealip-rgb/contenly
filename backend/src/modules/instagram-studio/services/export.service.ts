@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import sharp from 'sharp';
+import { jsPDF } from 'jspdf';
 
 interface SlideExportData {
   imageUrl: string;
@@ -8,6 +9,8 @@ interface SlideExportData {
   fontSize: number;
   fontColor: string;
   layoutPosition: string;
+  backgroundColor?: string;
+  gradientColors?: string[];
 }
 
 export interface ExportResult {
@@ -29,7 +32,10 @@ export class ExportService {
     try {
       let imageBuffer: Buffer;
 
-      if (slide.imageUrl && slide.imageUrl.startsWith('http')) {
+      // Check for gradient first
+      if (slide.gradientColors && slide.gradientColors.length >= 2) {
+        imageBuffer = await this.createGradientImage(slide.gradientColors);
+      } else if (slide.imageUrl && slide.imageUrl.startsWith('http')) {
         const response = await fetch(slide.imageUrl);
         const arrayBuffer = await response.arrayBuffer();
         imageBuffer = Buffer.from(arrayBuffer);
@@ -46,6 +52,17 @@ export class ExportService {
             height: this.CANVAS_HEIGHT,
             channels: 3,
             background: slide.imageUrl,
+          },
+        })
+          .png()
+          .toBuffer();
+      } else if (slide.backgroundColor) {
+        imageBuffer = await sharp({
+          create: {
+            width: this.CANVAS_WIDTH,
+            height: this.CANVAS_HEIGHT,
+            channels: 3,
+            background: slide.backgroundColor,
           },
         })
           .png()
@@ -239,6 +256,115 @@ export class ExportService {
     if (layoutPosition.includes('left')) return 'left';
     if (layoutPosition.includes('right')) return 'right';
     return 'center';
+  }
+
+  private async createGradientImage(colors: string[]): Promise<Buffer> {
+    const gradientStops = colors.map((color, index) => {
+      const position = index / (colors.length - 1);
+      return {
+        color: this.hexToRgb(color),
+        stop: position,
+      };
+    });
+
+    const svgGradient = `
+      <svg width="${this.CANVAS_WIDTH}" height="${this.CANVAS_HEIGHT}">
+        <defs>
+          <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            ${gradientStops.map(
+              (stop) =>
+                `<stop offset="${stop.stop * 100}%" style="stop-color:rgb(${stop.color.r},${stop.color.g},${stop.color.b});stop-opacity:1" />`,
+            ).join('')}
+          </linearGradient>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grad)"/>
+      </svg>
+    `;
+
+    return await sharp(Buffer.from(svgGradient))
+      .png()
+      .toBuffer();
+  }
+
+  private hexToRgb(hex: string): { r: number; g: number; b: number } {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result
+      ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16),
+        }
+      : { r: 26, g: 26, b: 46 };
+  }
+
+  async exportToPdf(
+    slides: SlideExportData[],
+  ): Promise<ExportResult> {
+    try {
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: [1080, 1350],
+      });
+
+      for (let i = 0; i < slides.length; i++) {
+        const slide = slides[i];
+        
+        let imageBuffer: Buffer;
+
+        if (slide.gradientColors && slide.gradientColors.length >= 2) {
+          imageBuffer = await this.createGradientImage(slide.gradientColors);
+        } else if (slide.imageUrl && slide.imageUrl.startsWith('http')) {
+          const response = await fetch(slide.imageUrl);
+          const arrayBuffer = await response.arrayBuffer();
+          imageBuffer = Buffer.from(arrayBuffer);
+        } else if (slide.imageUrl && slide.imageUrl.startsWith('data:')) {
+          const base64 = slide.imageUrl.split(',')[1];
+          imageBuffer = Buffer.from(base64, 'base64');
+        } else if (slide.backgroundColor) {
+          imageBuffer = await sharp({
+            create: {
+              width: this.CANVAS_WIDTH,
+              height: this.CANVAS_HEIGHT,
+              channels: 3,
+              background: slide.backgroundColor,
+            },
+          })
+            .png()
+            .toBuffer();
+        } else {
+          imageBuffer = await this.createPlaceholderImage();
+        }
+
+        const processedImage = await sharp(imageBuffer)
+          .resize(this.CANVAS_WIDTH, this.CANVAS_HEIGHT, {
+            fit: 'cover',
+            position: 'center',
+          })
+          .jpeg({ quality: 90 })
+          .toBuffer();
+
+        const base64Image = processedImage.toString('base64');
+
+        if (i > 0) {
+          pdf.addPage([1080, 1350]);
+        }
+
+        pdf.addImage(base64Image, 'JPEG', 0, 0, 1080, 1350);
+      }
+
+      const pdfBuffer = Buffer.from(pdf.output('arraybuffer'));
+      const filename = `carousel-${Date.now()}.pdf`;
+
+      return {
+        buffer: pdfBuffer,
+        filename,
+        mimeType: 'application/pdf',
+      };
+    } catch (error) {
+      this.logger.error(`PDF export failed: ${error.message}`);
+      throw error;
+    }
   }
 
   private async createPlaceholderImage(): Promise<Buffer> {

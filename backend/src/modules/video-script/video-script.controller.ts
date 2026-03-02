@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
@@ -71,5 +72,15 @@ export class VideoScriptController {
     @Body() dto: UpdateScriptSceneDto,
   ) {
     return this.service.updateScene(user.id, id, dto);
+  }
+
+  @Get('projects/:id/export')
+  @ApiOperation({ summary: 'Export video script in various formats' })
+  async exportScript(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Query('format') format: 'json' | 'srt' | 'txt' | 'caption',
+  ) {
+    return this.service.exportScript(user.id, id, format || 'json');
   }
 }

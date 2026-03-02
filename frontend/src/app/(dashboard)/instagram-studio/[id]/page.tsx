@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import {
     Select,
     SelectContent,
@@ -17,6 +18,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog'
 import {
     ArrowLeft,
     Loader2,
@@ -34,6 +41,7 @@ import {
     Plus,
     MoveLeft,
     MoveRight,
+    X,
 } from 'lucide-react'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
@@ -78,6 +86,10 @@ export default function InstagramStudioEditorPage() {
     const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
     const [editedContent, setEditedContent] = useState('')
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+    
+    // Preview Mode
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+    const [previewSlideIndex, setPreviewSlideIndex] = useState(0)
 
     useEffect(() => {
         fetchProject()
@@ -262,6 +274,41 @@ export default function InstagramStudioEditorPage() {
             }
         } catch (error) {
             console.error('Failed to add slide:', error)
+        }
+    }
+
+    const handleDragEnd = async (result: DropResult) => {
+        if (!result.destination || !project?.slides) return
+        
+        const sourceIndex = result.source.index
+        const destinationIndex = result.destination.index
+        
+        if (sourceIndex === destinationIndex) return
+        
+        const slideToMove = project.slides[sourceIndex]
+        
+        try {
+            const response = await fetch(
+                `${API_BASE_URL}/instagram-studio/projects/${projectId}/slides/reorder`,
+                {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        slideId: slideToMove.id,
+                        newSlideNumber: destinationIndex + 1
+                    })
+                }
+            )
+            
+            if (response.ok) {
+                await fetchProject()
+                setCurrentSlideIndex(destinationIndex)
+                toast.success('Urutan slide diperbarui')
+            }
+        } catch (error) {
+            console.error('Failed to reorder slides:', error)
+            toast.error('Gagal mengurutkan slide')
         }
     }
 
@@ -589,6 +636,18 @@ export default function InstagramStudioEditorPage() {
                                     </>
                                 )}
                             </Button>
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setPreviewSlideIndex(0)
+                                    setIsPreviewOpen(true)
+                                }}
+                                disabled={!project.slides?.length}
+                                className="flex-1"
+                            >
+                                <Eye className="h-4 w-4 mr-2" />
+                                Pratinjau All
+                            </Button>
                         </div>
                     </div>
 
@@ -622,50 +681,171 @@ export default function InstagramStudioEditorPage() {
 
                         <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                             <CardHeader className="pb-3">
-                                <CardTitle className="text-lg">Semua Slide</CardTitle>
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                    Semua Slide
+                                    <span className="text-xs font-normal text-slate-500">(Drag untuk urutkan)</span>
+                                </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="grid grid-cols-5 gap-2">
-                                    {project.slides?.map((slide, index) => (
-                                        <div
-                                            key={slide.id}
-                                            className={`relative aspect-[4/5] rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${index === currentSlideIndex
-                                                ? 'border-pink-500'
-                                                : 'border-transparent hover:border-slate-400'
-                                                }`}
-                                            onClick={() => setCurrentSlideIndex(index)}
-                                        >
-                                            {/* Background Layer (Thumbnail) */}
-                                            {slide.imageUrl ? (
-                                                slide.imageUrl.startsWith('#') || slide.imageUrl.startsWith('rgb') ? (
-                                                    <div className="absolute inset-0 w-full h-full" style={{ backgroundColor: slide.imageUrl }} />
-                                                ) : (
-                                                    <img
-                                                        src={slide.imageUrl}
-                                                        alt={`Slide ${index + 1}`}
-                                                        className="absolute inset-0 w-full h-full object-cover"
-                                                    />
-                                                )
-                                            ) : (
-                                                <div className="absolute inset-0 w-full h-full bg-slate-800 flex items-center justify-center text-slate-500">
-                                                    <span className="text-xl font-bold opacity-30">{index + 1}</span>
+                                <DragDropContext onDragEnd={handleDragEnd}>
+                                    <Droppable droppableId="slides" direction="horizontal">
+                                        {(provided) => (
+                                            <div 
+                                                {...provided.droppableProps}
+                                                ref={provided.innerRef}
+                                                className="grid grid-cols-5 gap-2"
+                                            >
+                                                {project.slides?.map((slide, index) => (
+                                                    <Draggable key={slide.id} draggableId={slide.id} index={index}>
+                                                        {(provided, snapshot) => (
+                                                            <div
+                                                                ref={provided.innerRef}
+                                                                {...provided.draggableProps}
+                                                                {...provided.dragHandleProps}
+                                                                className={`relative aspect-[4/5] rounded-lg overflow-hidden cursor-grab border-2 transition-all ${
+                                                                    index === currentSlideIndex
+                                                                        ? 'border-pink-500'
+                                                                        : snapshot.isDragging 
+                                                                            ? 'border-blue-500 shadow-lg scale-105 z-10' 
+                                                                            : 'border-transparent hover:border-slate-400'
+                                                                }`}
+                                                                onClick={() => setCurrentSlideIndex(index)}
+                                                            >
+                                                                {/* Drag indicator */}
+                                                                <div className="absolute top-1 left-1 z-10 opacity-50">
+                                                                    <div className="w-4 h-4 bg-black/50 rounded flex items-center justify-center">
+                                                                        <span className="text-white text-[8px] font-bold">{index + 1}</span>
+                                                                    </div>
+                                                                </div>
+                                                                
+                                                                {/* Background Layer (Thumbnail) */}
+                                                                {slide.imageUrl ? (
+                                                                    slide.imageUrl.startsWith('#') || slide.imageUrl.startsWith('rgb') ? (
+                                                                        <div className="absolute inset-0 w-full h-full" style={{ backgroundColor: slide.imageUrl }} />
+                                                                    ) : (
+                                                                        <img
+                                                                            src={slide.imageUrl}
+                                                                            alt={`Slide ${index + 1}`}
+                                                                            className="absolute inset-0 w-full h-full object-cover"
+                                                                        />
+                                                                    )
+                                                                ) : (
+                                                                    <div className="absolute inset-0 w-full h-full bg-slate-800 flex items-center justify-center text-slate-500">
+                                                                        <span className="text-xl font-bold opacity-30">{index + 1}</span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </Draggable>
+                                                ))}
+                                                {provided.placeholder}
+                                                <div
+                                                    className="aspect-[4/5] rounded-lg border-2 border-dashed border-gray-300 hover:border-pink-400 hover:bg-pink-50/50 flex flex-col items-center justify-center cursor-pointer transition-colors text-muted-foreground hover:text-pink-600"
+                                                    onClick={handleAddSlide}
+                                                >
+                                                    <Plus className="h-6 w-6 mb-1" />
+                                                    <span className="text-xs font-medium">Tambah</span>
                                                 </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                    <div
-                                        className="aspect-[4/5] rounded-lg border-2 border-dashed border-gray-300 hover:border-pink-400 hover:bg-pink-50/50 flex flex-col items-center justify-center cursor-pointer transition-colors text-muted-foreground hover:text-pink-600"
-                                        onClick={handleAddSlide}
-                                    >
-                                        <Plus className="h-6 w-6 mb-1" />
-                                        <span className="text-xs font-medium">Tambah</span>
-                                    </div>
-                                </div>
+                                            </div>
+                                        )}
+                                    </Droppable>
+                                </DragDropContext>
                             </CardContent>
                         </Card>
                     </div>
                 </div>
             )}
+
+            {/* Preview Modal */}
+            <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
+                    <DialogHeader>
+                        <DialogTitle>Pratinjau Carousel - Slide {previewSlideIndex + 1} dari {project?.slides?.length}</DialogTitle>
+                    </DialogHeader>
+                    
+                    <div className="relative flex items-center justify-center">
+                        {/* Navigation Left */}
+                        {previewSlideIndex > 0 && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="absolute left-0 z-10 h-12 w-12 rounded-full bg-black/50 hover:bg-black/70"
+                                onClick={() => setPreviewSlideIndex(previewSlideIndex - 1)}
+                            >
+                                <ChevronLeft className="h-6 w-6 text-white" />
+                            </Button>
+                        )}
+
+                        {/* Slide Preview */}
+                        <div className="w-full max-w-[400px] aspect-[4/5] rounded-lg overflow-hidden bg-slate-900 border-4 border-slate-800 shadow-2xl">
+                            {project?.slides?.[previewSlideIndex] ? (
+                                <>
+                                    {/* Background */}
+                                    {project.slides[previewSlideIndex].imageUrl ? (
+                                        project.slides[previewSlideIndex].imageUrl.startsWith('#') || project.slides[previewSlideIndex].imageUrl.startsWith('rgb') ? (
+                                            <div 
+                                                className="absolute inset-0 w-full h-full" 
+                                                style={{ backgroundColor: project.slides[previewSlideIndex].imageUrl }} 
+                                            />
+                                        ) : (
+                                            <img
+                                                src={project.slides[previewSlideIndex].imageUrl}
+                                                alt={`Slide ${previewSlideIndex + 1}`}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        )
+                                    ) : (
+                                        <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
+                                            <div className="text-center p-4">
+                                                <Sparkles className="h-12 w-12 text-slate-600 mx-auto mb-2" />
+                                                <p className="text-slate-500 text-sm">Belum ada gambar</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <div className="w-full h-full bg-slate-900 flex items-center justify-center">
+                                    <p className="text-slate-500">Tidak ada slide</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Navigation Right */}
+                        {previewSlideIndex < (project?.slides?.length || 0) - 1 && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="absolute right-0 z-10 h-12 w-12 rounded-full bg-black/50 hover:bg-black/70"
+                                onClick={() => setPreviewSlideIndex(previewSlideIndex + 1)}
+                            >
+                                <ChevronRight className="h-6 w-6 text-white" />
+                            </Button>
+                        )}
+                    </div>
+
+                    {/* Slide Indicators */}
+                    <div className="flex justify-center gap-2 py-4">
+                        {project?.slides?.map((_, index) => (
+                            <button
+                                key={index}
+                                onClick={() => setPreviewSlideIndex(index)}
+                                className={`w-3 h-3 rounded-full transition-all ${
+                                    index === previewSlideIndex 
+                                        ? 'bg-pink-500 scale-110' 
+                                        : 'bg-slate-300 hover:bg-slate-400'
+                                }`}
+                            />
+                        ))}
+                    </div>
+
+                    {/* Slide Info */}
+                    <div className="text-center">
+                        <p className="font-medium text-sm text-slate-600 dark:text-slate-400">
+                            {project?.slides?.[previewSlideIndex]?.textContent?.split('\n')[0] || 'Slide ' + (previewSlideIndex + 1)}
+                        </p>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

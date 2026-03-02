@@ -77,6 +77,25 @@ interface StylePreset {
     promptTemplate: string
 }
 
+interface CarouselTemplate {
+    id: string
+    name: string
+    category: 'education' | 'business' | 'lifestyle' | 'news' | 'promotional'
+    description: string
+    colors: {
+        primary: string
+        secondary: string
+        accent: string
+        text: string
+    }
+    background: {
+        type: 'gradient' | 'solid' | 'image' | 'pattern'
+        value: string | string[]
+    }
+    forAudience: 'individual' | 'agency' | 'all'
+    forPlatform: 'instagram' | 'linkedin' | 'twitter' | 'all'
+}
+
 interface Font {
     family: string
     category: string
@@ -97,11 +116,18 @@ export default function InstagramStudioPage() {
         sourceContent: '',
         globalStyle: 'modern minimal',
         fontFamily: 'Montserrat',
+        templateId: '',
     })
     const [isFetchingUrl, setIsFetchingUrl] = useState(false)
+    
+    // Templates
+    const [templates, setTemplates] = useState<CarouselTemplate[]>([])
+    const [isLoadingTemplates, setIsLoadingTemplates] = useState(false)
+    const [selectedCategory, setSelectedCategory] = useState<string>('all')
 
     useEffect(() => {
         fetchProjects()
+        fetchTemplates()
     }, [])
 
     const fetchProjects = async () => {
@@ -116,6 +142,22 @@ export default function InstagramStudioPage() {
             console.error('Failed to fetch projects:', error)
         } finally {
             setIsLoading(false)
+        }
+    }
+
+    const fetchTemplates = async () => {
+        setIsLoadingTemplates(true)
+        try {
+            const response = await fetch(`${API_BASE_URL}/instagram-studio/templates`, {
+                credentials: 'include',
+                headers: { 'ngrok-skip-browser-warning': 'true' },
+            })
+            const data = await response.json()
+            setTemplates(Array.isArray(data) ? data : [])
+        } catch (error) {
+            console.error('Failed to fetch templates:', error)
+        } finally {
+            setIsLoadingTemplates(false)
         }
     }
 
@@ -325,6 +367,92 @@ export default function InstagramStudioPage() {
                                         </SelectContent>
                                     </Select>
                                 </div>
+                            </div>
+
+                            {/* Template Selector */}
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-base font-semibold">Pilih Template (Opsional)</Label>
+                                    <span className="text-xs text-slate-500">{templates.length} template tersedia</span>
+                                </div>
+                                
+                                {isLoadingTemplates ? (
+                                    <div className="flex items-center justify-center py-4">
+                                        <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+                                    </div>
+                                ) : (
+                                    <>
+                                        {/* Category Filter */}
+                                        <div className="flex gap-2 flex-wrap">
+                                            {['all', 'education', 'business', 'lifestyle', 'news', 'promotional'].map((cat) => (
+                                                <Button
+                                                    key={cat}
+                                                    variant={selectedCategory === cat ? 'default' : 'outline'}
+                                                    size="sm"
+                                                    onClick={() => setSelectedCategory(cat)}
+                                                    className="text-xs"
+                                                >
+                                                    {cat === 'all' ? 'Semua' : cat.charAt(0).toUpperCase() + cat.slice(1)}
+                                                </Button>
+                                            ))}
+                                        </div>
+
+                                        {/* Templates Grid */}
+                                        <div className="grid grid-cols-3 gap-3 max-h-[300px] overflow-y-auto p-1">
+                                            {templates
+                                                .filter(t => selectedCategory === 'all' || t.category === selectedCategory)
+                                                .filter(t => t.forPlatform === 'instagram' || t.forPlatform === 'all')
+                                                .map((template) => (
+                                                    <div
+                                                        key={template.id}
+                                                        onClick={() => setNewProject({ ...newProject, templateId: template.id })}
+                                                        className={`relative cursor-pointer rounded-xl overflow-hidden border-2 transition-all hover:shadow-md ${
+                                                            newProject.templateId === template.id
+                                                                ? 'border-blue-500 ring-2 ring-blue-200'
+                                                                : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                                                        }`}
+                                                    >
+                                                        {/* Preview */}
+                                                        <div 
+                                                            className="h-20 w-full"
+                                                            style={{
+                                                                background: template.background.type === 'gradient' 
+                                                                    ? `linear-gradient(135deg, ${template.colors.primary}, ${template.colors.secondary})`
+                                                                    : template.colors.primary,
+                                                            }}
+                                                        >
+                                                            <div className="h-full w-full flex items-center justify-center p-2">
+                                                                <span className="text-white text-xs font-bold text-center line-clamp-2">
+                                                                    {template.name}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        {/* Info */}
+                                                        <div className="p-2 bg-white dark:bg-slate-800">
+                                                            <p className="text-xs font-medium truncate">{template.name}</p>
+                                                            <p className="text-[10px] text-slate-500 truncate">{template.category}</p>
+                                                        </div>
+
+                                                        {/* Selected Badge */}
+                                                        {newProject.templateId === template.id && (
+                                                            <div className="absolute top-2 right-2">
+                                                                <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                                                                    <Sparkles className="w-3 h-3 text-white" />
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                        </div>
+
+                                        {templates.filter(t => selectedCategory === 'all' || t.category === selectedCategory).length === 0 && (
+                                            <p className="text-center text-sm text-slate-500 py-4">
+                                                Tidak ada template ditemukan
+                                            </p>
+                                        )}
+                                    </>
+                                )}
                             </div>
                         </div>
                         <DialogFooter>

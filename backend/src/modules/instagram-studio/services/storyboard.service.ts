@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { OpenAiService } from '../../ai/services/openai.service';
+import { TemplateService, CarouselTemplate } from './template.service';
 import * as fs from 'fs';
 
 interface StoryboardSlide {
@@ -16,16 +17,20 @@ interface StoryboardResult {
 
 @Injectable()
 export class StoryboardService {
-  constructor(private openAiService: OpenAiService) { }
+  constructor(
+    private openAiService: OpenAiService,
+    private templateService: TemplateService,
+  ) { }
 
   async generateStoryboard(
     content: string,
     style: string = 'modern minimal',
     targetSlides?: number,
     model?: string,
+    templateId?: string,
   ): Promise<StoryboardResult> {
-    const systemPrompt = this.buildSystemPrompt(style, targetSlides);
-    const userPrompt = this.buildUserPrompt(content);
+    const systemPrompt = this.buildSystemPrompt(style, targetSlides, templateId);
+    const userPrompt = this.buildUserPrompt(content, templateId);
 
     const response = await this.openAiService.generateContent(userPrompt, {
       mode: 'custom',
@@ -37,14 +42,34 @@ export class StoryboardService {
     return this.parseResponse(response);
   }
 
-  private buildSystemPrompt(style: string, targetSlides?: number): string {
+  private buildSystemPrompt(style: string, targetSlides?: number, templateId?: string): string {
     const slideGuidance = targetSlides
       ? `Create exactly ${targetSlides} slides.`
       : `Determine optimal slide count (4-8) based on content complexity.`;
 
+    let templatePrompt = '';
+    if (templateId) {
+      const template = this.templateService.getTemplateById(templateId);
+      if (template) {
+        templatePrompt = `
+TEMPLATE STYLE (MUST FOLLOW):
+- Background: ${template.background.type === 'gradient' ? `Use gradient from ${template.background.value[0]} to ${template.background.value[1]}` : template.background.type}
+- Color Palette: Primary ${template.colors.primary}, Secondary ${template.colors.secondary}, Accent ${template.colors.accent}, Text ${template.colors.text}
+- Typography: Title font "${template.typography.titleFont}", Body font "${template.typography.bodyFont}"
+- Layout: ${template.layout.type} layout type
+- AI Style Keywords: ${template.aiPrompt.style}
+- NEGATIVE Prompt: ${template.aiPrompt.negative}
+
+ALL visual prompts MUST include elements that match this template's aesthetic. The visual must feel cohesive with these colors and style.`;
+      }
+    }
+
     return `You are an expert Instagram content creator and copywriter for a top-tier technology/news media outlet.
 
 TASK: Analyze the provided content and create a highly engaging storyboard for an Instagram carousel.
+
+${slideGuidance}
+${templatePrompt}
 
 STYLE & TONE: ${style}
 LANGUAGE: Indonesian (Bahasa Indonesia yang engaging, kekinian, namun tetap profesional dan berbobot).
@@ -82,12 +107,24 @@ OUTPUT FORMAT (JSON only, no markdown):
 CRITICAL: DO NOT INCLUDE ANY HTML TAGS OR MARKDOWN HEADERS IN YOUR RESPONSE. ONLY OUTPUT THE PURE JSON OBJECT.`;
   }
 
-  private buildUserPrompt(content: string): string {
+  private buildUserPrompt(content: string, templateId?: string): string {
+    let templateNote = '';
+    if (templateId) {
+      const template = this.templateService.getTemplateById(templateId);
+      if (template) {
+        templateNote = `
+IMPORTANT: This carousel is using the "${template.name}" template.
+- Template Description: ${template.description}
+- Make sure the content fits this template's style and audience.`;
+      }
+    }
+
     return `Please transform the following content into a viral Instagram carousel storyboard. Extract the most shocking, interesting, or valuable points and turn them into punchy slide texts.
 
 --- CONTENT SOURCE ---
 ${content.slice(0, 4000)}
 ----------------------
+${templateNote}
 
 Remember: Output valid JSON only. Ensure the visual prompts enforce a single, unifying aesthetic across all slides.`;
   }

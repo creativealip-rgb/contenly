@@ -136,6 +136,46 @@ export class InstagramStudioController {
     return this.service.getStyles();
   }
 
+  @Get('templates')
+  @ApiOperation({ summary: 'List all available carousel templates' })
+  async getTemplates(
+    @Query('category') category?: string,
+    @Query('platform') platform?: 'instagram' | 'linkedin' | 'twitter',
+  ) {
+    return this.service.getTemplates(category as any, platform);
+  }
+
+  @Get('templates/categories')
+  @ApiOperation({ summary: 'List template categories' })
+  async getTemplateCategories() {
+    return this.service.getTemplateCategories();
+  }
+
+  @Get('templates/:id')
+  @ApiOperation({ summary: 'Get template details by ID' })
+  async getTemplateById(@Param('id') id: string) {
+    return this.service.getTemplateById(id);
+  }
+
+  @Post('templates/:id/generate-prompt')
+  @ApiOperation({ summary: 'Generate AI prompt from template' })
+  async generateTemplatePrompt(
+    @Param('id') id: string,
+    @Body() body: { customStyle?: string },
+  ) {
+    return this.service.generateTemplatePrompt(id, body.customStyle);
+  }
+
+  @Post('projects/:id/hashtags')
+  @ApiOperation({ summary: 'Generate hashtags and caption for carousel' })
+  async generateHashtags(
+    @CurrentUser() user: User,
+    @Param('id') projectId: string,
+    @Body() body: { content?: string },
+  ) {
+    return this.service.generateHashtags(user.id, projectId, body.content);
+  }
+
   // --- Slide Management APIs ---
 
   @Post('projects/:id/slides')

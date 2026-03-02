@@ -30,6 +30,9 @@ import { InstagramStudioModule } from './modules/instagram-studio/instagram-stud
 import { VideoScriptModule } from './modules/video-script/video-script.module';
 import { TrendRadarModule } from './modules/trend-radar/trend-radar.module';
 import { TelegramBotModule } from './modules/telegram-bot/telegram-bot.module';
+import { SocialModule } from './modules/social/social.module';
+import { BrandKitModule } from './modules/brand-kit/brand-kit.module';
+import { CalendarModule } from './modules/calendar/calendar.module';
 
 @Module({
   imports: [
@@ -84,6 +87,9 @@ import { TelegramBotModule } from './modules/telegram-bot/telegram-bot.module';
     VideoScriptModule,
     TrendRadarModule,
     TelegramBotModule,
+    SocialModule,
+    BrandKitModule,
+    CalendarModule,
   ],
   controllers: [AppController],
   providers: [

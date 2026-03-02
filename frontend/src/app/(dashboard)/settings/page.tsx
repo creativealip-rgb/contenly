@@ -83,10 +83,24 @@ export default function SettingsPage() {
     const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false)
     const [avatarUrlInput, setAvatarUrlInput] = useState(user?.avatarUrl || '')
 
+    // Instagram State
+    const [instagramData, setInstagramData] = useState({
+        connected: false,
+        username: '',
+        message: ''
+    })
+    const [isLoadingInstagram, setIsLoadingInstagram] = useState(false)
+    const [isInstagramDialogOpen, setIsInstagramDialogOpen] = useState(false)
+    const [instagramForm, setInstagramForm] = useState({
+        accessToken: '',
+        accountId: ''
+    })
+
     useEffect(() => {
         fetchUserProfile()
         fetchApiKeys()
         fetchAccounts()
+        fetchInstagramStatus()
     }, [])
 
     const fetchAccounts = async () => {
@@ -99,6 +113,72 @@ export default function SettingsPage() {
         } finally {
             setIsLoadingAccounts(false)
         }
+    }
+
+    const fetchInstagramStatus = async () => {
+        setIsLoadingInstagram(true)
+        try {
+            const response = await api.get<any>('/social/instagram/status')
+            setInstagramData({
+                connected: response.connected,
+                username: response.username || '',
+                message: response.message
+            })
+        } catch (error) {
+            console.error('Failed to fetch Instagram status:', error)
+        } finally {
+            setIsLoadingInstagram(false)
+        }
+    }
+
+    const handleConnectInstagram = async () => {
+        if (!instagramForm.accessToken || !instagramForm.accountId) {
+            toast.error('Mohon isi Access Token dan Account ID')
+            return
+        }
+
+        setIsLoadingInstagram(true)
+        try {
+            const response = await api.post<any>('/social/instagram/connect', {
+                accessToken: instagramForm.accessToken,
+                accountId: instagramForm.accountId
+            })
+
+            if (response.success) {
+                toast.success('Instagram berhasil terhubung!')
+                setIsInstagramDialogOpen(false)
+                setInstagramForm({ accessToken: '', accountId: '' })
+                fetchInstagramStatus()
+            } else {
+                toast.error(response.message || 'Gagal menghubungkan Instagram')
+            }
+        } catch (error: any) {
+            toast.error(error.message || 'Gagal menghubungkan Instagram')
+        } finally {
+            setIsLoadingInstagram(false)
+        }
+    }
+
+    const handleDisconnectInstagram = async () => {
+        const confirmed = await confirm({
+            title: 'Putuskan Instagram',
+            description: 'Apakah Anda yakin ingin memutuskan koneksi Instagram?',
+            confirmText: 'Putuskan',
+            cancelText: 'Batal',
+            variant: 'destructive',
+            onConfirm: async () => {
+                setIsLoadingInstagram(true)
+                try {
+                    await api.delete<any>('/social/instagram/disconnect')
+                    toast.success('Instagram berhasil diputuskan')
+                    fetchInstagramStatus()
+                } catch (error: any) {
+                    toast.error(error.message || 'Gagal memutuskan Instagram')
+                } finally {
+                    setIsLoadingInstagram(false)
+                }
+            },
+        })
     }
 
     const fetchUserProfile = async () => {
@@ -728,6 +808,172 @@ export default function SettingsPage() {
                             )}
                         </CardContent>
                     </Card>
+
+                    {/* Instagram Connection */}
+                    <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl mt-4">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Camera className="h-5 w-5" />
+                                Instagram
+                            </CardTitle>
+                            <CardDescription>
+                                Hubungkan akun Instagram untuk memposting carousel langsung ke Instagram.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {isLoadingInstagram ? (
+                                <div className="py-8 flex justify-center">
+                                    <Loader2 className="h-6 w-6 animate-spin opacity-40" />
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-between p-4 rounded-2xl border bg-slate-50/50 dark:bg-slate-800/20">
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex h-12 w-12 items-center justify-center rounded-xl font-black text-xl shadow-sm border bg-gradient-to-tr from-purple-500 via-pink-500 to-yellow-500 text-white">
+                                            IG
+                                        </div>
+                                        <div>
+                                            <p className="font-black capitalize tracking-tight">Instagram</p>
+                                            {instagramData.connected ? (
+                                                <p className="text-xs font-medium text-green-600 dark:text-green-400">
+                                                    @{instagramData.username} - Terhubung
+                                                </p>
+                                            ) : (
+                                                <p className="text-xs font-medium text-slate-400">
+                                                    {instagramData.message || 'Tidak terhubung'}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                    {instagramData.connected ? (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="rounded-xl border-red-100 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900/30"
+                                            onClick={handleDisconnectInstagram}
+                                        >
+                                            Putuskan
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="rounded-xl border-pink-100 text-pink-600 hover:bg-pink-50 hover:text-pink-700 dark:border-pink-900/30"
+                                            onClick={() => setIsInstagramDialogOpen(true)}
+                                        >
+                                            Hubungkan
+                                        </Button>
+                                    )}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Instagram Connect Dialog */}
+                    <Dialog open={isInstagramDialogOpen} onOpenChange={setIsInstagramDialogOpen}>
+                        <DialogContent className="sm:max-w-md">
+                            <DialogHeader>
+                                <DialogTitle>Hubungkan Instagram</DialogTitle>
+                                <DialogDescription>
+                                    Masukkan Access Token dan Account ID dari Instagram Basic Display API.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="accessToken">Access Token</Label>
+                                    <Input
+                                        id="accessToken"
+                                        type="password"
+                                        placeholder="EAAC..."
+                                        value={instagramForm.accessToken}
+                                        onChange={(e) => setInstagramForm(prev => ({ ...prev, accessToken: e.target.value }))}
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="accountId">Account ID</Label>
+                                    <Input
+                                        id="accountId"
+                                        placeholder="178414..."
+                                        value={instagramForm.accountId}
+                                        onChange={(e) => setInstagramForm(prev => ({ ...prev, accountId: e.target.value }))}
+                                    />
+                                </div>
+                                <p className="text-xs text-slate-500">
+                                    Untuk mendapatkan Access Token, gunakan{' '}
+                                    <a 
+                                        href="https://developers.facebook.com/docs/instagram-basic-display-api" 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="text-blue-600 hover:underline"
+                                    >
+                                        Instagram Basic Display API
+                                    </a>
+                                </p>
+
+                                {/* Guide Accordion */}
+                                <details className="mt-2">
+                                    <summary className="text-sm font-medium text-slate-600 cursor-pointer hover:text-slate-900">
+                                        📖 Panduan Mendapatkan Token
+                                    </summary>
+                                    <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg text-xs space-y-3">
+                                        <div>
+                                            <p className="font-semibold">Langkah 1: Buat App di Meta Developers</p>
+                                            <ul className="list-disc list-inside text-slate-600 dark:text-slate-400 mt-1 space-y-1">
+                                                <li>Kunjungi <a href="https://developers.facebook.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">developers.facebook.com</a></li>
+                                                <li>Klik "My Apps" → "Create App"</li>
+                                                <li>Pilih "Other" → "Consumer"</li>
+                                                <li>Isi nama app dan email developer</li>
+                                            </ul>
+                                        </div>
+                                        <div>
+                                            <p className="font-semibold">Langkah 2: Tambahkan Instagram Basic Display</p>
+                                            <ul className="list-disc list-inside text-slate-600 dark:text-slate-400 mt-1 space-y-1">
+                                                <li>Di dashboard app, klik "Add product"</li>
+                                                <li>Cari "Instagram Basic Display" → klik "Set Up"</li>
+                                            </ul>
+                                        </div>
+                                        <div>
+                                            <p className="font-semibold">Langkah 3: Tambahkan Test User Instagram</p>
+                                            <ul className="list-disc list-inside text-slate-600 dark:text-slate-400 mt-1 space-y-1">
+                                                <li>Pergi ke "Roles" → "Test Users"</li>
+                                                <li>Klik "Add Test Users"</li>
+                                                <li>Login dengan akun Instagram yang ingin diconnect</li>
+                                            </ul>
+                                        </div>
+                                        <div>
+                                            <p className="font-semibold">Langkah 4: Generate Access Token</p>
+                                            <ul className="list-disc list-inside text-slate-600 dark:text-slate-400 mt-1 space-y-1">
+                                                <li>Pergi ke <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Graph API Explorer</a></li>
+                                                <li>Pilih app yang sudah dibuat</li>
+                                                <li>Klik "Get User Access Token"</li>
+                                                <li>Pilih permissions: <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded">instagram_basic</code>, <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded">instagram_content_publish</code>, <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded">pages_show_list</code></li>
+                                                <li>Klik "Generate Access Token"</li>
+                                            </ul>
+                                        </div>
+                                        <div>
+                                            <p className="font-semibold">Langkah 5: Dapatkan Account ID</p>
+                                            <ul className="list-disc list-inside text-slate-600 dark:text-slate-400 mt-1 space-y-1">
+                                                <li>Gunakan token untuk request: <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded">GET /me/accounts</code></li>
+                                                <li>Atau cek di Instagram app → Settings → Account → Linked Accounts</li>
+                                                <li>Account ID biasanya dimulai dengan <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded">178414...</code></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </details>
+                            </div>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsInstagramDialogOpen(false)}>
+                                    Batal
+                                </Button>
+                                <Button 
+                                    onClick={handleConnectInstagram}
+                                    disabled={isLoadingInstagram || !instagramForm.accessToken || !instagramForm.accountId}
+                                >
+                                    {isLoadingInstagram && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Hubungkan
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                 </TabsContent>
             </Tabs>
         </div>

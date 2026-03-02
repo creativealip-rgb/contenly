@@ -403,6 +403,7 @@ export const instagramProject = pgTable('instagram_project', {
   sourceContent: text('source_content'),
   globalStyle: varchar('global_style', { length: 100 }),
   fontFamily: varchar('font_family', { length: 100 }).default('Montserrat'),
+  templateId: varchar('template_id', { length: 100 }),
   totalSlides: integer('total_slides').default(0),
   status: varchar('status', { length: 50 }).default('draft'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -418,6 +419,7 @@ export const instagramSlide = pgTable('instagram_slide', {
   textContent: text('text_content').notNull(),
   visualPrompt: text('visual_prompt'),
   imageUrl: text('image_url'),
+  gradientColors: varchar('gradient_colors', { length: 100 }), // Store as "color1,color2"
   layoutPosition: varchar('layout_position', { length: 50 }),
   fontSize: integer('font_size').default(24),
   fontColor: varchar('font_color', { length: 20 }).default('#FFFFFF'),
@@ -461,6 +463,51 @@ export const scriptScene = pgTable('script_scene', {
   visualContext: text('visual_context').notNull(),
   voiceoverText: text('voiceover_text').notNull(),
   estimatedDuration: integer('estimated_duration'), // in seconds, optional
+  emoji: varchar('emoji', { length: 10 }), // Scene mood emoji
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// ==========================================
+// SOCIAL MEDIA ACCOUNTS
+// ==========================================
+
+export const socialAccount = pgTable('social_account', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  platform: varchar('platform', { length: 50 }).notNull(), // 'instagram', 'linkedin', 'twitter'
+  accountId: text('account_id').notNull(), // Platform-specific account ID
+  accessToken: text('access_token'), // Encrypted access token
+  refreshToken: text('refresh_token'), // Encrypted refresh token
+  tokenExpiresAt: timestamp('token_expires_at'), // Token expiration
+  username: varchar('username', { length: 255 }),
+  profileUrl: text('profile_url'),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// ==========================================
+// BRAND KIT (For Enterprise)
+// ==========================================
+
+export const brandKit = pgTable('brand_kit', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  name: varchar('name', { length: 255 }).notNull(),
+  primaryColor: varchar('primary_color', { length: 20 }).default('#000000'),
+  secondaryColor: varchar('secondary_color', { length: 20 }).default('#ffffff'),
+  accentColor: varchar('accent_color', { length: 20 }).default('#ff0000'),
+  fontTitle: varchar('font_title', { length: 100 }).default('Inter'),
+  fontBody: varchar('font_body', { length: 100 }).default('Inter'),
+  logoUrl: text('logo_url'),
+  website: varchar('website', { length: 255 }),
+  description: text('description'),
+  isDefault: boolean('is_default').default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
@@ -480,6 +527,8 @@ export const userRelations = relations(user, ({ many, one }) => ({
   transactions: many(transaction),
   subscriptions: many(subscription),
   notifications: many(notification),
+  socialAccounts: many(socialAccount),
+  brandKits: many(brandKit),
 }));
 
 export const wpSiteRelations = relations(wpSite, ({ one, many }) => ({
@@ -563,6 +612,48 @@ export const scriptSceneRelations = relations(scriptScene, ({ one }) => ({
   }),
 }));
 
+export const socialAccountRelations = relations(socialAccount, ({ one }) => ({
+  user: one(user, {
+    fields: [socialAccount.userId],
+    references: [user.id],
+  }),
+}));
+
+export const brandKitRelations = relations(brandKit, ({ one }) => ({
+  user: one(user, {
+    fields: [brandKit.userId],
+    references: [user.id],
+  }),
+}));
+
+// ==========================================
+// SCHEDULED CONTENT (For Calendar)
+// ==========================================
+
+export const scheduledContent = pgTable('scheduled_content', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  contentType: varchar('content_type', { length: 50 }).notNull(), // 'article', 'carousel', 'video_script'
+  contentId: uuid('content_id'), // Reference to the content (article/carousel/script ID)
+  title: varchar('title', { length: 255 }).notNull(),
+  scheduledAt: timestamp('scheduled_at').notNull(),
+  platform: varchar('platform', { length: 50 }).notNull(), // 'wordpress', 'instagram', 'linkedin', 'twitter'
+  status: varchar('status', { length: 20 }).default('pending'), // 'pending', 'published', 'failed'
+  publishedAt: timestamp('published_at'),
+  metadata: jsonb('metadata'), // Additional data like hashtags, caption, etc.
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export const scheduledContentRelations = relations(scheduledContent, ({ one }) => ({
+  user: one(user, {
+    fields: [scheduledContent.userId],
+    references: [user.id],
+  }),
+}));
+
 // Export all schemas for Better Auth
 export const schema = {
   user,
@@ -585,5 +676,8 @@ export const schema = {
   stylePreset,
   scriptProject,
   scriptScene,
+  socialAccount,
+  brandKit,
+  scheduledContent,
   dailyUsage,
 };

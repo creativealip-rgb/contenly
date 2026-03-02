@@ -5,6 +5,7 @@ import { StoryboardService } from './services/storyboard.service';
 import { FontService } from './services/font.service';
 import { ExportService } from './services/export.service';
 import { ImageTextService } from './services/image-text.service';
+import { TemplateService } from './services/template.service';
 import { DrizzleModule } from '../../db/drizzle.module';
 import { AiModule } from '../ai/ai.module';
 import { BillingModule } from '../billing/billing.module';
@@ -20,7 +21,8 @@ import { AuthModule } from '../auth/auth.module';
     FontService,
     ExportService,
     ImageTextService,
+    TemplateService,
   ],
-  exports: [InstagramStudioService],
+  exports: [InstagramStudioService, TemplateService],
 })
 export class InstagramStudioModule { }

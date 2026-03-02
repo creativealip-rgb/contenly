@@ -27,6 +27,10 @@ export class CreateProjectDto {
   @IsOptional()
   @IsString()
   fontFamily?: string;
+
+  @IsOptional()
+  @IsString()
+  templateId?: string;
 }
 
 export class UpdateProjectDto {
@@ -84,6 +88,10 @@ export class GenerateStoryboardDto {
   @Min(3)
   @Max(10)
   targetSlides?: number;
+
+  @IsOptional()
+  @IsString()
+  templateId?: string;
 }
 
 export class InstagramGenerateImageDto {
@@ -103,11 +111,15 @@ export class InstagramGenerateImageDto {
 export class ExportCarouselDto {
   @IsOptional()
   @IsString()
-  format?: 'png' | 'jpg';
+  format?: 'png' | 'jpg' | 'pdf';
 
   @IsOptional()
   @IsInt()
   quality?: number;
+
+  @IsOptional()
+  @IsString()
+  templateId?: string;
 }
 
 export class CreateSlideDto {

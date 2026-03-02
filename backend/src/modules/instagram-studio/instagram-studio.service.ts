@@ -15,6 +15,7 @@ import { FontService } from './services/font.service';
 import { ExportService } from './services/export.service';
 import { ScraperService } from '../scraper/scraper.service';
 import { ImageTextService } from './services/image-text.service';
+import { TemplateService, CarouselTemplate } from './services/template.service';
 import {
     CreateProjectDto,
     UpdateProjectDto,
@@ -39,6 +40,7 @@ export class InstagramStudioService {
         private exportService: ExportService,
         private scraperService: ScraperService,
         private imageTextService: ImageTextService,
+        private templateService: TemplateService,
     ) { }
 
     async fetchUrlContent(url: string) {
@@ -88,6 +90,7 @@ export class InstagramStudioService {
                 sourceContent: finalContent,
                 globalStyle: dto.globalStyle,
                 fontFamily: dto.fontFamily || 'Montserrat',
+                templateId: dto.templateId,
             })
             .returning();
 
@@ -207,6 +210,7 @@ export class InstagramStudioService {
             dto.style || project.globalStyle,
             dto.targetSlides,
             model,
+            dto.templateId,
         );
 
         await this.drizzle.db
@@ -419,6 +423,30 @@ export class InstagramStudioService {
             throw new BadRequestException('No slides to export');
         }
 
+        // If PDF export requested
+        if (dto.format === 'pdf') {
+            let templateColors = undefined;
+            if (dto.templateId) {
+                templateColors = this.templateService.getColorPalette(dto.templateId);
+            }
+
+            const slidesData = project.slides.map((slide) => ({
+                imageUrl: slide.imageUrl || '',
+                textContent: slide.textContent,
+                fontFamily: project.fontFamily || 'Montserrat',
+                fontSize: slide.fontSize || 24,
+                fontColor: slide.fontColor || '#FFFFFF',
+                layoutPosition: slide.layoutPosition || 'center',
+                gradientColors: templateColors 
+                    ? [templateColors.primary, templateColors.secondary]
+                    : undefined,
+                backgroundColor: !slide.imageUrl && !templateColors ? '#1a1a2e' : undefined,
+            }));
+
+            const result = await this.exportService.exportToPdf(slidesData);
+            return [result];
+        }
+
         const slidesData = project.slides.map((slide) => ({
             imageUrl: slide.imageUrl || '',
             textContent: slide.textContent,
@@ -610,5 +638,111 @@ export class InstagramStudioService {
                 negativePrompt: 'artificial, neon, tech',
             },
         ];
+    }
+
+    // =====================
+    // Template Methods
+    // =====================
+
+    async getTemplates(
+        category?: CarouselTemplate['category'],
+        platform?: 'instagram' | 'linkedin' | 'twitter',
+    ) {
+        if (category) {
+            return this.templateService.getTemplatesByCategory(category);
+        }
+        if (platform) {
+            return this.templateService.getTemplatesForPlatform(platform);
+        }
+        return this.templateService.getAllTemplates();
+    }
+
+    async getTemplateCategories() {
+        return this.templateService.getCategories();
+    }
+
+    async getTemplateById(id: string) {
+        const template = this.templateService.getTemplateById(id);
+        if (!template) {
+            throw new NotFoundException(`Template ${id} not found`);
+        }
+        return template;
+    }
+
+    generateTemplatePrompt(templateId: string, customStyle?: string) {
+        const template = this.templateService.getTemplateById(templateId);
+        if (!template) {
+            throw new NotFoundException(`Template ${templateId} not found`);
+        }
+        return {
+            prompt: this.templateService.generateAiPrompt(template, customStyle),
+            negative: this.templateService.generateNegativePrompt(template),
+            colors: template.colors,
+            background: template.background,
+            typography: template.typography,
+            layout: template.layout,
+        };
+    }
+
+    async generateHashtags(userId: string, projectId: string, content?: string) {
+        const project = await this.getProject(userId, projectId);
+        
+        const textContent = content || project.slides?.map(s => s.textContent).join(' ') || project.sourceContent || '';
+        
+        if (!textContent) {
+            throw new BadRequestException('No content available to generate hashtags');
+        }
+
+        const systemPrompt = `You are a social media expert. Generate relevant, trending hashtags for Instagram carousel posts.
+        
+RULES:
+- Generate 10-15 hashtags
+- Mix of popular (#viral, #trending) and niche hashtags
+- Include location-based if relevant
+- Use Indonesian and English hashtags
+- Only output hashtags, one per line, no other text
+- Start with #`;
+
+        try {
+            const result = await this.openAiService.generateContent(
+                `Generate hashtags for this content:\n\n${textContent.slice(0, 2000)}`,
+                { mode: 'custom', systemPrompt }
+            );
+
+            const hashtags = result.hashtags || result.text || '';
+            const hashtagArray = hashtags
+                .split('\n')
+                .map((h: string) => h.trim())
+                .filter((h: string) => h.startsWith('#') && h.length > 1)
+                .slice(0, 15);
+
+            return {
+                hashtags: hashtagArray,
+                caption: this.buildAutoCaption(project.title, hashtagArray),
+            };
+        } catch (error) {
+            this.logger.error(`Hashtag generation failed: ${error.message}`);
+            return {
+                hashtags: ['#content', '#viral', '#trending'],
+                caption: project.title,
+            };
+        }
+    }
+
+    private buildAutoCaption(title: string, hashtags: string[]): string {
+        const hook = this.getCaptionHook(title);
+        const hashtagStr = hashtags.slice(0, 10).join(' ');
+        return `${hook}\n\n${hashtagStr}\n\n#ContentCreatedWithContenly`;
+    }
+
+    private getCaptionHook(title: string): string {
+        const hooks = [
+            `Baca sampai habis! ${title} 🚀`,
+            `Penting untuk kamu ketahui! ${title} 👇`,
+            `Siapa yang sudah tahu ini? ${title} 🔥`,
+            `${title} - Jangan sampai kelewat!`,
+            `7 dari 10 orang tidak tahu ini tentang ${title} 😱`,
+        ];
+        return hooks[Math.floor(Math.random() * hooks.length)];
     }
 }
