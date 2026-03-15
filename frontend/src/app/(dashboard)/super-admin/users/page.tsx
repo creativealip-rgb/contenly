@@ -83,7 +83,7 @@ export default function UserManagementPage() {
     const [selectedUser, setSelectedUser] = useState<UserData | null>(null)
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
     const [isCreating, setIsCreating] = useState(false)
-    const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'USER' })
+    const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'user' })
     const [searchQuery, setSearchQuery] = useState('')
     const [currentPage, setCurrentPage] = useState(1)
     const itemsPerPage = 10
@@ -114,7 +114,7 @@ export default function UserManagementPage() {
             await api.post('/users/admin/users', newUser)
             toast.success('User berhasil dibuat')
             setIsCreateDialogOpen(false)
-            setNewUser({ name: '', email: '', password: '', role: 'USER' })
+            setNewUser({ name: '', email: '', password: '', role: 'user' })
             fetchUsers()
         } catch (error: any) {
             console.error('Failed to create user:', error)
@@ -184,9 +184,9 @@ export default function UserManagementPage() {
 
     const getRoleBadge = (role: string) => {
         switch (role) {
-            case 'SUPER_ADMIN':
+            case 'super_admin':
                 return <Badge className="bg-red-500/10 text-red-600 hover:bg-red-500/20 border-red-500/20"><ShieldAlert className="w-3 h-3 mr-1" /> Super Admin</Badge>
-            case 'ADMIN':
+            case 'admin':
                 return <Badge className="bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-500/20"><ShieldCheck className="w-3 h-3 mr-1" /> Admin</Badge>
             default:
                 return <Badge variant="secondary"><User className="w-3 h-3 mr-1" /> User</Badge>
@@ -258,9 +258,9 @@ export default function UserManagementPage() {
                                 <div className="space-y-2">
                                     <Label>Role</Label>
                                     <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={newUser.role} onChange={(e) => setNewUser(prev => ({ ...prev, role: e.target.value }))}>
-                                        <option value="USER">User</option>
-                                        <option value="ADMIN">Admin</option>
-                                        <option value="SUPER_ADMIN">Super Admin</option>
+                                        <option value="user">User</option>
+                                        <option value="admin">Admin</option>
+                                        <option value="super_admin">Super Admin</option>
                                     </select>
                                 </div>
                             </div>
@@ -332,9 +332,9 @@ export default function UserManagementPage() {
                                                         <DropdownMenuContent align="end" className="w-48">
                                                             <DropdownMenuItem onClick={() => setSelectedUser(user)}><Plus className="w-4 h-4 mr-2" /> Tambah Token</DropdownMenuItem>
                                                             <DropdownMenuSeparator />
-                                                            <DropdownMenuItem onClick={() => handleUpdateRole(user.id, 'USER')}>Ubah ke USER</DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => handleUpdateRole(user.id, 'ADMIN')}>Ubah ke ADMIN</DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => handleUpdateRole(user.id, 'SUPER_ADMIN')}>Ubah ke SUPER_ADMIN</DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => handleUpdateRole(user.id, 'user')}>Ubah ke USER</DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => handleUpdateRole(user.id, 'admin')}>Ubah ke ADMIN</DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => handleUpdateRole(user.id, 'super_admin')}>Ubah ke SUPER_ADMIN</DropdownMenuItem>
                                                             <DropdownMenuSeparator />
                                                             <DropdownMenuItem onClick={() => handleUpdateTier(user.id, 'FREE')}>Ubah ke FREE Tier</DropdownMenuItem>
                                                             <DropdownMenuItem onClick={() => handleUpdateTier(user.id, 'PRO')}>Ubah ke PRO Tier</DropdownMenuItem>

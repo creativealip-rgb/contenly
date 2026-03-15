@@ -189,7 +189,7 @@ const navGroups: NavGroup[] = [
         label: 'Tools',
         icon: icons.tools,
         items: [
-            { href: '/view-boost', label: 'View Boost', icon: icons.analytics, role: 'ADMIN' },
+            { href: '/view-boost', label: 'View Boost', icon: icons.analytics, role: 'admin' },
             { href: '/prompt-generator', label: 'Prompt Generator', icon: icons.createContent },
         ],
     },
@@ -201,7 +201,7 @@ const navGroups: NavGroup[] = [
             { href: '/integrations', label: 'Integrasi', icon: icons.integrations, tourId: 'integrations' },
             { href: '/billing', label: 'Tagihan', icon: icons.billing },
             { href: '/settings', label: 'Pengaturan', icon: icons.settings },
-            { href: '/super-admin/users', label: 'Pengguna', icon: icons.userManagement, role: 'SUPER_ADMIN' },
+            { href: '/super-admin/users', label: 'Pengguna', icon: icons.userManagement, role: 'super_admin' },
         ],
     },
 ]
@@ -226,10 +226,10 @@ export function Sidebar() {
         }
     }
 
-    const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN'
+    const isAdmin = user?.role === 'admin' || user?.role === 'super_admin'
 
     const renderNavItem = (item: NavItem, isSubItem: boolean = false) => {
-        if (item.role === 'SUPER_ADMIN' && user?.role !== 'SUPER_ADMIN') {
+        if (item.role === 'super_admin' && user?.role !== 'super_admin') {
             return null
         }
 
@@ -306,10 +306,10 @@ export function Sidebar() {
                     <nav className="flex-1 space-y-1.5 p-4 overflow-y-auto">
                         {navGroups.map((group) => {
                             const filteredItems = group.items.filter(item => {
-                                if (item.role === 'SUPER_ADMIN' && user?.role !== 'SUPER_ADMIN') {
+                                if (item.role === 'super_admin' && user?.role !== 'super_admin') {
                                     return false
                                 }
-                                if (item.role === 'ADMIN' && !isAdmin) {
+                                if (item.role === 'admin' && !isAdmin) {
                                     return false
                                 }
                                 return true
