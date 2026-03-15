@@ -5,13 +5,13 @@ RUN apk add --no-cache python3 make g++ pkgconfig pixman-dev cairo-dev pango-dev
 
 WORKDIR /app
 
-# Copy package files (from backend context)
-COPY package*.json ./
+# Copy package files from backend folder
+COPY backend/package*.json ./
 
 RUN npm install --include=dev
 
 # Copy the rest of the backend code
-COPY . .
+COPY backend/ .
 
 # Build the application
 RUN npm run build
