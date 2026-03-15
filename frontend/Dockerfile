@@ -2,13 +2,13 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files from the frontend directory
-COPY frontend/package*.json ./
+# Copy package files (from frontend context)
+COPY package*.json ./
 
 RUN npm install
 
 # Copy the rest of the frontend code
-COPY frontend/ .
+COPY . .
 
 # Build the application
 RUN npm run build

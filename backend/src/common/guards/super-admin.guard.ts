@@ -16,7 +16,7 @@ export class SuperAdminGuard extends AuthGuard {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
-    if (user?.role !== 'SUPER_ADMIN') {
+    if (user?.role !== 'super_admin') {
       throw new ForbiddenException('Super Admin access required');
     }
 

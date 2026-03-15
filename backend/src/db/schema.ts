@@ -19,9 +19,9 @@ import { relations } from 'drizzle-orm';
 // ==========================================
 
 export const userRoleEnum = pgEnum('user_role', [
-  'USER',
-  'ADMIN',
-  'SUPER_ADMIN',
+  'user',
+  'admin',
+  'super_admin',
 ]);
 export const wpSiteStatusEnum = pgEnum('wp_site_status', [
   'PENDING',
@@ -110,7 +110,7 @@ export const user = pgTable('user', {
   emailVerified: boolean('email_verified').notNull().default(false),
   image: text('image'),
   bio: text('bio'),
-  role: userRoleEnum('role').default('USER'),
+  role: userRoleEnum('role').default('user'),
   banned: boolean('banned').default(false),
   preferences: jsonb('preferences').default({}),
   createdAt: timestamp('created_at').notNull().defaultNow(),
