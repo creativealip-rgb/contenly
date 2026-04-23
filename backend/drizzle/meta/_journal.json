@@ -15,6 +15,13 @@
       "when": 1771897641354,
       "tag": "0001_shocking_peter_parker",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773890000000,
+      "tag": "0002_video_script_metadata",
+      "breakpoints": true
     }
   ]
 }

@@ -449,6 +449,14 @@ export const scriptProject = pgTable('script_project', {
   title: varchar('title', { length: 255 }).notNull(),
   sourceUrl: text('source_url'),
   sourceContent: text('source_content'),
+  headline: varchar('headline', { length: 255 }),
+  subHeadline: varchar('sub_headline', { length: 255 }),
+  caption: text('caption'),
+  hook: text('hook'),
+  thumbnailPrompt: text('thumbnail_prompt'),
+  musicSuggestion: text('music_suggestion'),
+  hashtags: jsonb('hashtags').default([]),
+  targetDurationSeconds: integer('target_duration_seconds'),
   status: varchar('status', { length: 50 }).default('draft'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
@@ -464,6 +472,7 @@ export const scriptScene = pgTable('script_scene', {
   voiceoverText: text('voiceover_text').notNull(),
   estimatedDuration: integer('estimated_duration'), // in seconds, optional
   emoji: varchar('emoji', { length: 10 }), // Scene mood emoji
+  footageSearches: jsonb('footage_searches').default([]),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });

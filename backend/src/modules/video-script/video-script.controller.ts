@@ -19,6 +19,8 @@ import { VideoScriptService } from './video-script.service';
 import {
   CreateScriptProjectDto,
   GenerateScriptDto,
+  RegenerateScriptFieldDto,
+  UpdateScriptProjectDto,
   UpdateScriptSceneDto,
 } from './video-script.dto';
 
@@ -66,6 +68,26 @@ export class VideoScriptController {
     return this.service.generateScript(user.id, id, dto);
   }
 
+  @Patch('projects/:id')
+  @ApiOperation({ summary: 'Update video script project metadata' })
+  async updateProject(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body() dto: UpdateScriptProjectDto,
+  ) {
+    return this.service.updateProject(user.id, id, dto);
+  }
+
+  @Post('projects/:id/regenerate')
+  @ApiOperation({ summary: 'Regenerate a specific video script field' })
+  async regenerateProjectField(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body() dto: RegenerateScriptFieldDto,
+  ) {
+    return this.service.regenerateProjectField(user.id, id, dto.field);
+  }
+
   @Patch('scenes/:id')
   @ApiOperation({ summary: 'Update a specific scene content' })
   async updateScene(
@@ -74,6 +96,15 @@ export class VideoScriptController {
     @Body() dto: UpdateScriptSceneDto,
   ) {
     return this.service.updateScene(user.id, id, dto);
+  }
+
+  @Post('scenes/:id/regenerate-voiceover')
+  @ApiOperation({ summary: 'Regenerate a specific scene voiceover' })
+  async regenerateSceneVoiceover(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+  ) {
+    return this.service.regenerateSceneVoiceover(user.id, id);
   }
 
   @Get('projects/:id/export')
@@ -91,13 +122,21 @@ export class VideoScriptController {
   async exportAudio(
     @CurrentUser() user: User,
     @Param('id') id: string,
-    @Body() body: { voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer' },
+    @Body()
+    body: { voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer' },
     @Res() res: Response,
   ) {
-    const result = await this.service.exportAudio(user.id, id, body.voice || 'alloy');
-    
+    const result = await this.service.exportAudio(
+      user.id,
+      id,
+      body.voice || 'alloy',
+    );
+
     res.setHeader('Content-Type', 'audio/mpeg');
-    res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${result.filename}"`,
+    );
     res.send(result.buffer);
   }
 }
