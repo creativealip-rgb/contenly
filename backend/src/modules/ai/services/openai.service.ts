@@ -429,17 +429,13 @@ Return JSON with:
     title: string,
     style: string = 'cinematic',
   ): Promise<string> {
-    if (!this.nativeOpenai) {
-      throw new Error('OPENAI_API_KEY is missing. Thumbnail generation requires a direct OpenAI API Key.');
-    }
-
     // Enhance title into a detailed visual prompt via GPT
     const enhanceResponse = await this.openai.chat.completions.create({
       model: this.model,
       messages: [
         {
           role: 'system',
-          content: `You are a thumbnail design expert. Given a video title and style, generate a detailed DALL-E 3 prompt for a YouTube/TikTok thumbnail. The prompt must be in English, highly descriptive (50-80 words), include subject, lighting, mood, composition. Output ONLY the prompt text, nothing else.`,
+          content: `You are a thumbnail design expert. Given a video title and style, generate a detailed image generation prompt for a YouTube/TikTok thumbnail. The prompt must be in English, highly descriptive (50-80 words), include subject, lighting, mood, composition. Output ONLY the prompt text, nothing else.`,
         },
         {
           role: 'user',
@@ -451,23 +447,53 @@ Return JSON with:
 
     const enhancedPrompt = enhanceResponse.choices[0]?.message?.content?.trim() || title;
 
-    const response = await this.nativeOpenai.images.generate({
-      model: 'dall-e-3',
-      prompt: enhancedPrompt,
-      n: 1,
-      size: '1792x1024',
-      quality: 'standard',
+    // Use the custom image generation endpoint (GPT-based image model)
+    const imageBaseUrl = (this.configService.get('OPENAI_BASE_URL') || 'https://api.openai.com/v1').replace(/\/+$/, '');
+    const imageApiKey = (this.configService.get('IMAGE_API_KEY') || this.configService.get('OPENAI_API_KEY') || '').trim();
+    const imageModel = this.configService.get('IMAGE_MODEL') || 'cx/gpt-5.4-image';
+
+    const response = await fetch(`${imageBaseUrl}/images/generations`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${imageApiKey}`,
+      },
+      body: JSON.stringify({
+        model: imageModel,
+        prompt: enhancedPrompt,
+        n: 1,
+        size: 'auto',
+        quality: 'auto',
+        output_format: 'png',
+      }),
     });
 
-    return response.data[0]?.url || '';
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`Image generation failed: ${err}`);
+    }
+
+    const data = await response.json() as any;
+    // Response may have data[0].url or data[0].b64_json
+    const imageData = data?.data?.[0];
+    if (imageData?.url) return imageData.url;
+    if (imageData?.b64_json) return `data:image/png;base64,${imageData.b64_json}`;
+    throw new Error('No image returned from generation API');
   }
 
   async generateSpeech(
     text: string,
     voice: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer' = 'alloy',
   ): Promise<Buffer> {
+    const elevenLabsKey = (this.configService.get('ELEVENLABS_API_KEY') || '').trim();
+
+    if (elevenLabsKey) {
+      return this.generateSpeechElevenLabs(text, voice, elevenLabsKey);
+    }
+
+    // Fallback to native OpenAI TTS
     if (!this.nativeOpenai) {
-      throw new Error('OPENAI_API_KEY is missing. Text-to-Speech requires a direct OpenAI API Key. Please add OPENAI_API_KEY to your environment variables.');
+      throw new Error('No TTS provider configured. Set ELEVENLABS_API_KEY or OPENAI_API_KEY.');
     }
 
     try {
@@ -481,11 +507,50 @@ Return JSON with:
       const buffer = Buffer.from(await response.arrayBuffer());
       return buffer;
     } catch (error: any) {
-      console.error('[OpenAiService] TTS generation failed:', {
-        message: error.message,
-        status: error.status,
-      });
+      console.error('[OpenAiService] TTS generation failed:', error.message);
       throw error;
     }
+  }
+
+  private async generateSpeechElevenLabs(
+    text: string,
+    voice: string,
+    apiKey: string,
+  ): Promise<Buffer> {
+    // Map OpenAI voice names to ElevenLabs voice IDs
+    const voiceMap: Record<string, string> = {
+      alloy: 'pNInz6obpgDQGcFmaJgB',    // Adam
+      echo: '21m00Tcm4TlvDq8ikWAM',      // Rachel
+      fable: 'AZnzlk1XvdvUeBnXmlld',     // Domi
+      onyx: 'VR6AewLTigWG4xSOukaG',      // Arnold
+      nova: 'EXAVITQu4vr4xnSDxMaL',      // Bella
+      shimmer: 'MF3mGyEYCl7XYWbV9V6O',   // Elli
+    };
+
+    const voiceId = voiceMap[voice] || voiceMap.nova;
+
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'xi-api-key': apiKey,
+      },
+      body: JSON.stringify({
+        text,
+        model_id: 'eleven_multilingual_v2',
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.75,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`ElevenLabs TTS failed: ${err}`);
+    }
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+    return buffer;
   }
 }
