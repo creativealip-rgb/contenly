@@ -1,6 +1,7 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { OpenAiService } from '../ai/services/openai.service';
+import { VideoScriptService } from '../video-script/video-script.service';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -196,6 +197,8 @@ export class MotionGraphicsService {
   constructor(
     private configService: ConfigService,
     private openAiService: OpenAiService,
+    @Inject(forwardRef(() => VideoScriptService))
+    private videoScriptService: VideoScriptService,
   ) {
     // Resolve bundle path (pre-built by `cd remotion && npm run build`)
     const bundleDir = path.resolve(process.cwd(), '..', 'remotion', 'dist', 'bundle');
@@ -395,5 +398,76 @@ Resolution: ${width}x${height}`;
 
     this.logger.log(`Rendered AutoCaption (${words.length} words) → ${outputPath}`);
     return { outputPath, format: 'webm' };
+  }
+
+  /**
+   * Compose full video from a Video Script project.
+   * Combines scenes (footage + voiceover text + captions) into one video.
+   */
+  async composeVideo(
+    userId: string,
+    projectId: string,
+    options: { showCaptions?: boolean; captionStyle?: string; aspectRatio?: string } = {},
+  ): Promise<{ outputPath: string; format: string; duration: number }> {
+    if (!this.bundlePath) {
+      throw new BadRequestException('Remotion bundle not available.');
+    }
+
+    const project = await this.videoScriptService.getProject(userId, projectId);
+    if (!project.scenes || project.scenes.length === 0) {
+      throw new BadRequestException('No scenes to compose.');
+    }
+
+    const aspectRatio = options.aspectRatio || '9:16';
+    const [width, height] = aspectRatio === '16:9' ? [1920, 1080] : aspectRatio === '1:1' ? [1080, 1080] : [1080, 1920];
+
+    const totalDuration = project.scenes.reduce((sum, s) => sum + (s.estimatedDuration || 5), 0);
+    const durationInFrames = (totalDuration + 2) * 30; // +2s for title overlay
+
+    const scenes = project.scenes.map((s: any) => ({
+      sceneNumber: s.sceneNumber,
+      voiceoverText: s.voiceoverText,
+      visualContext: s.visualContext,
+      estimatedDuration: s.estimatedDuration || 5,
+      emoji: s.emoji,
+      footageUrl: s.selectedFootage?.[0]?.thumbnailUrl || null,
+      audioUrl: null, // TTS would need pre-rendering; skip for now
+    }));
+
+    const props = {
+      scenes,
+      title: project.title,
+      showCaptions: options.showCaptions !== false,
+      captionStyle: options.captionStyle || 'classic',
+      bgColor: '#0f172a',
+      textColor: '#ffffff',
+      accentColor: '#3b82f6',
+    };
+
+    const { renderMedia, selectComposition } = await import('@remotion/renderer');
+
+    const composition = await selectComposition({
+      serveUrl: this.bundlePath,
+      id: 'ComposedVideo',
+      inputProps: props,
+    });
+
+    const compositionOverride = { ...composition, width, height, durationInFrames };
+
+    const outputDir = path.resolve(process.cwd(), 'tmp', 'renders');
+    if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+
+    const outputPath = path.join(outputDir, `composed-${Date.now()}.mp4`);
+
+    await renderMedia({
+      serveUrl: this.bundlePath,
+      composition: compositionOverride,
+      codec: 'h264',
+      outputLocation: outputPath,
+      inputProps: props,
+    });
+
+    this.logger.log(`Composed video (${scenes.length} scenes, ${totalDuration}s) → ${outputPath}`);
+    return { outputPath, format: 'mp4', duration: totalDuration };
   }
 }

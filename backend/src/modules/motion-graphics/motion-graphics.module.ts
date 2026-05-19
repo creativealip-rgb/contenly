@@ -1,11 +1,12 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MotionGraphicsController } from './motion-graphics.controller';
 import { MotionGraphicsService } from './motion-graphics.service';
 import { AuthModule } from '../auth/auth.module';
 import { AiModule } from '../ai/ai.module';
+import { VideoScriptModule } from '../video-script/video-script.module';
 
 @Module({
-  imports: [AuthModule, AiModule],
+  imports: [AuthModule, AiModule, forwardRef(() => VideoScriptModule)],
   controllers: [MotionGraphicsController],
   providers: [MotionGraphicsService],
   exports: [MotionGraphicsService],

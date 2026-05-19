@@ -1,4 +1,4 @@
-import { IsArray, IsIn, IsInt, IsObject, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsArray, IsBoolean, IsIn, IsInt, IsObject, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class RenderTemplateDto {
   @IsString()
@@ -74,4 +74,21 @@ export class RenderCaptionDto {
   @IsOptional()
   @IsInt()
   fontSize?: number;
+}
+
+export class ComposeVideoDto {
+  @IsString()
+  projectId: string;
+
+  @IsOptional()
+  @IsBoolean()
+  showCaptions?: boolean;
+
+  @IsOptional()
+  @IsIn(['classic', 'highlight', 'bounce'])
+  captionStyle?: string;
+
+  @IsOptional()
+  @IsIn(['9:16', '16:9', '1:1'])
+  aspectRatio?: string;
 }

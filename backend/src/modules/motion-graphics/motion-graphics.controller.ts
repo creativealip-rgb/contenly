@@ -6,7 +6,7 @@ import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { User } from '../../db/types';
 import { MotionGraphicsService } from './motion-graphics.service';
-import { RenderTemplateDto, AiGenerateAnimationDto, RenderCaptionDto } from './motion-graphics.dto';
+import { RenderTemplateDto, AiGenerateAnimationDto, RenderCaptionDto, ComposeVideoDto } from './motion-graphics.dto';
 
 @ApiTags('Motion Graphics')
 @ApiBearerAuth()
@@ -88,6 +88,26 @@ export class MotionGraphicsController {
     const stream = fs.createReadStream(result.outputPath);
     res.setHeader('Content-Type', 'video/webm');
     res.setHeader('Content-Disposition', 'attachment; filename="caption.webm"');
+    stream.pipe(res);
+    stream.on('end', () => { fs.unlink(result.outputPath, () => {}); });
+  }
+
+  @Post('compose-video')
+  @ApiOperation({ summary: 'Compose full video from a Video Script project (scenes → 1 video)' })
+  async composeVideo(
+    @CurrentUser() user: User,
+    @Body() dto: ComposeVideoDto,
+    @Res() res: Response,
+  ) {
+    const result = await this.service.composeVideo(user.id, dto.projectId, {
+      showCaptions: dto.showCaptions,
+      captionStyle: dto.captionStyle,
+      aspectRatio: dto.aspectRatio,
+    });
+
+    const stream = fs.createReadStream(result.outputPath);
+    res.setHeader('Content-Type', 'video/mp4');
+    res.setHeader('Content-Disposition', 'attachment; filename="composed-video.mp4"');
     stream.pipe(res);
     stream.on('end', () => { fs.unlink(result.outputPath, () => {}); });
   }

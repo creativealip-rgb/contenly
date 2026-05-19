@@ -142,6 +142,7 @@ export default function VideoScriptEditorPage() {
   const [isExportingAudio, setIsExportingAudio] = useState(false)
   const [selectedVoice, setSelectedVoice] = useState<'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer'>('nova')
   const [sidebarTab, setSidebarTab] = useState<'setup' | 'export' | 'tools'>('setup')
+  const [isComposing, setIsComposing] = useState(false)
   const [addingSceneAfter, setAddingSceneAfter] = useState<number | null>(null)
   const [duplicatingSceneId, setDuplicatingSceneId] = useState<string | null>(null)
   const [deletingSceneId, setDeletingSceneId] = useState<string | null>(null)
@@ -665,6 +666,38 @@ export default function VideoScriptEditorPage() {
     }
   }
 
+  const handleComposeVideo = async () => {
+    setIsComposing(true)
+    try {
+      const response = await fetch(`${API_BASE_URL}/motion-graphics/compose-video`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ projectId, showCaptions: true, captionStyle: 'classic', aspectRatio: '9:16' }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || 'Gagal compose video')
+      }
+
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${(projectForm.title || 'video').replace(/[^a-z0-9]/gi, '_').toLowerCase()}.mp4`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast.success('Video berhasil di-compose dan di-download!')
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Gagal compose video.'))
+    } finally {
+      setIsComposing(false)
+    }
+  }
+
   const handleAddScene = async (afterSceneNumber?: number) => {
     setAddingSceneAfter(afterSceneNumber ?? -1)
     try {
@@ -1005,6 +1038,18 @@ export default function VideoScriptEditorPage() {
                   <Volume2 className="mr-2 h-4 w-4" />
                 )}
                 Download Voiceover MP3
+              </Button>
+              <Button
+                disabled={!hasScenes || isComposing}
+                onClick={handleComposeVideo}
+                className="col-span-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white"
+              >
+                {isComposing ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Film className="mr-2 h-4 w-4" />
+                )}
+                {isComposing ? 'Composing...' : 'Compose Video (All Scenes → MP4)'}
               </Button>
             </CardContent>
           </Card>

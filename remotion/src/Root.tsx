@@ -10,6 +10,7 @@ import { LogoIntro } from './templates/LogoIntro';
 import { CalloutBox } from './templates/CalloutBox';
 import { AutoCaption } from './templates/AutoCaption';
 import { AnimatedBackground } from './templates/AnimatedBackground';
+import { ComposedVideo } from './templates/ComposedVideo';
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -36,6 +37,8 @@ export const RemotionRoot: React.FC = () => {
         defaultProps={{ words: [{ word: 'Hello', start: 0, end: 0.5 }, { word: 'World', start: 0.5, end: 1 }], style: 'highlight', textColor: '#ffffff', highlightColor: '#facc15', fontSize: 48 }} />
       <Composition id="AnimatedBackground" component={AnimatedBackground} durationInFrames={300} fps={30} width={1920} height={1080}
         defaultProps={{ type: 'gradient-mesh', color1: '#0f172a', color2: '#3b82f6', color3: '#8b5cf6', speed: 1 }} />
+      <Composition id="ComposedVideo" component={ComposedVideo} durationInFrames={300} fps={30} width={1080} height={1920}
+        defaultProps={{ scenes: [], title: 'Video', showCaptions: true, captionStyle: 'classic', bgColor: '#0f172a', textColor: '#ffffff', accentColor: '#3b82f6' }} />
     </>
   );
 };
