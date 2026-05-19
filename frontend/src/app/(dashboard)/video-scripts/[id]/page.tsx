@@ -140,6 +140,7 @@ export default function VideoScriptEditorPage() {
   const [playingTtsSceneId, setPlayingTtsSceneId] = useState<string | null>(null)
   const [ttsAudioUrl, setTtsAudioUrl] = useState<string | null>(null)
   const [isExportingAudio, setIsExportingAudio] = useState(false)
+  const [selectedVoice, setSelectedVoice] = useState<'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer'>('nova')
   const [addingSceneAfter, setAddingSceneAfter] = useState<number | null>(null)
   const [duplicatingSceneId, setDuplicatingSceneId] = useState<string | null>(null)
   const [deletingSceneId, setDeletingSceneId] = useState<string | null>(null)
@@ -606,7 +607,7 @@ export default function VideoScriptEditorPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ voice: 'nova' }),
+        body: JSON.stringify({ voice: selectedVoice }),
       })
 
       if (!response.ok) {
@@ -638,7 +639,7 @@ export default function VideoScriptEditorPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ voice: 'nova' }),
+        body: JSON.stringify({ voice: selectedVoice }),
       })
 
       if (!response.ok) {
@@ -946,6 +947,21 @@ export default function VideoScriptEditorPage() {
                 )}
                 Export Semua (ZIP)
               </Button>
+              <div className="col-span-2 space-y-2">
+                <label className="text-xs font-semibold text-slate-500">Voice</label>
+                <select
+                  value={selectedVoice}
+                  onChange={(e) => setSelectedVoice(e.target.value as any)}
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                >
+                  <option value="nova">Nova (Female, warm)</option>
+                  <option value="alloy">Alloy (Male, neutral)</option>
+                  <option value="echo">Echo (Female, soft)</option>
+                  <option value="onyx">Onyx (Male, deep)</option>
+                  <option value="fable">Fable (Female, expressive)</option>
+                  <option value="shimmer">Shimmer (Female, clear)</option>
+                </select>
+              </div>
               <Button
                 variant="outline"
                 disabled={!hasScenes || isExportingAudio}
