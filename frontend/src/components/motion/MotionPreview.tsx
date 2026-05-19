@@ -13,6 +13,12 @@ import { TransitionSwipe } from './preview-templates/TransitionSwipe'
 import { CalloutBox } from './preview-templates/CalloutBox'
 import { AutoCaption } from './preview-templates/AutoCaption'
 import { AnimatedBackground } from './preview-templates/AnimatedBackground'
+import { TypewriterText } from './preview-templates/TypewriterText'
+import { BulletList } from './preview-templates/BulletList'
+import { QuoteCard } from './preview-templates/QuoteCard'
+import { ProgressBar } from './preview-templates/ProgressBar'
+import { SplitScreen } from './preview-templates/SplitScreen'
+import { SocialProof } from './preview-templates/SocialProof'
 
 const COMPONENTS: Record<string, React.FC<any>> = {
   TitleCard,
@@ -26,6 +32,12 @@ const COMPONENTS: Record<string, React.FC<any>> = {
   CalloutBox,
   AutoCaption,
   AnimatedBackground,
+  TypewriterText,
+  BulletList,
+  QuoteCard,
+  ProgressBar,
+  SplitScreen,
+  SocialProof,
 }
 
 type Props = {
