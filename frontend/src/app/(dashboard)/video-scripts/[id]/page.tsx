@@ -742,7 +742,7 @@ export default function VideoScriptEditorPage() {
     }))
 
     try {
-      const response = await fetch(`${API_BASE_URL}/video-scripts/scenes/${sceneId}/footage`, {
+      const response = await fetch(`${API_BASE_URL}/video-scripts/scenes/${sceneId}/fetch-footage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
