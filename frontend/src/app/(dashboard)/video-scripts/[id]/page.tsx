@@ -540,10 +540,17 @@ export default function VideoScriptEditorPage() {
       }
 
       const data = await response.json()
-      const totalFootage = data.results.reduce(
-        (sum: number, r: any) => sum + r.footage.pexelsPhotos.length + r.footage.pexelsVideos.length,
-        0,
-      )
+      let totalFootage = 0
+
+      // Populate inline footage grid per scene
+      const newFootageSearch: Record<string, { query: string; loading: boolean; results: any[] }> = {}
+      for (const r of data.results) {
+        const allResults = [...(r.footage.pexelsPhotos || []), ...(r.footage.pexelsVideos || [])].slice(0, 8)
+        totalFootage += allResults.length
+        newFootageSearch[r.sceneId] = { query: r.query, loading: false, results: allResults }
+      }
+      setSceneFootageSearch((prev) => ({ ...prev, ...newFootageSearch }))
+
       toast.success(`B-Roll ditemukan: ${totalFootage} footage untuk ${data.results.length} scene.`)
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, 'Gagal auto-fill B-Roll.'))
@@ -1373,19 +1380,6 @@ function SortableSceneCard({
               onChange={(e) => onUpdateDraft(scene.id, { visualContext: e.target.value })}
               className="min-h-[150px]"
             />
-
-            {scene.footageSearches?.length > 0 && (
-              <div className="space-y-2">
-                <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">Footage Searches</div>
-                <div className="flex flex-wrap gap-2">
-                  {scene.footageSearches.map((search, idx) => (
-                    <a key={`${scene.id}-${idx}`} href={search.url} target="_blank" rel="noopener noreferrer" className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-blue-300 hover:text-blue-700">
-                      {search.platform}: {search.keyword}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Inline Footage Search */}
             <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
