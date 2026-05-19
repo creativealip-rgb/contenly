@@ -1,10 +1,6 @@
 'use client'
 
 import { Player } from '@remotion/player'
-import { useMemo } from 'react'
-
-// Re-export template components for client-side preview
-// These mirror the remotion/ package templates but are importable in Next.js
 
 import { TitleCard } from './preview-templates/TitleCard'
 import { LowerThird } from './preview-templates/LowerThird'
@@ -12,6 +8,11 @@ import { TextReveal } from './preview-templates/TextReveal'
 import { CounterAnimation } from './preview-templates/CounterAnimation'
 import { GlitchTitle } from './preview-templates/GlitchTitle'
 import { LogoIntro } from './preview-templates/LogoIntro'
+import { SubscribeButton } from './preview-templates/SubscribeButton'
+import { TransitionSwipe } from './preview-templates/TransitionSwipe'
+import { CalloutBox } from './preview-templates/CalloutBox'
+import { AutoCaption } from './preview-templates/AutoCaption'
+import { AnimatedBackground } from './preview-templates/AnimatedBackground'
 
 const COMPONENTS: Record<string, React.FC<any>> = {
   TitleCard,
@@ -20,6 +21,11 @@ const COMPONENTS: Record<string, React.FC<any>> = {
   CounterAnimation,
   GlitchTitle,
   LogoIntro,
+  SubscribeButton,
+  TransitionSwipe,
+  CalloutBox,
+  AutoCaption,
+  AnimatedBackground,
 }
 
 type Props = {
