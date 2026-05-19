@@ -171,6 +171,7 @@ const navGroups: NavGroup[] = [
             { href: '/content-lab', label: 'Content Lab', icon: icons.contentLab, tourId: 'content-lab' },
             { href: '/instagram-studio', label: 'Instagram Studio', icon: icons.instagram, tourId: 'instagram-studio' },
             { href: '/video-scripts', label: 'Video Scripts', icon: icons.video, tourId: 'video-scripts' },
+            { href: '/motion-graphics', label: 'Motion Graphics', icon: icons.video },
             { href: '/articles', label: 'Artikel', icon: icons.articles },
             { href: '/calendar', label: 'Kalender', icon: icons.calendar, tourId: 'calendar' },
         ],

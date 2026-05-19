@@ -1,0 +1,21 @@
+{
+  "name": "@contenly/remotion",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node build.mjs",
+    "preview": "npx remotion studio"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "remotion": "4.0.463",
+    "@remotion/renderer": "4.0.463",
+    "@remotion/bundler": "4.0.463",
+    "@remotion/cli": "4.0.463"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "@types/react": "^19.0.0"
+  }
+}

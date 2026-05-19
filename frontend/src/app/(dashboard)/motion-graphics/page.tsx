@@ -1,0 +1,218 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { Loader2, Download, Play, Palette, Type, Hash, Bell, Film } from 'lucide-react'
+import { toast } from 'sonner'
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+
+type Template = {
+  id: string
+  name: string
+  category: string
+  description: string
+  defaultProps: Record<string, any>
+  defaultDuration: number
+  defaultWidth: number
+  defaultHeight: number
+}
+
+const categoryIcons: Record<string, React.ReactNode> = {
+  title: <Type className="h-5 w-5" />,
+  'lower-third': <Film className="h-5 w-5" />,
+  text: <Type className="h-5 w-5" />,
+  counter: <Hash className="h-5 w-5" />,
+  subscribe: <Bell className="h-5 w-5" />,
+}
+
+export default function MotionGraphicsPage() {
+  const [templates, setTemplates] = useState<Template[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null)
+  const [props, setProps] = useState<Record<string, any>>({})
+  const [isRendering, setIsRendering] = useState(false)
+  const [format, setFormat] = useState<'mp4' | 'webm' | 'png'>('mp4')
+
+  useEffect(() => {
+    fetchTemplates()
+  }, [])
+
+  const fetchTemplates = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/motion-graphics/templates`, { credentials: 'include' })
+      if (res.ok) {
+        const data = await res.json()
+        setTemplates(data)
+      }
+    } catch {
+      toast.error('Gagal memuat templates.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const selectTemplate = (template: Template) => {
+    setSelectedTemplate(template)
+    setProps({ ...template.defaultProps })
+  }
+
+  const updateProp = (key: string, value: string) => {
+    setProps((prev) => ({ ...prev, [key]: isNaN(Number(value)) ? value : Number(value) }))
+  }
+
+  const handleRender = async () => {
+    if (!selectedTemplate) return
+    setIsRendering(true)
+    try {
+      const res = await fetch(`${API_BASE_URL}/motion-graphics/render`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ templateId: selectedTemplate.id, props, format }),
+      })
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.message || 'Render gagal')
+      }
+
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${selectedTemplate.id}.${format}`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast.success('Render selesai! File di-download.')
+    } catch (error: any) {
+      toast.error(error.message || 'Gagal render template.')
+    } finally {
+      setIsRendering(false)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="container mx-auto max-w-7xl p-6 space-y-8">
+      <div className="space-y-2">
+        <h1 className="text-3xl font-black tracking-tight">Motion Graphics Studio</h1>
+        <p className="text-slate-500">Pilih template, customize, dan render sebagai MP4/WebM/PNG.</p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+        {/* Template Grid */}
+        <div className="lg:col-span-7 space-y-4">
+          <h2 className="text-lg font-semibold">Templates</h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {templates.map((template) => (
+              <Card
+                key={template.id}
+                className={`cursor-pointer transition-all hover:ring-2 hover:ring-blue-400 ${
+                  selectedTemplate?.id === template.id ? 'ring-2 ring-blue-600 bg-blue-50/50' : ''
+                }`}
+                onClick={() => selectTemplate(template)}
+              >
+                <CardHeader className="pb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                      {categoryIcons[template.category] || <Palette className="h-5 w-5" />}
+                    </div>
+                    <div>
+                      <CardTitle className="text-base">{template.name}</CardTitle>
+                      <Badge variant="secondary" className="text-[10px]">{template.category}</Badge>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-slate-500">{template.description}</p>
+                  <p className="text-xs text-slate-400 mt-2">
+                    {template.defaultWidth}×{template.defaultHeight} • {Math.round(template.defaultDuration / 30)}s
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* Editor Panel */}
+        <div className="lg:col-span-5 space-y-4">
+          {selectedTemplate ? (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Palette className="h-5 w-5 text-purple-600" />
+                    Customize: {selectedTemplate.name}
+                  </CardTitle>
+                  <CardDescription>Edit props lalu klik Render.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {Object.entries(props).map(([key, value]) => (
+                    <div key={key} className="space-y-1">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{key}</label>
+                      <Input
+                        value={String(value)}
+                        onChange={(e) => updateProp(key, e.target.value)}
+                      />
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Output</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex gap-2">
+                    {(['mp4', 'webm', 'png'] as const).map((f) => (
+                      <Button
+                        key={f}
+                        size="sm"
+                        variant={format === f ? 'default' : 'outline'}
+                        onClick={() => setFormat(f)}
+                      >
+                        {f.toUpperCase()}
+                      </Button>
+                    ))}
+                  </div>
+
+                  <Button
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600"
+                    onClick={handleRender}
+                    disabled={isRendering}
+                  >
+                    {isRendering ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Rendering...</>
+                    ) : (
+                      <><Play className="mr-2 h-4 w-4" /> Render & Download</>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            </>
+          ) : (
+            <div className="flex min-h-[300px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 p-8 text-center">
+              <Palette className="mb-4 h-12 w-12 text-slate-300" />
+              <h3 className="text-lg font-semibold text-slate-700">Pilih Template</h3>
+              <p className="text-sm text-slate-500 mt-1">Klik salah satu template di kiri untuk mulai customize.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
