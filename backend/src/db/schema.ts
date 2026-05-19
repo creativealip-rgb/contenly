@@ -473,6 +473,8 @@ export const scriptScene = pgTable('script_scene', {
   estimatedDuration: integer('estimated_duration'), // in seconds, optional
   emoji: varchar('emoji', { length: 10 }), // Scene mood emoji
   footageSearches: jsonb('footage_searches').default([]),
+  brollPrompt: text('broll_prompt'), // Detailed English prompt for AI image gen / b-roll
+  selectedFootage: jsonb('selected_footage').default([]), // User-selected footage attached to scene
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });

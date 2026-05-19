@@ -16,7 +16,7 @@ import { ExportService } from './services/export.service';
 import { ScraperService } from '../scraper/scraper.service';
 import { ImageTextService } from './services/image-text.service';
 import { TemplateService, CarouselTemplate } from './services/template.service';
-import * as archiver from 'archiver';
+import archiver from 'archiver';
 import { Readable } from 'stream';
 import {
     CreateProjectDto,

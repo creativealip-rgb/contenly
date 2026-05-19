@@ -16,21 +16,35 @@ export class OpenAiService {
 
     // Try OpenAI API first
     let apiKey = (this.configService.get('OPENAI_API_KEY') || '').trim();
+    const customBaseURL = (this.configService.get('OPENAI_BASE_URL') || '').trim();
     let baseURL = 'https://api.openai.com/v1';
     let model = preferredModel;
 
-    // Logic: If model name contains a slash (e.g. 'openai/gpt-5.2'), use OpenRouter
-    // Or if OpenAI API key is missing
-    const useOpenRouter = model.includes('/') || !apiKey;
+    // Priority order:
+    // 1. If OPENAI_BASE_URL is set explicitly, use it as a custom OpenAI-compatible endpoint
+    //    (e.g. self-hosted gateway, proxy, regional endpoint).
+    // 2. Else if model name contains a slash (e.g. 'openai/gpt-5.2') OR OPENAI_API_KEY missing,
+    //    fall back to OpenRouter.
+    // 3. Else default to api.openai.com/v1.
+    let useOpenRouter = false;
+    let useCustomEndpoint = false;
 
-    if (useOpenRouter) {
-      console.log('📝 Switching to OpenRouter (model contains slash or OpenAI key missing)');
-      apiKey = (this.configService.get('OPENROUTER_API_KEY') || apiKey).trim();
-      baseURL = (this.configService.get('OPENROUTER_BASE_URL') || 'https://openrouter.ai/api/v1').trim();
+    if (customBaseURL) {
+      useCustomEndpoint = true;
+      baseURL = customBaseURL;
+      console.log(`📝 Using custom OPENAI_BASE_URL: ${baseURL}`);
+    } else {
+      useOpenRouter = model.includes('/') || !apiKey;
 
-      // If we are using OpenRouter, check if there's a specific OpenRouter model set
-      if (this.configService.get('OPENROUTER_MODEL')) {
-        model = this.configService.get('OPENROUTER_MODEL');
+      if (useOpenRouter) {
+        console.log('📝 Switching to OpenRouter (model contains slash or OpenAI key missing)');
+        apiKey = (this.configService.get('OPENROUTER_API_KEY') || apiKey).trim();
+        baseURL = (this.configService.get('OPENROUTER_BASE_URL') || 'https://openrouter.ai/api/v1').trim();
+
+        // If we are using OpenRouter, check if there's a specific OpenRouter model set
+        if (this.configService.get('OPENROUTER_MODEL')) {
+          model = this.configService.get('OPENROUTER_MODEL');
+        }
       }
     }
 
@@ -53,6 +67,8 @@ export class OpenAiService {
         'X-Title': 'Contently AI Platform',
       };
       console.log(`🔑 OpenRouter headers:`, defaultHeaders);
+    } else if (useCustomEndpoint) {
+      console.log(`🔑 Custom endpoint mode — no provider-specific headers injected`);
     }
 
     // Initialize OpenAI client
@@ -69,14 +85,23 @@ export class OpenAiService {
     }
     this.model = model;
 
-    console.log(`✅ Model set to: ${this.model} via ${useOpenRouter ? 'OpenRouter' : 'OpenAI'}`);
+    console.log(`✅ Model set to: ${this.model} via ${useCustomEndpoint ? 'Custom Endpoint' : useOpenRouter ? 'OpenRouter' : 'OpenAI'}`);
 
-    // Explicitly check for native OpenAI key for DALL-E if not already set
+    // Native OpenAI client is only used for DALL-E / TTS which require the real
+    // api.openai.com endpoint. Skip native init when custom endpoint mode is active
+    // unless an explicit OPENAI_NATIVE_API_KEY is provided.
     if (!this.nativeOpenai) {
-      const nativeApiKey = (this.configService.get('OPENAI_API_KEY') || '').trim();
+      const nativeApiKey = (
+        this.configService.get('OPENAI_NATIVE_API_KEY') ||
+        (useCustomEndpoint ? '' : this.configService.get('OPENAI_API_KEY') || '')
+      ).trim();
       if (nativeApiKey) {
         this.nativeOpenai = new OpenAI({ apiKey: nativeApiKey });
-        console.log(`✅ Native OpenAI client initialized for DALL-E`);
+        console.log(`✅ Native OpenAI client initialized for DALL-E / TTS`);
+      } else if (useCustomEndpoint) {
+        console.log(
+          `ℹ️  Native OpenAI client not initialized (custom endpoint mode). DALL-E / TTS disabled unless OPENAI_NATIVE_API_KEY is set.`,
+        );
       }
     }
   }

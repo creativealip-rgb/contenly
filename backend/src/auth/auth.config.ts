@@ -4,8 +4,12 @@ import { db, schema } from '../db';
 import { admin } from 'better-auth/plugins';
 
 console.log('🔐 Better Auth initializing...');
-const rawBaseUrl = process.env.API_URL || 'http://localhost:3001';
-const API_BASE_URL = rawBaseUrl.endsWith('/') ? rawBaseUrl.slice(0, -1) : rawBaseUrl;
+const backendPort = process.env.PORT || '3001';
+const inferredBackendBaseUrl = `http://localhost:${backendPort}`;
+const rawBaseUrl = process.env.API_URL || inferredBackendBaseUrl;
+const API_BASE_URL = rawBaseUrl.endsWith('/')
+  ? rawBaseUrl.slice(0, -1)
+  : rawBaseUrl;
 // Since NestJS has a global prefix 'api/v1', Better Auth needs to know it's served under /api/v1/auth
 const BETTER_AUTH_URL = API_BASE_URL.includes('/api/v1/auth')
   ? API_BASE_URL
@@ -18,7 +22,7 @@ const BETTER_AUTH_URL = API_BASE_URL.includes('/api/v1/auth')
 console.log('📍 Better Auth URL:', BETTER_AUTH_URL);
 console.log('📍 Trusted Origins:', [
   'http://localhost:3000',
-  'http://localhost:3001',
+  inferredBackendBaseUrl,
   'https://contenly.vercel.app',
   ...(process.env.FRONTEND_URL
     ? process.env.FRONTEND_URL.split(',').map((url) => url.trim())
@@ -44,7 +48,7 @@ export const auth = betterAuth({
   // Trusted origins for CORS
   trustedOrigins: [
     'http://localhost:3000', // Frontend dev server
-    'http://localhost:3001', // Backend server
+    inferredBackendBaseUrl, // Backend server (follows PORT)
     'https://contenly.vercel.app', // Explicitly add production URL
     ...(process.env.FRONTEND_URL
       ? process.env.FRONTEND_URL.split(',').map((url) => url.trim())

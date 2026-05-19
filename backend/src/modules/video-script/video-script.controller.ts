@@ -22,6 +22,11 @@ import {
   RegenerateScriptFieldDto,
   UpdateScriptProjectDto,
   UpdateScriptSceneDto,
+  FetchSceneFootageDto,
+  SelectSceneFootageDto,
+  AddSceneDto,
+  ReorderScenesDto,
+  TtsPreviewDto,
 } from './video-script.dto';
 
 @ApiTags('Video Scripts')
@@ -105,6 +110,81 @@ export class VideoScriptController {
     @Param('id') id: string,
   ) {
     return this.service.regenerateSceneVoiceover(user.id, id);
+  }
+
+  @Post('scenes/:id/fetch-footage')
+  @ApiOperation({ summary: 'Fetch footage suggestions (Pexels + Google) for a scene' })
+  async fetchSceneFootage(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body() dto: FetchSceneFootageDto,
+  ) {
+    return this.service.fetchSceneFootage(user.id, id, dto);
+  }
+
+  @Patch('scenes/:id/select-footage')
+  @ApiOperation({ summary: 'Attach selected footage items to a scene' })
+  async selectSceneFootage(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body() dto: SelectSceneFootageDto,
+  ) {
+    return this.service.selectSceneFootage(user.id, id, dto.items as any);
+  }
+
+  @Post('projects/:id/scenes')
+  @ApiOperation({ summary: 'Add a new empty scene to a project' })
+  async addScene(
+    @CurrentUser() user: User,
+    @Param('id') projectId: string,
+    @Body() dto: AddSceneDto,
+  ) {
+    return this.service.addScene(user.id, projectId, dto);
+  }
+
+  @Post('scenes/:id/duplicate')
+  @ApiOperation({ summary: 'Duplicate a scene (insert copy right after it)' })
+  async duplicateScene(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+  ) {
+    return this.service.duplicateScene(user.id, id);
+  }
+
+  @Delete('scenes/:id')
+  @ApiOperation({ summary: 'Delete a scene and renumber subsequent scenes' })
+  async deleteScene(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+  ) {
+    return this.service.deleteScene(user.id, id);
+  }
+
+  @Patch('projects/:id/scenes/reorder')
+  @ApiOperation({ summary: 'Reorder all scenes by ordered ID array' })
+  async reorderScenes(
+    @CurrentUser() user: User,
+    @Param('id') projectId: string,
+    @Body() dto: ReorderScenesDto,
+  ) {
+    return this.service.reorderScenes(user.id, projectId, dto.orderedSceneIds);
+  }
+
+  @Post('scenes/:id/tts-preview')
+  @ApiOperation({ summary: 'Generate MP3 TTS audio for a single scene voiceover' })
+  async ttsPreviewScene(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body() dto: TtsPreviewDto,
+    @Res() res: Response,
+  ) {
+    const result = await this.service.ttsPreviewScene(user.id, id, dto.voice);
+    res.setHeader('Content-Type', 'audio/mpeg');
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="${result.filename}"`,
+    );
+    res.send(result.buffer);
   }
 
   @Get('projects/:id/export')

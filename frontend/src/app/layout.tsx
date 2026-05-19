@@ -1,16 +1,9 @@
 import './globals.css'
 import type { Metadata, Viewport } from 'next'
-import { Plus_Jakarta_Sans } from 'next/font/google'
 import { Toaster } from '@/components/ui/sonner'
 import { AuthProvider } from '@/components/providers'
 import NextTopLoader from 'nextjs-toploader'
 import { ConfirmDialogProvider } from '@/components/ui/confirm-dialog'
-
-const plusJakartaSans = Plus_Jakarta_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
-  variable: '--font-sans',
-})
 
 export const viewport: Viewport = {
   themeColor: '#2563eb',
@@ -39,7 +32,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={plusJakartaSans.className} suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <AuthProvider>
           <ConfirmDialogProvider>
             <NextTopLoader color="#2563eb" showSpinner={true} shadow="0 0 10px #2563eb,0 0 5px #2563eb" />

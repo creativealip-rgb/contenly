@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { desc, eq } from 'drizzle-orm';
+import { asc, desc, eq, gt, gte, sql } from 'drizzle-orm';
 import { schema } from '../../db/schema';
 import { DrizzleService } from '../../db/drizzle.service';
 import {
@@ -16,6 +16,7 @@ import { OpenAiService } from '../ai/services/openai.service';
 import { AdvancedScraperService } from '../scraper/advanced-scraper.service';
 import { BillingService } from '../billing/billing.service';
 import { BILLING_TIERS } from '../billing/billing.constants';
+import { FootageService, FootageItem } from './footage.service';
 
 type EditableProjectField =
   | 'headline'
@@ -36,6 +37,7 @@ type GeneratedScene = {
   estimated_duration?: number;
   emoji?: string;
   footage_searches?: FootageSearch[];
+  broll_prompt?: string;
 };
 
 type GeneratedScript = {
@@ -70,6 +72,7 @@ export class VideoScriptService {
     private readonly openAiService: OpenAiService,
     private readonly scraperService: AdvancedScraperService,
     private readonly billingService: BillingService,
+    private readonly footageService: FootageService,
   ) {}
 
   async createProject(userId: string, dto: CreateScriptProjectDto) {
@@ -236,6 +239,7 @@ export class VideoScriptService {
           estimatedDuration: scene.estimatedDuration,
           emoji: scene.emoji,
           footageSearches: scene.footageSearches,
+          brollPrompt: scene.brollPrompt || null,
         });
       }
 
@@ -440,6 +444,299 @@ ${project.sourceContent}`;
     };
   }
 
+  async fetchSceneFootage(
+    userId: string,
+    sceneId: string,
+    options: { query?: string; perSource?: number; orientation?: 'landscape' | 'portrait' | 'square' } = {},
+  ) {
+    const [scene] = await this.drizzle.db
+      .select()
+      .from(schema.scriptScene)
+      .where(eq(schema.scriptScene.id, sceneId));
+
+    if (!scene) {
+      throw new NotFoundException('Scene not found');
+    }
+
+    // Auth check via project ownership
+    await this.getProject(userId, scene.projectId);
+
+    // Pick a sensible default query: explicit > brollPrompt > visualContext (truncated)
+    const query =
+      (options.query && options.query.trim()) ||
+      (scene.brollPrompt && scene.brollPrompt.trim()) ||
+      (scene.visualContext || '').trim().slice(0, 120);
+
+    const result = await this.footageService.fetchFootage(query, {
+      perSource: options.perSource,
+      orientation: options.orientation,
+    });
+
+    return {
+      sceneId,
+      sceneNumber: scene.sceneNumber,
+      ...result,
+    };
+  }
+
+  async selectSceneFootage(
+    userId: string,
+    sceneId: string,
+    items: Array<Partial<FootageItem> & { source?: string }>,
+  ) {
+    const [scene] = await this.drizzle.db
+      .select()
+      .from(schema.scriptScene)
+      .where(eq(schema.scriptScene.id, sceneId));
+
+    if (!scene) {
+      throw new NotFoundException('Scene not found');
+    }
+
+    await this.getProject(userId, scene.projectId);
+
+    const cleanItems = (Array.isArray(items) ? items : [])
+      .filter((i) => i && typeof i === 'object' && i.thumbnailUrl)
+      .slice(0, 20)
+      .map((i) => ({
+        source: i.source,
+        id: i.id,
+        thumbnailUrl: i.thumbnailUrl,
+        previewUrl: i.previewUrl || i.thumbnailUrl,
+        downloadUrl: i.downloadUrl,
+        title: i.title || '',
+        width: i.width,
+        height: i.height,
+        duration: i.duration,
+        attribution: i.attribution || {},
+      }));
+
+    const [updatedScene] = await this.drizzle.db
+      .update(schema.scriptScene)
+      .set({
+        selectedFootage: cleanItems,
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.scriptScene.id, sceneId))
+      .returning();
+
+    return {
+      ...updatedScene,
+      footageSearches: this.normalizeFootageSearches(
+        updatedScene.footageSearches,
+      ),
+    };
+  }
+
+  async addScene(
+    userId: string,
+    projectId: string,
+    options: { afterSceneNumber?: number } = {},
+  ) {
+    await this.getProject(userId, projectId);
+
+    // Find the max scene number for this project
+    const existing = await this.drizzle.db
+      .select()
+      .from(schema.scriptScene)
+      .where(eq(schema.scriptScene.projectId, projectId));
+
+    const maxNumber = existing.reduce(
+      (max, s) => Math.max(max, s.sceneNumber),
+      0,
+    );
+
+    let insertAt = maxNumber + 1;
+
+    // If afterSceneNumber given, shift subsequent scenes by +1 and insert after
+    if (typeof options.afterSceneNumber === 'number') {
+      const afterNum = options.afterSceneNumber;
+      // Shift scenes with number > afterNum
+      await this.drizzle.db
+        .update(schema.scriptScene)
+        .set({
+          sceneNumber: sql`${schema.scriptScene.sceneNumber} + 1`,
+          updatedAt: new Date(),
+        })
+        .where(
+          sql`${schema.scriptScene.projectId} = ${projectId} AND ${schema.scriptScene.sceneNumber} > ${afterNum}`,
+        );
+      insertAt = afterNum + 1;
+    }
+
+    const [scene] = await this.drizzle.db
+      .insert(schema.scriptScene)
+      .values({
+        projectId,
+        sceneNumber: insertAt,
+        visualContext: 'New scene visual direction.',
+        voiceoverText: 'New scene voiceover.',
+        estimatedDuration: 5,
+        emoji: '✨',
+        footageSearches: [],
+        selectedFootage: [],
+      })
+      .returning();
+
+    return {
+      ...scene,
+      footageSearches: this.normalizeFootageSearches(scene.footageSearches),
+    };
+  }
+
+  async duplicateScene(userId: string, sceneId: string) {
+    const [scene] = await this.drizzle.db
+      .select()
+      .from(schema.scriptScene)
+      .where(eq(schema.scriptScene.id, sceneId));
+
+    if (!scene) {
+      throw new NotFoundException('Scene not found');
+    }
+    await this.getProject(userId, scene.projectId);
+
+    // Shift all scenes with number > original by +1
+    await this.drizzle.db
+      .update(schema.scriptScene)
+      .set({
+        sceneNumber: sql`${schema.scriptScene.sceneNumber} + 1`,
+        updatedAt: new Date(),
+      })
+      .where(
+        sql`${schema.scriptScene.projectId} = ${scene.projectId} AND ${schema.scriptScene.sceneNumber} > ${scene.sceneNumber}`,
+      );
+
+    const [duplicated] = await this.drizzle.db
+      .insert(schema.scriptScene)
+      .values({
+        projectId: scene.projectId,
+        sceneNumber: scene.sceneNumber + 1,
+        visualContext: scene.visualContext,
+        voiceoverText: scene.voiceoverText,
+        estimatedDuration: scene.estimatedDuration,
+        emoji: scene.emoji,
+        footageSearches: scene.footageSearches,
+        brollPrompt: scene.brollPrompt,
+        selectedFootage: scene.selectedFootage,
+      })
+      .returning();
+
+    return {
+      ...duplicated,
+      footageSearches: this.normalizeFootageSearches(
+        duplicated.footageSearches,
+      ),
+    };
+  }
+
+  async deleteScene(userId: string, sceneId: string) {
+    const [scene] = await this.drizzle.db
+      .select()
+      .from(schema.scriptScene)
+      .where(eq(schema.scriptScene.id, sceneId));
+
+    if (!scene) {
+      throw new NotFoundException('Scene not found');
+    }
+    await this.getProject(userId, scene.projectId);
+
+    await this.drizzle.db
+      .delete(schema.scriptScene)
+      .where(eq(schema.scriptScene.id, sceneId));
+
+    // Renumber: shift down all scenes with number > deleted by -1
+    await this.drizzle.db
+      .update(schema.scriptScene)
+      .set({
+        sceneNumber: sql`${schema.scriptScene.sceneNumber} - 1`,
+        updatedAt: new Date(),
+      })
+      .where(
+        sql`${schema.scriptScene.projectId} = ${scene.projectId} AND ${schema.scriptScene.sceneNumber} > ${scene.sceneNumber}`,
+      );
+
+    return { success: true };
+  }
+
+  /**
+   * Reorder scenes by full array of scene IDs in desired order.
+   * Each ID will be assigned scene_number = index + 1.
+   */
+  async reorderScenes(
+    userId: string,
+    projectId: string,
+    orderedSceneIds: string[],
+  ) {
+    await this.getProject(userId, projectId);
+
+    if (!Array.isArray(orderedSceneIds) || orderedSceneIds.length === 0) {
+      throw new BadRequestException('orderedSceneIds must be a non-empty array');
+    }
+
+    // Validate all IDs belong to the project
+    const existing = await this.drizzle.db
+      .select()
+      .from(schema.scriptScene)
+      .where(eq(schema.scriptScene.projectId, projectId));
+
+    const existingIds = new Set(existing.map((s) => s.id));
+    for (const id of orderedSceneIds) {
+      if (!existingIds.has(id)) {
+        throw new BadRequestException(`Scene ${id} not in project ${projectId}`);
+      }
+    }
+    if (orderedSceneIds.length !== existing.length) {
+      throw new BadRequestException(
+        `orderedSceneIds length (${orderedSceneIds.length}) does not match scene count (${existing.length})`,
+      );
+    }
+
+    // Two-pass to avoid unique-violation if any: temporarily set numbers to negative
+    await this.drizzle.db.transaction(async (tx) => {
+      for (let i = 0; i < orderedSceneIds.length; i++) {
+        await tx
+          .update(schema.scriptScene)
+          .set({ sceneNumber: -(i + 1), updatedAt: new Date() })
+          .where(eq(schema.scriptScene.id, orderedSceneIds[i]));
+      }
+      for (let i = 0; i < orderedSceneIds.length; i++) {
+        await tx
+          .update(schema.scriptScene)
+          .set({ sceneNumber: i + 1, updatedAt: new Date() })
+          .where(eq(schema.scriptScene.id, orderedSceneIds[i]));
+      }
+    });
+
+    return this.getProject(userId, projectId);
+  }
+
+  async ttsPreviewScene(
+    userId: string,
+    sceneId: string,
+    voice: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer' = 'alloy',
+  ): Promise<{ buffer: Buffer; filename: string }> {
+    const [scene] = await this.drizzle.db
+      .select()
+      .from(schema.scriptScene)
+      .where(eq(schema.scriptScene.id, sceneId));
+
+    if (!scene) {
+      throw new NotFoundException('Scene not found');
+    }
+    await this.getProject(userId, scene.projectId);
+
+    const text = (scene.voiceoverText || '').trim();
+    if (!text) {
+      throw new BadRequestException('Scene voiceover text is empty');
+    }
+
+    const buffer = await this.openAiService.generateSpeech(text, voice);
+    return {
+      buffer,
+      filename: `scene-${scene.sceneNumber}-${voice}.mp3`,
+    };
+  }
+
   private estimateSceneDuration(voiceoverText: string): number {
     const trimmedText = voiceoverText.trim();
     if (!trimmedText) {
@@ -481,6 +778,7 @@ Return VALID JSON only with this exact shape:
       "voiceover_text": "exact narration line",
       "estimated_duration": 5,
       "emoji": "🔥",
+      "broll_prompt": "highly descriptive English prompt for AI image / b-roll generation, cinematic, photorealistic",
       "footage_searches": [
         { "platform": "YouTube", "keyword": "keyword", "url": "https://..." }
       ]
@@ -491,6 +789,7 @@ Return VALID JSON only with this exact shape:
 Rules:
 - Language for headline, sub-headline, caption, hook, visuals, and voiceover: Indonesian.
 - Thumbnail prompt must be in English, highly descriptive, and at least 35 words.
+- Each scene's broll_prompt must be in English, vivid, photorealistic/cinematic, 25-45 words, suitable as input for AI image / video generation tools (Midjourney, DALL-E, Sora, etc.). Include subject, setting, lighting, mood, camera angle.
 - Caption must be ready to post and include relevant hashtags.
 - Hashtags array must contain 5-10 items.
 - The combined voiceover across all scenes should target about ${targetWords} words, with an absolute maximum of ${maxWords} words.
@@ -559,6 +858,7 @@ ${project.sourceContent}`;
           .trim()
           .slice(0, 10),
         footageSearches: this.normalizeFootageSearches(scene.footage_searches),
+        brollPrompt: String(scene.broll_prompt || '').trim(),
       };
     });
 
@@ -635,6 +935,13 @@ ${project.sourceContent}`;
   }
 
   private getTierModel(tier: string): string | undefined {
+    // If OPENAI_MODEL env is set, it takes precedence over tier-based model.
+    // This is needed for custom AI providers (e.g. cx/gpt-5.5) that don't
+    // support OpenAI's gpt-3.5-turbo / gpt-4o models from tier defaults.
+    const envModel = (process.env.OPENAI_MODEL || '').trim();
+    if (envModel) {
+      return envModel;
+    }
     const tiers = BILLING_TIERS as Record<string, { aiModel?: string }>;
     return tiers[tier]?.aiModel;
   }
