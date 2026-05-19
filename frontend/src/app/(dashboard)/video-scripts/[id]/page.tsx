@@ -141,6 +141,7 @@ export default function VideoScriptEditorPage() {
   const [ttsAudioUrl, setTtsAudioUrl] = useState<string | null>(null)
   const [isExportingAudio, setIsExportingAudio] = useState(false)
   const [selectedVoice, setSelectedVoice] = useState<'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer'>('nova')
+  const [sidebarTab, setSidebarTab] = useState<'setup' | 'export' | 'tools'>('setup')
   const [addingSceneAfter, setAddingSceneAfter] = useState<number | null>(null)
   const [duplicatingSceneId, setDuplicatingSceneId] = useState<string | null>(null)
   const [deletingSceneId, setDeletingSceneId] = useState<string | null>(null)
@@ -778,6 +779,20 @@ export default function VideoScriptEditorPage() {
     }
   }
 
+  const handleSelectFootage = async (sceneId: string, item: any) => {
+    try {
+      await fetch(`${API_BASE_URL}/video-scripts/scenes/${sceneId}/select-footage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ items: [item] }),
+      })
+      toast.success('Footage dipilih untuk scene ini.')
+    } catch {
+      toast.error('Gagal menyimpan footage.')
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="container mx-auto max-w-7xl p-6 space-y-6">
@@ -870,7 +885,21 @@ export default function VideoScriptEditorPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-12">
-        <div className="space-y-6 xl:col-span-4">
+        <div className="space-y-4 xl:col-span-4">
+          {/* Sidebar Tabs */}
+          <div className="flex rounded-lg border bg-slate-100 p-1 gap-1">
+            {([['setup', 'Setup'], ['export', 'Export'], ['tools', 'AI Tools']] as const).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setSidebarTab(key)}
+                className={`flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${sidebarTab === key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {sidebarTab === 'setup' && (
           <Card className="glass rounded-3xl border-2 border-white/60 dark:border-white/20">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -908,7 +937,9 @@ export default function VideoScriptEditorPage() {
               </div>
             </CardContent>
           </Card>
+          )}
 
+          {sidebarTab === 'export' && (
           <Card className="glass rounded-3xl border-2 border-white/60 dark:border-white/20">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -977,7 +1008,9 @@ export default function VideoScriptEditorPage() {
               </Button>
             </CardContent>
           </Card>
+          )}
 
+          {sidebarTab === 'tools' && (
           <Card className="glass rounded-3xl border-2 border-white/60 dark:border-white/20">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -1085,6 +1118,7 @@ export default function VideoScriptEditorPage() {
               </div>
             </CardContent>
           </Card>
+          )}
         </div>
 
         <div className="space-y-6 xl:col-span-8">
@@ -1241,6 +1275,7 @@ export default function VideoScriptEditorPage() {
                           [sceneId]: { ...prev[sceneId], query, loading: false, results: prev[sceneId]?.results || [] },
                         }))
                       }
+                      onSelectFootage={handleSelectFootage}
                     />
                   ))}
                 </div>
@@ -1319,6 +1354,7 @@ function SortableSceneCard({
   onUpdateDraft,
   onFootageSearch,
   onFootageQueryChange,
+  onSelectFootage,
 }: {
   scene: Scene
   index: number
@@ -1339,6 +1375,7 @@ function SortableSceneCard({
   onUpdateDraft: (id: string, patch: Partial<Scene>) => void
   onFootageSearch: (id: string, query?: string) => void
   onFootageQueryChange: (id: string, query: string) => void
+  onSelectFootage: (sceneId: string, item: any) => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: scene.id })
 
@@ -1415,9 +1452,9 @@ function SortableSceneCard({
               {footageSearch?.results && footageSearch.results.length > 0 && (
                 <div className="grid grid-cols-4 gap-1.5 mt-2">
                   {footageSearch.results.map((item: any, i: number) => (
-                    <a key={i} href={item.previewUrl || item.thumbnailUrl} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-md border hover:ring-2 hover:ring-blue-400">
+                    <button key={i} onClick={() => onSelectFootage(scene.id, item)} className="block overflow-hidden rounded-md border hover:ring-2 hover:ring-blue-400 focus:ring-2 focus:ring-blue-500" title="Klik untuk pilih footage ini">
                       <img src={item.thumbnailUrl} alt={item.title || ''} className="h-16 w-full object-cover" loading="lazy" />
-                    </a>
+                    </button>
                   ))}
                 </div>
               )}
