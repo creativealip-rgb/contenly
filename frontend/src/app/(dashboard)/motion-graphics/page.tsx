@@ -5,8 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, Download, Play, Palette, Type, Hash, Bell, Film } from 'lucide-react'
+import { Loader2, Download, Play, Palette, Type, Hash, Bell, Film, Clapperboard, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
+import dynamic from 'next/dynamic'
+
+const MotionPreview = dynamic(() => import('@/components/motion/MotionPreview').then(m => ({ default: m.MotionPreview })), { ssr: false })
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
@@ -27,6 +30,10 @@ const categoryIcons: Record<string, React.ReactNode> = {
   text: <Type className="h-5 w-5" />,
   counter: <Hash className="h-5 w-5" />,
   subscribe: <Bell className="h-5 w-5" />,
+  transition: <Clapperboard className="h-5 w-5" />,
+  logo: <Sparkles className="h-5 w-5" />,
+  callout: <Film className="h-5 w-5" />,
+  caption: <Type className="h-5 w-5" />,
 }
 
 export default function MotionGraphicsPage() {
@@ -169,6 +176,24 @@ export default function MotionGraphicsPage() {
                       />
                     </div>
                   ))}
+                </CardContent>
+              </Card>
+
+              {/* Live Preview */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Play className="h-4 w-4 text-green-600" /> Live Preview
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <MotionPreview
+                    templateId={selectedTemplate.id}
+                    inputProps={props}
+                    width={selectedTemplate.defaultWidth}
+                    height={selectedTemplate.defaultHeight}
+                    durationInFrames={selectedTemplate.defaultDuration}
+                  />
                 </CardContent>
               </Card>
 
