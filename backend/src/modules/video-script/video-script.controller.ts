@@ -9,11 +9,15 @@ import {
   Query,
   UseGuards,
   Res,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { UserRateLimitGuard, SetUserRateLimit } from '../../common/guards/user-rate-limit.guard';
 import type { User } from '../../db/types';
 import { VideoScriptService } from './video-script.service';
 import {
@@ -27,11 +31,15 @@ import {
   AddSceneDto,
   ReorderScenesDto,
   TtsPreviewDto,
+  TranscribeDto,
+  GenerateThumbnailDto,
+  BrollAutoFillDto,
 } from './video-script.dto';
 
 @ApiTags('Video Scripts')
 @ApiBearerAuth()
-@UseGuards(SessionAuthGuard)
+@UseGuards(SessionAuthGuard, UserRateLimitGuard)
+@SetUserRateLimit({ limit: 20, windowMs: 60000 })
 @Controller('video-scripts')
 export class VideoScriptController {
   constructor(private readonly service: VideoScriptService) {}
@@ -218,5 +226,58 @@ export class VideoScriptController {
       `attachment; filename="${result.filename}"`,
     );
     res.send(result.buffer);
+  }
+
+  @Post('projects/:id/transcribe')
+  @ApiOperation({ summary: 'Transcribe audio/video file using Whisper' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file'))
+  async transcribeAudio(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() dto: TranscribeDto,
+  ) {
+    if (!file) {
+      throw new Error('No file uploaded');
+    }
+    return this.service.transcribeAudio(user.id, id, file.buffer, dto.language);
+  }
+
+  @Post('projects/:id/thumbnail')
+  @ApiOperation({ summary: 'Generate AI thumbnail for the project' })
+  async generateThumbnail(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body() dto: GenerateThumbnailDto,
+  ) {
+    return this.service.generateThumbnail(user.id, id, dto.style);
+  }
+
+  @Post('projects/:id/broll-autofill')
+  @ApiOperation({ summary: 'Auto-search footage for all scenes in batch' })
+  async brollAutoFill(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body() dto: BrollAutoFillDto,
+  ) {
+    return this.service.brollAutoFill(user.id, id, {
+      perSource: dto.perSource,
+      orientation: dto.orientation,
+    });
+  }
+
+  @Get('projects/:id/export/zip')
+  @ApiOperation({ summary: 'Export project as ZIP with all assets' })
+  async exportZip(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Res() res: Response,
+  ) {
+    const result = await this.service.exportProjectZip(user.id, id);
+
+    // Use archiver-like approach: send as JSON with file contents for now
+    // Frontend can construct the ZIP client-side using JSZip
+    res.json(result);
   }
 }

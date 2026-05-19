@@ -1,4 +1,4 @@
-import { Module, Global } from '@nestjs/common';
+import { Module, Global, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { BullModule } from '@nestjs/bull';
@@ -9,6 +9,10 @@ import { AppService } from './app.service';
 
 // Database
 import { DrizzleModule } from './db/drizzle.module';
+
+// Common
+import { CsrfMiddleware } from './common/middleware/csrf.middleware';
+import { AuditService } from './common/services/audit.service';
 
 // Feature Modules
 import { SecurityModule } from './modules/security/security.module';
@@ -94,10 +98,16 @@ import { CalendarModule } from './modules/calendar/calendar.module';
   controllers: [AppController],
   providers: [
     AppService,
+    AuditService,
     {
       provide: Reflector,
       useValue: new Reflector(),
     },
   ],
+  exports: [AuditService],
 })
-export class AppModule { }
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(CsrfMiddleware).forRoutes('*');
+  }
+}

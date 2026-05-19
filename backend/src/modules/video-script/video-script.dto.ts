@@ -156,3 +156,25 @@ export class TtsPreviewDto {
   @IsIn(['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'])
   voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
 }
+
+export class TranscribeDto {
+  @IsOptional()
+  @IsIn(['auto', 'id', 'en', 'ja', 'ko', 'zh', 'es', 'fr', 'de'])
+  language?: string;
+}
+
+export class GenerateThumbnailDto {
+  @IsOptional()
+  @IsString()
+  style?: string;
+}
+
+export class BrollAutoFillDto {
+  @IsOptional()
+  @IsInt()
+  perSource?: number;
+
+  @IsOptional()
+  @IsIn(['landscape', 'portrait', 'square'])
+  orientation?: 'landscape' | 'portrait' | 'square';
+}

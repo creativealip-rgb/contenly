@@ -10,11 +10,13 @@ import {
 } from './dto';
 import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { UserRateLimitGuard, SetUserRateLimit } from '../../common/guards/user-rate-limit.guard';
 import type { User } from '../../db/types';
 
 @ApiTags('ai')
 @ApiBearerAuth()
-@UseGuards(SessionAuthGuard)
+@UseGuards(SessionAuthGuard, UserRateLimitGuard)
+@SetUserRateLimit({ limit: 30, windowMs: 60000 }) // Default: 30 req/min per user
 @Controller('ai')
 export class AiController {
   constructor(private aiService: AiService) { }

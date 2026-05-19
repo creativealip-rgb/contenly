@@ -8,6 +8,7 @@ import {
   Param,
   Req,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -21,10 +22,12 @@ import { CreateSiteDto } from './dto/create-site.dto';
 import { UpdateSiteDto } from './dto/update-site.dto';
 import { CreateMappingDto } from './dto/create-mapping.dto';
 import { AuthGuard } from '../../common/guards/auth.guard';
+import { AuditInterceptor } from '../../common/interceptors/audit.interceptor';
 
 @ApiTags('integrations')
 @ApiBearerAuth()
 @UseGuards(AuthGuard)
+@UseInterceptors(AuditInterceptor)
 @Controller('integrations')
 export class IntegrationsController {
   constructor(private readonly integrationsService: IntegrationsService) {}

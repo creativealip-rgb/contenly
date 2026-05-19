@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { FileText, Rss, Sparkles, Plug, Zap, TrendingUp, ArrowRight } from 'lucide-react'
-import { KpiCard, RecentActivity, QuickActions } from '@/components/dashboard'
+import { KpiCard, RecentActivity, QuickActions, OnboardingModal } from '@/components/dashboard'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
@@ -43,6 +43,7 @@ export default function DashboardPage() {
 
     return (
         <div className="space-y-6 max-w-full overflow-hidden">
+            <OnboardingModal />
             {/* Hero Section */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}

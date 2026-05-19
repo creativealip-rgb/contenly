@@ -68,7 +68,13 @@ export class OpenAiService {
       };
       console.log(`🔑 OpenRouter headers:`, defaultHeaders);
     } else if (useCustomEndpoint) {
-      console.log(`🔑 Custom endpoint mode — no provider-specific headers injected`);
+      // Some custom OpenAI-compatible gateways (e.g. behind Cloudflare) block
+      // requests with the official `OpenAI/JS` user-agent. Override it with a
+      // generic one so the gateway doesn't reject our calls with 403.
+      defaultHeaders = {
+        'User-Agent': 'Mozilla/5.0 (compatible; Contenly/1.0)',
+      };
+      console.log(`🔑 Custom endpoint mode — overriding User-Agent to bypass gateway WAF`);
     }
 
     // Initialize OpenAI client
@@ -391,6 +397,69 @@ Return JSON with:
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '')
       .substring(0, 60);
+  }
+
+  async transcribeAudio(
+    buffer: Buffer,
+    language?: string,
+  ): Promise<{ text: string; segments: Array<{ start: number; end: number; text: string }> }> {
+    if (!this.nativeOpenai) {
+      throw new Error('OPENAI_API_KEY is missing. Transcription requires a direct OpenAI API Key.');
+    }
+
+    const file = new File([new Uint8Array(buffer)], 'audio.mp3', { type: 'audio/mpeg' });
+    const response = await this.nativeOpenai.audio.transcriptions.create({
+      model: 'whisper-1',
+      file,
+      response_format: 'verbose_json',
+      timestamp_granularities: ['segment'],
+      ...(language && language !== 'auto' ? { language } : {}),
+    });
+
+    const segments = ((response as any).segments || []).map((s: any) => ({
+      start: s.start,
+      end: s.end,
+      text: s.text?.trim() || '',
+    }));
+
+    return { text: response.text, segments };
+  }
+
+  async generateThumbnail(
+    title: string,
+    style: string = 'cinematic',
+  ): Promise<string> {
+    if (!this.nativeOpenai) {
+      throw new Error('OPENAI_API_KEY is missing. Thumbnail generation requires a direct OpenAI API Key.');
+    }
+
+    // Enhance title into a detailed visual prompt via GPT
+    const enhanceResponse = await this.openai.chat.completions.create({
+      model: this.model,
+      messages: [
+        {
+          role: 'system',
+          content: `You are a thumbnail design expert. Given a video title and style, generate a detailed DALL-E 3 prompt for a YouTube/TikTok thumbnail. The prompt must be in English, highly descriptive (50-80 words), include subject, lighting, mood, composition. Output ONLY the prompt text, nothing else.`,
+        },
+        {
+          role: 'user',
+          content: `Title: "${title}"\nStyle: ${style}\n\nGenerate the thumbnail prompt:`,
+        },
+      ],
+      max_tokens: 200,
+    });
+
+    const enhancedPrompt = enhanceResponse.choices[0]?.message?.content?.trim() || title;
+
+    const response = await this.nativeOpenai.images.generate({
+      model: 'dall-e-3',
+      prompt: enhancedPrompt,
+      n: 1,
+      size: '1792x1024',
+      quality: 'standard',
+    });
+
+    return response.data[0]?.url || '';
   }
 
   async generateSpeech(

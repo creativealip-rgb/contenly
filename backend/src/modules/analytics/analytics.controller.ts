@@ -1,26 +1,30 @@
-import { Controller, Get, Query, UseGuards, Post, Body, Res } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, UseInterceptors, Post, Body, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AnalyticsService } from './analytics.service';
 import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { ResponseCacheInterceptor, CacheTTL } from '../../common/interceptors/response-cache.interceptor';
 import type { User } from '../../db/types';
 import { Response } from 'express';
 
 @ApiTags('analytics')
 @ApiBearerAuth()
 @UseGuards(SessionAuthGuard)
+@UseInterceptors(ResponseCacheInterceptor)
 @Controller('analytics')
 export class AnalyticsController {
   constructor(private analyticsService: AnalyticsService) {}
 
   @Get('dashboard')
   @ApiOperation({ summary: 'Get dashboard stats' })
+  @CacheTTL(60) // Cache 1 minute
   async getDashboardStats(@CurrentUser() user: User) {
     return this.analyticsService.getDashboardStats(user.id);
   }
 
   @Get('content-performance')
   @ApiOperation({ summary: 'Get content performance metrics' })
+  @CacheTTL(120) // Cache 2 minutes
   async getContentPerformance(
     @CurrentUser() user: User,
     @Query('days') days = 30,

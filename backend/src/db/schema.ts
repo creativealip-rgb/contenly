@@ -11,6 +11,7 @@ import {
   jsonb,
   primaryKey,
   uniqueIndex,
+  index,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -284,7 +285,11 @@ export const article = pgTable('article', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
   publishedAt: timestamp('published_at'),
-});
+}, (table) => ({
+  userIdIdx: index('article_user_id_idx').on(table.userId),
+  statusIdx: index('article_status_idx').on(table.status),
+  createdAtIdx: index('article_created_at_idx').on(table.createdAt),
+}));
 
 // ==========================================
 // BILLING & TOKENS
@@ -314,7 +319,10 @@ export const transaction = pgTable('transaction', {
   status: transactionStatusEnum('status').default('PENDING'),
   metadata: jsonb('metadata').default({}),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-});
+}, (table) => ({
+  userIdIdx: index('transaction_user_id_idx').on(table.userId),
+  createdAtIdx: index('transaction_created_at_idx').on(table.createdAt),
+}));
 
 export const subscription = pgTable('subscription', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -347,7 +355,10 @@ export const notification = pgTable('notification', {
   data: jsonb('data').default({}),
   isRead: boolean('is_read').default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-});
+}, (table) => ({
+  userIdIdx: index('notification_user_id_idx').on(table.userId),
+  createdAtIdx: index('notification_created_at_idx').on(table.createdAt),
+}));
 
 // ==========================================
 // DAILY USAGE LIMITS
@@ -460,7 +471,10 @@ export const scriptProject = pgTable('script_project', {
   status: varchar('status', { length: 50 }).default('draft'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
-});
+}, (table) => ({
+  userIdIdx: index('script_project_user_id_idx').on(table.userId),
+  createdAtIdx: index('script_project_created_at_idx').on(table.createdAt),
+}));
 
 export const scriptScene = pgTable('script_scene', {
   id: uuid('id').primaryKey().defaultRandom(),

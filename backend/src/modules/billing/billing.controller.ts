@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Body, Query, UseGuards, Headers, Req, Logger, RawBodyRequest } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, UseGuards, UseInterceptors, Headers, Req, Logger, RawBodyRequest } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { BillingService } from './billing.service';
 import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { AuditInterceptor } from '../../common/interceptors/audit.interceptor';
 import type { User } from '../../db/types';
 import Stripe from 'stripe';
 import { Request } from 'express';
@@ -11,6 +12,7 @@ import { Request } from 'express';
 @ApiTags('billing')
 @ApiBearerAuth()
 @UseGuards(SessionAuthGuard)
+@UseInterceptors(AuditInterceptor)
 @Controller('billing')
 export class BillingController {
     private readonly logger = new Logger(BillingController.name);

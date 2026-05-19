@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { asc, desc, eq, gt, gte, sql } from 'drizzle-orm';
@@ -67,6 +68,8 @@ type ScriptProjectDetails = Omit<
 
 @Injectable()
 export class VideoScriptService {
+  private readonly logger = new Logger(VideoScriptService.name);
+
   constructor(
     private readonly drizzle: DrizzleService,
     private readonly openAiService: OpenAiService,
@@ -85,7 +88,7 @@ export class VideoScriptService {
         );
         content = scrapedData.content;
       } catch (error) {
-        console.error('Failed to scrape URL for script:', error);
+        this.logger.error('Failed to scrape URL for script:', error);
       }
     }
 
@@ -270,7 +273,7 @@ export class VideoScriptService {
 
       return this.getProject(userId, projectId);
     } catch (error) {
-      console.error('Script generation error:', error);
+      this.logger.error('Script generation error:', error);
       await this.drizzle.db
         .update(schema.scriptProject)
         .set({ status: 'error', updatedAt: new Date() })
@@ -1140,11 +1143,212 @@ ${project.sourceContent}`;
           .toLowerCase()}-voiceover.mp3`,
       };
     } catch (error: unknown) {
-      console.error('TTS generation error:', error);
+      this.logger.error('TTS generation error:', error);
       throw new BadRequestException(
         'Failed to generate audio: ' +
           (error instanceof Error ? error.message : 'Unknown error'),
       );
     }
+  }
+
+  // ==========================================
+  // WHISPER TRANSCRIPTION
+  // ==========================================
+
+  async transcribeAudio(
+    userId: string,
+    projectId: string,
+    fileBuffer: Buffer,
+    language?: string,
+  ) {
+    await this.getProject(userId, projectId);
+
+    const hasBalance = await this.billingService.checkBalance(userId, 1);
+    if (!hasBalance) {
+      throw new BadRequestException('Saldo kredit Anda tidak mencukupi.');
+    }
+
+    const result = await this.openAiService.transcribeAudio(fileBuffer, language);
+
+    // Generate SRT from segments
+    const srt = result.segments
+      .map((seg, i) => {
+        const start = this.secondsToSrtTime(seg.start);
+        const end = this.secondsToSrtTime(seg.end);
+        return `${i + 1}\n${start} --> ${end}\n${seg.text}\n`;
+      })
+      .join('\n');
+
+    // Generate VTT
+    const vtt =
+      'WEBVTT\n\n' +
+      result.segments
+        .map((seg) => {
+          const start = this.secondsToSrtTime(seg.start).replace(',', '.');
+          const end = this.secondsToSrtTime(seg.end).replace(',', '.');
+          return `${start} --> ${end}\n${seg.text}\n`;
+        })
+        .join('\n');
+
+    await this.billingService.deductTokens(userId, 1, 'Audio Transcription');
+
+    return {
+      text: result.text,
+      segments: result.segments,
+      srt,
+      vtt,
+    };
+  }
+
+  // ==========================================
+  // THUMBNAIL GENERATOR
+  // ==========================================
+
+  async generateThumbnail(
+    userId: string,
+    projectId: string,
+    style?: string,
+  ) {
+    const project = await this.getProject(userId, projectId);
+
+    const hasBalance = await this.billingService.checkBalance(userId, 1);
+    if (!hasBalance) {
+      throw new BadRequestException('Saldo kredit Anda tidak mencukupi.');
+    }
+
+    const title = project.headline || project.title;
+    const imageUrl = await this.openAiService.generateThumbnail(
+      title,
+      style || 'cinematic',
+    );
+
+    await this.billingService.deductTokens(userId, 1, 'Thumbnail Generation');
+
+    // Save thumbnail prompt to project if not already set
+    if (!project.thumbnailPrompt) {
+      await this.drizzle.db
+        .update(schema.scriptProject)
+        .set({ updatedAt: new Date() })
+        .where(eq(schema.scriptProject.id, projectId));
+    }
+
+    return { imageUrl, title, style: style || 'cinematic' };
+  }
+
+  // ==========================================
+  // B-ROLL AUTO-FILL (batch footage for all scenes)
+  // ==========================================
+
+  async brollAutoFill(
+    userId: string,
+    projectId: string,
+    options: { perSource?: number; orientation?: 'landscape' | 'portrait' | 'square' } = {},
+  ) {
+    const project = await this.getProject(userId, projectId);
+
+    if (!project.scenes || project.scenes.length === 0) {
+      throw new BadRequestException('No scenes to search footage for');
+    }
+
+    const perSource = options.perSource || 4;
+    const results: Array<{
+      sceneId: string;
+      sceneNumber: number;
+      query: string;
+      footage: { pexelsPhotos: any[]; pexelsVideos: any[]; googleImages: any[] };
+    }> = [];
+
+    // Process scenes in parallel (max 3 concurrent)
+    const batchSize = 3;
+    for (let i = 0; i < project.scenes.length; i += batchSize) {
+      const batch = project.scenes.slice(i, i + batchSize);
+      const batchResults = await Promise.allSettled(
+        batch.map(async (scene) => {
+          const query =
+            (scene.brollPrompt || '').trim() ||
+            (scene.visualContext || '').trim().slice(0, 80);
+
+          if (!query) return null;
+
+          const footage = await this.footageService.fetchFootage(query, {
+            perSource,
+            orientation: options.orientation,
+          });
+
+          return {
+            sceneId: scene.id,
+            sceneNumber: scene.sceneNumber,
+            query,
+            footage: {
+              pexelsPhotos: footage.pexelsPhotos,
+              pexelsVideos: footage.pexelsVideos,
+              googleImages: footage.googleImages,
+            },
+          };
+        }),
+      );
+
+      for (const r of batchResults) {
+        if (r.status === 'fulfilled' && r.value) {
+          results.push(r.value);
+        }
+      }
+    }
+
+    return { projectId, totalScenes: project.scenes.length, results };
+  }
+
+  // ==========================================
+  // PROJECT ZIP EXPORT
+  // ==========================================
+
+  async exportProjectZip(
+    userId: string,
+    projectId: string,
+  ) {
+    const project = await this.getProject(userId, projectId);
+
+    // Build text export
+    const scriptTxt = this.generatePlainText(project);
+
+    // Build SRT
+    const srt = this.generateSrt(project.scenes);
+
+    // Build caption
+    const caption = this.generateCaption(project);
+
+    // Build JSON export
+    const jsonExport = {
+      project: {
+        id: project.id,
+        title: project.title,
+        headline: project.headline,
+        subHeadline: project.subHeadline,
+        caption: project.caption,
+        hook: project.hook,
+        thumbnailPrompt: project.thumbnailPrompt,
+        musicSuggestion: project.musicSuggestion,
+        hashtags: project.hashtags,
+        targetDurationSeconds: project.targetDurationSeconds,
+      },
+      scenes: project.scenes.map((scene) => ({
+        sceneNumber: scene.sceneNumber,
+        visualContext: scene.visualContext,
+        voiceoverText: scene.voiceoverText,
+        estimatedDuration: scene.estimatedDuration,
+        emoji: scene.emoji,
+        footageSearches: this.normalizeFootageSearches(scene.footageSearches),
+      })),
+    };
+
+    return {
+      files: [
+        { name: 'script.txt', content: scriptTxt },
+        { name: 'subtitles.srt', content: srt },
+        { name: 'caption.txt', content: `${caption.caption}\n\n${caption.hashtags.join(' ')}` },
+        { name: 'project.json', content: JSON.stringify(jsonExport, null, 2) },
+      ],
+      projectTitle: project.title,
+    };
   }
 }
