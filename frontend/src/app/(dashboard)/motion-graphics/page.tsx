@@ -43,6 +43,8 @@ export default function MotionGraphicsPage() {
   const [props, setProps] = useState<Record<string, any>>({})
   const [isRendering, setIsRendering] = useState(false)
   const [format, setFormat] = useState<'mp4' | 'webm' | 'png'>('mp4')
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [isAiGenerating, setIsAiGenerating] = useState(false)
 
   useEffect(() => {
     fetchTemplates()
@@ -104,6 +106,35 @@ export default function MotionGraphicsPage() {
     }
   }
 
+  const handleAiGenerate = async () => {
+    if (!aiPrompt.trim()) return
+    setIsAiGenerating(true)
+    try {
+      const res = await fetch(`${API_BASE_URL}/motion-graphics/ai-generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ prompt: aiPrompt }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.message || 'AI generation gagal')
+      }
+      const data = await res.json()
+      // Auto-select the template and set props
+      const template = templates.find((t) => t.id === data.templateId)
+      if (template) {
+        setSelectedTemplate(template)
+        setProps(data.props)
+        toast.success(`AI memilih template "${template.name}": ${data.reasoning}`)
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Gagal generate animasi.')
+    } finally {
+      setIsAiGenerating(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
@@ -122,6 +153,27 @@ export default function MotionGraphicsPage() {
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
         {/* Template Grid */}
         <div className="lg:col-span-7 space-y-4">
+          {/* AI Generator */}
+          <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50">
+            <CardContent className="pt-5 space-y-3">
+              <div className="flex items-center gap-2 text-sm font-semibold text-purple-700">
+                <Sparkles className="h-4 w-4" /> AI Animation Generator
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Contoh: Teks 'WELCOME' muncul dengan efek glitch warna cyan..."
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAiGenerate()}
+                  className="flex-1"
+                />
+                <Button onClick={handleAiGenerate} disabled={isAiGenerating || !aiPrompt.trim()} className="bg-purple-600 hover:bg-purple-700">
+                  {isAiGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
           <h2 className="text-lg font-semibold">Templates</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {templates.map((template) => (

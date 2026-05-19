@@ -6,7 +6,7 @@ import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { User } from '../../db/types';
 import { MotionGraphicsService } from './motion-graphics.service';
-import { RenderTemplateDto } from './motion-graphics.dto';
+import { RenderTemplateDto, AiGenerateAnimationDto, RenderCaptionDto } from './motion-graphics.dto';
 
 @ApiTags('Motion Graphics')
 @ApiBearerAuth()
@@ -56,5 +56,39 @@ export class MotionGraphicsController {
     stream.on('end', () => {
       fs.unlink(result.outputPath, () => {});
     });
+  }
+
+  @Post('ai-generate')
+  @ApiOperation({ summary: 'AI generates animation config from natural language prompt' })
+  async aiGenerate(
+    @CurrentUser() user: User,
+    @Body() dto: AiGenerateAnimationDto,
+  ) {
+    return this.service.aiGenerateAnimation(dto.prompt, {
+      durationSeconds: dto.durationSeconds,
+      resolution: dto.resolution,
+      style: dto.style,
+    });
+  }
+
+  @Post('render-caption')
+  @ApiOperation({ summary: 'Render auto-caption video from word timestamps (WebM transparent)' })
+  async renderCaption(
+    @CurrentUser() user: User,
+    @Body() dto: RenderCaptionDto,
+    @Res() res: Response,
+  ) {
+    const result = await this.service.renderCaption(dto.words, {
+      style: dto.style,
+      textColor: dto.textColor,
+      highlightColor: dto.highlightColor,
+      fontSize: dto.fontSize,
+    });
+
+    const stream = fs.createReadStream(result.outputPath);
+    res.setHeader('Content-Type', 'video/webm');
+    res.setHeader('Content-Disposition', 'attachment; filename="caption.webm"');
+    stream.pipe(res);
+    stream.on('end', () => { fs.unlink(result.outputPath, () => {}); });
   }
 }

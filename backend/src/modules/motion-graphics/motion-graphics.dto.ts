@@ -1,4 +1,4 @@
-import { IsIn, IsInt, IsObject, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsArray, IsIn, IsInt, IsObject, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class RenderTemplateDto {
   @IsString()
@@ -32,6 +32,46 @@ export class RenderTemplateDto {
 
 export class ListTemplatesDto {
   @IsOptional()
-  @IsIn(['title', 'lower-third', 'text', 'counter', 'subscribe', 'all'])
+  @IsIn(['title', 'lower-third', 'text', 'counter', 'subscribe', 'transition', 'logo', 'callout', 'caption', 'all'])
   category?: string;
+}
+
+export class AiGenerateAnimationDto {
+  @IsString()
+  prompt: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(15)
+  durationSeconds?: number;
+
+  @IsOptional()
+  @IsIn(['1920x1080', '1080x1920', '1080x1080'])
+  resolution?: string;
+
+  @IsOptional()
+  @IsString()
+  style?: string;
+}
+
+export class RenderCaptionDto {
+  @IsArray()
+  words: Array<{ word: string; start: number; end: number }>;
+
+  @IsOptional()
+  @IsIn(['classic', 'neon', 'bounce', 'highlight', 'karaoke'])
+  style?: string;
+
+  @IsOptional()
+  @IsString()
+  textColor?: string;
+
+  @IsOptional()
+  @IsString()
+  highlightColor?: string;
+
+  @IsOptional()
+  @IsInt()
+  fontSize?: number;
 }

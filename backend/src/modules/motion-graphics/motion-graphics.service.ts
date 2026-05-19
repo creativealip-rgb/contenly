@@ -1,5 +1,6 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { OpenAiService } from '../ai/services/openai.service';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -115,6 +116,16 @@ const TEMPLATES: TemplateInfo[] = [
     defaultWidth: 1080,
     defaultHeight: 1920,
   },
+  {
+    id: 'AnimatedBackground',
+    name: 'Animated Background',
+    category: 'background',
+    description: 'Looping animated backgrounds (gradient, particles, geometric, waveform)',
+    defaultProps: { type: 'gradient-mesh', color1: '#0f172a', color2: '#3b82f6', color3: '#8b5cf6', speed: 1 },
+    defaultDuration: 300,
+    defaultWidth: 1920,
+    defaultHeight: 1080,
+  },
 ];
 
 @Injectable()
@@ -122,7 +133,10 @@ export class MotionGraphicsService {
   private readonly logger = new Logger(MotionGraphicsService.name);
   private bundlePath: string | null = null;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private openAiService: OpenAiService,
+  ) {
     // Resolve bundle path (pre-built by `cd remotion && npm run build`)
     const bundleDir = path.resolve(process.cwd(), '..', 'remotion', 'dist', 'bundle');
     if (fs.existsSync(bundleDir)) {
@@ -207,5 +221,119 @@ export class MotionGraphicsService {
 
     this.logger.log(`Rendered ${templateId} → ${outputPath}`);
     return { outputPath, format };
+  }
+
+  /**
+   * AI Custom Animation Generator
+   * GPT generates props for an existing template based on natural language prompt.
+   */
+  async aiGenerateAnimation(
+    prompt: string,
+    options: { durationSeconds?: number; resolution?: string; style?: string } = {},
+  ) {
+    const resolution = options.resolution || '1920x1080';
+    const [width, height] = resolution.split('x').map(Number);
+    const durationSeconds = options.durationSeconds || 3;
+    const durationFrames = durationSeconds * 30;
+
+    const systemPrompt = `You are a motion graphics designer. Given a user's description, choose the best template and generate props for it.
+
+Available templates and their props:
+- TitleCard: { title, subtitle, style: "modern"|"neon"|"minimal", bgColor, textColor, accentColor }
+- GlitchTitle: { title, bgColor, textColor, glitchColor }
+- TextReveal: { text, style: "bounce"|"fade"|"slide", bgColor, textColor }
+- CounterAnimation: { from, to, label, bgColor, textColor, accentColor }
+- LowerThird: { name, title, style: "clean"|"gradient"|"neon", accentColor }
+- LogoIntro: { logoText, effect: "zoom"|"spin"|"reveal", bgColor, textColor }
+- CalloutBox: { text, position: "top-left"|"top-right"|"bottom-left"|"bottom-right", bgColor, textColor, borderColor }
+- TransitionSwipe: { text, direction: "left"|"right"|"up"|"down", color }
+- SubscribeButton: { channel, style: "youtube"|"modern" }
+
+Return ONLY valid JSON:
+{
+  "templateId": "...",
+  "props": { ... },
+  "reasoning": "brief explanation"
+}
+
+User style hint: ${options.style || 'modern'}
+Resolution: ${width}x${height}`;
+
+    const result = await this.openAiService.generateContent(prompt, {
+      mode: 'custom',
+      systemPrompt,
+    }) as { templateId?: string; props?: Record<string, any>; reasoning?: string };
+
+    if (!result.templateId || !result.props) {
+      throw new BadRequestException('AI failed to generate valid animation config');
+    }
+
+    const template = this.getTemplate(result.templateId);
+    if (!template) {
+      throw new BadRequestException(`AI selected invalid template: ${result.templateId}`);
+    }
+
+    return {
+      templateId: result.templateId,
+      props: { ...template.defaultProps, ...result.props },
+      reasoning: result.reasoning || '',
+      durationFrames,
+      width,
+      height,
+    };
+  }
+
+  /**
+   * Render Auto-Caption from Whisper word timestamps
+   */
+  async renderCaption(
+    words: Array<{ word: string; start: number; end: number }>,
+    options: { style?: string; textColor?: string; highlightColor?: string; fontSize?: number } = {},
+  ): Promise<{ outputPath: string; format: string }> {
+    if (!this.bundlePath) {
+      throw new BadRequestException('Remotion bundle not available.');
+    }
+
+    if (!words.length) {
+      throw new BadRequestException('No words provided for caption rendering.');
+    }
+
+    const lastWord = words[words.length - 1];
+    const totalDuration = Math.ceil(lastWord.end) + 1;
+    const durationInFrames = totalDuration * 30;
+
+    const props = {
+      words,
+      style: options.style || 'highlight',
+      textColor: options.textColor || '#ffffff',
+      highlightColor: options.highlightColor || '#facc15',
+      fontSize: options.fontSize || 48,
+    };
+
+    const { renderMedia, selectComposition } = await import('@remotion/renderer');
+
+    const composition = await selectComposition({
+      serveUrl: this.bundlePath,
+      id: 'AutoCaption',
+      inputProps: props,
+    });
+
+    const compositionOverride = { ...composition, width: 1080, height: 1920, durationInFrames };
+
+    const outputDir = path.resolve(process.cwd(), 'tmp', 'renders');
+    if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+
+    const outputPath = path.join(outputDir, `caption-${Date.now()}.webm`);
+
+    await renderMedia({
+      serveUrl: this.bundlePath,
+      composition: compositionOverride,
+      codec: 'vp8',
+      outputLocation: outputPath,
+      inputProps: props,
+    });
+
+    this.logger.log(`Rendered AutoCaption (${words.length} words) → ${outputPath}`);
+    return { outputPath, format: 'webm' };
   }
 }
