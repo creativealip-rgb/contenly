@@ -70,12 +70,17 @@ const itemVariants = {
 export default function FeedsPage() {
     const [isAddOpen, setIsAddOpen] = useState(false)
     const [feeds, setFeeds] = useState<RssFeed[]>([])
+    const [searchQuery, setSearchQuery] = useState('')
     const [newFeedName, setNewFeedName] = useState('')
     const [newFeedUrl, setNewFeedUrl] = useState('')
     const [pollingInterval, setPollingInterval] = useState('15')
     const [editingFeedId, setEditingFeedId] = useState<string | null>(null)
     const [isPolling, setIsPolling] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState(true)
+
+    const filteredFeeds = feeds.filter((f) =>
+        !searchQuery || f.name.toLowerCase().includes(searchQuery.toLowerCase()) || f.url.toLowerCase().includes(searchQuery.toLowerCase())
+    )
 
     useEffect(() => {
         const loadFeeds = async () => {
@@ -345,9 +350,17 @@ export default function FeedsPage() {
                 transition={{ delay: 0.3 }}
                 className="card-clean p-8"
             >
-                <div className="mb-8">
-                    <h2 className="text-xl font-black tracking-tight">Stream Aktif</h2>
-                    <p className="text-slate-400 text-sm font-medium">Memantau sumber daya secara real-time</p>
+                <div className="mb-8 flex items-center justify-between gap-4">
+                    <div>
+                        <h2 className="text-xl font-black tracking-tight">Stream Aktif</h2>
+                        <p className="text-slate-400 text-sm font-medium">Memantau sumber daya secara real-time</p>
+                    </div>
+                    <Input
+                        placeholder="Cari feed..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="max-w-[200px] h-9 text-sm"
+                    />
                 </div>
 
                 <div className="rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-slate-800">
@@ -369,14 +382,14 @@ export default function FeedsPage() {
                                         <Loader2 className="h-10 w-10 animate-spin text-blue-600 opacity-20 mx-auto" />
                                     </TableCell>
                                 </TableRow>
-                            ) : feeds.length === 0 ? (
+                            ) : filteredFeeds.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={6} className="text-center py-20 text-slate-400 font-bold uppercase tracking-widest text-xs">
-                                        Tidak ada sumber web yang ditemukan
+                                        {searchQuery ? 'Tidak ada hasil pencarian' : 'Tidak ada sumber web yang ditemukan'}
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                feeds.map((feed) => (
+                                filteredFeeds.map((feed) => (
                                     <TableRow key={feed.id} className="group border-slate-50 dark:border-slate-800 hover:bg-slate-50/50 transition-colors">
                                         <TableCell className="px-8 font-black text-slate-900 dark:text-white uppercase tracking-tighter">
                                             <div>

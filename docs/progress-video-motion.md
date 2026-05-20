@@ -14,14 +14,31 @@
 9. ~~Cleanup /dev/video-scripts/ (stale duplicate)~~ ✅ (deleted)
 10. ~~Persist thumbnail URL ke DB~~ ✅
 
-## ❌ P2 — Belum Dikerjakan
-11. Bull queue untuk rendering (async, polling, progress via Socket.io)
-12. Render timeout + scheduled cleanup tmp files
-13. JSON/array editor untuk props (BulletList items, AutoCaption words)
-14. ~~Health-check endpoint untuk Remotion bundle~~ ✅ (sudah ada)
-15. DB table untuk render jobs (audit + analytics)
+## ✅ P2 — Done
+11. ~~Bull queue untuk rendering (async, polling, progress)~~ ✅
+    - BullModule.forRoot() di-uncomment di app.module.ts
+    - Queue 'render' registered di MotionGraphicsModule
+    - RenderProcessor handles template/caption/compose jobs (concurrency: 2)
+    - Frontend polling setiap 3 detik sampai job selesai
+    - Endpoints: POST returns `{ jobId }`, GET /jobs/:id untuk polling, GET /jobs/:id/download untuk download
+12. ~~Render timeout + scheduled cleanup tmp files~~ ✅
+    - Timeout 5 menit (template/caption), 10 menit (compose) via Bull job timeout
+    - RenderCleanupService: cron setiap 30 menit hapus file > 1 jam
+    - Cron setiap jam mark stale processing jobs sebagai timeout
+    - Cron harian purge records > 7 hari
+13. ~~JSON/array editor untuk props (BulletList items, AutoCaption words)~~ ✅
+    - Komponen `JsonArrayEditor` di `frontend/src/components/ui/json-array-editor.tsx`
+    - Mode `array-strings`: inline editor untuk string arrays (BulletList items)
+    - Mode `json`: raw JSON textarea dengan validasi (AutoCaption words)
+14. ~~Health-check endpoint untuk Remotion bundle~~ ✅ (sudah ada sebelumnya)
+15. ~~DB table untuk render jobs (audit + analytics)~~ ✅
+    - Table `render_jobs` dengan status enum (queued/processing/completed/failed/timeout)
+    - Tracks: userId, type, input, outputPath, outputFormat, error, progress, tokensCost, timestamps
+    - Migration: `backend/drizzle/0005_render_jobs.sql`
+    - ScheduleModule.forRoot() di-enable untuk cron cleanup
 
 ## Catatan
-- Item #5: Menggunakan custom `@SetUserRateLimit` decorator, bukan `@Throttle` dari `@nestjs/throttler`. Fungsionalitas sama, bisa di-revisit jika perlu konsistensi.
+- Item #5: Menggunakan custom `@SetUserRateLimit` decorator, bukan `@Throttle` dari `@nestjs/throttler`. Fungsionalitas sama.
 - Item #4: `aiGenerateAnimation` endpoint tidak pakai deductTokens (bukan render endpoint, hanya AI suggestion).
-- P2 items 11, 12, 13, 15 saling terkait — idealnya dikerjakan bareng (Bull queue + render jobs table + timeout).
+- Redis diperlukan untuk Bull queue. Pastikan REDIS_HOST, REDIS_PORT, REDIS_PASSWORD di .env.
+- Render endpoints sekarang async: POST → { jobId }, lalu poll GET /jobs/:id sampai completed, lalu download via GET /jobs/:id/download.

@@ -272,13 +272,15 @@ export class VideoScriptService {
       await this.billingService.incrementDailyUsage(userId, 'VIDEO_GENERATION');
 
       return this.getProject(userId, projectId);
-    } catch (error) {
-      this.logger.error('Script generation error:', error);
+    } catch (error: any) {
+      this.logger.error('Script generation error:', error?.message || error);
       await this.drizzle.db
         .update(schema.scriptProject)
         .set({ status: 'error', updatedAt: new Date() })
         .where(eq(schema.scriptProject.id, projectId));
-      throw error;
+      throw new BadRequestException(
+        error?.message || 'AI gagal generate script. Coba lagi atau gunakan konten yang lebih pendek.',
+      );
     }
   }
 

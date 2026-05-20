@@ -166,7 +166,8 @@ export function Navbar() {
                         </div>
                     </motion.div>
 
-
+                    {/* Notification Bell */}
+                    <NotificationBell />
 
                     {/* User Menu */}
                     <DropdownMenu>
@@ -260,5 +261,70 @@ export function Navbar() {
                 </div>
             </div>
         </header >
+    )
+}
+
+function NotificationBell() {
+    const [notifications, setNotifications] = useState<Array<{ id: string; title: string; message: string; isRead: boolean; createdAt: string }>>([])
+    const [isOpen, setIsOpen] = useState(false)
+
+    const fetchNotifications = async () => {
+        try {
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
+            const res = await fetch(`${API_URL}/notifications`, { credentials: 'include' })
+            if (res.ok) setNotifications(await res.json())
+        } catch { /* silent */ }
+    }
+
+    useEffect(() => {
+        fetchNotifications()
+        const interval = setInterval(fetchNotifications, 30000)
+        return () => clearInterval(interval)
+    }, [])
+
+    const unreadCount = notifications.filter((n) => !n.isRead).length
+
+    const markAsRead = async (id: string) => {
+        try {
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
+            await fetch(`${API_URL}/notifications/${id}/read`, { method: 'PATCH', credentials: 'include' })
+            setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, isRead: true } : n))
+        } catch { /* silent */ }
+    }
+
+    return (
+        <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-xl hover:bg-white/40 dark:hover:bg-slate-800/40">
+                    {icons.bell}
+                    {unreadCount > 0 && (
+                        <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-red-500 text-[9px] font-bold text-white flex items-center justify-center">
+                            {unreadCount > 9 ? '9+' : unreadCount}
+                        </span>
+                    )}
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-80 rounded-2xl p-2 max-h-[400px] overflow-y-auto" align="end">
+                <DropdownMenuLabel className="text-xs font-bold uppercase tracking-wider text-slate-400 px-3 py-2">
+                    Notifikasi {unreadCount > 0 && `(${unreadCount})`}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {notifications.length === 0 ? (
+                    <div className="text-center py-8 text-sm text-slate-400">Tidak ada notifikasi</div>
+                ) : (
+                    notifications.slice(0, 10).map((n) => (
+                        <DropdownMenuItem
+                            key={n.id}
+                            className={`flex flex-col items-start gap-0.5 px-3 py-2.5 rounded-xl cursor-pointer ${!n.isRead ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}
+                            onClick={() => markAsRead(n.id)}
+                        >
+                            <span className="text-sm font-medium">{n.title}</span>
+                            <span className="text-xs text-slate-500 line-clamp-1">{n.message}</span>
+                            <span className="text-[10px] text-slate-400">{new Date(n.createdAt).toLocaleString('id-ID')}</span>
+                        </DropdownMenuItem>
+                    ))
+                )}
+            </DropdownMenuContent>
+        </DropdownMenu>
     )
 }

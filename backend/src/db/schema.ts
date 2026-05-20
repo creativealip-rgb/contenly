@@ -715,6 +715,62 @@ export const contentAnalyticsRelations = relations(contentAnalytics, ({ one }) =
   }),
 }));
 
+// ==========================================
+// RENDER PRESETS (User-saved template configs)
+// ==========================================
+
+export const renderPresets = pgTable('render_presets', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  templateId: varchar('template_id', { length: 100 }).notNull(),
+  name: varchar('name', { length: 255 }).notNull(),
+  props: jsonb('props').notNull(),
+  format: varchar('format', { length: 10 }).default('mp4'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+export const renderPresetsRelations = relations(renderPresets, ({ one }) => ({
+  user: one(user, {
+    fields: [renderPresets.userId],
+    references: [user.id],
+  }),
+}));
+
+// ==========================================
+// RENDER JOBS (Motion Graphics Queue)
+// ==========================================
+
+export const renderJobStatusEnum = pgEnum('render_job_status', [
+  'queued',
+  'processing',
+  'completed',
+  'failed',
+  'timeout',
+]);
+
+export const renderJobs = pgTable('render_jobs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  type: varchar('type', { length: 50 }).notNull(), // 'template' | 'caption' | 'compose'
+  status: renderJobStatusEnum('status').notNull().default('queued'),
+  input: jsonb('input').notNull(), // render params (templateId, props, options, etc.)
+  outputPath: text('output_path'),
+  outputFormat: varchar('output_format', { length: 10 }),
+  error: text('error'),
+  progress: integer('progress').default(0), // 0-100
+  tokensCost: integer('tokens_cost').default(0),
+  startedAt: timestamp('started_at'),
+  completedAt: timestamp('completed_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+export const renderJobsRelations = relations(renderJobs, ({ one }) => ({
+  user: one(user, {
+    fields: [renderJobs.userId],
+    references: [user.id],
+  }),
+}));
+
 // Export all schemas for Better Auth
 export const schema = {
   user,
@@ -742,4 +798,6 @@ export const schema = {
   scheduledContent,
   contentAnalytics,
   dailyUsage,
+  renderJobs,
+  renderPresets,
 };

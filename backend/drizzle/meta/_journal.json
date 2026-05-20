@@ -22,6 +22,13 @@
       "when": 1773890000000,
       "tag": "0002_video_script_metadata",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1779251770203,
+      "tag": "0003_nosy_brood",
+      "breakpoints": true
     }
   ]
 }

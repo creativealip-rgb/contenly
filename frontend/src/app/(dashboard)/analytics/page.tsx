@@ -117,6 +117,7 @@ export default function AnalyticsPage() {
     const [stats, setStats] = useState<DashboardStats | null>(null)
     const [performance, setPerformance] = useState<ContentPerformance | null>(null)
     const [platformData, setPlatformData] = useState<PlatformBreakdown[]>([])
+    const [tokenUsage, setTokenUsage] = useState<Array<{ date: string; tokens: number }>>([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
@@ -128,15 +129,17 @@ export default function AnalyticsPage() {
             setLoading(true)
             const days = parseInt(timeRange)
             
-            const [statsRes, perfRes, platformRes] = await Promise.all([
+            const [statsRes, perfRes, platformRes, tokenRes] = await Promise.all([
                 api.get<DashboardStats>('/analytics/dashboard'),
                 api.get<ContentPerformance>(`/analytics/content-performance?days=${days}`),
                 api.get<PlatformBreakdown[]>('/analytics/platform-breakdown'),
+                api.get<Array<{ date: string; tokens: number }>>(`/analytics/token-usage?days=${days}`),
             ])
             
             setStats(statsRes)
             setPerformance(perfRes)
             setPlatformData(platformRes)
+            setTokenUsage(tokenRes || [])
         } catch (error) {
             toast.error('Failed to fetch analytics data')
         } finally {
@@ -412,6 +415,36 @@ export default function AnalyticsPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Token Usage Chart */}
+            <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-amber-500" />
+                        Penggunaan Token
+                    </CardTitle>
+                    <CardDescription>Token yang digunakan per hari ({timeRange} hari terakhir)</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="h-[250px]">
+                        {tokenUsage.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={tokenUsage.map(t => ({ date: format(new Date(t.date), 'dd MMM'), tokens: Math.abs(t.tokens) }))}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                                    <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                                    <YAxis tick={{ fontSize: 11 }} />
+                                    <Tooltip formatter={(value) => [`${value} tokens`, 'Digunakan']} />
+                                    <Bar dataKey="tokens" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                                Belum ada data penggunaan token
+                            </div>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
 
             {/* Charts Row 2 */}
             <div className="grid gap-6 lg:grid-cols-3">

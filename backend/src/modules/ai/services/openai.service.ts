@@ -435,7 +435,7 @@ Return JSON with:
       messages: [
         {
           role: 'system',
-          content: `You are a thumbnail design expert. Given a video title and style, generate a detailed image generation prompt for a YouTube/TikTok thumbnail. The prompt must be in English, highly descriptive (50-80 words), include subject, lighting, mood, composition. Output ONLY the prompt text, nothing else.`,
+          content: `You are a thumbnail design expert. Given a video title and style, generate a detailed image generation prompt for a vertical Reels/TikTok thumbnail (9:16 portrait). The prompt must be in English, highly descriptive (50-80 words), include subject, lighting, mood, composition optimized for vertical format. Output ONLY the prompt text, nothing else.`,
         },
         {
           role: 'user',
@@ -462,7 +462,7 @@ Return JSON with:
         model: imageModel,
         prompt: enhancedPrompt,
         n: 1,
-        size: 'auto',
+        size: '1024x1792',
         quality: 'auto',
         output_format: 'png',
       }),

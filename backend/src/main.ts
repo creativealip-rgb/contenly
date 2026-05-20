@@ -5,6 +5,8 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import * as path from 'path';
+import * as expressStatic from 'express';
 
 import { json, urlencoded } from 'express';
 
@@ -65,6 +67,9 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1', {
     exclude: ['health'], // Exclude health check from versioning if needed
   });
+
+  // Serve tmp files (for Remotion audio during compose)
+  app.use('/tmp', expressStatic.static(path.resolve(process.cwd(), 'tmp')));
 
   // Validation
   app.useGlobalPipes(

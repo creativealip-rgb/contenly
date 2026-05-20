@@ -55,4 +55,11 @@ export class AiController {
   async generatePrompt(@Body() dto: GeneratePromptDto) {
     return this.aiService.generatePrompt(dto);
   }
+
+  @Post('chat')
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  @ApiOperation({ summary: 'AI chat assistant' })
+  async chat(@Body() dto: { message: string; history?: Array<{ role: string; content: string }> }) {
+    return this.aiService.chat(dto.message, dto.history || []);
+  }
 }

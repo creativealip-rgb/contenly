@@ -26,7 +26,7 @@ import {
     SheetDescription,
 } from '@/components/ui/sheet'
 import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useContentLabStore } from '@/stores/content-lab-store'
 import { useBilling } from '@/hooks/use-billing'
 import { Lock } from 'lucide-react'
@@ -52,9 +52,10 @@ interface TrendAnalysis {
 
 export default function TrendRadarPage() {
     const router = useRouter()
+    const searchParams = useSearchParams()
     const { setScrapeUrl, setActiveTab } = useContentLabStore()
 
-    const [query, setQuery] = useState('')
+    const [query, setQuery] = useState(searchParams.get('q') || '')
     const [isSearching, setIsSearching] = useState(false)
     const [results, setResults] = useState<TrendItem[]>([])
     const [selectedTrend, setSelectedTrend] = useState<TrendItem | null>(null)
@@ -66,7 +67,7 @@ export default function TrendRadarPage() {
 
     const handleSearch = async (e?: React.FormEvent) => {
         if (e) e.preventDefault()
-        if (!query.trim()) return
+        if (!query.trim() || isSearching) return
 
         setIsSearching(true)
         setResults([])
@@ -90,6 +91,13 @@ export default function TrendRadarPage() {
             setIsSearching(false)
         }
     }
+
+    // Auto-search if query param provided (from dashboard click)
+    useEffect(() => {
+        if (query.trim() && results.length === 0 && !isSearching) {
+            handleSearch()
+        }
+    }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleAnalyze = async (trend: TrendItem) => {
         if (isFreeTier) {

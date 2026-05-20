@@ -44,7 +44,7 @@ import {
     Calendar,
 } from 'lucide-react'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
 
 interface Project {
     id: string
@@ -398,7 +398,7 @@ export default function InstagramStudioPage() {
                                         </div>
 
                                         {/* Templates Grid */}
-                                        <div className="grid grid-cols-3 gap-3 max-h-[300px] overflow-y-auto p-1">
+                                        <div className="grid grid-cols-3 gap-3 max-h-[350px] overflow-y-auto p-1">
                                             {templates
                                                 .filter(t => selectedCategory === 'all' || t.category === selectedCategory)
                                                 .filter(t => t.forPlatform === 'instagram' || t.forPlatform === 'all')
@@ -406,38 +406,45 @@ export default function InstagramStudioPage() {
                                                     <div
                                                         key={template.id}
                                                         onClick={() => setNewProject({ ...newProject, templateId: template.id })}
-                                                        className={`relative cursor-pointer rounded-xl overflow-hidden border-2 transition-all hover:shadow-md ${
+                                                        className={`relative cursor-pointer rounded-xl overflow-hidden border-2 transition-all hover:shadow-lg hover:scale-[1.02] ${
                                                             newProject.templateId === template.id
                                                                 ? 'border-blue-500 ring-2 ring-blue-200'
                                                                 : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
                                                         }`}
                                                     >
-                                                        {/* Preview */}
+                                                        {/* Visual Preview */}
                                                         <div 
-                                                            className="h-20 w-full"
+                                                            className="h-28 w-full relative"
                                                             style={{
                                                                 background: template.background.type === 'gradient' 
                                                                     ? `linear-gradient(135deg, ${template.colors.primary}, ${template.colors.secondary})`
                                                                     : template.colors.primary,
                                                             }}
                                                         >
-                                                            <div className="h-full w-full flex items-center justify-center p-2">
-                                                                <span className="text-white text-xs font-bold text-center line-clamp-2">
+                                                            {/* Simulated slide content */}
+                                                            <div className="absolute inset-0 flex flex-col items-center justify-center p-3 gap-1">
+                                                                <div className="w-8 h-0.5 rounded-full" style={{ background: template.colors.accent }} />
+                                                                <span className="text-[10px] font-bold text-center leading-tight" style={{ color: template.colors.text }}>
                                                                     {template.name}
                                                                 </span>
+                                                                <div className="w-12 h-0.5 rounded-full opacity-50" style={{ background: template.colors.text }} />
                                                             </div>
+                                                            {/* Decorative elements */}
+                                                            {(template as any).elements?.shapes?.[0] && (
+                                                                <div className="absolute top-1 right-1 w-4 h-4 rounded-full opacity-30" style={{ background: template.colors.accent }} />
+                                                            )}
                                                         </div>
                                                         
                                                         {/* Info */}
                                                         <div className="p-2 bg-white dark:bg-slate-800">
-                                                            <p className="text-xs font-medium truncate">{template.name}</p>
-                                                            <p className="text-[10px] text-slate-500 truncate">{template.category}</p>
+                                                            <p className="text-[11px] font-semibold truncate">{template.name}</p>
+                                                            <p className="text-[9px] text-slate-400 capitalize">{template.category}</p>
                                                         </div>
 
                                                         {/* Selected Badge */}
                                                         {newProject.templateId === template.id && (
                                                             <div className="absolute top-2 right-2">
-                                                                <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                                                                <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center shadow-lg">
                                                                     <Sparkles className="w-3 h-3 text-white" />
                                                                 </div>
                                                             </div>

@@ -412,6 +412,67 @@ export default function BillingPage() {
                     </CardContent>
                 </Card>
             </motion.div>
+
+            {/* Transaction History */}
+            <TransactionHistory />
+        </motion.div>
+    )
+}
+
+function TransactionHistory() {
+    const [transactions, setTransactions] = useState<any[]>([])
+    const [isLoading, setIsLoading] = useState(true)
+
+    useEffect(() => {
+        const fetchTransactions = async () => {
+            try {
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
+                const res = await fetch(`${apiUrl}/billing/transactions?limit=10`, { credentials: 'include' })
+                if (res.ok) {
+                    const data = await res.json()
+                    setTransactions(data.data || [])
+                }
+            } catch { /* silent */ }
+            finally { setIsLoading(false) }
+        }
+        fetchTransactions()
+    }, [])
+
+    const typeLabels: Record<string, string> = { USAGE: 'Penggunaan', PURCHASE: 'Pembelian', REFUND: 'Refund', SUBSCRIPTION_CREDIT: 'Kredit' }
+    const typeColors: Record<string, string> = { USAGE: 'text-red-600', PURCHASE: 'text-green-600', REFUND: 'text-blue-600', SUBSCRIPTION_CREDIT: 'text-purple-600' }
+
+    return (
+        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                        <CreditCard className="h-5 w-5" />
+                        Riwayat Transaksi
+                    </CardTitle>
+                    <CardDescription>10 transaksi terakhir</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {isLoading ? (
+                        <p className="text-sm text-muted-foreground text-center py-8">Memuat...</p>
+                    ) : transactions.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-8">Belum ada transaksi.</p>
+                    ) : (
+                        <div className="space-y-2">
+                            {transactions.map((tx) => (
+                                <div key={tx.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/50">
+                                    <div>
+                                        <p className="text-sm font-medium">{(tx.metadata as any)?.description || typeLabels[tx.type] || tx.type}</p>
+                                        <p className="text-xs text-muted-foreground">{new Date(tx.createdAt).toLocaleString('id-ID')}</p>
+                                    </div>
+                                    <span className={`text-sm font-bold ${tx.tokens >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {tx.tokens >= 0 ? '+' : ''}{tx.tokens} tokens
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
         </motion.div>
     )
 }

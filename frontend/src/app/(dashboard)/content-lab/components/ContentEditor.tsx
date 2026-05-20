@@ -13,10 +13,14 @@ import {
     RotateCcw,
     Sparkles,
     FileText,
+    Film,
     Loader2
 } from 'lucide-react'
 import { useContentLabStore } from '@/stores/content-lab-store'
 import { ContentLabState, ContentLabHandlers } from './types'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { toast } from 'sonner'
 
 interface ContentEditorProps {
     state: ContentLabState;
@@ -34,6 +38,35 @@ export function ContentEditor({ state, handlers, copied, handleCopy }: ContentEd
         sourceContent,
         selectedArticle,
     } = useContentLabStore()
+    const router = useRouter()
+    const [isConverting, setIsConverting] = useState(false)
+
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
+
+    const handleConvertToVideoScript = async () => {
+        if (!generatedContent) return
+        setIsConverting(true)
+        try {
+            const res = await fetch(`${API_BASE_URL}/video-scripts/projects`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    title: generatedTitle || 'Video Script',
+                    sourceUrl: selectedArticle?.url || '',
+                    sourceContent: generatedContent,
+                }),
+            })
+            if (!res.ok) throw new Error('Gagal membuat project')
+            const project = await res.json()
+            toast.success('Project video script dibuat! Redirecting...')
+            router.push(`/video-scripts/${project.id}`)
+        } catch (e: any) {
+            toast.error(e.message || 'Gagal convert ke video script')
+        } finally {
+            setIsConverting(false)
+        }
+    }
 
     return (
         <motion.div
@@ -42,6 +75,16 @@ export function ContentEditor({ state, handlers, copied, handleCopy }: ContentEd
             className="h-full flex flex-col gap-4"
         >
             <div className="flex items-center justify-end gap-2">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleConvertToVideoScript}
+                    disabled={!generatedContent || isConverting}
+                    className="h-10 px-4 rounded-xl border-purple-200 bg-purple-50/50 backdrop-blur-sm hover:bg-purple-100 transition-all shadow-sm text-purple-700"
+                    title="Convert to Video Script"
+                >
+                    {isConverting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Film className="h-4 w-4" />}
+                </Button>
                 <Button
                     variant="outline"
                     size="sm"

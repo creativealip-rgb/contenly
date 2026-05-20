@@ -449,7 +449,7 @@ export default function IntegrationsPage() {
                                                 <RefreshCw className="h-4 w-4 mr-2" />
                                                 Test Connectivity
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => toast.info('Settings coming soon')} className="cursor-pointer">
+                                            <DropdownMenuItem onClick={() => { setIsAddOpen(true) }} className="cursor-pointer">
                                                 <Settings className="h-4 w-4 mr-2" />
                                                 Konfigurasi
                                             </DropdownMenuItem>

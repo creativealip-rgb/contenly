@@ -65,6 +65,9 @@ export function SEOSection({
                 />
             </div>
 
+            {/* SEO Score */}
+            <SeoScoreIndicator title={metaTitle || generatedTitle || ''} description={metaDescription} slug={slug} />
+
             <div className="relative group rounded-2xl overflow-hidden aspect-[16/9] border-2 border-dashed border-slate-100 dark:border-slate-800 bg-slate-50/50 flex items-center justify-center transition-all hover:bg-slate-50">
                 {featuredImage ? (
                     <>
@@ -113,6 +116,37 @@ export function SEOSection({
                         reader.readAsDataURL(file);
                     }
                 }} />
+            </div>
+        </div>
+    )
+}
+
+function SeoScoreIndicator({ title, description, slug }: { title: string; description: string; slug: string }) {
+    const checks = [
+        { label: 'Title 50-60 chars', pass: title.length >= 50 && title.length <= 60, info: `${title.length}/60` },
+        { label: 'Meta desc 150-160', pass: description.length >= 150 && description.length <= 160, info: `${description.length}/160` },
+        { label: 'Slug tersedia', pass: slug.length > 0 && /^[a-z0-9-]+$/.test(slug), info: slug ? '✓' : '✗' },
+        { label: 'Title ada', pass: title.length > 0, info: title.length > 0 ? '✓' : '✗' },
+    ]
+    const score = Math.round((checks.filter((c) => c.pass).length / checks.length) * 100)
+    const color = score >= 75 ? 'text-green-600 bg-green-50' : score >= 50 ? 'text-yellow-600 bg-yellow-50' : 'text-red-600 bg-red-50'
+
+    if (!title && !description && !slug) return null
+
+    return (
+        <div className="rounded-xl border border-slate-100 p-3 space-y-2">
+            <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">SEO Score</span>
+                <span className={`text-xs font-black px-2 py-0.5 rounded-full ${color}`}>{score}%</span>
+            </div>
+            <div className="grid grid-cols-2 gap-1">
+                {checks.map((c) => (
+                    <div key={c.label} className="flex items-center gap-1">
+                        <div className={`w-1.5 h-1.5 rounded-full ${c.pass ? 'bg-green-500' : 'bg-slate-300'}`} />
+                        <span className="text-[9px] text-slate-500">{c.label}</span>
+                        <span className="text-[9px] text-slate-400 ml-auto">{c.info}</span>
+                    </div>
+                ))}
             </div>
         </div>
     )

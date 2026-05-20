@@ -291,4 +291,22 @@ Keep each field concise but descriptive. Use English.`;
 
     return { prompt };
   }
+
+  async chat(message: string, history: Array<{ role: string; content: string }>) {
+    const client = this.openAiService.getClient();
+    const messages = [
+      { role: 'system' as const, content: 'Kamu adalah AI assistant untuk platform Contenly — platform otomasi konten. Bantu user dengan pertanyaan tentang content creation, SEO, social media strategy, copywriting, dan penggunaan platform. Jawab dalam Bahasa Indonesia, singkat dan actionable.' },
+      ...history.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+      { role: 'user' as const, content: message },
+    ];
+
+    const response = await client.chat.completions.create({
+      model: this.openAiService.getModel(),
+      messages,
+      max_tokens: 500,
+      temperature: 0.7,
+    });
+
+    return { reply: response.choices[0]?.message?.content || 'Maaf, saya tidak bisa menjawab saat ini.' };
+  }
 }

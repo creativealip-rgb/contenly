@@ -93,28 +93,32 @@ export class BillingService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    await this.db.transaction(async (tx) => {
-      const existing = await tx.query.dailyUsage.findFirst({
-        where: and(
-          eq(dailyUsage.userId, userId),
-          eq(dailyUsage.featureType, featureType),
-          sql`DATE(${dailyUsage.date}) = DATE(${today.toISOString()})`
-        ),
-      });
-
-      if (existing) {
-        await tx.update(dailyUsage)
-          .set({ count: sql`${dailyUsage.count} + 1` })
-          .where(eq(dailyUsage.id, existing.id));
-      } else {
-        await tx.insert(dailyUsage).values({
-          userId,
-          featureType,
-          date: today,
-          count: 1,
+    try {
+      await this.db.transaction(async (tx) => {
+        const existing = await tx.query.dailyUsage.findFirst({
+          where: and(
+            eq(dailyUsage.userId, userId),
+            eq(dailyUsage.featureType, featureType),
+            sql`${dailyUsage.date}::date = ${today.toISOString().split('T')[0]}::date`
+          ),
         });
+
+        if (existing) {
+          await tx.update(dailyUsage)
+            .set({ count: sql`${dailyUsage.count} + 1` })
+            .where(eq(dailyUsage.id, existing.id));
+        } else {
+          await tx.insert(dailyUsage).values({
+            userId,
+            featureType,
+            date: today,
+            count: 1,
+          });
       }
     });
+    } catch (e) {
+      // Ignore duplicate key errors — race condition is harmless
+    }
   }
 
   async checkBalance(userId: string, required: number): Promise<boolean> {

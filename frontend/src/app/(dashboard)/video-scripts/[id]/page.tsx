@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
@@ -52,7 +52,7 @@ import {
 } from 'lucide-react'
 import { useConfirm } from '@/components/ui/confirm-dialog'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
 
 type FootageSearch = {
   platform: string
@@ -68,6 +68,7 @@ type Scene = {
   estimatedDuration?: number | null
   emoji?: string | null
   footageSearches: FootageSearch[]
+  selectedFootage?: Array<{ thumbnailUrl: string; title?: string }> | null
 }
 
 type ScriptProject = {
@@ -236,7 +237,39 @@ export default function VideoScriptEditorPage() {
 
   const updateSceneDraft = (sceneId: string, patch: Partial<Scene>) => {
     setScenes((prev) => prev.map((scene) => (scene.id === sceneId ? { ...scene, ...patch } : scene)))
+    dirtyScenes.current.add(sceneId)
   }
+
+  // Auto-save dirty scenes after 3s of inactivity
+  const dirtyScenes = useRef<Set<string>>(new Set())
+  const autoSaveTimer = useRef<NodeJS.Timeout | null>(null)
+
+  useEffect(() => {
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
+    autoSaveTimer.current = setTimeout(async () => {
+      const ids = Array.from(dirtyScenes.current)
+      if (ids.length === 0) return
+      dirtyScenes.current.clear()
+      for (const sceneId of ids) {
+        const scene = scenes.find((s) => s.id === sceneId)
+        if (!scene) continue
+        try {
+          await fetch(`${API_BASE_URL}/video-scripts/scenes/${sceneId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+              visualContext: scene.visualContext,
+              voiceoverText: scene.voiceoverText,
+              estimatedDuration: scene.estimatedDuration || undefined,
+              emoji: scene.emoji || undefined,
+            }),
+          })
+        } catch { /* silent auto-save */ }
+      }
+    }, 3000)
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current) }
+  }, [scenes])
 
   const parseHashtags = () =>
     projectForm.hashtagsText
@@ -707,12 +740,13 @@ export default function VideoScriptEditorPage() {
 
   const handleComposeVideo = async () => {
     setIsComposing(true)
+    let toastId: string | number | undefined
     try {
       const response = await fetch(`${API_BASE_URL}/motion-graphics/compose-video`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ projectId, showCaptions: true, captionStyle: 'classic', aspectRatio: '9:16' }),
+        body: JSON.stringify({ projectId, showCaptions: true, captionStyle: 'classic', aspectRatio: '9:16', voice: selectedVoice, includeAudio: true }),
       })
 
       if (!response.ok) {
@@ -720,17 +754,45 @@ export default function VideoScriptEditorPage() {
         throw new Error(errorData.message || 'Gagal compose video')
       }
 
-      const blob = await response.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${(projectForm.title || 'video').replace(/[^a-z0-9]/gi, '_').toLowerCase()}.mp4`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-      toast.success('Video berhasil di-compose dan di-download!')
+      const { jobId } = await response.json()
+      toast.info('Render job dimulai...')
+
+      // Poll job status with progress toast
+      const pollInterval = 3000
+      const maxPolls = 120
+      for (let i = 0; i < maxPolls; i++) {
+        await new Promise((r) => setTimeout(r, pollInterval))
+        const statusRes = await fetch(`${API_BASE_URL}/motion-graphics/jobs/${jobId}`, { credentials: 'include' })
+        if (!statusRes.ok) throw new Error('Gagal cek status render')
+        const job = await statusRes.json()
+
+        if (job.status === 'processing' && job.progress > 0) {
+          toastId = toast.loading(`Composing video... ${job.progress}%`, { id: toastId })
+        }
+
+        if (job.status === 'completed') {
+          if (toastId) toast.dismiss(toastId)
+          const dlRes = await fetch(`${API_BASE_URL}/motion-graphics/jobs/${jobId}/download`, { credentials: 'include' })
+          if (!dlRes.ok) throw new Error('Gagal download render output')
+          const blob = await dlRes.blob()
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = `${(projectForm.title || 'video').replace(/[^a-z0-9]/gi, '_').toLowerCase()}.mp4`
+          document.body.appendChild(a)
+          a.click()
+          document.body.removeChild(a)
+          URL.revokeObjectURL(url)
+          toast.success('Video berhasil di-compose dan di-download!')
+          return
+        } else if (job.status === 'failed' || job.status === 'timeout') {
+          if (toastId) toast.dismiss(toastId)
+          throw new Error(job.error || 'Render gagal')
+        }
+      }
+      throw new Error('Render timeout — coba lagi nanti')
     } catch (error: unknown) {
+      if (toastId) toast.dismiss(toastId)
       toast.error(getErrorMessage(error, 'Gagal compose video.'))
     } finally {
       setIsComposing(false)
@@ -860,6 +922,7 @@ export default function VideoScriptEditorPage() {
         body: JSON.stringify({ items: [item] }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      updateSceneDraft(sceneId, { selectedFootage: [item] })
       toast.success('Footage dipilih untuk scene ini.')
     } catch {
       toast.error('Gagal menyimpan footage.')
@@ -1014,49 +1077,47 @@ export default function VideoScriptEditorPage() {
 
           {sidebarTab === 'export' && (
           <Card className="glass rounded-3xl border-2 border-white/60 dark:border-white/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
                 <Download className="h-5 w-5 text-indigo-600" />
                 Export
               </CardTitle>
-              <CardDescription>Unduh hasil script dalam format kerja yang dibutuhkan.</CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-3">
-              {(['json', 'txt', 'srt', 'caption'] as const).map((format) => (
-                <Button
-                  key={format}
-                  variant="outline"
-                  disabled={!hasScenes || exportingFormat === format}
-                  onClick={() => handleExport(format)}
-                  className="uppercase"
-                >
-                  {exportingFormat === format ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Download className="mr-2 h-4 w-4" />
-                  )}
-                  {format}
-                </Button>
-              ))}
+            <CardContent className="space-y-4">
+              {/* Export formats */}
+              <div className="grid grid-cols-4 gap-2">
+                {(['json', 'txt', 'srt', 'caption'] as const).map((format) => (
+                  <Button
+                    key={format}
+                    variant="outline"
+                    size="sm"
+                    disabled={!hasScenes || exportingFormat === format}
+                    onClick={() => handleExport(format)}
+                    className="uppercase text-xs px-2"
+                  >
+                    {exportingFormat === format ? <Loader2 className="h-3 w-3 animate-spin" /> : format}
+                  </Button>
+                ))}
+              </div>
+
               <Button
                 variant="outline"
+                size="sm"
                 disabled={!hasScenes || isExportingZip}
                 onClick={handleExportZip}
-                className="col-span-2"
+                className="w-full"
               >
-                {isExportingZip ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Package className="mr-2 h-4 w-4" />
-                )}
+                {isExportingZip ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <Package className="mr-2 h-3 w-3" />}
                 Export Semua (ZIP)
               </Button>
-              <div className="col-span-2 space-y-2">
+
+              {/* Voice & Audio */}
+              <div className="border-t pt-3 space-y-2">
                 <label className="text-xs font-semibold text-slate-500">Voice</label>
                 <select
                   value={selectedVoice}
                   onChange={(e) => setSelectedVoice(e.target.value as any)}
-                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                  className="flex h-8 w-full rounded-md border border-input bg-background px-3 text-xs"
                 >
                   <option value="nova">Nova (Female, warm)</option>
                   <option value="alloy">Alloy (Male, neutral)</option>
@@ -1065,32 +1126,34 @@ export default function VideoScriptEditorPage() {
                   <option value="fable">Fable (Female, expressive)</option>
                   <option value="shimmer">Shimmer (Female, clear)</option>
                 </select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!hasScenes || isExportingAudio}
+                  onClick={handleExportAudio}
+                  className="w-full"
+                >
+                  {isExportingAudio ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <Volume2 className="mr-2 h-3 w-3" />}
+                  Download Voiceover MP3
+                </Button>
               </div>
-              <Button
-                variant="outline"
-                disabled={!hasScenes || isExportingAudio}
-                onClick={handleExportAudio}
-                className="col-span-2"
-              >
-                {isExportingAudio ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Volume2 className="mr-2 h-4 w-4" />
-                )}
-                Download Voiceover MP3
-              </Button>
-              <Button
-                disabled={!hasScenes || isComposing}
-                onClick={handleComposeVideo}
-                className="col-span-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white"
-              >
-                {isComposing ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Film className="mr-2 h-4 w-4" />
-                )}
-                {isComposing ? 'Composing...' : 'Compose Video (All Scenes → MP4)'}
-              </Button>
+
+              {/* Compose Video */}
+              <div className="border-t pt-3">
+                <Button
+                  disabled={!hasScenes || isComposing}
+                  onClick={handleComposeVideo}
+                  className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white"
+                  size="sm"
+                >
+                  {isComposing ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Film className="mr-2 h-4 w-4" />
+                  )}
+                  {isComposing ? 'Composing...' : 'Compose Video → MP4'}
+                </Button>
+              </div>
             </CardContent>
           </Card>
           )}
@@ -1206,7 +1269,7 @@ export default function VideoScriptEditorPage() {
           )}
         </div>
 
-        <div className="space-y-6 xl:col-span-8">
+        <div className="space-y-4 xl:col-span-8">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <MetadataCard
               title="Headline"
@@ -1225,14 +1288,14 @@ export default function VideoScriptEditorPage() {
           </div>
 
           <Card className="glass rounded-3xl border-2 border-white/60 dark:border-white/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
                 <Sparkles className="h-5 w-5 text-pink-600" />
                 Caption & Hook
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
+            <CardContent className="space-y-3">
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-semibold">Caption</label>
                   <Button
@@ -1252,19 +1315,19 @@ export default function VideoScriptEditorPage() {
                 <Textarea
                   value={projectForm.caption}
                   onChange={(e) => setProjectField('caption', e.target.value)}
-                  className="min-h-[120px]"
+                  className="min-h-[80px] resize-y"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <label className="text-sm font-semibold">Hook</label>
-                <Textarea value={projectForm.hook} onChange={(e) => setProjectField('hook', e.target.value)} />
+                <Textarea value={projectForm.hook} onChange={(e) => setProjectField('hook', e.target.value)} className="min-h-[60px] resize-y" />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <label className="text-sm font-semibold">Hashtags</label>
                 <Textarea
                   value={projectForm.hashtagsText}
                   onChange={(e) => setProjectField('hashtagsText', e.target.value)}
-                  className="min-h-[90px]"
+                  className="min-h-[50px] resize-y"
                   placeholder="#viral #reels #contentcreator"
                 />
               </div>
@@ -1403,9 +1466,9 @@ function MetadataCard({
 }) {
   return (
     <Card className="glass rounded-3xl border-2 border-white/60 dark:border-white/20">
-      <CardHeader>
+      <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-3">
-          <CardTitle className="text-lg">{title}</CardTitle>
+          <CardTitle className="text-base">{title}</CardTitle>
           <Button size="sm" variant="outline" onClick={onRegenerate} disabled={isRegenerating}>
             {isRegenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
             Regenerate
@@ -1413,7 +1476,7 @@ function MetadataCard({
         </div>
       </CardHeader>
       <CardContent>
-        <Textarea value={value} onChange={(e) => onChange(e.target.value)} className="min-h-[120px]" />
+        <Textarea value={value} onChange={(e) => onChange(e.target.value)} className="min-h-[70px] resize-y" />
       </CardContent>
     </Card>
   )
@@ -1466,8 +1529,11 @@ function SortableSceneCard({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
+    transition: transition || 'transform 200ms ease',
+    opacity: isDragging ? 0.7 : 1,
+    scale: isDragging ? '1.02' : '1',
+    zIndex: isDragging ? 50 : 'auto',
+    boxShadow: isDragging ? '0 10px 40px rgba(0,0,0,0.15)' : 'none',
   }
 
   return (
@@ -1521,6 +1587,13 @@ function SortableSceneCard({
 
             {/* Inline Footage Search */}
             <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+              {/* Show selected footage */}
+              {scene.selectedFootage && scene.selectedFootage.length > 0 && (
+                <div className="flex items-center gap-2 mb-2">
+                  <img src={scene.selectedFootage[0].thumbnailUrl} alt="" className="h-10 w-16 object-cover rounded border-2 border-green-400" />
+                  <span className="text-[10px] text-green-600 font-semibold">✓ Footage dipilih</span>
+                </div>
+              )}
               <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">Search Footage</div>
               <div className="flex gap-2">
                 <Input
