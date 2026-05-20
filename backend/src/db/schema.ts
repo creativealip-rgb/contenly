@@ -465,6 +465,7 @@ export const scriptProject = pgTable('script_project', {
   caption: text('caption'),
   hook: text('hook'),
   thumbnailPrompt: text('thumbnail_prompt'),
+  thumbnailUrl: text('thumbnail_url'),
   musicSuggestion: text('music_suggestion'),
   hashtags: jsonb('hashtags').default([]),
   targetDurationSeconds: integer('target_duration_seconds'),
@@ -491,7 +492,9 @@ export const scriptScene = pgTable('script_scene', {
   selectedFootage: jsonb('selected_footage').default([]), // User-selected footage attached to scene
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
-});
+}, (table) => ({
+  projectIdIdx: index('script_scene_project_id_idx').on(table.projectId),
+}));
 
 // ==========================================
 // SOCIAL MEDIA ACCOUNTS

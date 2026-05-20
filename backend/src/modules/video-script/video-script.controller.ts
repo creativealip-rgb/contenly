@@ -92,6 +92,7 @@ export class VideoScriptController {
   }
 
   @Post('projects/:id/regenerate')
+  @SetUserRateLimit({ limit: 5, windowMs: 60000 })
   @ApiOperation({ summary: 'Regenerate a specific video script field' })
   async regenerateProjectField(
     @CurrentUser() user: User,
@@ -112,6 +113,7 @@ export class VideoScriptController {
   }
 
   @Post('scenes/:id/regenerate-voiceover')
+  @SetUserRateLimit({ limit: 5, windowMs: 60000 })
   @ApiOperation({ summary: 'Regenerate a specific scene voiceover' })
   async regenerateSceneVoiceover(
     @CurrentUser() user: User,
@@ -121,6 +123,7 @@ export class VideoScriptController {
   }
 
   @Post('scenes/:id/fetch-footage')
+  @SetUserRateLimit({ limit: 15, windowMs: 60000 })
   @ApiOperation({ summary: 'Fetch footage suggestions (Pexels + Google) for a scene' })
   async fetchSceneFootage(
     @CurrentUser() user: User,
@@ -179,6 +182,7 @@ export class VideoScriptController {
   }
 
   @Post('scenes/:id/tts-preview')
+  @SetUserRateLimit({ limit: 10, windowMs: 60000 })
   @ApiOperation({ summary: 'Generate MP3 TTS audio for a single scene voiceover' })
   async ttsPreviewScene(
     @CurrentUser() user: User,
@@ -229,9 +233,12 @@ export class VideoScriptController {
   }
 
   @Post('projects/:id/transcribe')
+  @SetUserRateLimit({ limit: 3, windowMs: 60000 })
   @ApiOperation({ summary: 'Transcribe audio/video file using Whisper' })
   @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 25 * 1024 * 1024 } }),
+  )
   async transcribeAudio(
     @CurrentUser() user: User,
     @Param('id') id: string,
@@ -255,6 +262,7 @@ export class VideoScriptController {
   }
 
   @Post('projects/:id/broll-autofill')
+  @SetUserRateLimit({ limit: 3, windowMs: 60000 })
   @ApiOperation({ summary: 'Auto-search footage for all scenes in batch' })
   async brollAutoFill(
     @CurrentUser() user: User,

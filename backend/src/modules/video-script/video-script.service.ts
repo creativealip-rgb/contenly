@@ -4,7 +4,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { asc, desc, eq, gt, gte, sql } from 'drizzle-orm';
+import { asc, desc, eq, sql } from 'drizzle-orm';
 import { schema } from '../../db/schema';
 import { DrizzleService } from '../../db/drizzle.service';
 import {
@@ -292,6 +292,13 @@ export class VideoScriptService {
       throw new BadRequestException('Project source content is empty');
     }
 
+    const hasBalance = await this.billingService.checkBalance(userId, 1);
+    if (!hasBalance) {
+      throw new BadRequestException(
+        'Saldo kredit Anda tidak mencukupi untuk request ini.',
+      );
+    }
+
     const fieldPrompt = this.buildFieldRegenerationPrompt(field, project);
     const tier = await this.billingService.getSubscriptionTier(userId);
     const model = this.getTierModel(tier);
@@ -325,6 +332,12 @@ export class VideoScriptService {
       .set(updatePayload)
       .where(eq(schema.scriptProject.id, projectId))
       .returning();
+
+    await this.billingService.deductTokens(
+      userId,
+      1,
+      `Video script regenerate field: ${field}`,
+    );
 
     return {
       ...updatedProject,
@@ -388,6 +401,13 @@ export class VideoScriptService {
       throw new BadRequestException('Project source content is empty');
     }
 
+    const hasBalance = await this.billingService.checkBalance(userId, 1);
+    if (!hasBalance) {
+      throw new BadRequestException(
+        'Saldo kredit Anda tidak mencukupi untuk request ini.',
+      );
+    }
+
     const tier = await this.billingService.getSubscriptionTier(userId);
     const model = this.getTierModel(tier);
     const prompt = `You are an expert short-form video scriptwriter.
@@ -438,6 +458,12 @@ ${project.sourceContent}`;
       })
       .where(eq(schema.scriptScene.id, sceneId))
       .returning();
+
+    await this.billingService.deductTokens(
+      userId,
+      1,
+      `Video script regenerate voiceover (scene ${scene.sceneNumber})`,
+    );
 
     return {
       ...updatedScene,
@@ -733,7 +759,19 @@ ${project.sourceContent}`;
       throw new BadRequestException('Scene voiceover text is empty');
     }
 
+    const hasBalance = await this.billingService.checkBalance(userId, 1);
+    if (!hasBalance) {
+      throw new BadRequestException(
+        'Saldo kredit Anda tidak mencukupi untuk request ini.',
+      );
+    }
+
     const buffer = await this.openAiService.generateSpeech(text, voice);
+    await this.billingService.deductTokens(
+      userId,
+      1,
+      `Video script TTS preview (scene ${scene.sceneNumber}, voice ${voice})`,
+    );
     return {
       buffer,
       filename: `scene-${scene.sceneNumber}-${voice}.mp3`,
@@ -1224,13 +1262,11 @@ ${project.sourceContent}`;
 
     await this.billingService.deductTokens(userId, 1, 'Thumbnail Generation');
 
-    // Save thumbnail prompt to project if not already set
-    if (!project.thumbnailPrompt) {
-      await this.drizzle.db
-        .update(schema.scriptProject)
-        .set({ updatedAt: new Date() })
-        .where(eq(schema.scriptProject.id, projectId));
-    }
+    // Persist generated thumbnail URL to project
+    await this.drizzle.db
+      .update(schema.scriptProject)
+      .set({ thumbnailUrl: imageUrl, updatedAt: new Date() })
+      .where(eq(schema.scriptProject.id, projectId));
 
     return { imageUrl, title, style: style || 'cinematic' };
   }

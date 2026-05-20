@@ -50,6 +50,7 @@ import {
   Volume2,
   Wand2,
 } from 'lucide-react'
+import { useConfirm } from '@/components/ui/confirm-dialog'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
@@ -119,6 +120,7 @@ const getErrorMessage = (error: unknown, fallback: string) =>
 export default function VideoScriptEditorPage() {
   const params = useParams()
   const router = useRouter()
+  const confirm = useConfirm()
   const projectId = params.id as string
 
   const [project, setProject] = useState<ScriptProject | null>(null)
@@ -219,6 +221,15 @@ export default function VideoScriptEditorPage() {
     }
   }, [projectId, fetchProject])
 
+  // Cleanup TTS audio object URL on unmount to prevent memory leak
+  useEffect(() => {
+    return () => {
+      if (ttsAudioUrl) {
+        URL.revokeObjectURL(ttsAudioUrl)
+      }
+    }
+  }, [ttsAudioUrl])
+
   const setProjectField = (field: keyof ProjectFormState, value: string) => {
     setProjectForm((prev) => ({ ...prev, [field]: value }))
   }
@@ -238,6 +249,23 @@ export default function VideoScriptEditorPage() {
     if (!projectForm.sourceContent.trim()) {
       toast.info('Masukkan konten sumber terlebih dahulu.')
       return
+    }
+
+    // If scenes exist, confirm before destructive regeneration
+    if (scenes.length > 0) {
+      const confirmed = await new Promise<boolean>((resolve) => {
+        confirm({
+          title: 'Generate ulang script?',
+          description: `Semua ${scenes.length} scene yang sudah ada akan dihapus dan diganti dengan script baru. Aksi ini tidak bisa dibatalkan.`,
+          confirmText: 'Ya, Generate Ulang',
+          cancelText: 'Batal',
+          variant: 'destructive',
+          onConfirm: () => resolve(true),
+        }).catch(() => resolve(false))
+        // Resolve false on cancel via timeout fallback
+        setTimeout(() => resolve(false), 30000)
+      })
+      if (!confirmed) return
     }
 
     setIsGenerating(true)
@@ -598,9 +626,15 @@ export default function VideoScriptEditorPage() {
   const handleTtsPreview = async (sceneId: string) => {
     if (playingTtsSceneId === sceneId && ttsAudioUrl) {
       // Stop playing
+      URL.revokeObjectURL(ttsAudioUrl)
       setPlayingTtsSceneId(null)
       setTtsAudioUrl(null)
       return
+    }
+
+    // Revoke previous URL if any
+    if (ttsAudioUrl) {
+      URL.revokeObjectURL(ttsAudioUrl)
     }
 
     setPlayingTtsSceneId(sceneId)
@@ -623,6 +657,11 @@ export default function VideoScriptEditorPage() {
 
       const audio = new Audio(url)
       audio.onended = () => {
+        setPlayingTtsSceneId(null)
+        setTtsAudioUrl(null)
+        URL.revokeObjectURL(url)
+      }
+      audio.onerror = () => {
         setPlayingTtsSceneId(null)
         setTtsAudioUrl(null)
         URL.revokeObjectURL(url)
@@ -814,12 +853,13 @@ export default function VideoScriptEditorPage() {
 
   const handleSelectFootage = async (sceneId: string, item: any) => {
     try {
-      await fetch(`${API_BASE_URL}/video-scripts/scenes/${sceneId}/select-footage`, {
-        method: 'POST',
+      const res = await fetch(`${API_BASE_URL}/video-scripts/scenes/${sceneId}/select-footage`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ items: [item] }),
       })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       toast.success('Footage dipilih untuk scene ini.')
     } catch {
       toast.error('Gagal menyimpan footage.')

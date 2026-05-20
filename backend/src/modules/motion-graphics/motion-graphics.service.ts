@@ -2,6 +2,7 @@ import { Injectable, Logger, BadRequestException, Inject, forwardRef } from '@ne
 import { ConfigService } from '@nestjs/config';
 import { OpenAiService } from '../ai/services/openai.service';
 import { VideoScriptService } from '../video-script/video-script.service';
+import { BillingService } from '../billing/billing.service';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -197,6 +198,7 @@ export class MotionGraphicsService {
   constructor(
     private configService: ConfigService,
     private openAiService: OpenAiService,
+    private billingService: BillingService,
     @Inject(forwardRef(() => VideoScriptService))
     private videoScriptService: VideoScriptService,
   ) {
@@ -215,11 +217,23 @@ export class MotionGraphicsService {
     return TEMPLATES.filter((t) => t.category === category);
   }
 
+  healthCheck(): { ready: boolean; bundlePath: string | null; templateCount: number; message: string } {
+    return {
+      ready: this.bundlePath !== null,
+      bundlePath: this.bundlePath,
+      templateCount: TEMPLATES.length,
+      message: this.bundlePath
+        ? 'Motion graphics renderer is ready'
+        : 'Remotion bundle not found. Run "cd remotion && npm run build" to enable rendering.',
+    };
+  }
+
   getTemplate(templateId: string): TemplateInfo | undefined {
     return TEMPLATES.find((t) => t.id === templateId);
   }
 
   async renderTemplate(
+    userId: string,
     templateId: string,
     props: Record<string, any>,
     options: { format?: 'mp4' | 'webm' | 'png'; durationFrames?: number; width?: number; height?: number } = {},
@@ -233,6 +247,13 @@ export class MotionGraphicsService {
       throw new BadRequestException(
         'Remotion bundle not available. Run "cd remotion && npm run build" to create the bundle.',
       );
+    }
+
+    // Billing: PNG = 1 token, video = 3 tokens (rendering is CPU-heavy)
+    const cost = (options.format || 'mp4') === 'png' ? 1 : 3;
+    const hasBalance = await this.billingService.checkBalance(userId, cost);
+    if (!hasBalance) {
+      throw new BadRequestException('Saldo kredit Anda tidak mencukupi untuk request ini.');
     }
 
     const format = options.format || 'mp4';
@@ -283,6 +304,11 @@ export class MotionGraphicsService {
     }
 
     this.logger.log(`Rendered ${templateId} → ${outputPath}`);
+    await this.billingService.deductTokens(
+      userId,
+      cost,
+      `Motion graphics render: ${templateId} (${format})`,
+    );
     return { outputPath, format };
   }
 
@@ -350,6 +376,7 @@ Resolution: ${width}x${height}`;
    * Render Auto-Caption from Whisper word timestamps
    */
   async renderCaption(
+    userId: string,
     words: Array<{ word: string; start: number; end: number }>,
     options: { style?: string; textColor?: string; highlightColor?: string; fontSize?: number } = {},
   ): Promise<{ outputPath: string; format: string }> {
@@ -359,6 +386,12 @@ Resolution: ${width}x${height}`;
 
     if (!words.length) {
       throw new BadRequestException('No words provided for caption rendering.');
+    }
+
+    const CAPTION_COST = 3;
+    const hasBalance = await this.billingService.checkBalance(userId, CAPTION_COST);
+    if (!hasBalance) {
+      throw new BadRequestException('Saldo kredit Anda tidak mencukupi untuk request ini.');
     }
 
     const lastWord = words[words.length - 1];
@@ -397,6 +430,11 @@ Resolution: ${width}x${height}`;
     });
 
     this.logger.log(`Rendered AutoCaption (${words.length} words) → ${outputPath}`);
+    await this.billingService.deductTokens(
+      userId,
+      CAPTION_COST,
+      `Motion graphics render: AutoCaption (${words.length} words)`,
+    );
     return { outputPath, format: 'webm' };
   }
 
@@ -407,7 +445,7 @@ Resolution: ${width}x${height}`;
   async composeVideo(
     userId: string,
     projectId: string,
-    options: { showCaptions?: boolean; captionStyle?: string; aspectRatio?: string } = {},
+    options: { showCaptions?: boolean; captionStyle?: string; aspectRatio?: string; voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer'; includeAudio?: boolean } = {},
   ): Promise<{ outputPath: string; format: string; duration: number }> {
     if (!this.bundlePath) {
       throw new BadRequestException('Remotion bundle not available.');
@@ -418,21 +456,73 @@ Resolution: ${width}x${height}`;
       throw new BadRequestException('No scenes to compose.');
     }
 
+    // Compose video is the most expensive operation. Cost depends on TTS pre-render.
+    const includeAudio = options.includeAudio !== false; // default true
+    const COMPOSE_COST = includeAudio ? 10 : 5;
+    const hasBalance = await this.billingService.checkBalance(userId, COMPOSE_COST);
+    if (!hasBalance) {
+      throw new BadRequestException('Saldo kredit Anda tidak mencukupi untuk request ini.');
+    }
+
     const aspectRatio = options.aspectRatio || '9:16';
     const [width, height] = aspectRatio === '16:9' ? [1920, 1080] : aspectRatio === '1:1' ? [1080, 1080] : [1080, 1920];
+
+    // Pre-render TTS audio per scene (so the composed video isn't silent).
+    // Audio files are written to a temp dir and referenced via file:// URL during render,
+    // then cleaned up after render completes.
+    const audioDir = path.resolve(process.cwd(), 'tmp', 'compose-audio', `${projectId}-${Date.now()}`);
+    let audioFiles: string[] = [];
+    if (includeAudio) {
+      fs.mkdirSync(audioDir, { recursive: true });
+      const voice = options.voice || 'alloy';
+      try {
+        const ttsResults = await Promise.all(
+          project.scenes.map(async (s: any) => {
+            const text = (s.voiceoverText || '').trim();
+            if (!text) return null;
+            const buffer = await this.openAiService.generateSpeech(text, voice);
+            const filePath = path.join(audioDir, `scene-${s.sceneNumber}.mp3`);
+            fs.writeFileSync(filePath, buffer);
+            audioFiles.push(filePath);
+            return { sceneNumber: s.sceneNumber, filePath };
+          }),
+        );
+        const audioMap = new Map(
+          ttsResults
+            .filter((r): r is { sceneNumber: number; filePath: string } => r !== null)
+            .map((r) => [r.sceneNumber, r.filePath]),
+        );
+        // attach
+        (project.scenes as any[]).forEach((s) => {
+          const ap = audioMap.get(s.sceneNumber);
+          (s as any).__audioPath = ap || null;
+        });
+      } catch (err) {
+        this.logger.error('TTS pre-render failed during composeVideo:', err);
+        // Cleanup partial audio files
+        audioFiles.forEach((f) => fs.unlink(f, () => {}));
+        try { fs.rmdirSync(audioDir); } catch { /* ignore */ }
+        throw new BadRequestException('Gagal generate audio TTS untuk video. Coba lagi atau matikan opsi audio.');
+      }
+    }
 
     const totalDuration = project.scenes.reduce((sum, s) => sum + (s.estimatedDuration || 5), 0);
     const durationInFrames = (totalDuration + 2) * 30; // +2s for title overlay
 
-    const scenes = project.scenes.map((s: any) => ({
-      sceneNumber: s.sceneNumber,
-      voiceoverText: s.voiceoverText,
-      visualContext: s.visualContext,
-      estimatedDuration: s.estimatedDuration || 5,
-      emoji: s.emoji,
-      footageUrl: s.selectedFootage?.[0]?.thumbnailUrl || null,
-      audioUrl: null, // TTS would need pre-rendering; skip for now
-    }));
+    const scenes = project.scenes.map((s: any) => {
+      const audioPath: string | null = (s as any).__audioPath || null;
+      // Convert local path to file:// URL for Remotion <Audio> tag
+      const audioUrl = audioPath ? `file://${audioPath.replace(/\\/g, '/')}` : null;
+      return {
+        sceneNumber: s.sceneNumber,
+        voiceoverText: s.voiceoverText,
+        visualContext: s.visualContext,
+        estimatedDuration: s.estimatedDuration || 5,
+        emoji: s.emoji,
+        footageUrl: s.selectedFootage?.[0]?.thumbnailUrl || null,
+        audioUrl,
+      };
+    });
 
     const props = {
       scenes,
@@ -459,15 +549,28 @@ Resolution: ${width}x${height}`;
 
     const outputPath = path.join(outputDir, `composed-${Date.now()}.mp4`);
 
-    await renderMedia({
-      serveUrl: this.bundlePath,
-      composition: compositionOverride,
-      codec: 'h264',
-      outputLocation: outputPath,
-      inputProps: props,
-    });
+    try {
+      await renderMedia({
+        serveUrl: this.bundlePath,
+        composition: compositionOverride,
+        codec: 'h264',
+        outputLocation: outputPath,
+        inputProps: props,
+      });
+    } finally {
+      // Always cleanup TTS temp files even if render fails
+      audioFiles.forEach((f) => fs.unlink(f, () => {}));
+      try {
+        if (fs.existsSync(audioDir)) fs.rmdirSync(audioDir);
+      } catch { /* ignore */ }
+    }
 
-    this.logger.log(`Composed video (${scenes.length} scenes, ${totalDuration}s) → ${outputPath}`);
+    this.logger.log(`Composed video (${scenes.length} scenes, ${totalDuration}s${includeAudio ? ', with audio' : ', silent'}) → ${outputPath}`);
+    await this.billingService.deductTokens(
+      userId,
+      COMPOSE_COST,
+      `Motion graphics compose: ${scenes.length} scenes (${totalDuration}s)`,
+    );
     return { outputPath, format: 'mp4', duration: totalDuration };
   }
 }

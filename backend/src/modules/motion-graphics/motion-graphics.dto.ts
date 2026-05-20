@@ -91,4 +91,12 @@ export class ComposeVideoDto {
   @IsOptional()
   @IsIn(['9:16', '16:9', '1:1'])
   aspectRatio?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  includeAudio?: boolean;
+
+  @IsOptional()
+  @IsIn(['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'])
+  voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
 }

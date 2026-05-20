@@ -11,6 +11,12 @@ import { CalloutBox } from './templates/CalloutBox';
 import { AutoCaption } from './templates/AutoCaption';
 import { AnimatedBackground } from './templates/AnimatedBackground';
 import { ComposedVideo } from './templates/ComposedVideo';
+import { TypewriterText } from './templates/TypewriterText';
+import { BulletList } from './templates/BulletList';
+import { QuoteCard } from './templates/QuoteCard';
+import { ProgressBar } from './templates/ProgressBar';
+import { SplitScreen } from './templates/SplitScreen';
+import { SocialProof } from './templates/SocialProof';
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -39,6 +45,18 @@ export const RemotionRoot: React.FC = () => {
         defaultProps={{ type: 'gradient-mesh', color1: '#0f172a', color2: '#3b82f6', color3: '#8b5cf6', speed: 1 }} />
       <Composition id="ComposedVideo" component={ComposedVideo} durationInFrames={300} fps={30} width={1080} height={1920}
         defaultProps={{ scenes: [], title: 'Video', showCaptions: true, captionStyle: 'classic', bgColor: '#0f172a', textColor: '#ffffff', accentColor: '#3b82f6' }} />
+      <Composition id="TypewriterText" component={TypewriterText} durationInFrames={90} fps={30} width={1920} height={1080}
+        defaultProps={{ text: 'Hello World...', bgColor: '#0f172a', textColor: '#22c55e', speed: 1 }} />
+      <Composition id="BulletList" component={BulletList} durationInFrames={90} fps={30} width={1920} height={1080}
+        defaultProps={{ items: ['Point one', 'Point two', 'Point three', 'Point four'], bgColor: '#0f172a', textColor: '#ffffff', bulletColor: '#3b82f6', style: 'slide' as const }} />
+      <Composition id="QuoteCard" component={QuoteCard} durationInFrames={90} fps={30} width={1080} height={1080}
+        defaultProps={{ quote: 'The only way to do great work is to love what you do.', author: 'Steve Jobs', bgColor: '#0f172a', textColor: '#ffffff', accentColor: '#f59e0b' }} />
+      <Composition id="ProgressBar" component={ProgressBar} durationInFrames={75} fps={30} width={1920} height={1080}
+        defaultProps={{ percentage: 85, label: 'Completion', bgColor: '#0f172a', barColor: '#10b981', textColor: '#ffffff' }} />
+      <Composition id="SplitScreen" component={SplitScreen} durationInFrames={75} fps={30} width={1920} height={1080}
+        defaultProps={{ title: 'BEFORE', subtitle: 'After the transformation', bgColor: '#1e293b', textColor: '#ffffff', accentColor: '#3b82f6' }} />
+      <Composition id="SocialProof" component={SocialProof} durationInFrames={75} fps={30} width={1080} height={1080}
+        defaultProps={{ handle: '@creator', followers: '1.2M', bio: 'Content Creator & Educator', bgColor: '#f1f5f9', accentColor: '#8b5cf6' }} />
     </>
   );
 };
