@@ -10,6 +10,7 @@ import {
 import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { ConfigService } from '@nestjs/config';
+import { AuthService } from '../auth/auth.service';
 
 @WebSocketGateway({
     cors: {
@@ -39,18 +40,38 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
     private readonly logger = new Logger(NotificationsGateway.name);
     private userSockets: Map<string, Set<string>> = new Map();
+    private authenticatedUsers: Map<string, string> = new Map(); // socketId -> userId
 
-    constructor(private configService: ConfigService) { }
+    constructor(
+        private configService: ConfigService,
+        private authService: AuthService,
+    ) { }
 
-    handleConnection(client: Socket) {
+    async handleConnection(client: Socket) {
         this.logger.log(`Client connected: ${client.id}`);
 
-        // The client should send userId after connection
-        // This is handled in the subscribe handler
+        // Authenticate via cookie or auth token from handshake
+        try {
+            const cookie = client.handshake.headers.cookie || '';
+            const token = client.handshake.auth?.token;
+            const headers = new Headers();
+            if (cookie) headers.set('cookie', cookie);
+            if (token) headers.set('authorization', `Bearer ${token}`);
+
+            const session = await this.authService.getSession({ headers });
+            if (session?.user) {
+                this.authenticatedUsers.set(client.id, session.user.id);
+            } else {
+                client.disconnect();
+            }
+        } catch {
+            client.disconnect();
+        }
     }
 
     handleDisconnect(client: Socket) {
         this.logger.log(`Client disconnected: ${client.id}`);
+        this.authenticatedUsers.delete(client.id);
 
         // Remove client from all user rooms
         for (const [userId, sockets] of this.userSockets.entries()) {
@@ -69,10 +90,15 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         @MessageBody() data: { userId: string },
     ) {
         const { userId } = data;
+        const authenticatedUserId = this.authenticatedUsers.get(client.id);
 
-        if (!userId) {
-            this.logger.warn(`Subscribe attempt without userId from client ${client.id}`);
-            return { success: false, error: 'userId is required' };
+        if (!authenticatedUserId) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        // Users can only subscribe to their own notifications
+        if (userId !== authenticatedUserId) {
+            return { success: false, error: 'Unauthorized' };
         }
 
         // Join user-specific room

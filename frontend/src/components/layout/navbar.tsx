@@ -127,6 +127,7 @@ export function Navbar() {
                         size="icon"
                         className="md:hidden rounded-xl"
                         onClick={toggle}
+                        aria-label="Buka menu navigasi"
                     >
                         {icons.menu}
                     </Button>
@@ -272,7 +273,10 @@ function NotificationBell() {
         try {
             const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
             const res = await fetch(`${API_URL}/notifications`, { credentials: 'include' })
-            if (res.ok) setNotifications(await res.json())
+            if (res.ok) {
+                const data = await res.json()
+                setNotifications(Array.isArray(data) ? data : data.data || [])
+            }
         } catch { /* silent */ }
     }
 

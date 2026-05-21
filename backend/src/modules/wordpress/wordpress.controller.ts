@@ -40,14 +40,14 @@ export class WordpressController {
 
   @Post('sites/:id/test')
   @ApiOperation({ summary: 'Test site connection' })
-  async testConnection(@Param('id') siteId: string) {
-    return this.wordpressService.verifySiteConnection(siteId);
+  async testConnection(@CurrentUser() user: User, @Param('id') siteId: string) {
+    return this.wordpressService.verifySiteConnection(user.id, siteId);
   }
 
   @Get('sites/:id/categories')
   @ApiOperation({ summary: 'Sync and get categories from WordPress' })
-  async getCategories(@Param('id') siteId: string) {
-    return this.wordpressService.syncCategories(siteId);
+  async getCategories(@CurrentUser() user: User, @Param('id') siteId: string) {
+    return this.wordpressService.syncCategories(user.id, siteId);
   }
 
   @Delete('sites/:id')

@@ -1,5 +1,5 @@
 import { Injectable, Inject, forwardRef } from '@nestjs/common';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, count } from 'drizzle-orm';
 import { DrizzleService } from '../../db/drizzle.service';
 import { notification } from '../../db/schema';
 import { NotificationsGateway } from './notifications.gateway';
@@ -17,12 +17,18 @@ export class NotificationsService {
     return this.drizzle.db;
   }
 
-  async findAll(userId: string) {
-    return this.db.query.notification.findMany({
-      where: eq(notification.userId, userId),
-      orderBy: [desc(notification.createdAt)],
-      limit: 50,
-    });
+  async findAll(userId: string, page = 1, limit = 20) {
+    const offset = (page - 1) * limit;
+    const [data, [{ total }]] = await Promise.all([
+      this.db.query.notification.findMany({
+        where: eq(notification.userId, userId),
+        orderBy: [desc(notification.createdAt)],
+        limit,
+        offset,
+      }),
+      this.db.select({ total: count() }).from(notification).where(eq(notification.userId, userId)),
+    ]);
+    return { data, total, page, limit };
   }
 
   async markAsRead(userId: string, id: string) {

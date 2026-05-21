@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     Search,
@@ -30,6 +30,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useContentLabStore } from '@/stores/content-lab-store'
 import { useBilling } from '@/hooks/use-billing'
 import { Lock } from 'lucide-react'
+import { useTrendSearch, useTrendAnalysis } from '@/hooks/use-trend-radar'
 
 interface TrendItem {
     id: string;
@@ -56,48 +57,20 @@ export default function TrendRadarPage() {
     const { setScrapeUrl, setActiveTab } = useContentLabStore()
 
     const [query, setQuery] = useState(searchParams.get('q') || '')
-    const [isSearching, setIsSearching] = useState(false)
-    const [results, setResults] = useState<TrendItem[]>([])
+    const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '')
     const [selectedTrend, setSelectedTrend] = useState<TrendItem | null>(null)
-    const [isAnalyzing, setIsAnalyzing] = useState(false)
-    const [analysis, setAnalysis] = useState<TrendAnalysis | null>(null)
     const [isSheetOpen, setIsSheetOpen] = useState(false)
     const { data: billingData } = useBilling()
     const isFreeTier = billingData?.tier === 'FREE'
 
+    const { data: results = [], isFetching: isSearching } = useTrendSearch(searchQuery)
+    const analysisMutation = useTrendAnalysis()
+
     const handleSearch = async (e?: React.FormEvent) => {
         if (e) e.preventDefault()
-        if (!query.trim() || isSearching) return
-
-        setIsSearching(true)
-        setResults([])
-
-        try {
-            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
-            const response = await fetch(`${API_BASE_URL}/trend-radar/search?q=${encodeURIComponent(query)}`, {
-                headers: { 'ngrok-skip-browser-warning': 'true' },
-                credentials: 'include'
-            })
-            const data = await response.json()
-            if (data.success) {
-                setResults(data.data)
-                if (data.data.length === 0) toast.info('No trends found for this query.')
-            } else {
-                toast.error(data.error || 'Failed to search trends')
-            }
-        } catch (error) {
-            toast.error('Connection error. Please try again.')
-        } finally {
-            setIsSearching(false)
-        }
+        if (!query.trim()) return
+        setSearchQuery(query.trim())
     }
-
-    // Auto-search if query param provided (from dashboard click)
-    useEffect(() => {
-        if (query.trim() && results.length === 0 && !isSearching) {
-            handleSearch()
-        }
-    }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleAnalyze = async (trend: TrendItem) => {
         if (isFreeTier) {
@@ -112,30 +85,10 @@ export default function TrendRadarPage() {
         }
 
         setSelectedTrend(trend)
-        setIsAnalyzing(true)
         setIsSheetOpen(true)
-        setAnalysis(null)
-
-        try {
-            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
-            const response = await fetch(`${API_BASE_URL}/trend-radar/analyze?url=${encodeURIComponent(trend.url)}`, {
-                headers: { 'ngrok-skip-browser-warning': 'true' },
-                credentials: 'include'
-            })
-            const data = await response.json()
-            if (data.success) {
-                setAnalysis({
-                    ...data.data.analysis,
-                    content: data.data.content
-                })
-            } else {
-                toast.error('Failed to analyze trend content')
-            }
-        } catch (error) {
-            toast.error('Analysis failed. Try another link.')
-        } finally {
-            setIsAnalyzing(false)
-        }
+        analysisMutation.mutate(trend.url, {
+            onError: () => toast.error('Analysis failed. Try another link.'),
+        })
     }
 
     const handleDraftInLab = () => {
@@ -146,6 +99,9 @@ export default function TrendRadarPage() {
         toast.success('Topic sent to Content Lab!')
         router.push('/content-lab')
     }
+
+    const analysis = analysisMutation.data
+    const isAnalyzing = analysisMutation.isPending
 
     return (
         <div className="max-w-[1400px] mx-auto space-y-10 pb-20">
@@ -294,7 +250,7 @@ export default function TrendRadarPage() {
             {/* Analysis Sheet */}
             <Sheet open={isSheetOpen} onOpenChange={(open) => {
                 setIsSheetOpen(open);
-                if (!open) setAnalysis(null);
+                if (!open) analysisMutation.reset();
             }}>
                 <SheetContent side="right" className="w-full sm:max-w-xl glass border-l-white/40 dark:border-l-white/10 p-0 overflow-hidden">
                     <div className="h-full flex flex-col">

@@ -23,11 +23,13 @@ export function URLScrapeSection({ isScraping, onScrape }: URLScrapeSectionProps
                         placeholder="https://example.com/blog-post"
                         value={scrapeUrl}
                         onChange={(e) => setScrapeUrl(e.target.value)}
+                        aria-label="URL sumber konten"
                         className="bg-white/50 backdrop-blur-sm border-slate-200 h-11 rounded-xl"
                     />
                     <Button
                         onClick={onScrape}
                         disabled={isScraping || !scrapeUrl}
+                        aria-label="Tarik konten dari URL"
                         className="w-full h-11 bg-blue-600 hover:bg-blue-700 rounded-xl shadow-lg shadow-blue-100 font-bold"
                     >
                         {isScraping ? <Loader2 className="h-5 w-5 animate-spin" /> : "Tarik Konten"}

@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { RefreshCw, Image as ImageIcon, Trash2, Loader2, Sparkles } from 'lucide-react'
 import { useContentLabStore } from '@/stores/content-lab-store'
+import NextImage from 'next/image'
 
 interface SEOSectionProps {
     isRefreshingSEO: boolean;
@@ -71,7 +72,7 @@ export function SEOSection({
             <div className="relative group rounded-2xl overflow-hidden aspect-[16/9] border-2 border-dashed border-slate-100 dark:border-slate-800 bg-slate-50/50 flex items-center justify-center transition-all hover:bg-slate-50">
                 {featuredImage ? (
                     <>
-                        <img src={featuredImage} alt="Featured" className="w-full h-full object-cover" />
+                        <NextImage src={featuredImage} alt="Featured" fill className="object-cover" unoptimized />
                         <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-sm">
                             <Button variant="secondary" size="sm" className="h-8 text-[10px] font-bold rounded-lg" onClick={() => document.getElementById('image-input')?.click()}>
                                 Ganti

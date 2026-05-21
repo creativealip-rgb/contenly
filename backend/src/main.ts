@@ -15,15 +15,21 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Increase body size limits for featured images
-  app.use(json({ limit: '50mb' }));
-  app.use(urlencoded({ limit: '50mb', extended: true }));
+  app.use(json({ limit: '5mb' }));
+  app.use(urlencoded({ limit: '5mb', extended: true }));
 
   // Security
   app.use(helmet());
 
-  // Global Logger
+  // Enable graceful shutdown
+  app.enableShutdownHooks();
+
+  // Request logging (production-safe)
   app.use((req, res, next) => {
-    console.log(`[GlobalLogger] ${req.method} ${req.url}`);
+    const start = Date.now();
+    res.on('finish', () => {
+      logger.log(`${req.method} ${req.url} ${res.statusCode} ${Date.now() - start}ms`);
+    });
     next();
   });
 
@@ -68,8 +74,14 @@ async function bootstrap() {
     exclude: ['health'], // Exclude health check from versioning if needed
   });
 
-  // Serve tmp files (for Remotion audio during compose)
-  app.use('/tmp', expressStatic.static(path.resolve(process.cwd(), 'tmp')));
+  // Serve tmp files (for Remotion audio during compose) — require session cookie
+  app.use('/tmp', (req, res, next) => {
+    const cookies = req.headers.cookie || '';
+    if (!cookies.includes('better-auth.session_token')) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    next();
+  }, expressStatic.static(path.resolve(process.cwd(), 'tmp')));
 
   // Validation
   app.useGlobalPipes(

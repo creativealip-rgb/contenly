@@ -21,6 +21,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <OnboardingModal />
             <AiAssistant />
             <main
+                role="main"
+                id="main-content"
                 className={cn(
                     "min-h-screen pt-20 transition-all duration-300 max-w-full overflow-x-hidden",
                     isCollapsed ? "md:ml-[112px]" : "md:ml-[320px]"

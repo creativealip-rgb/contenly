@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { eq, and, sql } from 'drizzle-orm';
 import { DrizzleService } from '../../db/drizzle.service';
@@ -104,7 +104,7 @@ export class WordpressService implements OnModuleInit {
       .returning();
 
     // Fetch and cache categories
-    await this.syncCategories(site.id);
+    await this.syncCategories(userId, site.id);
 
     return site;
   }
@@ -128,12 +128,13 @@ export class WordpressService implements OnModuleInit {
     }
   }
 
-  async verifySiteConnection(siteId: string): Promise<{ connected: boolean; message?: string }> {
+  async verifySiteConnection(userId: string, siteId: string): Promise<{ connected: boolean; message?: string }> {
     const site = await this.db.query.wpSite.findFirst({
       where: eq(wpSite.id, siteId),
     });
 
     if (!site) throw new NotFoundException('Site not found');
+    if (site.userId !== userId) throw new ForbiddenException('Access denied');
 
     this.logger.log(`Verifying connection for site: ${site.name} (${site.url})`);
 
@@ -164,7 +165,7 @@ export class WordpressService implements OnModuleInit {
     }
   }
 
-  async syncCategories(siteId: string) {
+  async syncCategories(userId: string, siteId: string) {
     this.logger.log(`Starting category sync for site: ${siteId}`);
     const site = await this.db.query.wpSite.findFirst({
       where: eq(wpSite.id, siteId),
@@ -174,6 +175,8 @@ export class WordpressService implements OnModuleInit {
       this.logger.warn('Site not found for category sync');
       throw new NotFoundException('Site not found');
     }
+
+    if (site.userId !== userId) throw new ForbiddenException('Access denied');
 
     try {
       const appPassword = this.encryptionService.decrypt(site.appPasswordEncrypted);

@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
-import { eq, and, ilike, or, sql, desc } from 'drizzle-orm';
+import { eq, and, ilike, or, sql, desc, inArray } from 'drizzle-orm';
 import { DrizzleService } from '../../db/drizzle.service';
 import { article, wpSite } from '../../db/schema';
 import { CreateArticleDto, UpdateArticleDto } from './dto';
@@ -53,10 +53,8 @@ export class ArticlesService {
       .limit(limit)
       .offset(offset);
 
-    // Fetch wpSite data separately for articles that have wpSiteId
-    const wpSiteIds = articlesData
-      .filter(a => a.wpSiteId)
-      .map(a => a.wpSiteId);
+    // Fetch wpSite data in a single query
+    const wpSiteIds = [...new Set(articlesData.filter(a => a.wpSiteId).map(a => a.wpSiteId!))];
 
     let wpSitesData: any[] = [];
     if (wpSiteIds.length > 0) {
@@ -67,22 +65,7 @@ export class ArticlesService {
           url: wpSite.url,
         })
         .from(wpSite)
-        .where(eq(wpSite.id, wpSiteIds[0]));
-
-      // For multiple IDs, we need to query each one separately or use OR conditions
-      if (wpSiteIds.length > 1) {
-        for (let i = 1; i < wpSiteIds.length; i++) {
-          const additionalSites = await this.db
-            .select({
-              id: wpSite.id,
-              name: wpSite.name,
-              url: wpSite.url,
-            })
-            .from(wpSite)
-            .where(eq(wpSite.id, wpSiteIds[i]));
-          wpSitesData.push(...additionalSites);
-        }
-      }
+        .where(inArray(wpSite.id, wpSiteIds));
     }
 
     // Merge articles with their wpSite data

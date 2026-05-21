@@ -38,6 +38,7 @@ import { SocialModule } from './modules/social/social.module';
 import { BrandKitModule } from './modules/brand-kit/brand-kit.module';
 import { CalendarModule } from './modules/calendar/calendar.module';
 import { MotionGraphicsModule } from './modules/motion-graphics/motion-graphics.module';
+import { VideoClipModule } from './modules/video-clip/video-clip.module';
 
 @Module({
   imports: [
@@ -96,6 +97,7 @@ import { MotionGraphicsModule } from './modules/motion-graphics/motion-graphics.
     BrandKitModule,
     CalendarModule,
     MotionGraphicsModule,
+    VideoClipModule,
   ],
   controllers: [AppController],
   providers: [

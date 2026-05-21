@@ -1,39 +1,36 @@
-import { useState, useEffect } from 'react';
-import { api } from '@/lib/api';
+import { useQuery } from '@tanstack/react-query'
+import { api } from '@/lib/api'
 
-export interface BillingData {
-    tier: 'FREE' | 'PRO' | 'ENTERPRISE';
-    balance: number;
-    subscription: any;
+export function useBillingBalance() {
+  return useQuery<{ balance: number }>({
+    queryKey: ['billing-balance'],
+    queryFn: () => api.get('/billing/balance'),
+  })
 }
 
+export function useBillingSubscription() {
+  return useQuery<any>({
+    queryKey: ['billing-subscription'],
+    queryFn: () => api.get('/billing/subscriptions'),
+  })
+}
+
+export function useBillingTransactions(limit = 10) {
+  return useQuery<any[]>({
+    queryKey: ['billing-transactions', limit],
+    queryFn: async () => {
+      const data = await api.get<any>(`/billing/transactions?limit=${limit}`)
+      return data.data || []
+    },
+  })
+}
+
+// Backward-compatible hook used by trend-radar and view-boost
 export function useBilling() {
-    const [data, setData] = useState<BillingData | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<Error | null>(null);
-
-    useEffect(() => {
-        async function fetchBilling() {
-            try {
-                // Fetch subscription to get tier
-                const subRes = await api.get<any>('/billing/subscriptions');
-                const balanceRes = await api.get<{ balance: number }>('/billing/balance');
-
-                setData({
-                    tier: subRes?.plan || 'FREE',
-                    balance: balanceRes.balance,
-                    subscription: subRes,
-                });
-            } catch (err: any) {
-                console.error('Failed to fetch billing data:', err);
-                setError(err);
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        fetchBilling();
-    }, []);
-
-    return { data, loading, error };
+  const { data: balanceData, isLoading: l1 } = useBillingBalance()
+  const { data: subscription, isLoading: l2 } = useBillingSubscription()
+  return {
+    data: !l1 && !l2 ? { tier: subscription?.plan || 'FREE', balance: balanceData?.balance ?? 0, subscription } : null,
+    loading: l1 || l2,
+  }
 }

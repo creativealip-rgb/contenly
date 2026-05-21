@@ -84,26 +84,13 @@ export class AuthService {
 
   async getSession(options: { headers: Headers }) {
     try {
-      // Debug Headers
-      const authHeader = options.headers.get('authorization');
-      const cookieHeader = options.headers.get('cookie');
-      const originHeader = options.headers.get('origin');
-      const hostHeader = options.headers.get('host');
-      this.logger.log(`[SessionAuthGuard] Host: ${hostHeader}`);
-      this.logger.log(`[SessionAuthGuard] Origin: ${originHeader}`);
-      this.logger.log(`[SessionAuthGuard] Auth Header Present: ${!!authHeader}`);
-      this.logger.log(
-        `[SessionAuthGuard] Cookie Header Present: ${!!cookieHeader}`,
-      );
       const session = await auth.api.getSession({
         headers: options.headers,
       });
       return session;
     } catch (error: any) {
       this.logger.error('[AuthService] getSession Error:', error);
-      throw new UnauthorizedException(
-        `DEBUG: getSession Error: ${error.message || 'Unknown'}`,
-      );
+      throw new UnauthorizedException('Unauthorized');
     }
   }
 

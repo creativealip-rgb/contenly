@@ -3,6 +3,7 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { Readability } from '@mozilla/readability';
 import { JSDOM } from 'jsdom';
+import { validateUrlSafe } from '../../common/utils/url-validator';
 
 export interface AdvancedScrapedContent {
   title: string;
@@ -25,6 +26,9 @@ export class AdvancedScraperService {
   async scrapeArticle(url: string): Promise<AdvancedScrapedContent> {
     try {
       this.logger.log(`Scraping article: ${url}`);
+
+      // SSRF protection: validate URL before fetching
+      await validateUrlSafe(url);
 
       // Fetch HTML
       const response = await axios.get(url, {

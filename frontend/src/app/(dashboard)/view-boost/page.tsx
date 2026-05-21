@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AdminGuard } from '@/components/guards';
 import { toast } from 'sonner';
 import { useBilling } from '@/hooks/use-billing';
+import { containerVariants, itemVariants } from '@/lib/animations';
 
 interface ViewBoostJob {
   id: string;
@@ -26,16 +27,6 @@ interface ViewBoostJob {
   progress: number;
   createdAt: string;
 }
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
-} as const
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 100 } }
-} as const
 
 export default function ViewBoostPage() {
   const [jobs, setJobs] = useState<ViewBoostJob[]>([]);
@@ -54,7 +45,9 @@ export default function ViewBoostPage() {
 
   useEffect(() => {
     fetchJobs(true);
-    const interval = setInterval(() => fetchJobs(false), 5000);
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') fetchJobs(false);
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 

@@ -5,6 +5,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
@@ -25,8 +26,12 @@ export class FeedsController {
 
   @Get()
   @ApiOperation({ summary: 'List all RSS feeds' })
-  async findAll(@CurrentUser() user: User) {
-    return this.feedsService.findAll(user.id);
+  async findAll(
+    @CurrentUser() user: User,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.feedsService.findAll(user.id, Number(page) || 1, Number(limit) || 20);
   }
 
   @Post()
@@ -56,8 +61,8 @@ export class FeedsController {
 
   @Post(':id/poll')
   @ApiOperation({ summary: 'Manually trigger feed polling' })
-  async pollFeed(@Param('id') id: string) {
-    const result = await this.feedsService.triggerPoll(id);
+  async pollFeed(@CurrentUser() user: User, @Param('id') id: string) {
+    const result = await this.feedsService.triggerPoll(user.id, id);
     return {
       message: 'Feed polling completed',
       data: result,

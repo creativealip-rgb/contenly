@@ -1,7 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, count } from 'drizzle-orm';
 import { DrizzleService } from '../../db/drizzle.service';
 import { feed, feedItem } from '../../db/schema';
 import { FeedPollerService } from './feed-poller.service';
@@ -23,11 +23,18 @@ export class FeedsService {
     return this.drizzle.db;
   }
 
-  async findAll(userId: string) {
-    return this.db.query.feed.findMany({
-      where: eq(feed.userId, userId),
-      orderBy: [desc(feed.createdAt)],
-    });
+  async findAll(userId: string, page = 1, limit = 20) {
+    const offset = (page - 1) * limit;
+    const [data, [{ total }]] = await Promise.all([
+      this.db.query.feed.findMany({
+        where: eq(feed.userId, userId),
+        orderBy: [desc(feed.createdAt)],
+        limit,
+        offset,
+      }),
+      this.db.select({ total: count() }).from(feed).where(eq(feed.userId, userId)),
+    ]);
+    return { data, total, page, limit };
   }
   async create(userId: string, data: { name: string; url: string; pollingIntervalMinutes?: number }) {
     this.logger.log(`Creating feed for user: ${userId}, URL: ${data.url}`);
@@ -57,7 +64,7 @@ export class FeedsService {
 
       // Trigger immediate poll for new feed
       try {
-        await this.triggerPoll(newFeed.id);
+        await this.triggerPoll(userId, newFeed.id);
       } catch (error: any) {
         this.logger.warn(`Could not trigger immediate poll: ${error.message}`);
       }
@@ -124,7 +131,14 @@ export class FeedsService {
     return { message: 'Feed deleted' };
   }
 
-  async triggerPoll(feedId: string) {
+  async triggerPoll(userId: string, feedId: string) {
+    // Verify ownership
+    const feedRecord = await this.db.query.feed.findFirst({
+      where: eq(feed.id, feedId),
+    });
+    if (!feedRecord) throw new NotFoundException('Feed not found');
+    if (feedRecord.userId !== userId) throw new ForbiddenException('Access denied');
+
     // Add job to queue for immediate processing
     this.logger.log(`Triggering immediate poll for feed: ${feedId}`);
     try {

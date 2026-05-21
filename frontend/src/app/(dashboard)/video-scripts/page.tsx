@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { Button } from '@/components/ui/button'
@@ -13,8 +13,7 @@ import { Label } from '@/components/ui/label'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
 import { useConfirm } from '@/components/ui/confirm-dialog'
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
+import { useVideoProjects, useCreateVideoProject, useDeleteVideoProject } from '@/hooks/use-video-scripts'
 
 interface ScriptProject {
     id: string
@@ -28,62 +27,23 @@ interface ScriptProject {
 export default function VideoScriptsPage() {
     const router = useRouter()
     const confirm = useConfirm()
-    const [projects, setProjects] = useState<ScriptProject[]>([])
-    const [isLoading, setIsLoading] = useState(true)
-    const [isCreating, setIsCreating] = useState(false)
+    const { data: projects = [], isLoading, refetch } = useVideoProjects()
+    const createMutation = useCreateVideoProject()
+    const deleteMutation = useDeleteVideoProject()
     const [newTitle, setNewTitle] = useState('')
     const [newUrl, setNewUrl] = useState('')
     const [isDialogOpen, setIsDialogOpen] = useState(false)
 
-    const fetchProjects = async () => {
-        try {
-            setIsLoading(true)
-            const response = await fetch(`${API_BASE_URL}/video-scripts/projects`, {
-                headers: { 'Cache-Control': 'no-cache' },
-                credentials: 'include'
-            })
-            if (response.ok) {
-                const data = await response.json()
-                setProjects(data)
-            }
-        } catch (error) {
-            console.error('Failed to fetch video scripts:', error)
-        } finally {
-            setIsLoading(false)
-        }
-    }
-
-    useEffect(() => {
-        fetchProjects()
-    }, [])
-
     const handleCreateProject = async () => {
         if (!newTitle.trim()) return
-
-        try {
-            setIsCreating(true)
-            const response = await fetch(`${API_BASE_URL}/video-scripts/projects`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({
-                    title: newTitle,
-                    sourceUrl: newUrl
-                })
-            })
-
-            if (response.ok) {
-                const newProject = await response.json()
+        createMutation.mutate({ title: newTitle, sourceUrl: newUrl }, {
+            onSuccess: (newProject) => {
                 setIsDialogOpen(false)
                 setNewTitle('')
                 setNewUrl('')
                 router.push(`/video-scripts/${newProject.id}`)
-            }
-        } catch (error) {
-            console.error('Failed to create script:', error)
-        } finally {
-            setIsCreating(false)
-        }
+            },
+        })
     }
 
     const handleDeleteProject = async (e: React.MouseEvent, id: string) => {
@@ -95,17 +55,7 @@ export default function VideoScriptsPage() {
             cancelText: 'Batal',
             variant: 'destructive',
             onConfirm: async () => {
-                try {
-                    const response = await fetch(`${API_BASE_URL}/video-scripts/projects/${id}`, {
-                        method: 'DELETE',
-                        credentials: 'include'
-                    })
-                    if (response.ok) {
-                        fetchProjects()
-                    }
-                } catch (error) {
-                    console.error('Failed to delete script:', error)
-                }
+                deleteMutation.mutate(id)
             },
         })
     }
@@ -136,7 +86,7 @@ export default function VideoScriptsPage() {
                 <div className="flex gap-4">
                     <Button
                         variant="ghost"
-                        onClick={fetchProjects}
+                        onClick={() => refetch()}
                         disabled={isLoading}
                         className="h-12 px-6 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-white/40 glass border-none transition-all active:scale-95"
                     >
@@ -165,7 +115,7 @@ export default function VideoScriptsPage() {
                                         placeholder="cth: Apple Vision Pro Roast"
                                         value={newTitle}
                                         onChange={(e) => setNewTitle(e.target.value)}
-                                        disabled={isCreating}
+                                        disabled={createMutation.isPending}
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -174,20 +124,20 @@ export default function VideoScriptsPage() {
                                         placeholder="https://techcrunch.com/..."
                                         value={newUrl}
                                         onChange={(e) => setNewUrl(e.target.value)}
-                                        disabled={isCreating}
+                                        disabled={createMutation.isPending}
                                     />
                                     <p className="text-xs text-muted-foreground mt-1">Konteks sangat penting untuk script yang lebih baik.</p>
                                 </div>
                             </div>
                             <DialogFooter>
-                                <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isCreating}>
+                                <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={createMutation.isPending}>
                                     Batal
                                 </Button>
                                 <Button
                                     onClick={handleCreateProject}
-                                    disabled={!newTitle.trim() || isCreating}
+                                    disabled={!newTitle.trim() || createMutation.isPending}
                                 >
-                                    {isCreating ? (
+                                    {createMutation.isPending ? (
                                         <>
                                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                             Membuat...

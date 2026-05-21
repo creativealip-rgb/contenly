@@ -50,17 +50,27 @@ import { authClient } from '@/lib/auth-client'
 import { toast } from 'sonner'
 import { useConfirm } from '@/components/ui/confirm-dialog'
 
+import { containerVariants, itemVariants } from '@/lib/animations'
+
+interface CategoryMappingResponse {
+    sourceCategory: string
+    targetCategoryName: string
+    targetCategoryId: string
+}
+
+interface WpCategory {
+    id: number
+    name: string
+    slug: string
+}
+
+interface CategoryMapping {
+    source: string
+    target: string
+    wpCategoryId?: number
+}
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
-
-const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
-} as const
-
-const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 100 } }
-} as const
 
 async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
     const session = await authClient.getSession()
@@ -89,7 +99,7 @@ export default function IntegrationsPage() {
     const [sites, setSites] = useState<WordPressSite[]>([])
     const [isLoadingSites, setIsLoadingSites] = useState(true)
     const [isRefreshingCategories, setIsRefreshingCategories] = useState(false)
-    const [categoryMappings, setCategoryMappings] = useState<Array<{ source: string; target: string; wpCategoryId?: number }>>([])
+    const [categoryMappings, setCategoryMappings] = useState<CategoryMapping[]>([])
     const [isLoadingMappings, setIsLoadingMappings] = useState(true)
     const [formData, setFormData] = useState({ name: '', url: '', username: '', appPassword: '' })
     const [isTesting, setIsTesting] = useState(false)
@@ -105,7 +115,7 @@ export default function IntegrationsPage() {
         try {
             const data = await fetchWithAuth('/category-mapping')
             if (Array.isArray(data)) {
-                const mappings = data.map((m: any) => ({
+                const mappings = data.map((m: CategoryMappingResponse) => ({
                     source: m.sourceCategory,
                     target: m.targetCategoryName,
                     wpCategoryId: parseInt(m.targetCategoryId)
@@ -126,7 +136,7 @@ export default function IntegrationsPage() {
             const data = await fetchWithAuth('/wordpress/sites')
             if (Array.isArray(data)) {
                 setSites(data)
-                const sitesForLocalStorage = data.map((site: any) => ({
+                const sitesForLocalStorage = data.map((site: WordPressSite) => ({
                     id: site.id,
                     name: site.name,
                     url: site.url,
@@ -184,7 +194,7 @@ export default function IntegrationsPage() {
         try {
             const data = await fetchWithAuth(`/wordpress/sites/${targetSite.id}/categories`)
             if (data && Array.isArray(data)) {
-                const newMappings = data.map((cat: any) => ({
+                const newMappings = data.map((cat: WpCategory) => ({
                     source: cat.slug || cat.name,
                     target: cat.name,
                     wpCategoryId: cat.id
@@ -201,9 +211,9 @@ export default function IntegrationsPage() {
                 setCategoryMappings(newMappings)
                 toast.success(`Successfully fetched and saved categories from ${targetSite.name}`)
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Refresh categories error:', error)
-            toast.error(error.message || 'Failed to refresh categories')
+            toast.error(error instanceof Error ? error.message : 'Failed to refresh categories')
         } finally {
             setIsRefreshingCategories(false)
         }
@@ -234,8 +244,8 @@ export default function IntegrationsPage() {
             setIsAddOpen(false)
             setFormData({ name: '', url: '', username: '', appPassword: '' })
             toast.success('Site connected successfully!')
-        } catch (error: any) {
-            setConnectionError(error.message || 'Failed to connect to WordPress site')
+        } catch (error: unknown) {
+            setConnectionError(error instanceof Error ? error.message : 'Failed to connect to WordPress site')
         } finally {
             setIsTesting(false)
         }
@@ -251,9 +261,9 @@ export default function IntegrationsPage() {
                 toast.error(`Connection failed: ${response.message || 'Unknown error'}`)
                 setSites(sites.map(s => s.id === site.id ? { ...s, status: 'ERROR', error: response.message } : s))
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('[handleTestConnection] Error:', error)
-            toast.error(`Network error: ${error.message}`)
+            toast.error(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`)
         }
     }
 
@@ -269,8 +279,8 @@ export default function IntegrationsPage() {
                     await fetchWithAuth(`/wordpress/sites/${id}`, { method: 'DELETE' })
                     await fetchSites()
                     toast.success('Site disconnected successfully')
-                } catch (error: any) {
-                    toast.error(`Failed to disconnect: ${error.message}`)
+                } catch (error: unknown) {
+                    toast.error(`Failed to disconnect: ${error instanceof Error ? error.message : 'Unknown error'}`)
                 }
             },
         })

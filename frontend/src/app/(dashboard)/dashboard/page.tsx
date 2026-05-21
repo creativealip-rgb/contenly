@@ -1,55 +1,31 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { FileText, Sparkles, Plug, Zap, TrendingUp, ArrowRight } from 'lucide-react'
-import { KpiCard, RecentActivity, QuickActions, OnboardingModal } from '@/components/dashboard'
+import { KpiCard, RecentActivity, QuickActions } from '@/components/dashboard'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
+import { useDashboardStats, useTrends } from '@/hooks/use-dashboard'
 
 export default function DashboardPage() {
     const router = useRouter()
-    const [stats, setStats] = useState({
+    const { data: stats, isLoading } = useDashboardStats()
+    const { data: trends } = useTrends()
+
+    const s = stats ?? {
         totalArticles: 0,
         publishedArticles: 0,
         activeFeeds: 0,
         connectedSites: 0,
         tokenBalance: 0,
         currentTier: 'FREE',
-        recentActivity: [] as any[]
-    })
-    const [trends, setTrends] = useState<Array<{ title: string; source: string }>>([])
-    const [isLoading, setIsLoading] = useState(true)
+        recentActivity: [],
+    }
 
-    useEffect(() => {
-        const load = async () => {
-            try {
-                const [dashRes, trendRes] = await Promise.all([
-                    fetch(`${API_BASE_URL}/analytics/dashboard`, { credentials: 'include', headers: { 'ngrok-skip-browser-warning': 'true' } }),
-                    fetch(`${API_BASE_URL}/trend-radar/search?q=trending+indonesia`, { credentials: 'include' }).catch(() => null),
-                ])
-                if (dashRes.ok) setStats(await dashRes.json())
-                if (trendRes?.ok) {
-                    const data = await trendRes.json()
-                    setTrends((data.results || data || []).slice(0, 4))
-                }
-            } catch (error) {
-                console.error('Failed to load dashboard:', error)
-            } finally {
-                setIsLoading(false)
-            }
-        }
-        load()
-        const interval = setInterval(load, 60000)
-        return () => clearInterval(interval)
-    }, [])
-
-    const trendItems = trends.length > 0
+    const trendItems = trends && trends.length > 0
         ? trends.map((t) => ({ title: t.title, source: t.source || 'News' }))
         : [
             { title: 'Kecerdasan Buatan di 2026', source: 'Tech' },
@@ -60,7 +36,6 @@ export default function DashboardPage() {
 
     return (
         <div className="space-y-6 max-w-full overflow-hidden">
-            <OnboardingModal />
             {/* Hero Section */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -89,7 +64,7 @@ export default function DashboardPage() {
                                         <Skeleton className="h-6 w-24 bg-white/20 rounded-full" />
                                     ) : (
                                         <span className="inline-flex items-center px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-[10px] font-black uppercase tracking-widest text-white shadow-xl">
-                                            Plan: {stats.currentTier}
+                                            Plan: {s.currentTier}
                                         </span>
                                     )}
                                 </motion.div>
@@ -97,11 +72,11 @@ export default function DashboardPage() {
 
                             <motion.div className="flex gap-4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}>
                                 <div className="glass-subtle rounded-xl px-4 py-3 text-center">
-                                    {isLoading ? <Skeleton className="h-8 w-10 bg-white/20 rounded" /> : <div className="text-2xl font-bold tabular-nums">{stats.totalArticles}</div>}
+                                    {isLoading ? <Skeleton className="h-8 w-10 bg-white/20 rounded" /> : <div className="text-2xl font-bold tabular-nums">{s.totalArticles}</div>}
                                     <div className="text-xs text-blue-100 uppercase tracking-wider">Artikel</div>
                                 </div>
                                 <div className="glass-subtle rounded-xl px-4 py-3 text-center">
-                                    {isLoading ? <Skeleton className="h-8 w-10 bg-white/20 rounded" /> : <div className="text-2xl font-bold tabular-nums">{stats.publishedArticles}</div>}
+                                    {isLoading ? <Skeleton className="h-8 w-10 bg-white/20 rounded" /> : <div className="text-2xl font-bold tabular-nums">{s.publishedArticles}</div>}
                                     <div className="text-xs text-blue-100 uppercase tracking-wider">Terbit</div>
                                 </div>
                             </motion.div>
@@ -120,9 +95,9 @@ export default function DashboardPage() {
                     </>
                 ) : (
                     <>
-                        <KpiCard title="Artikel Dibuat" value={stats.totalArticles} icon={FileText} description="Total konten AI" delay={0} />
-                        <KpiCard title="Sisa Kredit" value={stats.tokenBalance} icon={Sparkles} description="Token tersedia" delay={1} />
-                        <KpiCard title="WordPress Terhubung" value={stats.connectedSites} icon={Plug} description="Situs aktif" delay={2} />
+                        <KpiCard title="Artikel Dibuat" value={s.totalArticles} icon={FileText} description="Total konten AI" delay={0} />
+                        <KpiCard title="Sisa Kredit" value={s.tokenBalance} icon={Sparkles} description="Token tersedia" delay={1} />
+                        <KpiCard title="WordPress Terhubung" value={s.connectedSites} icon={Plug} description="Situs aktif" delay={2} />
                     </>
                 )}
             </div>
@@ -173,7 +148,7 @@ export default function DashboardPage() {
                         </Card>
                     </motion.div>
 
-                    <RecentActivity activities={stats.recentActivity} isLoading={isLoading} />
+                    <RecentActivity activities={s.recentActivity} isLoading={isLoading} />
                 </div>
 
                 <div className="space-y-6">

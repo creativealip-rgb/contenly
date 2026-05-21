@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -14,8 +14,12 @@ export class NotificationsController {
 
   @Get()
   @ApiOperation({ summary: 'List notifications' })
-  async findAll(@CurrentUser() user: User) {
-    return this.notificationsService.findAll(user.id);
+  async findAll(
+    @CurrentUser() user: User,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.notificationsService.findAll(user.id, Number(page) || 1, Number(limit) || 20);
   }
 
   @Patch(':id/read')

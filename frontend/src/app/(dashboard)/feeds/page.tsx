@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     Table,
@@ -51,78 +51,49 @@ import {
     Trash2,
     Loader2
 } from 'lucide-react'
-import { RssFeed, getFeeds, addFeed, removeFeed, updateFeed, pollFeed } from '@/lib/feeds-store'
+import { RssFeed } from '@/lib/feeds-store'
+import { useFeeds, useCreateFeed, useUpdateFeed, useDeleteFeed, usePollFeed } from '@/hooks/use-feeds'
 import { toast } from 'sonner'
-
-const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-        opacity: 1,
-        transition: { staggerChildren: 0.1 }
-    }
-} as const
-
-const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 100 } }
-} as const
+import { containerVariants, itemVariants } from '@/lib/animations'
 
 export default function FeedsPage() {
     const [isAddOpen, setIsAddOpen] = useState(false)
-    const [feeds, setFeeds] = useState<RssFeed[]>([])
     const [searchQuery, setSearchQuery] = useState('')
     const [newFeedName, setNewFeedName] = useState('')
     const [newFeedUrl, setNewFeedUrl] = useState('')
     const [pollingInterval, setPollingInterval] = useState('15')
     const [editingFeedId, setEditingFeedId] = useState<string | null>(null)
     const [isPolling, setIsPolling] = useState<string | null>(null)
-    const [isLoading, setIsLoading] = useState(true)
+
+    const { data: feeds = [], isLoading } = useFeeds()
+    const createFeed = useCreateFeed()
+    const updateFeed = useUpdateFeed()
+    const deleteFeed = useDeleteFeed()
+    const pollFeed = usePollFeed()
 
     const filteredFeeds = feeds.filter((f) =>
         !searchQuery || f.name.toLowerCase().includes(searchQuery.toLowerCase()) || f.url.toLowerCase().includes(searchQuery.toLowerCase())
     )
 
-    useEffect(() => {
-        const loadFeeds = async () => {
-            setIsLoading(true)
-            try {
-                const fetchedFeeds = await getFeeds()
-                setFeeds(fetchedFeeds)
-            } catch (error) {
-                console.error('Failed to load feeds:', error)
-                toast.error('Failed to load feeds')
-            } finally {
-                setIsLoading(false)
-            }
-        }
-        loadFeeds()
-    }, [])
-
     const handleAddFeed = async () => {
         if (!newFeedName || !newFeedUrl) return
         try {
             if (editingFeedId) {
-                await updateFeed(editingFeedId, {
+                await updateFeed.mutateAsync({
+                    id: editingFeedId,
                     name: newFeedName,
                     url: newFeedUrl,
-                    pollingInterval: parseInt(pollingInterval)
+                    pollingInterval: parseInt(pollingInterval),
                 })
                 toast.success('Feed updated successfully')
             } else {
-                const newFeed: RssFeed = {
-                    id: Math.random().toString(36).substring(7),
+                await createFeed.mutateAsync({
                     name: newFeedName,
                     url: newFeedUrl,
-                    status: 'active',
                     pollingInterval: parseInt(pollingInterval),
-                    itemsFetched: 0,
-                    lastSynced: new Date().toISOString()
-                }
-                await addFeed(newFeed)
+                })
                 toast.success('Feed added successfully')
             }
-            const updatedFeeds = await getFeeds()
-            setFeeds(updatedFeeds)
             resetForm()
             setIsAddOpen(false)
         } catch (error) {
@@ -149,14 +120,12 @@ export default function FeedsPage() {
     const handlePollNow = async (id: string) => {
         setIsPolling(id)
         try {
-            const result = await pollFeed(id)
-            if (result) {
-                toast.success(`Polling completed: ${result.newItems} new items found`)
+            const result = await pollFeed.mutateAsync(id)
+            if (result && (result as any).data) {
+                toast.success(`Polling completed: ${(result as any).data.newItems} new items found`)
             } else {
                 toast.success('Polling completed')
             }
-            const updatedFeeds = await getFeeds()
-            setFeeds(updatedFeeds)
         } catch (error) {
             toast.error('Failed to start polling: ' + (error instanceof Error ? error.message : 'Unknown error'))
         } finally {
@@ -168,9 +137,7 @@ export default function FeedsPage() {
         const currentStatus = (feed.status || 'ACTIVE').toUpperCase()
         const newStatus = currentStatus === 'ACTIVE' ? 'PAUSED' : 'ACTIVE'
         try {
-            await updateFeed(feed.id, { status: newStatus as any })
-            const updatedFeeds = await getFeeds()
-            setFeeds(updatedFeeds)
+            await updateFeed.mutateAsync({ id: feed.id, status: newStatus })
             toast.success(`Feed ${newStatus === 'ACTIVE' ? 'resumed' : 'paused'}`)
         } catch (error) {
             toast.error('Failed to update status')
@@ -179,9 +146,7 @@ export default function FeedsPage() {
 
     const handleRemoveFeed = async (id: string) => {
         try {
-            await removeFeed(id)
-            const updatedFeeds = await getFeeds()
-            setFeeds(updatedFeeds)
+            await deleteFeed.mutateAsync(id)
             toast.success('Feed removed')
         } catch (error) {
             console.error('Failed to remove feed:', error)

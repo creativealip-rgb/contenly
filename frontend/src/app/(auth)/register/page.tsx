@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -8,7 +9,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { authClient } from '@/lib/auth-client'
+import { z } from 'zod'
 import { useAuthStore } from '@/stores'
+
+const registerSchema = z.object({
+    name: z.string().min(2, 'Nama minimal 2 karakter'),
+    email: z.string().email('Email tidak valid'),
+    password: z.string().min(8, 'Password minimal 8 karakter'),
+})
 
 export default function RegisterPage() {
     const router = useRouter()
@@ -24,9 +32,19 @@ export default function RegisterPage() {
         setError('')
 
         const formData = new FormData(e.target as HTMLFormElement)
-        const name = formData.get('name') as string
-        const email = formData.get('email') as string
-        const password = formData.get('password') as string
+        const parsed = registerSchema.safeParse({
+            name: formData.get('name'),
+            email: formData.get('email'),
+            password: formData.get('password'),
+        })
+
+        if (!parsed.success) {
+            setError(parsed.error.issues[0].message)
+            setIsLoading(false)
+            return
+        }
+
+        const { name, email, password } = parsed.data
 
         try {
             const { data, error } = await authClient.signUp.email({
@@ -92,7 +110,7 @@ export default function RegisterPage() {
                         <div className="flex -space-x-3">
                             {[1, 2, 3, 4].map((i) => (
                                 <div key={i} className="w-10 h-10 rounded-full border-2 border-blue-900 bg-blue-100 flex items-center justify-center overflow-hidden z-10">
-                                    <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=${i + 15}`} alt="User" width={40} height={40} />
+                                    <Image src={`https://api.dicebear.com/7.x/notionists/svg?seed=${i + 15}`} alt="User" width={40} height={40} />
                                 </div>
                             ))}
                             <div className="w-10 h-10 rounded-full border-2 border-blue-900 bg-gray-900 flex items-center justify-center text-xs font-bold text-white z-0">

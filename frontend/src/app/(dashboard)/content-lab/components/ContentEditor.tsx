@@ -82,6 +82,7 @@ export function ContentEditor({ state, handlers, copied, handleCopy }: ContentEd
                     disabled={!generatedContent || isConverting}
                     className="h-10 px-4 rounded-xl border-purple-200 bg-purple-50/50 backdrop-blur-sm hover:bg-purple-100 transition-all shadow-sm text-purple-700"
                     title="Convert to Video Script"
+                    aria-label="Konversi ke skrip video"
                 >
                     {isConverting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Film className="h-4 w-4" />}
                 </Button>
@@ -90,6 +91,7 @@ export function ContentEditor({ state, handlers, copied, handleCopy }: ContentEd
                     size="sm"
                     onClick={handleCopy}
                     disabled={!generatedContent}
+                    aria-label="Salin konten"
                     className="h-10 px-4 rounded-xl border-slate-200 bg-white/50 backdrop-blur-sm hover:bg-white transition-all shadow-sm"
                 >
                     {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
@@ -99,6 +101,7 @@ export function ContentEditor({ state, handlers, copied, handleCopy }: ContentEd
                     size="sm"
                     onClick={handlers.handleAIRewrite}
                     disabled={!sourceContent || state.isRewriting}
+                    aria-label="Tulis ulang dengan AI"
                     className="h-10 px-4 rounded-xl border-slate-200 bg-white/50 backdrop-blur-sm hover:bg-white transition-all shadow-sm"
                 >
                     <RotateCcw className={`h-4 w-4 ${state.isRewriting ? 'animate-spin' : ''}`} />
@@ -153,7 +156,7 @@ export function ContentEditor({ state, handlers, copied, handleCopy }: ContentEd
                     <TabsContent value="source" className="flex-1 mt-0">
                         <div className="h-full bg-slate-50/50 dark:bg-slate-900/50 rounded-[32px] border-2 border-dashed border-slate-200 dark:border-slate-800 p-8 overflow-auto custom-scrollbar min-h-[500px]">
                             {state.isScanning || state.isScraping ? (
-                                <div className="h-full flex flex-col items-center justify-center space-y-4 py-20">
+                                <div className="h-full flex flex-col items-center justify-center space-y-4 py-20" role="status" aria-label="Memuat...">
                                     <Loader2 className="h-10 w-10 animate-spin text-slate-300" />
                                     <p className="text-sm text-slate-400 font-bold uppercase tracking-widest">Memindai sumber...</p>
                                 </div>

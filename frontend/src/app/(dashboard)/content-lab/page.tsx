@@ -118,7 +118,7 @@ export default function ContentLabPage() {
                 </div>
                 <div className="flex items-center gap-3">
                     {(state.isRewriting || state.isScraping || state.isPublishing || state.isGeneratingImage || state.isRefreshingSEO) && (
-                        <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200 gap-1">
+                        <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200 gap-1" role="status" aria-label="Memuat...">
                             <Loader2 className="h-3 w-3 animate-spin" />
                             Memproses...
                         </Badge>
@@ -128,7 +128,7 @@ export default function ContentLabPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4 flex-1 min-h-0">
                 {/* Left Panel: Editor (Wider) */}
-                <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-2xl border border-white/60 dark:border-slate-800/60 rounded-[40px] p-6 lg:p-10 overflow-y-auto shadow-2xl shadow-slate-200/50 dark:shadow-none flex-1 min-h-0">
+                <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-2xl border border-white/60 dark:border-slate-800/60 rounded-[40px] p-6 lg:p-10 overflow-y-auto shadow-2xl shadow-slate-200/50 dark:shadow-none flex-1 min-h-0" aria-live="polite">
                     <ContentEditor state={state} handlers={handlers} copied={copied} handleCopy={handleCopy} />
                 </div>
 

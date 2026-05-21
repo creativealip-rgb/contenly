@@ -1,83 +1,45 @@
-'use client'
-
 import React from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Footer } from '@/components/layout'
-import { Check, Sparkles, Zap, Shield, Wand2, Rss, ArrowRight } from 'lucide-react'
+import { Check, Zap, Rss, ArrowRight } from 'lucide-react'
+import { MobileMenuToggle } from '@/components/landing/mobile-menu'
+import type { Metadata } from 'next'
 
-// Premium SVG Icons as components
-const IconAI = () => (
-  <svg viewBox="0 0 24 24" fill="none" className="w-7 h-7" stroke="currentColor" strokeWidth="1.5">
-    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" strokeLinecap="round" strokeLinejoin="round" />
-    <circle cx="12" cy="12" r="2" fill="currentColor" />
-  </svg>
-)
-
-const IconWordPress = () => (
-  <svg viewBox="0 0 24 24" fill="none" className="w-7 h-7" stroke="currentColor" strokeWidth="1.5">
-    <circle cx="12" cy="12" r="10" />
-    <path d="M3 12h18M12 3c-2.5 3-4 6-4 9s1.5 6 4 9c2.5-3 4-6 4-9s-1.5-6-4-9z" strokeLinecap="round" />
-    <path d="M8 8l4 8 4-8" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-)
-
-const IconInstagram = () => (
-  <svg viewBox="0 0 24 24" fill="none" className="w-7 h-7" stroke="currentColor" strokeWidth="1.5">
-    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-    <path d="M16 11.37a4 4 0 11-4-4 4 4 0 014 4z" />
-    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
-  </svg>
-)
-
-const IconVideo = () => (
-  <svg viewBox="0 0 24 24" fill="none" className="w-7 h-7" stroke="currentColor" strokeWidth="1.5">
-    <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" />
-    <line x1="7" y1="2" x2="7" y2="22" />
-    <line x1="17" y1="2" x2="17" y2="22" />
-    <line x1="2" y1="12" x2="22" y2="12" />
-    <line x1="2" y1="7" x2="7" y2="7" />
-    <line x1="2" y1="17" x2="7" y2="17" />
-    <line x1="17" y1="17" x2="22" y2="17" />
-    <line x1="17" y1="7" x2="22" y2="7" />
-  </svg>
-)
+export const metadata: Metadata = {
+  title: 'Contenly - Platform Otomasi Konten AI',
+  description: 'Ubah sumber mana pun menjadi artikel SEO, naskah Reels, hingga carousel Instagram — semuanya otomatis.',
+}
 
 const features = [
   {
-    icon: IconAI,
     title: 'Content Lab Utama',
     description: 'Transformasi URL atau RSS ke artikel SEO-optimized dalam hitungan detik. Kloning fakta, tulis ulang dengan gaya bahasa baru yang segar.',
     color: 'from-blue-600 to-cyan-500',
   },
   {
-    icon: IconInstagram,
     title: 'Instagram Studio',
     description: 'Jangan cuma bikin teks. Ubah berita menjadi desain Carousel/Microblog lengkap dengan kustomisasi visual siap unduh.',
     color: 'from-pink-500 to-orange-400',
   },
   {
-    icon: IconWordPress,
     title: 'Auto-Publish WordPress',
     description: 'Langsung kirim draft artikel ke puluhan web Anda dengan satu klik. Kategori tersetting otomatis.',
     color: 'from-blue-500 to-indigo-500',
   },
   {
-    icon: IconVideo,
     title: 'Video Script Studio',
     description: 'Generasi naskah Reels/TikTok super cepat lengkap dengan visual prompt untuk adegan (B-Roll) yang tepat sasaran.',
     color: 'from-purple-500 to-indigo-400',
   },
   {
-    icon: Rss,
     title: 'Trend Radar & RSS',
     description: 'Pantau apa yang sedang viral di seluruh dunia. Auto-draft artikel begitu berita baru masuk ke radar Anda.',
     color: 'from-emerald-400 to-teal-500',
   },
   {
-    icon: Zap,
     title: 'Pay-As-You-Go System',
     description: 'Tidak ada biaya langganan bulanan yang mencekik. Beli token sesuai pemakaian aktual AI Anda.',
     color: 'from-amber-400 to-orange-500',
@@ -105,38 +67,42 @@ const testimonials = [
   },
 ]
 
-export default function LandingPage() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: 'Contenly',
+  url: 'https://contenly.web.id',
+  description: 'Platform otomasi konten berbasis AI. Ubah URL menjadi artikel SEO, naskah video, dan carousel Instagram.',
+  applicationCategory: 'BusinessApplication',
+  operatingSystem: 'Web',
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'IDR',
+  },
+}
 
+export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background overflow-hidden relative">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* Navbar */}
       <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/40">
         <div className="max-w-7xl mx-auto flex h-16 items-center px-4 md:px-6">
           <div className="flex-1">
             <Link href="/" className="flex items-center gap-3">
-              <div className="flex items-center justify-center overflow-hidden">
-                <Image src="/logo-full.png" alt="Contently Logo" width={140} height={40} className="object-contain h-9 w-auto" />
-              </div>
+              <Image src="/logo-full.png" alt="Contenly Logo" width={140} height={40} className="object-contain h-9 w-auto" priority />
             </Link>
           </div>
 
           <nav className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-10">
-            <Link href="#features" className="text-sm font-semibold text-muted-foreground hover:text-brand-primary transition-all">
-              Fitur Utama
-            </Link>
-            <Link href="#pricing" className="text-sm font-semibold text-muted-foreground hover:text-brand-primary transition-all">
-              Harga
-            </Link>
-            <Link href="#testimonials" className="text-sm font-semibold text-muted-foreground hover:text-brand-primary transition-all">
-              Kisah Sukses
-            </Link>
+            <Link href="#features" className="text-sm font-semibold text-muted-foreground hover:text-brand-primary transition-all">Fitur Utama</Link>
+            <Link href="#pricing" className="text-sm font-semibold text-muted-foreground hover:text-brand-primary transition-all">Harga</Link>
+            <Link href="#testimonials" className="text-sm font-semibold text-muted-foreground hover:text-brand-primary transition-all">Kisah Sukses</Link>
           </nav>
 
           <div className="hidden md:flex flex-1 justify-end items-center gap-4">
-            <Link href="/login" className="text-sm font-semibold text-foreground hover:text-brand-primary transition-all">
-              Sign In
-            </Link>
+            <Link href="/login" className="text-sm font-semibold text-foreground hover:text-brand-primary transition-all">Sign In</Link>
             <Link href="/register">
               <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-0.5">
                 Coba Gratis Sekarang
@@ -144,27 +110,8 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          <button className="md:hidden p-2 text-foreground" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-            {isMobileMenuOpen ? (
-              <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6" stroke="currentColor" strokeWidth="2"><path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" /></svg>
-            ) : (
-              <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6" stroke="currentColor" strokeWidth="2"><path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" strokeLinejoin="round" /></svg>
-            )}
-          </button>
+          <MobileMenuToggle />
         </div>
-
-        {isMobileMenuOpen && (
-          <div className="absolute top-16 left-0 right-0 bg-background/95 backdrop-blur-xl border-b border-border p-4 md:hidden flex flex-col gap-4 shadow-2xl animate-in slide-in-from-top-5">
-            <Link href="#features" className="px-4 py-3 text-sm font-medium hover:bg-accent rounded-lg" onClick={() => setIsMobileMenuOpen(false)}>Fitur Utama</Link>
-            <Link href="#pricing" className="px-4 py-3 text-sm font-medium hover:bg-accent rounded-lg" onClick={() => setIsMobileMenuOpen(false)}>Harga</Link>
-            <Link href="#testimonials" className="px-4 py-3 text-sm font-medium hover:bg-accent rounded-lg" onClick={() => setIsMobileMenuOpen(false)}>Testimoni</Link>
-            <div className="h-px bg-border my-2"></div>
-            <Link href="/login" className="px-4 py-3 text-sm font-medium text-center" onClick={() => setIsMobileMenuOpen(false)}>Sign In</Link>
-            <Link href="/register" onClick={() => setIsMobileMenuOpen(false)}>
-              <Button className="w-full bg-blue-600">Coba Gratis</Button>
-            </Link>
-          </div>
-        )}
       </header>
 
       {/* Hero Section */}
@@ -208,18 +155,26 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Trust Section */}
+      {/* Stats Section */}
       <section className="py-10 border-y border-border/40 bg-muted/20">
         <div className="max-w-7xl mx-auto px-4 md:px-6">
-          <p className="text-center text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-6">
-            Dipercaya oleh kreator, agensi, dan media modern
-          </p>
-          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
-            {/* Dummy logos for social proof */}
-            <div className="text-2xl font-black font-sans tracking-tight">KONTENTREACH</div>
-            <div className="text-2xl font-bold font-serif italic">The Daily Scroll</div>
-            <div className="text-2xl font-black font-mono tracking-tighter">SEO<span className="text-blue-500">NINJA</span></div>
-            <div className="text-2xl font-extrabold uppercase tracking-widest text-slate-400">TrendCast</div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <div>
+              <p className="text-3xl font-bold text-primary">10x</p>
+              <p className="text-sm text-muted-foreground mt-1">Lebih Cepat Produksi</p>
+            </div>
+            <div>
+              <p className="text-3xl font-bold text-primary">18+</p>
+              <p className="text-sm text-muted-foreground mt-1">Fitur AI Terintegrasi</p>
+            </div>
+            <div>
+              <p className="text-3xl font-bold text-primary">5+</p>
+              <p className="text-sm text-muted-foreground mt-1">Format Output</p>
+            </div>
+            <div>
+              <p className="text-3xl font-bold text-primary">1-Click</p>
+              <p className="text-sm text-muted-foreground mt-1">Publish ke WordPress</p>
+            </div>
           </div>
         </div>
       </section>
@@ -228,33 +183,26 @@ export default function LandingPage() {
       <section id="features" className="py-24 relative bg-white dark:bg-gray-950">
         <div className="max-w-7xl mx-auto px-4 md:px-6">
           <div className="text-center mb-20">
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">
-              Pabrik Konten Pribadi Anda
-            </h2>
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">Pabrik Konten Pribadi Anda</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Contenly dirancang untuk menyelesaikan masalah penulisan repetitif dari Hulu ke Hilir. Riset, Generasi, hingga Publikasi.
             </p>
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {features.map((feature, index) => {
-              const Icon = feature.icon
-              return (
-                <Card key={index} className="group overflow-hidden border-2 border-slate-100 dark:border-slate-800/50 hover:border-blue-500/30 dark:hover:border-blue-500/30 shadow-lg shadow-slate-200/40 dark:shadow-none hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 bg-white dark:bg-slate-900/50 rounded-3xl">
-                  <CardContent className="p-8">
-                    <div className={`w-14 h-14 rounded-2xl mb-8 flex items-center justify-center bg-gradient-to-br ${feature.color} text-white shadow-lg`}>
-                      <Icon />
-                    </div>
-                    <h3 className="text-xl font-bold mb-3 text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                      {feature.title}
-                    </h3>
-                    <p className="text-muted-foreground leading-relaxed font-medium">
-                      {feature.description}
-                    </p>
-                  </CardContent>
-                </Card>
-              )
-            })}
+            {features.map((feature, index) => (
+              <Card key={index} className="group overflow-hidden border-2 border-slate-100 dark:border-slate-800/50 hover:border-blue-500/30 dark:hover:border-blue-500/30 shadow-lg shadow-slate-200/40 dark:shadow-none hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 bg-white dark:bg-slate-900/50 rounded-3xl">
+                <CardContent className="p-8">
+                  <div className={`w-14 h-14 rounded-2xl mb-8 flex items-center justify-center bg-gradient-to-br ${feature.color} text-white shadow-lg`}>
+                    <Zap className="w-7 h-7" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-3 text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                    {feature.title}
+                  </h3>
+                  <p className="text-muted-foreground leading-relaxed font-medium">{feature.description}</p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
@@ -266,9 +214,7 @@ export default function LandingPage() {
             <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 mb-6">
               <Zap className="w-8 h-8" />
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">
-              Bayar Hanya Sesuai Pemakaian
-            </h2>
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">Bayar Hanya Sesuai Pemakaian</h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Tinggalkan langganan bulanan mahal yang fiturnya tidak Anda pakai penuh. Sistem Token Contenly transparan, fleksibel, dan jauh lebih hemat.
             </p>
@@ -305,9 +251,7 @@ export default function LandingPage() {
             <Card className="relative overflow-hidden border-2 border-blue-500 shadow-2xl shadow-blue-500/20 bg-gradient-to-b from-white to-blue-50 dark:from-slate-900 dark:to-slate-800 rounded-[2rem]">
               <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-blue-500 to-cyan-500" />
               <div className="absolute top-4 right-4">
-                <span className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 text-xs font-bold uppercase tracking-wider py-1 px-3 rounded-full">
-                  Populer
-                </span>
+                <span className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 text-xs font-bold uppercase tracking-wider py-1 px-3 rounded-full">Populer</span>
               </div>
               <CardHeader className="pt-10 text-center">
                 <CardTitle className="text-2xl font-bold">Paket Top-up Token</CardTitle>
@@ -346,19 +290,14 @@ export default function LandingPage() {
       <section id="testimonials" className="py-24 relative bg-white dark:bg-gray-950">
         <div className="max-w-7xl mx-auto px-4 md:px-6">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Dicintai oleh Kreator dan Agensi
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Berhenti kerja berlebihan. Biarkan mesin yang menulis untuk Anda.
-            </p>
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">Dicintai oleh Kreator dan Agensi</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Berhenti kerja berlebihan. Biarkan mesin yang menulis untuk Anda.</p>
           </div>
 
           <div className="grid gap-8 md:grid-cols-3">
             {testimonials.map((testimonial, index) => (
               <Card key={index} className="border-none shadow-xl shadow-slate-200/50 dark:shadow-none bg-slate-50/50 dark:bg-slate-900/50 rounded-3xl p-2 relative">
                 <CardContent className="p-8">
-                  {/* Stars */}
                   <div className="flex gap-1 mb-6">
                     {[...Array(5)].map((_, i) => (
                       <svg key={i} className="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
@@ -366,13 +305,9 @@ export default function LandingPage() {
                       </svg>
                     ))}
                   </div>
-
-                  <p className="text-foreground text-lg mb-8 leading-relaxed font-medium">
-                    &ldquo;{testimonial.content}&rdquo;
-                  </p>
-
+                  <p className="text-foreground text-lg mb-8 leading-relaxed font-medium">&ldquo;{testimonial.content}&rdquo;</p>
                   <div className="flex items-center gap-4 mt-auto">
-                    <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=${testimonial.image}`} alt={testimonial.name} className="w-12 h-12 rounded-full border-2 border-white shadow-sm bg-white" />
+                    <Image src={`https://api.dicebear.com/7.x/notionists/svg?seed=${testimonial.image}`} alt={testimonial.name} width={48} height={48} className="w-12 h-12 rounded-full border-2 border-white shadow-sm bg-white" />
                     <div>
                       <p className="font-bold text-slate-900 dark:text-white">{testimonial.name}</p>
                       <p className="text-sm font-medium text-slate-500">{testimonial.role}</p>

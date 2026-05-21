@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, UseGuards, UseInterceptors, Headers, Req, Logger, RawBodyRequest } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, UseGuards, UseInterceptors, Headers, Req, Logger, RawBodyRequest, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { BillingService } from './billing.service';
@@ -75,13 +75,13 @@ export class BillingController {
     ) {
         if (!this.stripe) {
             this.logger.error('Stripe not initialized');
-            return { received: false, error: 'Stripe not configured' };
+            throw new BadRequestException('Stripe not configured');
         }
 
         const webhookSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET');
         if (!webhookSecret) {
             this.logger.error('STRIPE_WEBHOOK_SECRET not set');
-            return { received: false, error: 'Webhook secret not configured' };
+            throw new BadRequestException('Webhook secret not configured');
         }
 
         let event: Stripe.Event;
@@ -96,7 +96,7 @@ export class BillingController {
             );
         } catch (err: any) {
             this.logger.error(`Webhook signature verification failed: ${err.message}`);
-            return { received: false, error: err.message };
+            throw new BadRequestException('Webhook signature verification failed');
         }
 
         // Handle the event
@@ -133,7 +133,7 @@ export class BillingController {
             return { received: true };
         } catch (err: any) {
             this.logger.error(`Error processing webhook: ${err.message}`);
-            return { received: false, error: err.message };
+            throw new InternalServerErrorException('Webhook processing failed');
         }
     }
 }

@@ -1,11 +1,29 @@
 import { create } from 'zustand'
 
+export interface Article {
+    id: string
+    title: string
+    url?: string
+    content?: string
+    excerpt?: string
+    description?: string
+    pubDate?: string
+    sourceUrl?: string
+    generatedContent?: string
+    originalContent?: string
+    metaTitle?: string
+    metaDescription?: string
+    slug?: string
+    featuredImageUrl?: string
+    status?: string
+}
+
 interface ContentLabState {
     // Content State
     generatedContent: string
     generatedTitle: string
     sourceContent: string
-    selectedArticle: any | null
+    selectedArticle: Article | null
     generatedArticleId: string | null
     featuredImage: string
 
@@ -29,7 +47,7 @@ interface ContentLabState {
     setGeneratedContent: (content: string) => void
     setGeneratedTitle: (title: string) => void
     setSourceContent: (content: string) => void
-    setSelectedArticle: (article: any | null) => void
+    setSelectedArticle: (article: Article | null) => void
     setGeneratedArticleId: (id: string | null) => void
     setFeaturedImage: (url: string) => void
     setActiveTab: (tab: string) => void

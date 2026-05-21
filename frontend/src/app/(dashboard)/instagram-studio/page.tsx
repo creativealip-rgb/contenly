@@ -43,8 +43,7 @@ import {
     Eye,
     Calendar,
 } from 'lucide-react'
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
+import { useInstagramProjects, useCreateProject, useDeleteProject } from '@/hooks/use-instagram-studio'
 
 interface Project {
     id: string
@@ -105,9 +104,9 @@ interface Font {
 export default function InstagramStudioPage() {
     const router = useRouter()
     const confirm = useConfirm()
-    const [projects, setProjects] = useState<Project[]>([])
-    const [isLoading, setIsLoading] = useState(true)
-    const [isCreating, setIsCreating] = useState(false)
+    const { data: projects = [], isLoading } = useInstagramProjects()
+    const createProject = useCreateProject()
+    const deleteProject = useDeleteProject()
     const [isNewProjectOpen, setIsNewProjectOpen] = useState(false)
 
     const [newProject, setNewProject] = useState({
@@ -126,29 +125,13 @@ export default function InstagramStudioPage() {
     const [selectedCategory, setSelectedCategory] = useState<string>('all')
 
     useEffect(() => {
-        fetchProjects()
         fetchTemplates()
     }, [])
-
-    const fetchProjects = async () => {
-        try {
-            const response = await fetch(`${API_BASE_URL}/instagram-studio/projects`, {
-                credentials: 'include',
-                headers: { 'ngrok-skip-browser-warning': 'true' },
-            })
-            const data = await response.json()
-            setProjects(Array.isArray(data) ? data : [])
-        } catch (error) {
-            console.error('Failed to fetch projects:', error)
-        } finally {
-            setIsLoading(false)
-        }
-    }
 
     const fetchTemplates = async () => {
         setIsLoadingTemplates(true)
         try {
-            const response = await fetch(`${API_BASE_URL}/instagram-studio/templates`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/instagram-studio/templates`, {
                 credentials: 'include',
                 headers: { 'ngrok-skip-browser-warning': 'true' },
             })
@@ -163,25 +146,9 @@ export default function InstagramStudioPage() {
 
     const handleCreateProject = async () => {
         if (!newProject.title) return
-
-        setIsCreating(true)
-        try {
-            const response = await fetch(`${API_BASE_URL}/instagram-studio/projects`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify(newProject),
-            })
-
-            if (response.ok) {
-                const project = await response.json()
-                router.push(`/instagram-studio/${project.id}`)
-            }
-        } catch (error) {
-            console.error('Failed to create project:', error)
-        } finally {
-            setIsCreating(false)
-        }
+        createProject.mutate(newProject, {
+            onSuccess: (project) => router.push(`/instagram-studio/${project.id}`),
+        })
     }
 
     const handleFetchUrl = async () => {
@@ -192,6 +159,7 @@ export default function InstagramStudioPage() {
 
         setIsFetchingUrl(true)
         try {
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
             const response = await fetch(`${API_BASE_URL}/instagram-studio/fetch-url?url=${encodeURIComponent(newProject.sourceUrl)}`, {
                 credentials: 'include',
                 headers: { 'ngrok-skip-browser-warning': 'true' },
@@ -222,15 +190,7 @@ export default function InstagramStudioPage() {
             cancelText: 'Batal',
             variant: 'destructive',
             onConfirm: async () => {
-                try {
-                    await fetch(`${API_BASE_URL}/instagram-studio/projects/${id}`, {
-                        method: 'DELETE',
-                        credentials: 'include',
-                    })
-                    fetchProjects()
-                } catch (error) {
-                    console.error('Failed to delete project:', error)
-                }
+                deleteProject.mutate(id)
             },
         })
     }
@@ -277,7 +237,7 @@ export default function InstagramStudioPage() {
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-2xl">
-                        {(isCreating || isFetchingUrl) && (
+                        {(createProject.isPending || isFetchingUrl) && (
                             <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
                                 <div className="flex flex-col items-center gap-3">
                                     <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -466,8 +426,8 @@ export default function InstagramStudioPage() {
                             <Button variant="outline" onClick={() => setIsNewProjectOpen(false)}>
                                 Batal
                             </Button>
-                            <Button onClick={handleCreateProject} disabled={isCreating || isFetchingUrl || !newProject.title}>
-                                {isCreating ? (
+                            <Button onClick={handleCreateProject} disabled={createProject.isPending || isFetchingUrl || !newProject.title}>
+                                {createProject.isPending ? (
                                     <>
                                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                         Membuat...

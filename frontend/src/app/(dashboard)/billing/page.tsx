@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -22,58 +21,15 @@ import {
     Check,
     CheckCircle2
 } from 'lucide-react'
-
-const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-        opacity: 1,
-        transition: { staggerChildren: 0.1 }
-    }
-} as const
-
-const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 100 } }
-} as const
+import { useBillingBalance, useBillingSubscription, useBillingTransactions } from '@/hooks/use-billing'
+import { containerVariants, itemVariants } from '@/lib/animations'
 
 export default function BillingPage() {
-    const [balance, setBalance] = useState<number | null>(null)
-    const [subscription, setSubscription] = useState<any>(null)
-    const [loading, setLoading] = useState(true)
+    const { data: balanceData, isLoading: balanceLoading } = useBillingBalance()
+    const { data: subscription, isLoading: subLoading } = useBillingSubscription()
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-
-                // Fetch Balance
-                const balanceRes = await fetch(`${apiUrl}/billing/balance`, {
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                })
-                if (balanceRes.ok) {
-                    const data = await balanceRes.json()
-                    setBalance(data.balance)
-                }
-
-                // Fetch Subscription
-                const subRes = await fetch(`${apiUrl}/billing/subscriptions`, {
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                })
-                if (subRes.ok) {
-                    const data = await subRes.json()
-                    setSubscription(data)
-                }
-            } catch (error) {
-                console.error('Failed to fetch billing data:', error)
-            } finally {
-                setLoading(false)
-            }
-        }
-
-        fetchData()
-    }, [])
+    const loading = balanceLoading || subLoading
+    const balance = balanceData?.balance ?? null
 
     const getPlanName = (plan: string) => {
         switch (plan?.toUpperCase()) {
@@ -420,23 +376,7 @@ export default function BillingPage() {
 }
 
 function TransactionHistory() {
-    const [transactions, setTransactions] = useState<any[]>([])
-    const [isLoading, setIsLoading] = useState(true)
-
-    useEffect(() => {
-        const fetchTransactions = async () => {
-            try {
-                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
-                const res = await fetch(`${apiUrl}/billing/transactions?limit=10`, { credentials: 'include' })
-                if (res.ok) {
-                    const data = await res.json()
-                    setTransactions(data.data || [])
-                }
-            } catch { /* silent */ }
-            finally { setIsLoading(false) }
-        }
-        fetchTransactions()
-    }, [])
+    const { data: transactions = [], isLoading } = useBillingTransactions()
 
     const typeLabels: Record<string, string> = { USAGE: 'Penggunaan', PURCHASE: 'Pembelian', REFUND: 'Refund', SUBSCRIPTION_CREDIT: 'Kredit' }
     const typeColors: Record<string, string> = { USAGE: 'text-red-600', PURCHASE: 'text-green-600', REFUND: 'text-blue-600', SUBSCRIPTION_CREDIT: 'text-purple-600' }
@@ -458,7 +398,7 @@ function TransactionHistory() {
                         <p className="text-sm text-muted-foreground text-center py-8">Belum ada transaksi.</p>
                     ) : (
                         <div className="space-y-2">
-                            {transactions.map((tx) => (
+                            {transactions.map((tx: any) => (
                                 <div key={tx.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/50">
                                     <div>
                                         <p className="text-sm font-medium">{(tx.metadata as any)?.description || typeLabels[tx.type] || tx.type}</p>

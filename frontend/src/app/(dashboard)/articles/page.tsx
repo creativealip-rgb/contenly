@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -45,63 +45,38 @@ import {
 import { formatDistanceToNow } from 'date-fns'
 import { toast } from 'sonner'
 import { useConfirm } from '@/components/ui/confirm-dialog'
-
-const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-        opacity: 1,
-        transition: { staggerChildren: 0.1 }
-    }
-} as const
-
-const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 100 } }
-} as const
+import { useArticles, useDeleteArticle, useSyncScheduled } from '@/hooks/use-articles'
 
 export default function ArticlesPage() {
     const confirm = useConfirm()
     const [search, setSearch] = useState('')
+    const [debouncedSearch, setDebouncedSearch] = useState('')
     const [statusFilter, setStatusFilter] = useState('all')
-    const [articles, setArticles] = useState<any[]>([])
-    const [isLoading, setIsLoading] = useState(true)
-    const [stats, setStats] = useState({
-        total: 0,
-        published: 0,
-        draft: 0,
-        scheduled: 0
-    })
 
-    const fetchArticles = async () => {
-        setIsLoading(true)
-        try {
-            const params = new URLSearchParams()
-            if (search) params.append('search', search)
-            if (statusFilter !== 'all') params.append('status', statusFilter.toUpperCase())
-            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
-            const response = await fetch(`${API_BASE_URL}/articles?${params.toString()}`, {
-                credentials: 'include'
-            })
-            if (response.ok) {
-                const data = await response.json()
-                setArticles(data.data || [])
-                const allItems = data.data || []
-                setStats({
-                    total: data.meta?.total || allItems.length,
-                    published: allItems.filter((a: any) => a.status === 'PUBLISHED').length,
-                    draft: allItems.filter((a: any) => a.status === 'DRAFT').length,
-                    scheduled: allItems.filter((a: any) => a.status === 'FUTURE' || a.status === 'SCHEDULED').length
-                })
-            }
-        } catch (error) {
-            console.error('Failed to fetch articles:', error)
-        } finally {
-            setIsLoading(false)
+    // Debounce search input by 300ms
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(search), 300)
+        return () => clearTimeout(timer)
+    }, [search])
+
+    const { data, isLoading, refetch } = useArticles({ search: debouncedSearch, status: statusFilter })
+    const deleteArticle = useDeleteArticle()
+    const syncScheduled = useSyncScheduled()
+
+    const articles = data?.data || []
+    const stats = useMemo(() => {
+        return {
+            total: data?.meta?.total || articles.length,
+            published: articles.filter((a: any) => a.status === 'PUBLISHED').length,
+            draft: articles.filter((a: any) => a.status === 'DRAFT').length,
+            scheduled: articles.filter((a: any) => a.status === 'FUTURE' || a.status === 'SCHEDULED').length,
         }
-    }
+    }, [articles, data?.meta?.total])
+
+    const isBusy = isLoading || deleteArticle.isPending || syncScheduled.isPending
 
     const handleDelete = async (id: string) => {
-        const confirmed = await confirm({
+        await confirm({
             title: 'Hapus Artikel',
             description: 'Apakah Anda yakin ingin menghapus artikel ini?',
             confirmText: 'Hapus',
@@ -109,19 +84,10 @@ export default function ArticlesPage() {
             variant: 'destructive',
             onConfirm: async () => {
                 try {
-                    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
-                    const response = await fetch(`${API_BASE_URL}/articles/${id}`, {
-                        method: 'DELETE',
-                        credentials: 'include'
-                    })
-                    if (response.ok) {
-                        toast.success('Artikel dihapus')
-                        fetchArticles()
-                    } else {
-                        toast.error('Gagal menghapus artikel')
-                    }
-                } catch (error) {
-                    toast.error('Kesalahan saat menghapus artikel')
+                    await deleteArticle.mutateAsync(id)
+                    toast.success('Artikel dihapus')
+                } catch {
+                    toast.error('Gagal menghapus artikel')
                 }
             },
         })
@@ -147,43 +113,11 @@ export default function ArticlesPage() {
     }
 
     const handleSyncStatus = async () => {
-        setIsLoading(true)
         try {
-            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
-            const response = await fetch(`${API_BASE_URL}/wordpress/sync-scheduled`, {
-                method: 'POST',
-                credentials: 'include'
-            })
-            if (response.ok) {
-                toast.success('Sinkronisasi status selesai')
-                fetchArticles()
-            } else {
-                toast.error('Gagal menyinkronkan status')
-            }
-        } catch (error) {
-            toast.error('Kesalahan selama sinkronisasi')
-        } finally {
-            setIsLoading(false)
-        }
-    }
-
-    useEffect(() => {
-        fetchArticles()
-    }, [search, statusFilter])
-
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'PUBLISHED':
-                return <Badge className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/20"><CheckCircle2 className="h-3 w-3 mr-1" />Diterbitkan</Badge>
-            case 'DRAFT':
-                return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" />Draf</Badge>
-            case 'FUTURE':
-            case 'SCHEDULED':
-                return <Badge className="bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-500/20"><Clock className="h-3 w-3 mr-1" />Dijadwalkan</Badge>
-            case 'FAILED':
-                return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Gagal</Badge>
-            default:
-                return <Badge variant="outline">{status}</Badge>
+            await syncScheduled.mutateAsync()
+            toast.success('Sinkronisasi status selesai')
+        } catch {
+            toast.error('Gagal menyinkronkan status')
         }
     }
 
@@ -207,18 +141,20 @@ export default function ArticlesPage() {
                     <Button
                         variant="ghost"
                         onClick={handleSyncStatus}
-                        disabled={isLoading}
+                        disabled={isBusy}
+                        aria-label="Sinkronisasi status WordPress"
                         className="h-12 px-6 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-white/40 glass border-none transition-all active:scale-95"
                     >
-                        <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                        <RefreshCw className={`h-4 w-4 mr-2 ${isBusy ? 'animate-spin' : ''}`} />
                         Sinkronisasi WP
                     </Button>
                     <Button
                         className="h-12 px-6 bg-slate-900 hover:bg-black text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-slate-200 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                        onClick={fetchArticles}
-                        disabled={isLoading}
+                        onClick={() => refetch()}
+                        disabled={isBusy}
+                        aria-label="Segarkan daftar artikel"
                     >
-                        <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                        <RefreshCw className={`h-4 w-4 mr-2 ${isBusy ? 'animate-spin' : ''}`} />
                         Segarkan
                     </Button>
                 </div>
@@ -280,6 +216,7 @@ export default function ArticlesPage() {
                             placeholder="Filter berdasarkan judul atau kata kunci..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
+                            aria-label="Cari artikel"
                             className="h-12 pl-12 rounded-2xl bg-white/40 border-none focus-visible:ring-blue-400 font-bold dark:bg-slate-800/40"
                         />
                     </div>
@@ -319,7 +256,7 @@ export default function ArticlesPage() {
                     </Badge>
                 </div>
 
-                <div className="rounded-[2.5rem] overflow-hidden border border-slate-50 dark:border-slate-800">
+                <div className="rounded-[2.5rem] overflow-hidden border border-slate-50 dark:border-slate-800" aria-live="polite">
                     <Table>
                         <TableHeader className="bg-slate-50/50 dark:bg-slate-800/20">
                             <TableRow className="border-none hover:bg-transparent">
@@ -335,7 +272,9 @@ export default function ArticlesPage() {
                             {isLoading ? (
                                 <TableRow>
                                     <TableCell colSpan={6} className="py-20 text-center">
-                                        <Loader2 className="h-10 w-10 animate-spin text-blue-600 opacity-20 mx-auto" />
+                                        <div role="status" aria-label="Memuat...">
+                                            <Loader2 className="h-10 w-10 animate-spin text-blue-600 opacity-20 mx-auto" />
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ) : articles.length === 0 ? (
@@ -345,7 +284,7 @@ export default function ArticlesPage() {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                articles.map((article, idx) => (
+                                articles.map((article: any, idx: number) => (
                                     <motion.tr
                                         initial={{ opacity: 0, x: -10 }}
                                         animate={{ opacity: 1, x: 0 }}
@@ -383,7 +322,7 @@ export default function ArticlesPage() {
                                         <TableCell className="text-right px-8">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-blue-50 hover:text-blue-600">
+                                                    <Button variant="ghost" size="icon" aria-label="Opsi artikel" className="h-10 w-10 rounded-xl hover:bg-blue-50 hover:text-blue-600">
                                                         <MoreHorizontal className="h-5 w-5" />
                                                     </Button>
                                                 </DropdownMenuTrigger>

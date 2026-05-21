@@ -33,47 +33,50 @@ export class AnalyticsService {
 
     const currentTier = sub?.plan || 'FREE';
 
-    // Get counts
-    const [articles] = await this.db
-      .select({ count: sql<number>`count(*)` })
-      .from(article)
-      .where(eq(article.userId, userId));
-
-    const [feeds] = await this.db
-      .select({ count: sql<number>`count(*)` })
-      .from(feed)
-      .where(eq(feed.userId, userId));
-
-    const [wpSites] = await this.db
-      .select({ count: sql<number>`count(*)` })
-      .from(wpSite)
-      .where(eq(wpSite.userId, userId));
-
-    const [publishedArticles] = await this.db
-      .select({ count: sql<number>`count(*)` })
-      .from(article)
-      .where(and(eq(article.userId, userId), eq(article.status, 'PUBLISHED')));
-
-    const [carousels] = await this.db
-      .select({ count: sql<number>`count(*)` })
-      .from(instagramProject)
-      .where(eq(instagramProject.userId, userId));
-
-    const [videoScripts] = await this.db
-      .select({ count: sql<number>`count(*)` })
-      .from(scriptProject)
-      .where(eq(scriptProject.userId, userId));
-
-    // Get total analytics
-    const [totalViews] = await this.db
-      .select({ sum: sql<number>`coalesce(sum(views), 0)` })
-      .from(contentAnalytics)
-      .where(eq(contentAnalytics.userId, userId));
-
-    const [totalEngagement] = await this.db
-      .select({ sum: sql<number>`coalesce(sum(engagement), 0)` })
-      .from(contentAnalytics)
-      .where(eq(contentAnalytics.userId, userId));
+    // Get counts in parallel
+    const [
+      [articles],
+      [feeds],
+      [wpSites],
+      [publishedArticles],
+      [carousels],
+      [videoScripts],
+      [totalViews],
+      [totalEngagement],
+    ] = await Promise.all([
+      this.db
+        .select({ count: sql<number>`count(*)` })
+        .from(article)
+        .where(eq(article.userId, userId)),
+      this.db
+        .select({ count: sql<number>`count(*)` })
+        .from(feed)
+        .where(eq(feed.userId, userId)),
+      this.db
+        .select({ count: sql<number>`count(*)` })
+        .from(wpSite)
+        .where(eq(wpSite.userId, userId)),
+      this.db
+        .select({ count: sql<number>`count(*)` })
+        .from(article)
+        .where(and(eq(article.userId, userId), eq(article.status, 'PUBLISHED'))),
+      this.db
+        .select({ count: sql<number>`count(*)` })
+        .from(instagramProject)
+        .where(eq(instagramProject.userId, userId)),
+      this.db
+        .select({ count: sql<number>`count(*)` })
+        .from(scriptProject)
+        .where(eq(scriptProject.userId, userId)),
+      this.db
+        .select({ sum: sql<number>`coalesce(sum(views), 0)` })
+        .from(contentAnalytics)
+        .where(eq(contentAnalytics.userId, userId)),
+      this.db
+        .select({ sum: sql<number>`coalesce(sum(engagement), 0)` })
+        .from(contentAnalytics)
+        .where(eq(contentAnalytics.userId, userId)),
+    ]);
 
     let balance = await this.db.query.tokenBalance.findFirst({
       where: eq(tokenBalance.userId, userId),

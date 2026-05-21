@@ -1,4 +1,5 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { DrizzleService } from '../../db/drizzle.service';
 import { sql } from 'drizzle-orm';
 
@@ -7,24 +8,22 @@ export class HealthController {
     constructor(private readonly drizzleService: DrizzleService) {}
 
     @Get()
-    async check() {
+    async check(@Res() res: Response) {
         try {
-            // Test database connection
-            const result = await this.drizzleService.db.execute(sql`SELECT NOW()`);
-            
-            return {
+            await this.drizzleService.db.execute(sql`SELECT 1`);
+
+            return res.status(HttpStatus.OK).json({
                 status: 'healthy',
                 timestamp: new Date().toISOString(),
                 database: 'connected',
                 uptime: process.uptime(),
-            };
+            });
         } catch (error) {
-            return {
+            return res.status(HttpStatus.SERVICE_UNAVAILABLE).json({
                 status: 'unhealthy',
                 timestamp: new Date().toISOString(),
                 database: 'disconnected',
-                error: error instanceof Error ? error.message : 'Unknown error',
-            };
+            });
         }
     }
 }

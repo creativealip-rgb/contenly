@@ -26,6 +26,10 @@ export class SessionAuthGuard implements CanActivate {
   ) {}
 
   private isDevBypassEnabled(): boolean {
+    // Never allow bypass in production
+    if (this.configService.get<string>('NODE_ENV') === 'production') {
+      return false;
+    }
     const flag = (this.configService.get<string>('DEV_BYPASS_AUTH') || '')
       .toString()
       .trim()
@@ -106,16 +110,7 @@ export class SessionAuthGuard implements CanActivate {
       return true;
     } catch (error: any) {
       console.error('[SessionAuthGuard] Validation failed:', error);
-      // If it's already an HttpException, rethrow it (to keep our debug message)
-      if (
-        error?.response?.message &&
-        error.response.message.startsWith('DEBUG:')
-      ) {
-        throw error;
-      }
-      throw new UnauthorizedException(
-        `DEBUG: Validation Error. ${error.message}`,
-      );
+      throw new UnauthorizedException('Unauthorized');
     }
   }
 }

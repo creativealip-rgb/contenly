@@ -193,7 +193,9 @@ export const wpSite = pgTable('wp_site', {
   lastHealthCheck: timestamp('last_health_check'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
-});
+}, (table) => ({
+  userIdIdx: index('wp_site_user_id_idx').on(table.userId),
+}));
 
 export const categoryMapping = pgTable(
   'category_mapping',
@@ -238,7 +240,10 @@ export const feed = pgTable('feed', {
   successRate: real('success_rate').default(100),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
-});
+}, (table) => ({
+  userIdIdx: index('feed_user_id_idx').on(table.userId),
+  statusIdx: index('feed_status_idx').on(table.status),
+}));
 
 export const feedItem = pgTable('feed_item', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -252,7 +257,10 @@ export const feedItem = pgTable('feed_item', {
   status: feedItemStatusEnum('status').default('PENDING'),
   publishedAt: timestamp('published_at'),
   fetchedAt: timestamp('fetched_at').notNull().defaultNow(),
-});
+}, (table) => ({
+  feedIdIdx: index('feed_item_feed_id_idx').on(table.feedId),
+  statusIdx: index('feed_item_status_idx').on(table.status),
+}));
 
 // ==========================================
 // ARTICLES
@@ -338,7 +346,9 @@ export const subscription = pgTable('subscription', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
   canceledAt: timestamp('canceled_at'),
-});
+}, (table) => ({
+  userIdStatusIdx: index('subscription_user_id_status_idx').on(table.userId, table.status),
+}));
 
 // ==========================================
 // NOTIFICATIONS
@@ -419,7 +429,9 @@ export const instagramProject = pgTable('instagram_project', {
   status: varchar('status', { length: 50 }).default('draft'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
-});
+}, (table) => ({
+  userIdIdx: index('instagram_project_user_id_idx').on(table.userId),
+}));
 
 export const instagramSlide = pgTable('instagram_slide', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -771,6 +783,43 @@ export const renderJobsRelations = relations(renderJobs, ({ one }) => ({
   }),
 }));
 
+// ==========================================
+// VIDEO CLIP PROJECTS
+// ==========================================
+
+export const videoClipStatusEnum = pgEnum('video_clip_status', [
+  'created',
+  'downloading',
+  'transcribing',
+  'analyzing',
+  'ready',
+  'failed',
+]);
+
+export const videoClipProjects = pgTable('video_clip_projects', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  title: varchar('title', { length: 255 }).notNull(),
+  sourceUrl: text('source_url').notNull(),
+  status: videoClipStatusEnum('status').notNull().default('created'),
+  videoPath: text('video_path'),
+  duration: integer('duration'),
+  transcript: text('transcript'),
+  words: jsonb('words'),
+  segments: jsonb('segments'),
+  exports: jsonb('exports').default([]),
+  error: text('error'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export const videoClipProjectsRelations = relations(videoClipProjects, ({ one }) => ({
+  user: one(user, {
+    fields: [videoClipProjects.userId],
+    references: [user.id],
+  }),
+}));
+
 // Export all schemas for Better Auth
 export const schema = {
   user,
@@ -800,4 +849,5 @@ export const schema = {
   dailyUsage,
   renderJobs,
   renderPresets,
+  videoClipProjects,
 };
