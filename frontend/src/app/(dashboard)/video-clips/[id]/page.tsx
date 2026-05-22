@@ -498,7 +498,7 @@ export default function VideoClipDetailPage() {
               </Button>
             </div>
 
-            {/* Center: Preview + Editor (5 cols) */}
+            {/* Center: Preview only (5 cols) */}
             <div className="lg:col-span-5 space-y-4">
               <Card>
                 <CardContent className="p-4 space-y-3">
@@ -506,7 +506,7 @@ export default function VideoClipDetailPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <Label className="text-xs">Aspect:</Label>
                     <Select value={aspectRatio} onValueChange={(v) => setAspectRatio(v as AspectRatio)}>
-                      <SelectTrigger className="h-8 w-32 text-xs">
+                      <SelectTrigger className="h-8 w-36 text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -515,13 +515,13 @@ export default function VideoClipDetailPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    {aspectRatio !== '16:9' && (
+                    {aspectRatio !== '16:9' && aspectRatio !== '9:16-fit' && (
                       <div className="flex items-center gap-2 flex-1 min-w-[120px]">
                         <Label className="text-xs whitespace-nowrap">Crop X: {cropOffsetX.toFixed(2)}</Label>
                         <Slider value={[cropOffsetX]} min={-1} max={1} step={0.1} onValueChange={(v) => setCropOffsetX(v[0])} />
                       </div>
                     )}
-                    {aspectRatio !== '16:9' && (
+                    {aspectRatio !== '16:9' && aspectRatio !== '9:16-fit' && (
                       <SmartCropButton
                         videoElement={previewRef.current?.getVideoElement() || null}
                         segmentStart={currentSegment.startTime}
@@ -546,6 +546,19 @@ export default function VideoClipDetailPage() {
                 </CardContent>
               </Card>
 
+              <Button
+                size="lg"
+                className="w-full"
+                onClick={() => exportClip(selectedSegment)}
+                disabled={exporting !== null}
+              >
+                {exporting !== null ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+                Export Clip #{selectedSegment + 1} ({aspectRatio}) — 30 token
+              </Button>
+            </div>
+
+            {/* Right: Editor + Style tabs + Exports (4 cols) */}
+            <div className="lg:col-span-4 space-y-4">
               {/* Segment editor */}
               <Card>
                 <CardHeader className="pb-3">
@@ -656,19 +669,7 @@ export default function VideoClipDetailPage() {
                 </TabsContent>
               </Tabs>
 
-              <Button
-                size="lg"
-                className="w-full"
-                onClick={() => exportClip(selectedSegment)}
-                disabled={exporting !== null}
-              >
-                {exporting !== null ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-                Export Clip #{selectedSegment + 1} ({aspectRatio}) — 30 token
-              </Button>
-            </div>
-
-            {/* Right: Transcript + Exports (4 cols) */}
-            <div className="lg:col-span-4 space-y-4">
+              {/* Exports */}
               {project.exports && project.exports.length > 0 && (
                 <Card>
                   <CardHeader className="pb-3">
@@ -677,7 +678,7 @@ export default function VideoClipDetailPage() {
                       Exported ({project.exports.length})
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2 max-h-[260px] overflow-y-auto">
+                  <CardContent className="space-y-2 max-h-[200px] overflow-y-auto">
                     {project.exports.map((exp, i) => (
                       <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-muted/50 text-sm">
                         <div className="min-w-0 flex-1">
@@ -685,60 +686,12 @@ export default function VideoClipDetailPage() {
                           <p className="text-[10px] text-muted-foreground">{new Date(exp.createdAt).toLocaleString('id-ID')}</p>
                         </div>
                         <Button size="sm" variant="outline" className="h-7" asChild>
-                          <a
-                            href={`${API_BASE_URL}/video-clips/${id}/download/${exp.jobId}`}
-                            download
-                          >
+                          <a href={`${API_BASE_URL}/video-clips/${id}/download/${exp.jobId}`} download>
                             <Download className="h-3 w-3" />
                           </a>
                         </Button>
                       </div>
                     ))}
-                  </CardContent>
-                </Card>
-              )}
-
-              {words.length > 0 && (
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Wand2 className="h-4 w-4" />
-                      Transcript
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <InteractiveTranscript
-                      words={words}
-                      highlightRange={{ start: currentSegment.startTime, end: currentSegment.endTime }}
-                      onSelectRange={async (start, end) => {
-                        if (!project) return
-                        try {
-                          const res = await api.post<{ segments: Segment[] }>(`/video-clips/${id}/segments`, {
-                            startTime: start,
-                            endTime: end,
-                            hookTitle: 'From transcript',
-                          })
-                          setProject({ ...project, segments: res.segments })
-                          setSelectedSegment(res.segments.length - 1)
-                          toast.success(`Segment dibuat dari transcript (${formatTime(start)}–${formatTime(end)})`)
-                        } catch {
-                          toast.error('Gagal buat segment')
-                        }
-                      }}
-                    />
-                  </CardContent>
-                </Card>
-              )}
-
-              {!words.length && project.transcript && (
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base">Transcript</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap max-h-48 overflow-y-auto">
-                      {project.transcript}
-                    </p>
                   </CardContent>
                 </Card>
               )}

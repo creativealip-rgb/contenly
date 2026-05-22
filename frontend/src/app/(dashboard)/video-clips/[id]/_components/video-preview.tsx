@@ -2,7 +2,6 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, useCallback } from 'react'
 import { Pause, Play, RotateCcw, Volume2, VolumeX } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { ASPECT_RATIOS, type AspectRatio, type BrollItem, type Segment, type SubtitleStyle, type TitleStyle, formatTime } from './types'
 
 interface VideoPreviewProps {
@@ -302,46 +301,43 @@ export const VideoPreview = forwardRef<VideoPreviewHandle, VideoPreviewProps>(fu
         {!isPlaying && (
           <button
             onClick={togglePlay}
-            className="absolute inset-0 flex items-center justify-center bg-black/30 transition-opacity hover:bg-black/40"
+            className="absolute inset-0 flex items-center justify-center bg-black/20 transition-opacity hover:bg-black/30"
             type="button"
           >
-            <div className="rounded-full bg-white/90 p-4 shadow-lg">
-              <Play className="h-6 w-6 text-slate-900" fill="currentColor" />
+            <div className="rounded-full bg-white/90 p-3 shadow-lg">
+              <Play className="h-5 w-5 text-slate-900" fill="currentColor" />
             </div>
           </button>
         )}
 
-        {/* Progress bar */}
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/30">
-          <div
-            className="h-full bg-white/90 transition-[width] duration-150"
-            style={{ width: `${segmentProgress * 100}%` }}
-          />
+        {/* Bottom controls bar (inside video) */}
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-8 pb-2 px-3">
+          <div className="flex items-center gap-1.5">
+            <button type="button" onClick={togglePlay} className="text-white/90 hover:text-white">
+              {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" fill="currentColor" />}
+            </button>
+            <button type="button" onClick={restart} className="text-white/90 hover:text-white">
+              <RotateCcw className="h-3.5 w-3.5" />
+            </button>
+            <button type="button" onClick={toggleMute} className="text-white/90 hover:text-white">
+              {isMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+            </button>
+            <button
+              type="button"
+              onClick={() => setLoop((l) => !l)}
+              className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${loop ? 'bg-white text-black' : 'text-white/70 border border-white/30'}`}
+            >
+              Loop
+            </button>
+            {/* Progress bar */}
+            <div className="flex-1 h-1 mx-2 rounded-full bg-white/20 overflow-hidden">
+              <div className="h-full bg-white/90 transition-[width] duration-150" style={{ width: `${segmentProgress * 100}%` }} />
+            </div>
+            <span className="text-[10px] font-mono tabular-nums text-white/80">
+              {formatTime(segmentElapsed)}/{formatTime(segmentDuration)}
+            </span>
+          </div>
         </div>
-      </div>
-
-      {/* Controls */}
-      <div className="flex items-center justify-center gap-1.5">
-        <Button size="sm" variant="outline" onClick={togglePlay} className="h-8">
-          {isPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-        </Button>
-        <Button size="sm" variant="outline" onClick={restart} className="h-8">
-          <RotateCcw className="h-3.5 w-3.5" />
-        </Button>
-        <Button size="sm" variant="outline" onClick={toggleMute} className="h-8">
-          {isMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
-        </Button>
-        <Button
-          size="sm"
-          variant={loop ? 'default' : 'outline'}
-          onClick={() => setLoop((l) => !l)}
-          className="h-8 text-[10px] uppercase"
-        >
-          Loop
-        </Button>
-        <span className="ml-2 text-xs font-mono tabular-nums text-slate-500">
-          {formatTime(segmentElapsed)} / {formatTime(segmentDuration)}
-        </span>
       </div>
     </div>
   )
