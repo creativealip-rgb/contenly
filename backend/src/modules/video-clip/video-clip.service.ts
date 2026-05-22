@@ -515,6 +515,7 @@ Transcript snippet: ${transcriptSnippet}`;
     const audioPath = videoPath.replace('.mp4', '.wav');
     const srtPath = videoPath.replace('.mp4', '-transcript.srt');
     const modelPath = process.env.WHISPER_MODEL_PATH || path.join(__dirname, '..', '..', '..', 'models', 'ggml-base.bin');
+    const language = process.env.WHISPER_LANGUAGE || 'id'; // Force Indonesian by default
 
     // Extract 16kHz mono audio
     await execFileAsync('ffmpeg', [
@@ -522,12 +523,12 @@ Transcript snippet: ${transcriptSnippet}`;
       '-y', audioPath,
     ], { timeout: 300000 });
 
-    // Transcribe using ffmpeg whisper filter (local, no API needed)
+    // Transcribe using ffmpeg whisper filter with forced language
     const escapedModel = modelPath.replace(/\\/g, '/').replace(/:/g, '\\:');
     const escapedSrt = srtPath.replace(/\\/g, '/').replace(/:/g, '\\:');
     await execFileAsync('ffmpeg', [
       '-i', audioPath,
-      '-af', `whisper=model='${escapedModel}':format=srt:destination='${escapedSrt}'`,
+      '-af', `whisper=model='${escapedModel}':language=${language}:format=srt:destination='${escapedSrt}'`,
       '-f', 'null', '-',
     ], { timeout: 600000 });
 
@@ -546,6 +547,9 @@ Transcript snippet: ${transcriptSnippet}`;
     const words: TranscriptWord[] = [];
     const textParts: string[] = [];
 
+    // Noise patterns to filter out (music cues, non-speech)
+    const noisePattern = /^\s*[\(\[\{].*[\)\]\}]\s*$/;
+
     for (const block of blocks) {
       const lines = block.split('\n');
       if (lines.length < 3) continue;
@@ -557,11 +561,17 @@ Transcript snippet: ${transcriptSnippet}`;
       const text = lines.slice(2).join(' ').trim();
       if (!text) continue;
 
-      textParts.push(text);
+      // Skip noise markers like (upbeat music), [music], etc.
+      if (noisePattern.test(text)) continue;
+      // Remove inline noise markers
+      const cleanText = text.replace(/[\(\[\{][^\)\]\}]*[\)\]\}]/g, '').trim();
+      if (!cleanText) continue;
+
+      textParts.push(cleanText);
       // Distribute words evenly across the time range
-      const lineWords = text.split(/\s+/);
+      const lineWords = cleanText.split(/\s+/).filter(Boolean);
       const duration = end - start;
-      const wordDuration = duration / lineWords.length;
+      const wordDuration = lineWords.length > 0 ? duration / lineWords.length : duration;
       for (let i = 0; i < lineWords.length; i++) {
         words.push({
           word: lineWords[i],
