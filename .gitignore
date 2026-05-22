@@ -50,3 +50,12 @@ Desktop.ini
 
 # Windows artifacts (reserved names)
 nul
+
+# Local backend artifacts
+backend/server_err.txt
+backend/server_out.txt
+backend/tmp/
+backend/tmp_*.txt
+backend/models/
+push_result*.txt
+

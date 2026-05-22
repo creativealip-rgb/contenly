@@ -27,10 +27,14 @@ import {
   ArrowLeft,
   Copy,
   Eye,
+  LayoutGrid,
   Loader2,
   Music4,
+  Pause,
+  Play,
   Plus,
   RefreshCw,
+  Rows3,
   Save,
   Sparkles,
   Wand2,
@@ -40,11 +44,17 @@ import {
   MetadataCard,
   SortableSceneCard,
   SidebarPanels,
+  ScriptStatsBar,
+  StoryboardView,
+  GenerateScriptDialog,
+  RenderJobsTracker,
+  addActiveJob,
+  defaultStyleOptions,
   API_BASE_URL,
   defaultFormState,
   getErrorMessage,
 } from './_components'
-import type { Scene, ScriptProject, ProjectFormState } from './_components'
+import type { Scene, ScriptProject, ProjectFormState, FootageItem, ScriptStyleOptions } from './_components'
 
 export default function VideoScriptEditorPage() {
   const params = useParams()
@@ -77,7 +87,16 @@ export default function VideoScriptEditorPage() {
   const [addingSceneAfter, setAddingSceneAfter] = useState<number | null>(null)
   const [duplicatingSceneId, setDuplicatingSceneId] = useState<string | null>(null)
   const [deletingSceneId, setDeletingSceneId] = useState<string | null>(null)
-  const [sceneFootageSearch, setSceneFootageSearch] = useState<Record<string, { query: string; loading: boolean; results: any[] }>>({})
+  const [sceneFootageSearch, setSceneFootageSearch] = useState<Record<string, { query: string; loading: boolean; results: FootageItem[] }>>({})
+  const [suggestedKeywords, setSuggestedKeywords] = useState<Record<string, string[]>>({})
+  const [suggestingKeywordsSceneId, setSuggestingKeywordsSceneId] = useState<string | null>(null)
+  const [improvingVisualSceneId, setImprovingVisualSceneId] = useState<string | null>(null)
+  const [generateDialogOpen, setGenerateDialogOpen] = useState(false)
+  const [viewMode, setViewMode] = useState<'list' | 'storyboard'>('list')
+  const [playAllState, setPlayAllState] = useState<{ active: boolean; currentSceneId: string | null }>({ active: false, currentSceneId: null })
+  const playAllAudioRef = useRef<HTMLAudioElement | null>(null)
+  const audioCacheRef = useRef<Record<string, string>>({})
+  const sceneRefs = useRef<Record<string, HTMLDivElement | null>>({})
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -119,7 +138,12 @@ export default function VideoScriptEditorPage() {
   }, [projectId])
 
   useEffect(() => { if (projectId) fetchProject() }, [projectId, fetchProject])
-  useEffect(() => { return () => { if (ttsAudioUrl) URL.revokeObjectURL(ttsAudioUrl) } }, [ttsAudioUrl])
+  useEffect(() => {
+    return () => {
+      Object.keys(audioCacheRef.current).forEach((id) => URL.revokeObjectURL(audioCacheRef.current[id]))
+      audioCacheRef.current = {}
+    }
+  }, [])
 
   const setProjectField = (field: keyof ProjectFormState, value: string) => {
     setProjectForm((prev) => ({ ...prev, [field]: value }))
@@ -150,8 +174,10 @@ export default function VideoScriptEditorPage() {
               voiceoverText: scene.voiceoverText,
               estimatedDuration: scene.estimatedDuration || undefined,
               emoji: scene.emoji || undefined,
+              directorNotes: scene.directorNotes || undefined,
             }),
           })
+          delete audioCacheRef.current[sceneId]
         } catch { /* silent auto-save */ }
       }
     }, 3000)
@@ -178,25 +204,52 @@ export default function VideoScriptEditorPage() {
     } catch { toast.error('Gagal menyimpan urutan scene.'); await fetchProject() }
   }
 
-  const handleGenerateScript = async () => {
-    if (!projectForm.sourceContent.trim()) { toast.info('Masukkan konten sumber terlebih dahulu.'); return }
-    if (scenes.length > 0) {
-      const confirmed = await new Promise<boolean>((resolve) => {
-        confirm({ title: 'Generate ulang script?', description: `Semua ${scenes.length} scene yang sudah ada akan dihapus dan diganti dengan script baru. Aksi ini tidak bisa dibatalkan.`, confirmText: 'Ya, Generate Ulang', cancelText: 'Batal', variant: 'destructive', onConfirm: () => resolve(true) }).catch(() => resolve(false))
-        setTimeout(() => resolve(false), 30000)
-      })
-      if (!confirmed) return
-    }
+  const handleGenerateScript = async (params?: {
+    sourceContent?: string
+    targetDurationSeconds?: number
+    style?: ScriptStyleOptions
+  }) => {
+    const sourceContent = params?.sourceContent ?? projectForm.sourceContent
+    const targetDuration = params?.targetDurationSeconds ?? Number(projectForm.targetDurationSeconds || 60)
+    const style = params?.style ?? defaultStyleOptions
+    if (!sourceContent.trim()) { toast.info('Masukkan konten sumber terlebih dahulu.'); return }
     setIsGenerating(true)
     try {
       const response = await fetch(`${API_BASE_URL}/video-scripts/projects/${projectId}/generate-script`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-        body: JSON.stringify({ content: projectForm.sourceContent, targetDurationSeconds: Number(projectForm.targetDurationSeconds || 60) }),
+        body: JSON.stringify({ content: sourceContent, targetDurationSeconds: targetDuration, style }),
       })
       if (!response.ok) { const d = await response.json().catch(() => ({})); throw new Error(d.message || 'Gagal membuat script') }
-      await fetchProject(); toast.success('Script video berhasil dibuat.')
+      // Persist sourceContent if changed via dialog
+      if (params?.sourceContent !== undefined && params.sourceContent !== projectForm.sourceContent) {
+        setProjectForm((prev) => ({ ...prev, sourceContent: params.sourceContent! }))
+      }
+      if (params?.targetDurationSeconds !== undefined) {
+        setProjectForm((prev) => ({ ...prev, targetDurationSeconds: String(params.targetDurationSeconds) }))
+      }
+      await fetchProject()
+      setGenerateDialogOpen(false)
+      toast.success('Script video berhasil dibuat.')
     } catch (error: unknown) { toast.error(getErrorMessage(error, 'Terjadi kesalahan saat membuat script.')) }
     finally { setIsGenerating(false) }
+  }
+
+  const openGenerateDialog = async () => {
+    if (scenes.length > 0) {
+      const confirmed = await new Promise<boolean>((resolve) => {
+        confirm({
+          title: 'Generate ulang script?',
+          description: `Semua ${scenes.length} scene yang sudah ada akan dihapus dan diganti dengan script baru.`,
+          confirmText: 'Ya, lanjutkan',
+          cancelText: 'Batal',
+          variant: 'destructive',
+          onConfirm: () => resolve(true),
+        }).catch(() => resolve(false))
+        setTimeout(() => resolve(false), 30000)
+      })
+      if (!confirmed) return
+    }
+    setGenerateDialogOpen(true)
   }
 
   const handleSaveProject = async () => {
@@ -219,11 +272,13 @@ export default function VideoScriptEditorPage() {
     try {
       const response = await fetch(`${API_BASE_URL}/video-scripts/scenes/${sceneId}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-        body: JSON.stringify({ visualContext: scene.visualContext, voiceoverText: scene.voiceoverText, estimatedDuration: scene.estimatedDuration || undefined, emoji: scene.emoji || undefined, footageSearches: scene.footageSearches }),
+        body: JSON.stringify({ visualContext: scene.visualContext, voiceoverText: scene.voiceoverText, estimatedDuration: scene.estimatedDuration || undefined, emoji: scene.emoji || undefined, directorNotes: scene.directorNotes || undefined, footageSearches: scene.footageSearches }),
       })
       if (!response.ok) { const d = await response.json().catch(() => ({})); throw new Error(d.message || 'Gagal menyimpan scene') }
       const updatedScene: Scene = await response.json()
       updateSceneDraft(sceneId, updatedScene)
+      // Invalidate cached audio if voiceover content possibly changed
+      delete audioCacheRef.current[sceneId]
       toast.success(`Scene ${scene.sceneNumber} disimpan.`)
     } catch (error: unknown) { toast.error(getErrorMessage(error, 'Gagal menyimpan scene.')) }
     finally { setSavingSceneId(null) }
@@ -332,9 +387,9 @@ export default function VideoScriptEditorPage() {
       if (!response.ok) { const d = await response.json().catch(() => ({})); throw new Error(d.message || 'Gagal auto-fill B-Roll') }
       const data = await response.json()
       let totalFootage = 0
-      const newFootageSearch: Record<string, { query: string; loading: boolean; results: any[] }> = {}
+      const newFootageSearch: Record<string, { query: string; loading: boolean; results: FootageItem[] }> = {}
       for (const r of data.results) {
-        const allResults = [...(r.footage.pexelsPhotos || []), ...(r.footage.pexelsVideos || [])].slice(0, 8)
+        const allResults: FootageItem[] = [...(r.footage.pexelsPhotos || []), ...(r.footage.pexelsVideos || []), ...(r.footage.googleImages || [])].slice(0, 16)
         totalFootage += allResults.length
         newFootageSearch[r.sceneId] = { query: r.query, loading: false, results: allResults }
       }
@@ -362,17 +417,19 @@ export default function VideoScriptEditorPage() {
   }
 
   const handleTtsPreview = async (sceneId: string) => {
-    if (playingTtsSceneId === sceneId && ttsAudioUrl) { URL.revokeObjectURL(ttsAudioUrl); setPlayingTtsSceneId(null); setTtsAudioUrl(null); return }
-    if (ttsAudioUrl) URL.revokeObjectURL(ttsAudioUrl)
+    if (playingTtsSceneId === sceneId && ttsAudioUrl) {
+      // Toggle off without revoking cached URL
+      setPlayingTtsSceneId(null)
+      setTtsAudioUrl(null)
+      return
+    }
     setPlayingTtsSceneId(sceneId)
     try {
-      const response = await fetch(`${API_BASE_URL}/video-scripts/scenes/${sceneId}/tts-preview`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ voice: selectedVoice }) })
-      if (!response.ok) { const d = await response.json().catch(() => ({})); throw new Error(d.message || 'Gagal generate TTS') }
-      const blob = await response.blob()
-      const url = URL.createObjectURL(blob); setTtsAudioUrl(url)
+      const url = await fetchSceneTtsBlob(sceneId)
+      setTtsAudioUrl(url)
       const audio = new Audio(url)
-      audio.onended = () => { setPlayingTtsSceneId(null); setTtsAudioUrl(null); URL.revokeObjectURL(url) }
-      audio.onerror = () => { setPlayingTtsSceneId(null); setTtsAudioUrl(null); URL.revokeObjectURL(url) }
+      audio.onended = () => { setPlayingTtsSceneId(null); setTtsAudioUrl(null) }
+      audio.onerror = () => { setPlayingTtsSceneId(null); setTtsAudioUrl(null) }
       audio.play()
     } catch (error: unknown) { toast.error(getErrorMessage(error, 'Gagal generate TTS preview.')); setPlayingTtsSceneId(null) }
   }
@@ -393,31 +450,27 @@ export default function VideoScriptEditorPage() {
 
   const handleComposeVideo = async () => {
     setIsComposing(true)
-    let toastId: string | number | undefined
     try {
-      const response = await fetch(`${API_BASE_URL}/motion-graphics/compose-video`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ projectId, showCaptions: true, captionStyle: 'classic', aspectRatio: '9:16', voice: selectedVoice, includeAudio: true }) })
+      const response = await fetch(`${API_BASE_URL}/motion-graphics/compose-video`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ projectId, showCaptions: true, captionStyle: 'classic', aspectRatio: '9:16', voice: selectedVoice, includeAudio: true }),
+      })
       if (!response.ok) { const d = await response.json().catch(() => ({})); throw new Error(d.message || 'Gagal compose video') }
       const { jobId } = await response.json()
-      toast.info('Render job dimulai...')
-      for (let i = 0; i < 120; i++) {
-        await new Promise((r) => setTimeout(r, 3000))
-        const statusRes = await fetch(`${API_BASE_URL}/motion-graphics/jobs/${jobId}`, { credentials: 'include' })
-        if (!statusRes.ok) throw new Error('Gagal cek status render')
-        const job = await statusRes.json()
-        if (job.status === 'processing' && job.progress > 0) toastId = toast.loading(`Composing video... ${job.progress}%`, { id: toastId })
-        if (job.status === 'completed') {
-          if (toastId) toast.dismiss(toastId)
-          const dlRes = await fetch(`${API_BASE_URL}/motion-graphics/jobs/${jobId}/download`, { credentials: 'include' })
-          if (!dlRes.ok) throw new Error('Gagal download render output')
-          const blob = await dlRes.blob(); const url = URL.createObjectURL(blob)
-          const a = document.createElement('a'); a.href = url; a.download = `${(projectForm.title || 'video').replace(/[^a-z0-9]/gi, '_').toLowerCase()}.mp4`
-          document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url)
-          toast.success('Video berhasil di-compose dan di-download!'); return
-        } else if (job.status === 'failed' || job.status === 'timeout') { if (toastId) toast.dismiss(toastId); throw new Error(job.error || 'Render gagal') }
-      }
-      throw new Error('Render timeout — coba lagi nanti')
-    } catch (error: unknown) { if (toastId) toast.dismiss(toastId); toast.error(getErrorMessage(error, 'Gagal compose video.')) }
-    finally { setIsComposing(false) }
+      addActiveJob({
+        jobId,
+        projectId,
+        projectTitle: projectForm.title || project?.title || 'video',
+        startedAt: Date.now(),
+      })
+      toast.success('Render dimulai. Progress akan muncul di pojok kanan bawah, dan tetap berjalan walau Anda berpindah halaman.')
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Gagal compose video.'))
+    } finally {
+      setIsComposing(false)
+    }
   }
 
   const handleAddScene = async (afterSceneNumber?: number) => {
@@ -461,19 +514,121 @@ export default function VideoScriptEditorPage() {
       const response = await fetch(`${API_BASE_URL}/video-scripts/scenes/${sceneId}/fetch-footage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ query: searchQuery, perSource: 4 }) })
       if (!response.ok) throw new Error('Gagal search footage')
       const data = await response.json()
-      const allResults = [...(data.pexelsPhotos || []), ...(data.pexelsVideos || [])].slice(0, 8)
+      const allResults: FootageItem[] = [...(data.pexelsPhotos || []), ...(data.pexelsVideos || []), ...(data.googleImages || [])].slice(0, 16)
       setSceneFootageSearch((prev) => ({ ...prev, [sceneId]: { query: searchQuery, loading: false, results: allResults } }))
     } catch { setSceneFootageSearch((prev) => ({ ...prev, [sceneId]: { ...prev[sceneId], loading: false } })); toast.error('Gagal search footage.') }
   }
 
-  const handleSelectFootage = async (sceneId: string, item: any) => {
+  const handleSelectFootage = async (sceneId: string, item: FootageItem) => {
+    const currentScene = scenes.find((s) => s.id === sceneId)
+    const currentFootage = currentScene?.selectedFootage || []
+    const itemKey = `${item.source}:${item.id ?? item.previewUrl ?? item.thumbnailUrl}`
+    const existing = currentFootage.findIndex(
+      (f) => `${f.source}:${f.id ?? f.previewUrl ?? f.thumbnailUrl}` === itemKey,
+    )
+    const nextFootage =
+      existing >= 0
+        ? currentFootage.filter((_, i) => i !== existing) // toggle off
+        : [...currentFootage, item]
     try {
-      const res = await fetch(`${API_BASE_URL}/video-scripts/scenes/${sceneId}/select-footage`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ items: [item] }) })
+      const res = await fetch(`${API_BASE_URL}/video-scripts/scenes/${sceneId}/select-footage`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ items: nextFootage }) })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      updateSceneDraft(sceneId, { selectedFootage: [item] })
-      toast.success('Footage dipilih untuk scene ini.')
+      updateSceneDraft(sceneId, { selectedFootage: nextFootage })
+      toast.success(existing >= 0 ? 'Footage dilepas.' : 'Footage dipilih.')
     } catch { toast.error('Gagal menyimpan footage.') }
   }
+
+  const handleSuggestKeywords = async (sceneId: string) => {
+    setSuggestingKeywordsSceneId(sceneId)
+    try {
+      const res = await fetch(`${API_BASE_URL}/video-scripts/scenes/${sceneId}/suggest-keywords`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ count: 6 }),
+      })
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.message || 'Gagal suggest keywords') }
+      const data = await res.json()
+      setSuggestedKeywords((prev) => ({ ...prev, [sceneId]: data.keywords || [] }))
+      toast.success(`${data.keywords?.length || 0} keyword saran siap.`)
+    } catch (error: unknown) { toast.error(getErrorMessage(error, 'Gagal suggest keywords.')) }
+    finally { setSuggestingKeywordsSceneId(null) }
+  }
+
+  const handleImproveVisual = async (sceneId: string) => {
+    setImprovingVisualSceneId(sceneId)
+    try {
+      const res = await fetch(`${API_BASE_URL}/video-scripts/scenes/${sceneId}/improve-visual`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({}),
+      })
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.message || 'Gagal improve visual') }
+      const updatedScene = await res.json()
+      updateSceneDraft(sceneId, updatedScene)
+      // Invalidate audio cache for this scene since voiceover may relate to visual
+      delete audioCacheRef.current[sceneId]
+      toast.success('Visual direction diperbarui.')
+    } catch (error: unknown) { toast.error(getErrorMessage(error, 'Gagal improve visual.')) }
+    finally { setImprovingVisualSceneId(null) }
+  }
+
+  const fetchSceneTtsBlob = async (sceneId: string): Promise<string> => {
+    if (audioCacheRef.current[sceneId]) return audioCacheRef.current[sceneId]
+    const response = await fetch(`${API_BASE_URL}/video-scripts/scenes/${sceneId}/tts-preview`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ voice: selectedVoice }),
+    })
+    if (!response.ok) { const d = await response.json().catch(() => ({})); throw new Error(d.message || 'Gagal generate TTS') }
+    const blob = await response.blob()
+    const url = URL.createObjectURL(blob)
+    audioCacheRef.current[sceneId] = url
+    return url
+  }
+
+  const stopPlayAll = () => {
+    if (playAllAudioRef.current) {
+      playAllAudioRef.current.pause()
+      playAllAudioRef.current = null
+    }
+    setPlayAllState({ active: false, currentSceneId: null })
+  }
+
+  const playAllScenes = async () => {
+    if (playAllState.active) { stopPlayAll(); return }
+    setPlayAllState({ active: true, currentSceneId: scenes[0]?.id || null })
+    try {
+      for (let i = 0; i < scenes.length; i++) {
+        const scene = scenes[i]
+        if (!scene.voiceoverText?.trim()) continue
+        setPlayAllState({ active: true, currentSceneId: scene.id })
+        // Scroll into view
+        sceneRefs.current[scene.id]?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        const url = await fetchSceneTtsBlob(scene.id)
+        await new Promise<void>((resolve, reject) => {
+          const audio = new Audio(url)
+          playAllAudioRef.current = audio
+          audio.onended = () => resolve()
+          audio.onerror = () => reject(new Error('Audio error'))
+          audio.play().catch(reject)
+        })
+        if (!playAllAudioRef.current) return // stopped externally
+      }
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Gagal play all scenes.'))
+    } finally {
+      stopPlayAll()
+    }
+  }
+
+  // Invalidate audio cache when voiceover or voice changes
+  useEffect(() => {
+    Object.keys(audioCacheRef.current).forEach((id) => URL.revokeObjectURL(audioCacheRef.current[id]))
+    audioCacheRef.current = {}
+  }, [selectedVoice])
 
   if (isLoading) {
     return (
@@ -528,7 +683,7 @@ export default function VideoScriptEditorPage() {
           <Button variant="outline" onClick={handleCopyScript} disabled={!hasScenes}><Copy className="mr-2 h-4 w-4" />Salin Script</Button>
           <Button variant="outline" onClick={handleCopyCaption} disabled={!projectForm.caption.trim()}><Sparkles className="mr-2 h-4 w-4" />Salin Caption</Button>
           <Button onClick={handleSaveProject} disabled={isSavingProject}>{isSavingProject ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}Simpan Project</Button>
-          <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700" onClick={handleGenerateScript} disabled={isGenerating || !projectForm.sourceContent.trim()}>
+          <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700" onClick={openGenerateDialog} disabled={isGenerating}>
             {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}{hasScenes ? 'Generate Ulang' : 'Generate Script'}
           </Button>
         </div>
@@ -602,34 +757,104 @@ export default function VideoScriptEditorPage() {
           </div>
 
           {!hasScenes ? (
-            <div className="flex min-h-[360px] flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50/40 p-12 text-center">
-              <Wand2 className="mb-4 h-12 w-12 text-slate-300" />
-              <h3 className="mb-2 text-xl font-semibold text-slate-800">Belum ada scene</h3>
-              <p className="max-w-md text-slate-500">Generate script untuk membuat metadata lengkap, footage references, dan voiceover per scene.</p>
+            <div className="flex min-h-[360px] flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50/40 p-12 text-center">
+              <Wand2 className="mb-2 h-12 w-12 text-slate-300" />
+              <h3 className="text-xl font-semibold text-slate-800">Belum ada scene</h3>
+              <p className="max-w-md text-slate-500">Generate script penuh dari konten sumber, atau mulai manual dengan menambah scene satu per satu.</p>
+              <div className="mt-2 flex flex-wrap gap-2 justify-center">
+                <Button onClick={openGenerateDialog} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
+                  <Wand2 className="mr-2 h-4 w-4" /> Generate dari Source
+                </Button>
+                <Button variant="outline" onClick={() => handleAddScene()}>
+                  <Plus className="mr-2 h-4 w-4" /> Mulai Manual
+                </Button>
+              </div>
             </div>
           ) : (
             <>
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={scenes.map((s) => s.id)} strategy={verticalListSortingStrategy}>
-                  <div className="space-y-6">
-                    {scenes.map((scene, index) => (
-                      <SortableSceneCard
-                        key={scene.id} scene={scene} index={index} totalScenes={scenes.length}
-                        playingTtsSceneId={playingTtsSceneId} regeneratingSceneId={regeneratingSceneId}
-                        savingSceneId={savingSceneId} addingSceneAfter={addingSceneAfter}
-                        duplicatingSceneId={duplicatingSceneId} deletingSceneId={deletingSceneId}
-                        footageSearch={sceneFootageSearch[scene.id]}
-                        onTtsPreview={handleTtsPreview} onRegenerateVoiceover={handleRegenerateSceneVoiceover}
-                        onAddScene={handleAddScene} onDuplicate={handleDuplicateScene}
-                        onDelete={handleDeleteScene} onSave={handleSaveScene}
-                        onUpdateDraft={updateSceneDraft} onFootageSearch={handleSceneFootageSearch}
-                        onFootageQueryChange={(sceneId, query) => setSceneFootageSearch((prev) => ({ ...prev, [sceneId]: { ...prev[sceneId], query, loading: false, results: prev[sceneId]?.results || [] } }))}
-                        onSelectFootage={handleSelectFootage}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
+              <ScriptStatsBar scenes={scenes} targetDurationSeconds={Number(projectForm.targetDurationSeconds || 60)} />
+
+              {/* View toggle + Play All */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="inline-flex rounded-lg border bg-slate-100 p-1">
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${viewMode === 'list' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                    <Rows3 className="h-3.5 w-3.5" />
+                    List
+                  </button>
+                  <button
+                    onClick={() => setViewMode('storyboard')}
+                    className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${viewMode === 'storyboard' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                    <LayoutGrid className="h-3.5 w-3.5" />
+                    Storyboard
+                  </button>
+                </div>
+
+                <Button variant="outline" size="sm" onClick={playAllScenes} className="gap-1.5">
+                  {playAllState.active ? (
+                    <>
+                      <Pause className="h-3.5 w-3.5" />
+                      Stop Play All
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-3.5 w-3.5" />
+                      Play All Scenes
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {viewMode === 'storyboard' && (
+                <StoryboardView
+                  scenes={scenes}
+                  onSelectScene={(sceneId) => {
+                    setViewMode('list')
+                    setTimeout(() => sceneRefs.current[sceneId]?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100)
+                  }}
+                  onAddScene={() => handleAddScene()}
+                />
+              )}
+
+              {viewMode === 'list' && (
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext items={scenes.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+                    <div className="space-y-6">
+                      {scenes.map((scene, index) => (
+                        <div
+                          key={scene.id}
+                          ref={(el) => { sceneRefs.current[scene.id] = el }}
+                          className={playAllState.currentSceneId === scene.id ? 'ring-2 ring-blue-400 ring-offset-2 rounded-3xl transition-all' : ''}
+                        >
+                          <SortableSceneCard
+                            scene={scene} index={index} totalScenes={scenes.length}
+                            defaultCollapsed={scenes.length > 4 && index > 0 && index < scenes.length - 1}
+                            playingTtsSceneId={playingTtsSceneId} regeneratingSceneId={regeneratingSceneId}
+                            improvingVisualSceneId={improvingVisualSceneId}
+                            savingSceneId={savingSceneId} addingSceneAfter={addingSceneAfter}
+                            duplicatingSceneId={duplicatingSceneId} deletingSceneId={deletingSceneId}
+                            footageSearch={sceneFootageSearch[scene.id]}
+                            suggestedKeywords={suggestedKeywords[scene.id]}
+                            suggestingKeywordsSceneId={suggestingKeywordsSceneId}
+                            onTtsPreview={handleTtsPreview} onRegenerateVoiceover={handleRegenerateSceneVoiceover}
+                            onImproveVisual={handleImproveVisual}
+                            onAddScene={handleAddScene} onDuplicate={handleDuplicateScene}
+                            onDelete={handleDeleteScene} onSave={handleSaveScene}
+                            onUpdateDraft={updateSceneDraft} onFootageSearch={handleSceneFootageSearch}
+                            onFootageQueryChange={(sceneId, query) => setSceneFootageSearch((prev) => ({ ...prev, [sceneId]: { ...prev[sceneId], query, loading: false, results: prev[sceneId]?.results || [] } }))}
+                            onSelectFootage={handleSelectFootage}
+                            onSuggestKeywords={handleSuggestKeywords}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              )}
+
               <Button variant="outline" className="w-full border-dashed border-2 py-6 mt-6" onClick={() => handleAddScene()} disabled={addingSceneAfter !== null}>
                 {addingSceneAfter !== null ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}Tambah Scene Baru
               </Button>
@@ -637,6 +862,18 @@ export default function VideoScriptEditorPage() {
           )}
         </div>
       </div>
+
+      <GenerateScriptDialog
+        open={generateDialogOpen}
+        onOpenChange={setGenerateDialogOpen}
+        initialSourceContent={projectForm.sourceContent}
+        initialDuration={projectForm.targetDurationSeconds}
+        isGenerating={isGenerating}
+        hasExistingScenes={hasScenes}
+        onGenerate={handleGenerateScript}
+      />
+
+      <RenderJobsTracker filterProjectId={projectId} />
     </div>
   )
 }

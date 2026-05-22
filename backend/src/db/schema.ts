@@ -502,6 +502,7 @@ export const scriptScene = pgTable('script_scene', {
   footageSearches: jsonb('footage_searches').default([]),
   brollPrompt: text('broll_prompt'), // Detailed English prompt for AI image gen / b-roll
   selectedFootage: jsonb('selected_footage').default([]), // User-selected footage attached to scene
+  directorNotes: text('director_notes'), // Free-form notes for editors / collaborators
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({
@@ -803,7 +804,11 @@ export const videoClipProjects = pgTable('video_clip_projects', {
   sourceUrl: text('source_url').notNull(),
   status: videoClipStatusEnum('status').notNull().default('created'),
   videoPath: text('video_path'),
+  thumbnailPath: text('thumbnail_path'),
   duration: integer('duration'),
+  metadata: jsonb('metadata'),
+  waveform: jsonb('waveform'),
+  brollPlan: jsonb('broll_plan').default([]),
   transcript: text('transcript'),
   words: jsonb('words'),
   segments: jsonb('segments'),
@@ -819,6 +824,18 @@ export const videoClipProjectsRelations = relations(videoClipProjects, ({ one })
     references: [user.id],
   }),
 }));
+
+export const videoClipPreset = pgTable('video_clip_preset', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  name: varchar('name', { length: 100 }).notNull(),
+  description: text('description'),
+  // Stored configuration: subtitle style, title style, aspect ratio, crop offset, b-roll defaults
+  config: jsonb('config').notNull(),
+  isFavorite: boolean('is_favorite').default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
 
 // Export all schemas for Better Auth
 export const schema = {
@@ -850,4 +867,5 @@ export const schema = {
   renderJobs,
   renderPresets,
   videoClipProjects,
+  videoClipPreset,
 };

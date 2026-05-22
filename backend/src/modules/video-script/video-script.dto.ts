@@ -21,6 +21,28 @@ export class CreateScriptProjectDto {
   sourceContent?: string;
 }
 
+export class ScriptStyleOptionsDto {
+  @IsOptional()
+  @IsIn(['casual', 'professional', 'edgy', 'educational', 'comedy'])
+  tone?: 'casual' | 'professional' | 'edgy' | 'educational' | 'comedy';
+
+  @IsOptional()
+  @IsIn(['question', 'statistic', 'bold-claim', 'story'])
+  hookStyle?: 'question' | 'statistic' | 'bold-claim' | 'story';
+
+  @IsOptional()
+  @IsIn(['id', 'en', 'mix'])
+  language?: 'id' | 'en' | 'mix';
+
+  @IsOptional()
+  @IsIn(['gen-z', 'millennial', 'professional', 'general'])
+  audience?: 'gen-z' | 'millennial' | 'professional' | 'general';
+
+  @IsOptional()
+  @IsIn(['fast', 'standard', 'slow'])
+  pacing?: 'fast' | 'standard' | 'slow';
+}
+
 export class GenerateScriptDto {
   @IsString()
   content: string;
@@ -28,6 +50,10 @@ export class GenerateScriptDto {
   @IsOptional()
   @IsInt()
   targetDurationSeconds?: number;
+
+  @IsOptional()
+  @IsObject()
+  style?: ScriptStyleOptionsDto;
 }
 
 export class UpdateScriptProjectDto {
@@ -91,6 +117,10 @@ export class UpdateScriptSceneDto {
   emoji?: string;
 
   @IsOptional()
+  @IsString()
+  directorNotes?: string;
+
+  @IsOptional()
   @IsArray()
   @IsObject({ each: true })
   footageSearches?: Array<{
@@ -98,6 +128,18 @@ export class UpdateScriptSceneDto {
     keyword?: string;
     url?: string;
   }>;
+}
+
+export class SuggestFootageKeywordsDto {
+  @IsOptional()
+  @IsInt()
+  count?: number;
+}
+
+export class ImproveVisualDto {
+  @IsOptional()
+  @IsString()
+  hint?: string;
 }
 
 export class RegenerateScriptFieldDto {

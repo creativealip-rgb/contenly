@@ -34,6 +34,8 @@ import {
   TranscribeDto,
   GenerateThumbnailDto,
   BrollAutoFillDto,
+  SuggestFootageKeywordsDto,
+  ImproveVisualDto,
 } from './video-script.dto';
 
 @ApiTags('Video Scripts')
@@ -141,6 +143,33 @@ export class VideoScriptController {
     @Body() dto: SelectSceneFootageDto,
   ) {
     return this.service.selectSceneFootage(user.id, id, dto.items as any);
+  }
+
+  @Post('scenes/:id/suggest-keywords')
+  @SetUserRateLimit({ limit: 30, windowMs: 60000 })
+  @ApiOperation({ summary: 'AI suggests stock footage keywords for a scene' })
+  async suggestSceneKeywords(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body() dto: SuggestFootageKeywordsDto,
+  ) {
+    const keywords = await this.service.suggestFootageKeywords(
+      user.id,
+      id,
+      dto.count,
+    );
+    return { keywords };
+  }
+
+  @Post('scenes/:id/improve-visual')
+  @SetUserRateLimit({ limit: 15, windowMs: 60000 })
+  @ApiOperation({ summary: 'AI improves the visual / B-roll direction for a scene' })
+  async improveSceneVisual(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body() dto: ImproveVisualDto,
+  ) {
+    return this.service.improveSceneVisual(user.id, id, dto.hint);
   }
 
   @Post('projects/:id/scenes')

@@ -12,6 +12,6 @@ import { AuthModule } from '../auth/auth.module';
   imports: [DrizzleModule, AiModule, BillingModule, ScraperModule, AuthModule],
   controllers: [VideoScriptController],
   providers: [VideoScriptService, FootageService],
-  exports: [VideoScriptService],
+  exports: [VideoScriptService, FootageService],
 })
 export class VideoScriptModule { }

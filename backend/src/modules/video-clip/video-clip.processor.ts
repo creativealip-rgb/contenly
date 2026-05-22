@@ -25,13 +25,27 @@ export class VideoClipProcessor {
     const db = this.drizzle.getDb();
 
     try {
-      // Step 1: Download
-      await db.update(videoClipProjects).set({ status: 'downloading' }).where(eq(videoClipProjects.id, projectId));
-      const [project] = await db.select().from(videoClipProjects).where(eq(videoClipProjects.id, projectId));
-      
-      this.logger.log(`Downloading video for project ${projectId}`);
-      const videoPath = await this.videoClipService.downloadVideo(project.sourceUrl, projectId);
-      await db.update(videoClipProjects).set({ videoPath, status: 'transcribing' }).where(eq(videoClipProjects.id, projectId));
+      // Step 1: Download (skip if videoPath already exists, e.g. uploaded file)
+      const [existing] = await db.select().from(videoClipProjects).where(eq(videoClipProjects.id, projectId));
+      let videoPath: string;
+      if (existing.videoPath) {
+        this.logger.log(`Reusing uploaded video for project ${projectId}: ${existing.videoPath}`);
+        videoPath = existing.videoPath;
+        await db.update(videoClipProjects).set({ status: 'transcribing' }).where(eq(videoClipProjects.id, projectId));
+      } else {
+        await db.update(videoClipProjects).set({ status: 'downloading' }).where(eq(videoClipProjects.id, projectId));
+        this.logger.log(`Downloading video for project ${projectId}`);
+        videoPath = await this.videoClipService.downloadVideo(existing.sourceUrl, projectId);
+        const thumbnailPath = await this.videoClipService.extractThumbnail(videoPath, projectId);
+        const waveform = await this.videoClipService.extractWaveform(videoPath).catch(() => []);
+        await db.update(videoClipProjects).set({
+          videoPath,
+          thumbnailPath: thumbnailPath || null,
+          waveform: waveform.length > 0 ? waveform : null,
+          status: 'transcribing',
+        }).where(eq(videoClipProjects.id, projectId));
+      }
+      const project = existing;
 
       // Step 2: Get duration
       const duration = await this.videoClipService.getVideoDuration(videoPath);
@@ -85,8 +99,11 @@ export class VideoClipProcessor {
     segmentIndex: number;
     subtitleStyle: any;
     titleStyle: any;
+    aspectRatio?: string;
+    cropOffsetX?: number;
+    includeBroll?: boolean;
   }>) {
-    const { jobId, userId, projectId, segmentIndex, subtitleStyle, titleStyle } = job.data;
+    const { jobId, userId, projectId, segmentIndex, subtitleStyle, titleStyle, aspectRatio, cropOffsetX, includeBroll } = job.data;
     const db = this.drizzle.getDb();
 
     try {
@@ -97,7 +114,19 @@ export class VideoClipProcessor {
       const segment = segments[segmentIndex];
       const words = (project.words as any[]) || [];
 
-      this.logger.log(`Exporting clip ${segmentIndex} for project ${projectId}`);
+      // B-roll: filter to only those for this segment
+      let brollItems: any[] = [];
+      let brollAssets: Record<string, string> | undefined;
+      if (includeBroll !== false) {
+        const allBroll = ((project.brollPlan as any[]) || []).filter((b) => b.segmentIndex === segmentIndex);
+        if (allBroll.length > 0) {
+          this.logger.log(`Downloading ${allBroll.length} b-roll assets for clip ${segmentIndex}`);
+          brollAssets = await this.videoClipService.downloadBrollAssets(allBroll);
+          brollItems = allBroll;
+        }
+      }
+
+      this.logger.log(`Exporting clip ${segmentIndex} for project ${projectId}${brollItems.length ? ` with ${brollItems.length} b-roll overlays` : ''}`);
       const outputPath = await this.videoClipService.clipAndExport(
         project.videoPath!,
         segment,
@@ -105,11 +134,24 @@ export class VideoClipProcessor {
         subtitleStyle,
         titleStyle,
         jobId,
+        {
+          aspectRatio: (aspectRatio as any) || '9:16',
+          cropOffsetX: cropOffsetX || 0,
+          brollItems,
+          brollAssets,
+        },
       );
 
       // Store export path in project exports array
       const exports = (project.exports as any[]) || [];
-      exports.push({ segmentIndex, outputPath, jobId, createdAt: new Date().toISOString() });
+      exports.push({
+        segmentIndex,
+        outputPath,
+        jobId,
+        aspectRatio: aspectRatio || '9:16',
+        brollCount: brollItems.length,
+        createdAt: new Date().toISOString(),
+      });
       await db.update(videoClipProjects).set({ exports }).where(eq(videoClipProjects.id, projectId));
 
       // Deduct tokens

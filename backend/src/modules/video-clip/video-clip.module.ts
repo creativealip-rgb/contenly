@@ -7,6 +7,7 @@ import { AuthModule } from '../auth/auth.module';
 import { AiModule } from '../ai/ai.module';
 import { BillingModule } from '../billing/billing.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { VideoScriptModule } from '../video-script/video-script.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     AiModule,
     BillingModule,
     NotificationsModule,
+    VideoScriptModule, // for reusing FootageService
     BullModule.registerQueue({ name: 'video-clip' }),
   ],
   controllers: [VideoClipController],

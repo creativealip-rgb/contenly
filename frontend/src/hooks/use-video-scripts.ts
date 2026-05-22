@@ -1,11 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 
-interface ScriptProject {
+export interface ScriptProject {
   id: string
   title: string
   sourceUrl: string
+  sourceContent?: string
   status: string
+  headline?: string | null
+  caption?: string | null
+  targetDurationSeconds?: number | null
+  sceneCount?: number
+  totalEstimatedDuration?: number
+  scenesWithFootage?: number
+  coverThumbnail?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -18,7 +26,7 @@ export function useVideoProjects() {
 }
 
 export function useCreateVideoProject() {
-  return useMutation<ScriptProject, Error, { title: string; sourceUrl: string }>({
+  return useMutation<ScriptProject, Error, { title: string; sourceUrl?: string; sourceContent?: string }>({
     mutationFn: (body) => api.post('/video-scripts/projects', body),
   })
 }

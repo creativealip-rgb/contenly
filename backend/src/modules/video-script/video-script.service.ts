@@ -106,9 +106,49 @@ export class VideoScriptService {
   }
 
   async getProjects(userId: string) {
-    return this.drizzle.db.query.scriptProject.findMany({
+    const rows = await this.drizzle.db.query.scriptProject.findMany({
       where: eq(schema.scriptProject.userId, userId),
       orderBy: [desc(schema.scriptProject.createdAt)],
+      with: {
+        scenes: {
+          columns: {
+            id: true,
+            sceneNumber: true,
+            estimatedDuration: true,
+            voiceoverText: true,
+            selectedFootage: true,
+          },
+        },
+      },
+    });
+
+    return rows.map((row) => {
+      const scenes = row.scenes || [];
+      const totalDuration = scenes.reduce((acc, s) => {
+        if (s.estimatedDuration && s.estimatedDuration > 0) return acc + s.estimatedDuration;
+        const words = (s.voiceoverText || '').trim().split(/\s+/).filter(Boolean).length;
+        return acc + Math.max(1, Math.round((words / 160) * 60));
+      }, 0);
+      const scenesWithFootage = scenes.filter(
+        (s) => Array.isArray(s.selectedFootage) && (s.selectedFootage as unknown[]).length > 0,
+      ).length;
+      const firstFootage = (() => {
+        for (const s of scenes) {
+          if (Array.isArray(s.selectedFootage) && s.selectedFootage.length > 0) {
+            const item = (s.selectedFootage as Array<{ thumbnailUrl?: string }>)[0];
+            if (item?.thumbnailUrl) return item.thumbnailUrl;
+          }
+        }
+        return null;
+      })();
+      return {
+        ...row,
+        sceneCount: scenes.length,
+        totalEstimatedDuration: totalDuration,
+        scenesWithFootage,
+        coverThumbnail: firstFootage,
+        scenes: undefined, // strip scenes from list response
+      };
     });
   }
 
@@ -211,6 +251,7 @@ export class VideoScriptService {
       const systemPrompt = this.buildSystemPrompt(
         project.title,
         dto.targetDurationSeconds,
+        dto.style,
       );
 
       const tier = await this.billingService.getSubscriptionTier(userId);
@@ -372,6 +413,7 @@ export class VideoScriptService {
         estimatedDuration:
           dto.estimatedDuration ?? this.estimateSceneDuration(voiceoverText),
         emoji: dto.emoji ?? scene.emoji,
+        directorNotes: dto.directorNotes ?? scene.directorNotes,
         footageSearches:
           dto.footageSearches ??
           this.normalizeFootageSearches(scene.footageSearches),
@@ -507,6 +549,124 @@ ${project.sourceContent}`;
       sceneId,
       sceneNumber: scene.sceneNumber,
       ...result,
+    };
+  }
+
+  async suggestFootageKeywords(
+    userId: string,
+    sceneId: string,
+    count = 6,
+  ): Promise<string[]> {
+    const [scene] = await this.drizzle.db
+      .select()
+      .from(schema.scriptScene)
+      .where(eq(schema.scriptScene.id, sceneId));
+    if (!scene) throw new NotFoundException('Scene not found');
+    const project = await this.getProject(userId, scene.projectId);
+
+    const tier = await this.billingService.getSubscriptionTier(userId);
+    const model = this.getTierModel(tier);
+    const prompt = `You are a stock footage curator helping creators find b-roll for short-form video.
+
+Return VALID JSON only with this shape:
+{ "keywords": ["short keyword 1", "short keyword 2", ...] }
+
+Rules:
+- Provide ${Math.max(3, Math.min(12, count))} concise English keywords or 2-3 word phrases.
+- Keywords should be searchable on Pexels / Unsplash (concrete nouns + adjectives, no full sentences).
+- Avoid duplicates. Mix wide shots and close-ups when relevant.
+
+Scene visual context: ${scene.visualContext}
+Scene voiceover: ${scene.voiceoverText}
+Project headline: ${project.headline || ''}
+Project hook: ${project.hook || ''}`;
+
+    const result = (await this.openAiService.generateContent(
+      scene.visualContext || project.title,
+      { mode: 'custom', systemPrompt: prompt, model },
+    )) as { keywords?: unknown };
+
+    const raw = Array.isArray(result.keywords) ? result.keywords : [];
+    return raw
+      .map((k) => (typeof k === 'string' ? k.trim() : ''))
+      .filter((k) => k.length > 0)
+      .slice(0, count);
+  }
+
+  async improveSceneVisual(
+    userId: string,
+    sceneId: string,
+    hint?: string,
+  ) {
+    const [scene] = await this.drizzle.db
+      .select()
+      .from(schema.scriptScene)
+      .where(eq(schema.scriptScene.id, sceneId));
+    if (!scene) throw new NotFoundException('Scene not found');
+    const project = await this.getProject(userId, scene.projectId);
+
+    const hasBalance = await this.billingService.checkBalance(userId, 1);
+    if (!hasBalance) {
+      throw new BadRequestException(
+        'Saldo kredit Anda tidak mencukupi untuk request ini.',
+      );
+    }
+
+    const tier = await this.billingService.getSubscriptionTier(userId);
+    const model = this.getTierModel(tier);
+    const prompt = `You are a video director writing a vivid visual direction for a short-form video scene.
+
+Return VALID JSON only:
+{ "visualContext": "...", "brollPrompt": "..." }
+
+Rules:
+- "visualContext" in Indonesian, 1-3 sentences, describes what is on screen, camera angle, mood, motion.
+- "brollPrompt" in English, 25-45 words, photorealistic / cinematic, suitable for AI image/video generators.
+- Stay coherent with the voiceover text and project hook.
+- Make it visually different and richer than the previous version.
+${hint ? `- Apply this user hint: ${hint}` : ''}
+
+Scene voiceover: ${scene.voiceoverText}
+Previous visual context: ${scene.visualContext}
+Project hook: ${project.hook || ''}
+Project headline: ${project.headline || ''}`;
+
+    const result = (await this.openAiService.generateContent(
+      scene.voiceoverText || project.title,
+      { mode: 'custom', systemPrompt: prompt, model },
+    )) as { visualContext?: unknown; brollPrompt?: unknown };
+
+    const visualContext =
+      typeof result.visualContext === 'string'
+        ? result.visualContext.trim()
+        : '';
+    if (!visualContext) {
+      throw new BadRequestException('Failed to improve scene visual');
+    }
+    const brollPrompt =
+      typeof result.brollPrompt === 'string' ? result.brollPrompt.trim() : null;
+
+    const [updatedScene] = await this.drizzle.db
+      .update(schema.scriptScene)
+      .set({
+        visualContext,
+        brollPrompt: brollPrompt || scene.brollPrompt,
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.scriptScene.id, sceneId))
+      .returning();
+
+    await this.billingService.deductTokens(
+      userId,
+      1,
+      `Video script improve visual (scene ${scene.sceneNumber})`,
+    );
+
+    return {
+      ...updatedScene,
+      footageSearches: this.normalizeFootageSearches(
+        updatedScene.footageSearches,
+      ),
     };
   }
 
@@ -794,15 +954,62 @@ ${project.sourceContent}`;
   private buildSystemPrompt(
     projectTitle: string,
     targetDuration?: number,
+    style?: GenerateScriptDto['style'],
   ): string {
     const totalSeconds =
       targetDuration && targetDuration > 0 ? targetDuration : 45;
     const targetWords = Math.round(totalSeconds * (160 / 60));
     const maxWords = Math.round(targetWords * 1.15);
 
+    const tone = style?.tone || 'casual';
+    const hookStyle = style?.hookStyle || 'question';
+    const language = style?.language || 'id';
+    const audience = style?.audience || 'gen-z';
+    const pacing = style?.pacing || 'standard';
+
+    const toneDescriptor: Record<string, string> = {
+      casual: 'casual, friendly, conversational, like talking to a close friend',
+      professional: 'polished, authoritative, well-structured, confident expert voice',
+      edgy: 'bold, provocative, punchy, controversial-but-tasteful, attention-grabbing',
+      educational: 'clear, informative, teacherly, with concrete examples and structure',
+      comedy: 'humorous, playful, witty punchlines, light sarcasm where appropriate',
+    };
+
+    const hookDescriptor: Record<string, string> = {
+      question: 'open with a curiosity-driven question that the rest of the script answers',
+      statistic: 'open with a surprising statistic, number, or data point',
+      'bold-claim': 'open with a bold, contrarian, or counter-intuitive claim',
+      story: 'open with the start of a personal or relatable mini-story / scenario',
+    };
+
+    const languageDescriptor: Record<string, string> = {
+      id: 'Use Indonesian (Bahasa Indonesia, casual modern style) for headline, sub-headline, caption, hook, visual_context, and voiceover_text.',
+      en: 'Use English for headline, sub-headline, caption, hook, visual_context, and voiceover_text.',
+      mix: 'Use Indonesian as base language but naturally mix relevant English terms (Indo-glish style) for headline, caption, hook, and voiceover_text.',
+    };
+
+    const audienceDescriptor: Record<string, string> = {
+      'gen-z': 'Gen Z (16-26): use contemporary slang sparingly, references they care about, fast pacing, meme-aware tone',
+      millennial: 'Millennial (27-40): nostalgic references where appropriate, balanced pace, practical takeaways',
+      professional: 'working professionals: business / career angle, concrete value, no slang',
+      general: 'general audience across age groups: clear, accessible language',
+    };
+
+    const pacingDescriptor: Record<string, string> = {
+      fast: 'Fast cuts: each scene 3-5 seconds, snappy voiceover lines, lots of scene changes.',
+      standard: 'Standard pacing: each scene 6-10 seconds, balanced rhythm.',
+      slow: 'Slower storytelling: each scene 10-15 seconds, longer narrative beats.',
+    };
+
     return `You are an expert short-form video scriptwriter and content strategist for TikTok, Instagram Reels, and YouTube Shorts.
 
 Project title: ${projectTitle}
+
+Style requirements:
+- Tone: ${toneDescriptor[tone]}
+- Hook style: ${hookDescriptor[hookStyle]}
+- Target audience: ${audienceDescriptor[audience]}
+- Pacing: ${pacingDescriptor[pacing]}
 
 Return VALID JSON only with this exact shape:
 {
@@ -830,15 +1037,15 @@ Return VALID JSON only with this exact shape:
 }
 
 Rules:
-- Language for headline, sub-headline, caption, hook, visuals, and voiceover: Indonesian.
+- ${languageDescriptor[language]}
 - Thumbnail prompt must be in English, highly descriptive, and at least 35 words.
 - Each scene's broll_prompt must be in English, vivid, photorealistic/cinematic, 25-45 words, suitable as input for AI image / video generation tools (Midjourney, DALL-E, Sora, etc.). Include subject, setting, lighting, mood, camera angle.
 - Caption must be ready to post and include relevant hashtags.
 - Hashtags array must contain 5-10 items.
 - The combined voiceover across all scenes should target about ${targetWords} words, with an absolute maximum of ${maxWords} words.
-- Scene 1 must hook hard in the first seconds.
+- Scene 1 must hook hard in the first seconds following the hook style above.
 - Final scene should close naturally with a CTA or takeaway.
-- Split the script into concise scenes with fast pacing.
+- Split the script into concise scenes following the pacing guidance above.
 - Each scene must include 3-5 footage search suggestions across mixed platforms such as YouTube, TikTok, Pexels, X, or Instagram.
 - Each footage_searches item must contain platform, keyword, and url.
 - Do not wrap the JSON in markdown.`;

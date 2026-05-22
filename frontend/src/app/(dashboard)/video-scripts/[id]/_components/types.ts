@@ -4,6 +4,25 @@ export type FootageSearch = {
   url: string
 }
 
+export type FootageItem = {
+  source: 'pexels-photo' | 'pexels-video' | 'google-image'
+  id?: string
+  thumbnailUrl: string
+  previewUrl?: string
+  downloadUrl?: string
+  title?: string
+  width?: number
+  height?: number
+  duration?: number
+  attribution?: {
+    author?: string
+    authorUrl?: string
+    sourceUrl?: string
+  }
+}
+
+export type FootageFilter = 'all' | 'photo' | 'video'
+
 export type Scene = {
   id: string
   sceneNumber: number
@@ -12,7 +31,8 @@ export type Scene = {
   estimatedDuration?: number | null
   emoji?: string | null
   footageSearches: FootageSearch[]
-  selectedFootage?: Array<{ thumbnailUrl: string; title?: string }> | null
+  selectedFootage?: FootageItem[] | null
+  directorNotes?: string | null
 }
 
 export type ScriptProject = {
