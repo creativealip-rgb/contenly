@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
@@ -18,19 +19,48 @@ import { ContentLabState, ContentLabHandlers } from './components/types'
 import { useRSS } from './hooks/useRSS'
 import { useWordPress } from './hooks/useWordPress'
 import { useAIContent } from './hooks/useAIContent'
+import { useAutoSaveDraft } from './hooks/useAutoSaveDraft'
 
 export default function ContentLabPage() {
     // Global Store State
     const { generatedContent } = useContentLabStore()
+    const searchParams = useSearchParams()
+    const loadArticleId = searchParams.get('id')
 
     // Custom Hooks
     const rss = useRSS()
     const wp = useWordPress()
     const ai = useAIContent()
+    const { isSaving } = useAutoSaveDraft()
 
     // Local UI State (Remaining)
     const [copied, setCopied] = useState(false)
     const [rightPanelTab, setRightPanelTab] = useState<'sources' | 'tools'>('sources')
+
+    // Load existing article from ?id= param
+    useEffect(() => {
+        if (!loadArticleId) return
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
+        const load = async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/articles/${loadArticleId}`, { credentials: 'include' })
+                if (!res.ok) return
+                const article = await res.json()
+                const store = useContentLabStore.getState()
+                store.setGeneratedContent(article.generatedContent || '')
+                store.setGeneratedTitle(article.title || '')
+                store.setSourceContent(article.originalContent || '')
+                store.setMetaTitle(article.metaTitle || '')
+                store.setMetaDescription(article.metaDescription || '')
+                store.setSlug(article.slug || '')
+                store.setGeneratedArticleId(article.id)
+                if (article.featuredImageUrl) store.setFeaturedImage(article.featuredImageUrl)
+                if (article.sourceUrl) store.setSelectedArticle({ id: article.id, title: article.title, url: article.sourceUrl })
+                setRightPanelTab('tools')
+            } catch { /* ignore */ }
+        }
+        load()
+    }, [loadArticleId])
 
     // Initial Load & Orchestration
     useEffect(() => {
@@ -117,6 +147,12 @@ export default function ContentLabPage() {
                     <p className="text-sm font-medium text-slate-500">Tulis dan sempurnakan konten unik Anda</p>
                 </div>
                 <div className="flex items-center gap-3">
+                    {isSaving && (
+                        <Badge variant="outline" className="bg-emerald-50 text-emerald-600 border-emerald-200 gap-1 text-[10px]">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Menyimpan...
+                        </Badge>
+                    )}
                     {(state.isRewriting || state.isScraping || state.isPublishing || state.isGeneratingImage || state.isRefreshingSEO) && (
                         <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200 gap-1" role="status" aria-label="Memuat...">
                             <Loader2 className="h-3 w-3 animate-spin" />

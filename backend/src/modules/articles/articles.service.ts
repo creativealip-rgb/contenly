@@ -206,6 +206,51 @@ export class ArticlesService {
     return { message: 'Article deleted' };
   }
 
+  async bulkDelete(userId: string, ids: string[]) {
+    if (!ids?.length) return { deleted: 0 };
+    // Make sure all belong to user
+    const found = await this.db
+      .select({ id: article.id })
+      .from(article)
+      .where(and(eq(article.userId, userId), inArray(article.id, ids)));
+    const validIds = found.map((f) => f.id);
+    if (validIds.length === 0) return { deleted: 0 };
+    await this.db.delete(article).where(inArray(article.id, validIds));
+    return { deleted: validIds.length };
+  }
+
+  async bulkUpdateStatus(userId: string, ids: string[], status: ArticleStatus) {
+    if (!ids?.length) return { updated: 0 };
+    const result = await this.db
+      .update(article)
+      .set({ status, updatedAt: new Date() })
+      .where(and(eq(article.userId, userId), inArray(article.id, ids)))
+      .returning({ id: article.id });
+    return { updated: result.length };
+  }
+
+  async getStats(userId: string) {
+    const rows = await this.db
+      .select({
+        status: article.status,
+        count: sql<number>`count(*)::int`,
+        tokens: sql<number>`coalesce(sum(${article.tokensUsed}), 0)::int`,
+      })
+      .from(article)
+      .where(eq(article.userId, userId))
+      .groupBy(article.status);
+
+    const counts: Record<string, number> = {};
+    let totalTokens = 0;
+    let totalArticles = 0;
+    for (const r of rows) {
+      counts[r.status as string] = r.count;
+      totalTokens += r.tokens || 0;
+      totalArticles += r.count;
+    }
+    return { counts, totalTokens, totalArticles };
+  }
+
   async updateStatus(id: string, status: ArticleStatus, wpData?: { wpPostId: string; wpPostUrl: string }) {
     const [updated] = await this.db
       .update(article)

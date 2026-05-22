@@ -3,9 +3,11 @@
 import { useState, useCallback } from 'react'
 import { useContentLabStore } from '@/stores/content-lab-store'
 import { toast } from 'sonner'
+import { useQueryClient } from '@tanstack/react-query'
 
 export function useAIContent() {
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
+    const queryClient = useQueryClient()
 
     const [isScraping, setIsScraping] = useState(false)
     const [isRewriting, setIsRewriting] = useState(false)
@@ -123,7 +125,39 @@ export function useAIContent() {
                 if (result.data.metaDescription) setMetaDescription(result.data.metaDescription)
                 if (result.data.slug) setSlug(result.data.slug)
                 if (result.data.title) setMetaTitle(result.data.title)
-                toast.success('Konten berhasil dibuat!')
+
+                // Auto-save as draft to /articles
+                try {
+                    const sourceText = activeTab === 'idea' ? articleIdea : sourceContent
+                    const articleRes = await fetch(`${API_BASE_URL}/articles`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            title: result.data.title,
+                            generatedContent: result.data.content,
+                            originalContent: sourceText,
+                            sourceUrl: selectedArticle?.url || scrapeUrl || '',
+                            metaTitle: result.data.title,
+                            metaDescription: result.data.metaDescription || '',
+                            slug: result.data.slug || '',
+                            tokensUsed: result.data.tokensUsed || 0,
+                            status: 'DRAFT',
+                        }),
+                    })
+                    if (articleRes.ok) {
+                        const saved = await articleRes.json()
+                        setGeneratedArticleId(saved.id)
+                        // Invalidate articles cache
+                        queryClient.invalidateQueries({ queryKey: ['articles'] })
+                        queryClient.invalidateQueries({ queryKey: ['articles-stats'] })
+                    }
+                } catch (saveErr) {
+                    console.warn('Auto-save draft failed:', saveErr)
+                    // Non-fatal — content tetap di store, user bisa save manual
+                }
+
+                toast.success('Konten berhasil dibuat dan disimpan sebagai draft!')
             } else {
                 toast.error(result.error || 'Gagal membuat konten')
             }
@@ -146,7 +180,9 @@ export function useAIContent() {
         setGeneratedTitle,
         setMetaDescription,
         setSlug,
-        setMetaTitle
+        setMetaTitle,
+        setGeneratedArticleId,
+        queryClient,
     ])
 
     const handleRefreshSEO = useCallback(async () => {

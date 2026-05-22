@@ -11,10 +11,10 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ArticlesService } from './articles.service';
-import { CreateArticleDto, UpdateArticleDto } from './dto';
+import { CreateArticleDto, UpdateArticleDto, BulkDeleteDto, BulkStatusDto } from './dto';
 import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import type { User } from '../../db/types';
+import type { User, ArticleStatus } from '../../db/types';
 
 @ApiTags('articles')
 @ApiBearerAuth()
@@ -68,5 +68,23 @@ export class ArticlesController {
   @ApiOperation({ summary: 'Delete article' })
   async delete(@CurrentUser() user: User, @Param('id') id: string) {
     return this.articlesService.delete(user.id, id);
+  }
+
+  @Get('stats/summary')
+  @ApiOperation({ summary: 'Aggregate stats per status + total tokens' })
+  async getStats(@CurrentUser() user: User) {
+    return this.articlesService.getStats(user.id);
+  }
+
+  @Post('bulk/delete')
+  @ApiOperation({ summary: 'Delete multiple articles' })
+  async bulkDelete(@CurrentUser() user: User, @Body() dto: BulkDeleteDto) {
+    return this.articlesService.bulkDelete(user.id, dto.ids);
+  }
+
+  @Post('bulk/status')
+  @ApiOperation({ summary: 'Update status for multiple articles' })
+  async bulkStatus(@CurrentUser() user: User, @Body() dto: BulkStatusDto) {
+    return this.articlesService.bulkUpdateStatus(user.id, dto.ids, dto.status as ArticleStatus);
   }
 }

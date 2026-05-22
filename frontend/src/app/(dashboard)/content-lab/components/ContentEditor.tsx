@@ -16,6 +16,12 @@ import {
     Film,
     Loader2
 } from 'lucide-react'
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { useContentLabStore } from '@/stores/content-lab-store'
 import { ContentLabState, ContentLabHandlers } from './types'
 import { useRouter } from 'next/navigation'
@@ -74,38 +80,62 @@ export function ContentEditor({ state, handlers, copied, handleCopy }: ContentEd
             animate={{ opacity: 1, y: 0 }}
             className="h-full flex flex-col gap-4"
         >
-            <div className="flex items-center justify-end gap-2">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleConvertToVideoScript}
-                    disabled={!generatedContent || isConverting}
-                    className="h-10 px-4 rounded-xl border-purple-200 bg-purple-50/50 backdrop-blur-sm hover:bg-purple-100 transition-all shadow-sm text-purple-700"
-                    title="Convert to Video Script"
-                    aria-label="Konversi ke skrip video"
-                >
-                    {isConverting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Film className="h-4 w-4" />}
-                </Button>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleCopy}
-                    disabled={!generatedContent}
-                    aria-label="Salin konten"
-                    className="h-10 px-4 rounded-xl border-slate-200 bg-white/50 backdrop-blur-sm hover:bg-white transition-all shadow-sm"
-                >
-                    {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                </Button>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handlers.handleAIRewrite}
-                    disabled={!sourceContent || state.isRewriting}
-                    aria-label="Tulis ulang dengan AI"
-                    className="h-10 px-4 rounded-xl border-slate-200 bg-white/50 backdrop-blur-sm hover:bg-white transition-all shadow-sm"
-                >
-                    <RotateCcw className={`h-4 w-4 ${state.isRewriting ? 'animate-spin' : ''}`} />
-                </Button>
+            <div className="flex items-center justify-between gap-2">
+                {/* Left: word count + readability */}
+                <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    {generatedContent && (
+                        <>
+                            <span>{generatedContent.trim().split(/\s+/).filter(Boolean).length} kata</span>
+                            <span>·</span>
+                            <span>~{Math.ceil(generatedContent.trim().split(/\s+/).filter(Boolean).length / 200)} min baca</span>
+                        </>
+                    )}
+                </div>
+
+                {/* Right: action buttons */}
+                <div className="flex items-center gap-2">
+                    {/* Convert menu */}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={!generatedContent}
+                                className="h-10 px-4 rounded-xl border-purple-200 bg-purple-50/50 hover:bg-purple-100 text-purple-700"
+                            >
+                                <Film className="h-4 w-4 mr-1.5" />
+                                Konversi
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={handleConvertToVideoScript} disabled={isConverting} className="cursor-pointer">
+                                <Film className="h-4 w-4 mr-2" />
+                                Video Script
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCopy}
+                        disabled={!generatedContent}
+                        className="h-10 px-4 rounded-xl border-slate-200 bg-white/50 hover:bg-white"
+                    >
+                        {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handlers.handleAIRewrite}
+                        disabled={!sourceContent || state.isRewriting}
+                        className="h-10 px-4 rounded-xl border-slate-200 bg-white/50 hover:bg-white"
+                        title="Regenerate (~3 token)"
+                    >
+                        <RotateCcw className={`h-4 w-4 ${state.isRewriting ? 'animate-spin' : ''}`} />
+                        <span className="ml-1.5 text-[10px] font-bold text-slate-400">~3t</span>
+                    </Button>
+                </div>
             </div>
 
             <div className="flex-1 flex flex-col min-h-0">

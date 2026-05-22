@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNumber } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsArray, IsIn } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 
 export class CreateArticleDto {
@@ -74,4 +74,22 @@ export class UpdateArticleDto extends PartialType(CreateArticleDto) {
   @IsString()
   @IsOptional()
   wpSiteId?: string;
+}
+
+export class BulkDeleteDto {
+  @ApiProperty({ type: [String] })
+  @IsArray()
+  @IsString({ each: true })
+  ids: string[];
+}
+
+export class BulkStatusDto {
+  @ApiProperty({ type: [String] })
+  @IsArray()
+  @IsString({ each: true })
+  ids: string[];
+
+  @ApiProperty({ enum: ['DRAFT', 'GENERATING', 'GENERATED', 'READY', 'PUBLISHING', 'PUBLISHED', 'SCHEDULED', 'FAILED'] })
+  @IsIn(['DRAFT', 'GENERATING', 'GENERATED', 'READY', 'PUBLISHING', 'PUBLISHED', 'SCHEDULED', 'FAILED'])
+  status: string;
 }

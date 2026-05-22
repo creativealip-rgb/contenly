@@ -67,6 +67,7 @@ export function SEOSection({
             </div>
 
             {/* SEO Score */}
+            <GooglePreviewMock title={metaTitle || generatedTitle || ''} description={metaDescription} slug={slug} />
             <SeoScoreIndicator title={metaTitle || generatedTitle || ''} description={metaDescription} slug={slug} />
 
             <div className="relative group rounded-2xl overflow-hidden aspect-[16/9] border-2 border-dashed border-slate-100 dark:border-slate-800 bg-slate-50/50 flex items-center justify-center transition-all hover:bg-slate-50">
@@ -118,6 +119,21 @@ export function SEOSection({
                     }
                 }} />
             </div>
+        </div>
+    )
+}
+
+function GooglePreviewMock({ title, description, slug }: { title: string; description: string; slug: string }) {
+    if (!title && !description) return null
+    const displayTitle = (title || 'Judul Artikel').slice(0, 60)
+    const displayDesc = (description || 'Deskripsi meta akan muncul di sini...').slice(0, 160)
+    const displaySlug = slug || 'artikel-slug'
+    return (
+        <div className="rounded-xl border border-slate-100 bg-white p-3 space-y-0.5">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Google Preview</p>
+            <p className="text-sm font-medium text-blue-700 leading-tight truncate">{displayTitle}</p>
+            <p className="text-[11px] text-green-700 font-mono truncate">yoursite.com › {displaySlug}</p>
+            <p className="text-[11px] text-slate-600 leading-snug line-clamp-2">{displayDesc}</p>
         </div>
     )
 }
