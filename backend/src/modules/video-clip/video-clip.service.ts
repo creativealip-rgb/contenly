@@ -30,7 +30,7 @@ export interface TranscriptWord {
   end: number;
 }
 
-export type AspectRatio = '9:16' | '1:1' | '16:9' | '4:5';
+export type AspectRatio = '9:16' | '9:16-fit' | '1:1' | '16:9' | '4:5';
 
 export interface VideoClipPresetConfig {
   subtitleStyle?: SubtitleStyleInput;
@@ -673,6 +673,12 @@ Rules:
         h: 1920,
         // crop width = ih*9/16; horizontal x position uses center offset
         cropExpr: `crop=ih*9/16:ih:(iw-ih*9/16)/2+(${cropOffsetX})*((iw-ih*9/16)/2):0`,
+      },
+      '9:16-fit': {
+        w: 1080,
+        h: 1920,
+        // Letterbox: scale to fit width, pad top/bottom with black
+        cropExpr: `scale=1080:-2,pad=1080:1920:0:(1920-ih)/2:black`,
       },
       '1:1': {
         w: 1080,

@@ -172,8 +172,8 @@ export const VideoPreview = forwardRef<VideoPreviewHandle, VideoPreviewProps>(fu
         <video
           ref={videoRef}
           src={streamUrl}
-          className="h-full w-full object-cover"
-          style={{ transform: cropTransform }}
+          className={`h-full w-full ${aspectRatio === '9:16-fit' ? 'object-contain bg-black' : 'object-cover'}`}
+          style={{ transform: aspectRatio === '9:16-fit' ? 'none' : cropTransform }}
           playsInline
           preload="metadata"
           crossOrigin="use-credentials"

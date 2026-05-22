@@ -1,5 +1,6 @@
 export const ASPECT_RATIOS = [
   { value: '9:16', label: '9:16 (Vertical)', w: 9, h: 16 },
+  { value: '9:16-fit', label: '9:16 Fit (Letterbox)', w: 9, h: 16 },
   { value: '1:1', label: '1:1 (Square)', w: 1, h: 1 },
   { value: '16:9', label: '16:9 (Landscape)', w: 16, h: 9 },
   { value: '4:5', label: '4:5 (Instagram)', w: 4, h: 5 },

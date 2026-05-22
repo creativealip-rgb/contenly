@@ -305,7 +305,7 @@ export class TitleStyleDto {
   position?: 'top' | 'center' | 'bottom';
 }
 
-export type AspectRatio = '9:16' | '1:1' | '16:9' | '4:5';
+export type AspectRatio = '9:16' | '9:16-fit' | '1:1' | '16:9' | '4:5';
 
 export class ExportClipDto {
   @IsString()
@@ -315,7 +315,7 @@ export class ExportClipDto {
   segmentIndex: number;
 
   @IsOptional()
-  @IsIn(['9:16', '1:1', '16:9', '4:5'])
+  @IsIn(['9:16', '9:16-fit', '1:1', '16:9', '4:5'])
   aspectRatio?: AspectRatio;
 
   @IsOptional()
@@ -346,7 +346,7 @@ export class BatchExportDto {
   segmentIndexes: number[];
 
   @IsOptional()
-  @IsIn(['9:16', '1:1', '16:9', '4:5'])
+  @IsIn(['9:16', '9:16-fit', '1:1', '16:9', '4:5'])
   aspectRatio?: AspectRatio;
 
   @IsOptional()
