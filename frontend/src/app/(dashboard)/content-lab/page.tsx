@@ -20,6 +20,7 @@ import { useRSS } from './hooks/useRSS'
 import { useWordPress } from './hooks/useWordPress'
 import { useAIContent } from './hooks/useAIContent'
 import { useAutoSaveDraft } from './hooks/useAutoSaveDraft'
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 
 export default function ContentLabPage() {
     // Global Store State
@@ -135,6 +136,12 @@ export default function ContentLabPage() {
         handleAIRewrite: () => ai.handleAIRewrite(wp.selectedCategory),
         handleGenerateImage: ai.handleGenerateImage
     }
+
+    // Keyboard shortcuts
+    useKeyboardShortcuts({
+        onRegenerate: () => handlers.handleAIRewrite(),
+        onCopy: handleCopy,
+    })
 
     return (
         <div className="h-[calc(100vh-180px)] min-h-[600px] px-4 md:px-0 flex flex-col">

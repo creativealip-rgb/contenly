@@ -290,6 +290,7 @@ export const article = pgTable('article', {
   wpPostUrl: text('wp_post_url'),
   tokensUsed: real('tokens_used').default(0),
   seoData: jsonb('seo_data').default({}),
+  versions: jsonb('versions').default([]),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
   publishedAt: timestamp('published_at'),
@@ -837,6 +838,17 @@ export const videoClipPreset = pgTable('video_clip_preset', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
+export const contentTemplate = pgTable('content_template', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  name: varchar('name', { length: 100 }).notNull(),
+  description: text('description'),
+  config: jsonb('config').notNull(),
+  isFavorite: boolean('is_favorite').default(false),
+  usageCount: integer('usage_count').default(0),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 // Export all schemas for Better Auth
 export const schema = {
   user,
@@ -868,4 +880,5 @@ export const schema = {
   renderPresets,
   videoClipProjects,
   videoClipPreset,
+  contentTemplate,
 };

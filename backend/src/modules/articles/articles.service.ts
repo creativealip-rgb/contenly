@@ -143,7 +143,25 @@ export class ArticlesService {
 
   async update(userId: string, id: string, dto: UpdateArticleDto) {
     this.logger.log(`Attempting update for article ${id} (User: ${userId})`);
-    await this.findById(userId, id);
+    const existing = await this.findById(userId, id);
+
+    // Auto-snapshot: if generatedContent is changing, save current as version
+    if (dto.generatedContent && dto.generatedContent !== existing.generatedContent) {
+      const versions = (Array.isArray(existing.versions) ? existing.versions : []) as Array<{
+        title: string; content: string; metaTitle?: string; metaDescription?: string; slug?: string; savedAt: string;
+      }>;
+      versions.unshift({
+        title: existing.title,
+        content: existing.generatedContent,
+        metaTitle: existing.metaTitle || undefined,
+        metaDescription: existing.metaDescription || undefined,
+        slug: existing.slug || undefined,
+        savedAt: new Date().toISOString(),
+      });
+      // Keep max 10 versions
+      const trimmed = versions.slice(0, 10);
+      await this.db.update(article).set({ versions: trimmed }).where(eq(article.id, id));
+    }
 
     const updateData: ArticleUpdateData = {
       title: dto.title,
@@ -227,6 +245,40 @@ export class ArticlesService {
       .where(and(eq(article.userId, userId), inArray(article.id, ids)))
       .returning({ id: article.id });
     return { updated: result.length };
+  }
+
+  async restoreVersion(userId: string, articleId: string, versionIndex: number) {
+    const existing = await this.findById(userId, articleId);
+    const versions = (Array.isArray(existing.versions) ? existing.versions : []) as Array<{
+      title: string; content: string; metaTitle?: string; metaDescription?: string; slug?: string; savedAt: string;
+    }>;
+    if (versionIndex < 0 || versionIndex >= versions.length) {
+      throw new NotFoundException('Version not found');
+    }
+    const ver = versions[versionIndex];
+    // Save current as new version before restoring
+    versions.unshift({
+      title: existing.title,
+      content: existing.generatedContent,
+      metaTitle: existing.metaTitle || undefined,
+      metaDescription: existing.metaDescription || undefined,
+      slug: existing.slug || undefined,
+      savedAt: new Date().toISOString(),
+    });
+    const [updated] = await this.db
+      .update(article)
+      .set({
+        title: ver.title,
+        generatedContent: ver.content,
+        metaTitle: ver.metaTitle || null,
+        metaDescription: ver.metaDescription || null,
+        slug: ver.slug || null,
+        versions: versions.slice(0, 10),
+        updatedAt: new Date(),
+      })
+      .where(eq(article.id, articleId))
+      .returning();
+    return updated;
   }
 
   async getStats(userId: string) {

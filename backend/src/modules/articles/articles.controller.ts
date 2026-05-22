@@ -87,4 +87,14 @@ export class ArticlesController {
   async bulkStatus(@CurrentUser() user: User, @Body() dto: BulkStatusDto) {
     return this.articlesService.bulkUpdateStatus(user.id, dto.ids, dto.status as ArticleStatus);
   }
+
+  @Post(':id/restore/:versionIndex')
+  @ApiOperation({ summary: 'Restore article to a previous version' })
+  async restoreVersion(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Param('versionIndex') versionIndex: string,
+  ) {
+    return this.articlesService.restoreVersion(user.id, id, parseInt(versionIndex, 10));
+  }
 }

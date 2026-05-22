@@ -1,12 +1,13 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { ArticlesController } from './articles.controller';
 import { ArticlesService } from './articles.service';
+import { ContentTemplateController } from './content-template.controller';
 import { AuthModule } from '../auth/auth.module';
 import { AiModule } from '../ai/ai.module';
 
 @Module({
   imports: [forwardRef(() => AiModule), AuthModule],
-  controllers: [ArticlesController],
+  controllers: [ArticlesController, ContentTemplateController],
   providers: [ArticlesService],
   exports: [ArticlesService],
 })
