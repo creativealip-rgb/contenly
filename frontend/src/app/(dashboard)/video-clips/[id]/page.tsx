@@ -426,7 +426,7 @@ export default function VideoClipDetailPage() {
                         setTitleStyle((prev) => ({ ...prev, text: seg.hookTitle }))
                       }}
                     >
-                      <CardContent className="p-3 space-y-2">
+                      <CardContent className="p-2.5 space-y-1">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1">
                             <input
@@ -439,44 +439,41 @@ export default function VideoClipDetailPage() {
                                 else next.delete(i)
                                 setSelectedExports(next)
                               }}
-                              className="h-3.5 w-3.5 cursor-pointer"
+                              className="h-3 w-3 cursor-pointer"
                               title="Include in batch export"
                             />
                             {seg.viralScore > 0 ? (
-                              <Badge variant="secondary" className="text-[10px] h-5">
-                                <Zap className="h-2.5 w-2.5 mr-0.5" />{seg.viralScore}/10
+                              <Badge variant="secondary" className="text-[9px] h-4 px-1">
+                                <Zap className="h-2 w-2 mr-0.5" />{seg.viralScore}
                               </Badge>
                             ) : (
-                              <Badge variant="outline" className="text-[10px] h-5">Custom</Badge>
+                              <Badge variant="outline" className="text-[9px] h-4 px-1">Custom</Badge>
                             )}
                           </div>
-                          <span className="text-[10px] font-mono text-muted-foreground">
+                          <span className="text-[9px] font-mono text-muted-foreground">
                             {formatTime(seg.startTime)}–{formatTime(seg.endTime)}
                           </span>
                         </div>
-                        <p className="text-sm font-semibold line-clamp-2 leading-tight">{seg.hookTitle}</p>
-                        {seg.reason && (
-                          <p className="text-[10px] text-muted-foreground line-clamp-2">{seg.reason}</p>
-                        )}
-                        <div className="flex items-center gap-1">
+                        <p className="text-xs font-semibold line-clamp-1 leading-tight">{seg.hookTitle}</p>
+                        <div className="flex items-center gap-0.5">
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-7 text-[10px] flex-1 gap-1"
+                            className="h-6 text-[9px] flex-1 gap-0.5 px-2"
                             onClick={(e) => { e.stopPropagation(); exportClip(i) }}
                             disabled={exporting === i}
                           >
-                            {exporting === i ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+                            {exporting === i ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Download className="h-2.5 w-2.5" />}
                             Export
                           </Button>
-                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); duplicateSegment(i) }} title="Duplicate">
-                            <CopyIcon className="h-3 w-3" />
+                          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); duplicateSegment(i) }} title="Duplicate">
+                            <CopyIcon className="h-2.5 w-2.5" />
                           </Button>
-                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); setSplittingSegment(i); setSplitTime((seg.startTime + seg.endTime) / 2) }} title="Split">
-                            <Split className="h-3 w-3" />
+                          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); setSplittingSegment(i); setSplitTime((seg.startTime + seg.endTime) / 2) }} title="Split">
+                            <Split className="h-2.5 w-2.5" />
                           </Button>
-                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-red-500 hover:text-red-600" onClick={(e) => { e.stopPropagation(); deleteSegment(i) }} title="Delete">
-                            <Trash2 className="h-3 w-3" />
+                          <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-red-500 hover:text-red-600" onClick={(e) => { e.stopPropagation(); deleteSegment(i) }} title="Delete">
+                            <Trash2 className="h-2.5 w-2.5" />
                           </Button>
                         </div>
                       </CardContent>
@@ -561,22 +558,23 @@ export default function VideoClipDetailPage() {
             <div className="lg:col-span-4 space-y-4">
               {/* Segment editor */}
               <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Scissors className="h-4 w-4" />
+                <CardHeader className="pb-2 pt-3 px-4">
+                  <CardTitle className="text-sm flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Scissors className="h-3.5 w-3.5" />
                       Edit Clip #{selectedSegment + 1}
                     </span>
-                    <Button size="sm" variant="outline" onClick={() => setHooksDialogOpen(true)} className="h-7 text-xs gap-1">
-                      <Sparkles className="h-3 w-3" /> Alternate Hooks
+                    <Button size="sm" variant="outline" onClick={() => setHooksDialogOpen(true)} className="h-6 text-[9px] gap-1 px-2">
+                      <Sparkles className="h-2.5 w-2.5" /> Hooks
                     </Button>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="space-y-2 px-4 pb-3">
                   <div>
-                    <Label>Hook Title</Label>
+                    <Label className="text-[10px]">Hook Title</Label>
                     <Input
                       value={currentSegment.hookTitle}
+                      className="h-8 text-sm"
                       onChange={(e) => {
                         const newSegments = [...segments]
                         newSegments[selectedSegment] = { ...newSegments[selectedSegment], hookTitle: e.target.value }
@@ -586,9 +584,9 @@ export default function VideoClipDetailPage() {
                       onBlur={(e) => updateSegment(selectedSegment, { hookTitle: e.target.value })}
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <Label>Start ({formatTime(currentSegment.startTime)})</Label>
+                      <Label className="text-[10px]">Start ({formatTime(currentSegment.startTime)})</Label>
                       <Slider
                         value={[currentSegment.startTime]}
                         max={project.duration || 100}
@@ -602,7 +600,7 @@ export default function VideoClipDetailPage() {
                       />
                     </div>
                     <div>
-                      <Label>End ({formatTime(currentSegment.endTime)})</Label>
+                      <Label className="text-[10px]">End ({formatTime(currentSegment.endTime)})</Label>
                       <Slider
                         value={[currentSegment.endTime]}
                         max={project.duration || 100}
@@ -616,10 +614,10 @@ export default function VideoClipDetailPage() {
                       />
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Clock className="h-3.5 w-3.5" />
+                  <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
                     Durasi: {formatTime(currentSegment.endTime - currentSegment.startTime)}
-                  </div>
+                  </p>
                 </CardContent>
               </Card>
 

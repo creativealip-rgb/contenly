@@ -226,30 +226,27 @@ export function BrollPanel({
   return (
     <div className="space-y-4">
       {/* Auto-Cutaway hero */}
-      <div className="rounded-2xl border-2 border-violet-200 bg-gradient-to-br from-violet-50 via-white to-pink-50 p-3 dark:from-violet-950/30 dark:via-slate-900 dark:to-pink-950/30 dark:border-violet-900">
-        <div className="flex items-center justify-between gap-3">
+      <div className="rounded-xl border border-violet-200 bg-gradient-to-r from-violet-50 to-pink-50 p-2.5 dark:from-violet-950/30 dark:to-pink-950/30 dark:border-violet-900">
+        <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-bold uppercase tracking-wider text-violet-700 dark:text-violet-300">
-              <Sparkles className="inline h-3.5 w-3.5 mr-1" />
-              AI Auto-Cutaway
+            <p className="text-[10px] font-bold uppercase tracking-wider text-violet-700 dark:text-violet-300">
+              <Sparkles className="inline h-3 w-3 mr-0.5" /> AI Auto-Cutaway
             </p>
-            <p className="mt-0.5 text-[11px] text-slate-600 dark:text-slate-400">
-              AI cari momen visual di transcript, otomatis populate b-roll dari Pexels
+            <p className="text-[9px] text-slate-500 dark:text-slate-400 line-clamp-1">
+              Otomatis cari momen visual & populate b-roll
             </p>
           </div>
           <Button
             size="sm"
             onClick={handleAutoCutaway}
             disabled={autoCutting}
-            className="bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white"
+            className="h-7 text-[10px] bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white shrink-0"
           >
             {autoCutting ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Analyzing...
-              </>
+              <Loader2 className="h-3 w-3 animate-spin" />
             ) : (
               <>
-                <Wand2 className="h-3.5 w-3.5 mr-1" /> Auto B-roll (2 token)
+                <Wand2 className="h-3 w-3 mr-1" /> Auto (2t)
               </>
             )}
           </Button>
@@ -257,39 +254,37 @@ export function BrollPanel({
       </div>
 
       {/* Search bar */}
-      <div className="space-y-2">
-        <div className="flex gap-2">
+      <div className="space-y-1.5">
+        <div className="flex gap-1.5">
           <Input
-            placeholder="Cari footage Pexels (e.g. 'coffee shop', 'people running')..."
+            placeholder="Cari footage Pexels..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            className="h-8 text-xs"
           />
-          <Button variant="outline" onClick={() => handleSearch()} disabled={searching || !query.trim()}>
-            {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+          <Button variant="outline" onClick={() => handleSearch()} disabled={searching || !query.trim()} className="h-8 w-8 p-0 shrink-0">
+            {searching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
           </Button>
         </div>
 
         {/* AI suggested keywords */}
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1">
           <button
             type="button"
             onClick={handleSuggest}
             disabled={suggesting}
-            className="inline-flex items-center gap-1 rounded-full border border-dashed border-violet-300 bg-violet-50 px-2 py-0.5 text-[10px] font-bold uppercase text-violet-700 hover:bg-violet-100 disabled:opacity-50"
+            className="inline-flex items-center gap-0.5 rounded-full border border-dashed border-violet-300 bg-violet-50 px-1.5 py-0.5 text-[9px] font-bold uppercase text-violet-700 hover:bg-violet-100 disabled:opacity-50"
           >
-            {suggesting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-            AI Suggest (1 token)
+            {suggesting ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Sparkles className="h-2.5 w-2.5" />}
+            Suggest (1t)
           </button>
           {suggestedKeywords.map((kw) => (
             <button
               key={kw}
               type="button"
-              onClick={() => {
-                setQuery(kw)
-                handleSearch(kw)
-              }}
-              className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700 hover:bg-blue-100"
+              onClick={() => { setQuery(kw); handleSearch(kw) }}
+              className="rounded-full bg-blue-50 px-1.5 py-0.5 text-[9px] font-semibold text-blue-700 hover:bg-blue-100"
             >
               {kw}
             </button>
@@ -411,7 +406,6 @@ function BrollItemEditor({ item, segDuration, onUpdate, onDelete, onSeek }: Brol
   const [draftStart, setDraftStart] = useState(item.start)
   const [draftEnd, setDraftEnd] = useState(item.end)
 
-  // Sync local state when item changes externally
   useEffect(() => {
     setDraftStart(item.start)
     setDraftEnd(item.end)
@@ -419,7 +413,7 @@ function BrollItemEditor({ item, segDuration, onUpdate, onDelete, onSeek }: Brol
 
   return (
     <Card className="overflow-hidden">
-      <CardContent className="p-3 space-y-2">
+      <CardContent className="p-2.5 space-y-2">
         <div className="flex items-start gap-2">
           {item.thumbnailUrl && (
             // eslint-disable-next-line @next/next/no-img-element
