@@ -1,5 +1,5 @@
+import { Transform } from 'class-transformer';
 import {
-  Transform,
   IsString,
   IsOptional,
   IsInt,
