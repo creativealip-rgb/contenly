@@ -43,7 +43,9 @@ services:
       ENCRYPTION_KEY: O9YnyBMLgN2KBk173itM0Z6Tt1AZ-Q4oRE-_FBF5dJNG3qU09fa_zV3efqVLojFq
       OPENROUTER_BASE_URL: https://9router-168-144-37-19.sslip.io/v1
       OPENAI_BASE_URL: https://9router-168-144-37-19.sslip.io/v1
-      OPENAI_API_KEY: sk-4dd...49e6
+      CODEX_API_KEY: sk-752b90456c373287-7ndp1b-1930998e
+      CODEX_BASE_URL: https://9router-168-144-37-19.sslip.io
+      OPENAI_API_KEY: sk-4dd43230cd861e78-jxy505-df7149e6
     networks:
       - default
       - dokploy-network
