@@ -99,11 +99,12 @@ export class OpenAiService {
     if (!this.nativeOpenai) {
       const nativeApiKey = (
         this.configService.get('OPENAI_NATIVE_API_KEY') ||
-        (useCustomEndpoint ? '' : this.configService.get('OPENAI_API_KEY') || '')
+        this.configService.get('OPENAI_API_KEY') || ''
       ).trim();
       if (nativeApiKey) {
-        this.nativeOpenai = new OpenAI({ apiKey: nativeApiKey });
-        console.log(`✅ Native OpenAI client initialized for DALL-E / TTS`);
+        const nativeBaseURL = customBaseURL || undefined;
+        this.nativeOpenai = new OpenAI({ apiKey: nativeApiKey, ...(nativeBaseURL ? { baseURL: nativeBaseURL } : {}) });
+        console.log(`✅ Native OpenAI client initialized for DALL-E / TTS${nativeBaseURL ? ' (custom endpoint: ' + nativeBaseURL + ')' : ''}`);
       } else if (useCustomEndpoint) {
         console.log(
           `ℹ️  Native OpenAI client not initialized (custom endpoint mode). DALL-E / TTS disabled unless OPENAI_NATIVE_API_KEY is set.`,
