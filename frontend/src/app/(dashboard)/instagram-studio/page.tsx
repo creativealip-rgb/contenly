@@ -236,7 +236,7 @@ export default function InstagramStudioPage() {
                             Proyek Baru
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
+                    <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
                         {(createProject.isPending || isFetchingUrl) && (
                             <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
                                 <div className="flex flex-col items-center gap-3">
@@ -253,7 +253,7 @@ export default function InstagramStudioPage() {
                                 Mulai dengan memasukkan konten atau URL untuk membuat carousel Instagram Anda
                             </DialogDescription>
                         </DialogHeader>
-                        <div className="space-y-4 py-4">
+                        <div className="space-y-4 py-4 overflow-y-auto flex-1 min-h-0">
                             <div className="space-y-2">
                                 <Label>Judul Proyek</Label>
                                 <Input
@@ -287,7 +287,7 @@ export default function InstagramStudioPage() {
                                     placeholder="Tempelkan konten artikel Anda di sini, atau masukkan URL di atas untuk menarik data..."
                                     value={newProject.sourceContent}
                                     onChange={(e) => setNewProject({ ...newProject, sourceContent: e.target.value })}
-                                    className="min-h-[150px]"
+                                    className="min-h-[100px]"
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
@@ -358,7 +358,7 @@ export default function InstagramStudioPage() {
                                         </div>
 
                                         {/* Templates Grid */}
-                                        <div className="grid grid-cols-3 gap-3 max-h-[350px] overflow-y-auto p-1">
+                                        <div className="grid grid-cols-3 gap-3 max-h-[200px] overflow-y-auto p-1">
                                             {templates
                                                 .filter(t => selectedCategory === 'all' || t.category === selectedCategory)
                                                 .filter(t => t.forPlatform === 'instagram' || t.forPlatform === 'all')
