@@ -130,7 +130,7 @@ export interface ActiveExportJob {
   startedAt: number
 }
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 
 export const FONTS = ['Arial', 'Impact', 'Montserrat', 'Poppins', 'Roboto', 'Inter', 'Bebas Neue', 'Anton']
 

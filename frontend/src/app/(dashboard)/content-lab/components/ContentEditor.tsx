@@ -47,7 +47,7 @@ export function ContentEditor({ state, handlers, copied, handleCopy }: ContentEd
     const router = useRouter()
     const [isConverting, setIsConverting] = useState(false)
 
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 
     const handleConvertToVideoScript = async () => {
         if (!generatedContent) return

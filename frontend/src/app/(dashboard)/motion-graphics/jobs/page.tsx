@@ -8,7 +8,7 @@ import { Loader2, Download, Clock, CheckCircle2, XCircle, RefreshCw, ArrowLeft }
 import { toast } from 'sonner'
 import Link from 'next/link'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 
 type RenderJob = {
   id: string

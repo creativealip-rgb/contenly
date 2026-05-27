@@ -73,7 +73,7 @@ export function Navbar() {
 
         const fetchBalance = async () => {
             try {
-                const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
+                const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 
                 const response = await fetch(`${API_BASE_URL}/billing/balance`, {
                     credentials: 'include',
@@ -271,7 +271,7 @@ function NotificationBell() {
 
     const fetchNotifications = async () => {
         try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
             const res = await fetch(`${API_URL}/notifications`, { credentials: 'include' })
             if (res.ok) {
                 const data = await res.json()
@@ -290,7 +290,7 @@ function NotificationBell() {
 
     const markAsRead = async (id: string) => {
         try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
             await fetch(`${API_URL}/notifications/${id}/read`, { method: 'PATCH', credentials: 'include' })
             setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, isRead: true } : n))
         } catch { /* silent */ }

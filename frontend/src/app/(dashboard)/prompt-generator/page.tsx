@@ -9,7 +9,7 @@ import { Loader2, Copy, Sparkles, Image, Video, Wand2, Check } from 'lucide-reac
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 
 type PromptMode = 'image' | 'video'
 

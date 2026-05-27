@@ -131,7 +131,7 @@ export default function InstagramStudioPage() {
     const fetchTemplates = async () => {
         setIsLoadingTemplates(true)
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/instagram-studio/templates`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api/v1'}/instagram-studio/templates`, {
                 credentials: 'include',
                 headers: { 'ngrok-skip-browser-warning': 'true' },
             })
@@ -159,7 +159,7 @@ export default function InstagramStudioPage() {
 
         setIsFetchingUrl(true)
         try {
-            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
             const response = await fetch(`${API_BASE_URL}/instagram-studio/fetch-url?url=${encodeURIComponent(newProject.sourceUrl)}`, {
                 credentials: 'include',
                 headers: { 'ngrok-skip-browser-warning': 'true' },

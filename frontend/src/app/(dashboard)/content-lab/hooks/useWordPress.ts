@@ -6,7 +6,7 @@ import { useContentLabStore } from '@/stores/content-lab-store'
 import { toast } from 'sonner'
 
 export function useWordPress() {
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 
     const [sites, setSites] = useState<WordPressSite[]>([])
     const [wpCategories, setWpCategories] = useState<Array<{ id: number; name: string }>>([])
