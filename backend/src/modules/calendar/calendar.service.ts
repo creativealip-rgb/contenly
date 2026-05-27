@@ -33,7 +33,7 @@ export class CalendarService {
         contentType: dto.contentType,
         contentId: dto.contentId,
         title: dto.title,
-        scheduledAt: dto.scheduledAt,
+        scheduledAt: new Date(dto.scheduledAt as any),
         platform: dto.platform,
         metadata: dto.metadata,
         status: 'pending',
