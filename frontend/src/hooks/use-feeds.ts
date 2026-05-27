@@ -14,7 +14,8 @@ export function useFeeds() {
   return useQuery<RssFeed[]>({
     queryKey: ['feeds'],
     queryFn: async () => {
-      const feeds = await api.get<any[]>('/feeds')
+      const res = await api.get<any>('/feeds')
+      const feeds = Array.isArray(res) ? res : (res?.data || [])
       return feeds.map(transformFeed)
     },
   })
