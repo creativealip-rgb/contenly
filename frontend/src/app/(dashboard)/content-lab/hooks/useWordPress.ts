@@ -59,7 +59,9 @@ export function useWordPress() {
     }, [API_BASE_URL])
 
     const handlePublishNow = useCallback(async (status: 'draft' | 'publish') => {
-        if (!generatedContent || !generatedTitle) return
+        const currentContent = useContentLabStore.getState().generatedContent
+        const currentTitle = useContentLabStore.getState().generatedTitle
+        if (!currentContent || !currentTitle) return
 
         setIsPublishing(true)
         setPublishResult(null)
@@ -70,8 +72,8 @@ export function useWordPress() {
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
                 body: JSON.stringify({
-                    title: generatedTitle,
-                    content: generatedContent,
+                    title: currentTitle,
+                    content: currentContent,
                     status,
                     categories: selectedCategory ? [selectedCategory] : undefined,
                     sourceUrl: selectedArticle?.url || scrapeUrl || '',
@@ -121,7 +123,9 @@ export function useWordPress() {
     ])
 
     const handleSchedulePublish = useCallback(async () => {
-        if (!generatedContent || !generatedTitle || !scheduleDate || !scheduleTime) return
+        const schedContent = useContentLabStore.getState().generatedContent
+        const schedTitle = useContentLabStore.getState().generatedTitle
+        if (!schedContent || !schedTitle || !scheduleDate || !scheduleTime) return
 
         setIsPublishing(true)
 
@@ -133,8 +137,8 @@ export function useWordPress() {
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
                 body: JSON.stringify({
-                    title: generatedTitle,
-                    content: generatedContent,
+                    title: schedTitle,
+                    content: schedContent,
                     status: 'future',
                     categories: selectedCategory ? [selectedCategory] : undefined,
                     sourceUrl: selectedArticle?.url || scrapeUrl || '',
