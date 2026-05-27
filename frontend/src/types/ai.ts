@@ -16,6 +16,7 @@ export interface AIRewriteResponse {
         content: string
         excerpt: string
         metaDescription?: string
+        slug?: string
         seoKeywords?: string[]
         articleId?: string
     }

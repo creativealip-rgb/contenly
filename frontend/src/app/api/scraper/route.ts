@@ -49,7 +49,9 @@ const backendUrl = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
             throw new Error(error.message || `Backend returned ${response.status}`)
         }
 
-        const data = await response.json()
+        const responseData = await response.json()
+        // Backend returns { success: true, data: { title, content, ... } }
+        const data = responseData.data || responseData
 
         console.log('Backend scraper data:', {
             hasContent: !!data.content,

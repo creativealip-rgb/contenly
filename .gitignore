@@ -59,3 +59,7 @@ backend/tmp_*.txt
 backend/models/
 push_result*.txt
 
+
+# Dokploy env
+.env.dokploy
+.deployed-major-commit

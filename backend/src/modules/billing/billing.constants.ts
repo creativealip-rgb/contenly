@@ -7,7 +7,7 @@ export const BILLING_TIERS = {
             VIDEO_GENERATION: 2,
         },
         maxWpSites: 1,
-        aiModel: 'gpt-3.5-turbo',
+        aiModel: 'cx/gpt-5.5',
         canAutoSync: false,
         minSyncInterval: 0,
         canAccessViewBoost: false,
@@ -21,7 +21,7 @@ export const BILLING_TIERS = {
             VIDEO_GENERATION: 20,
         },
         maxWpSites: 2,
-        aiModel: 'gpt-4o',
+        aiModel: 'cx/gpt-5.5',
         canAutoSync: true,
         minSyncInterval: 60, // 60 minutes
         canAccessViewBoost: true,
@@ -35,7 +35,7 @@ export const BILLING_TIERS = {
             VIDEO_GENERATION: 70,
         },
         maxWpSites: 5,
-        aiModel: 'gpt-4o',
+        aiModel: 'cx/gpt-5.5',
         canAutoSync: true,
         minSyncInterval: 15, // 15 minutes
         canAccessViewBoost: true,

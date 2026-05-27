@@ -1,0 +1,95 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: contenly-local-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: contenly
+      POSTGRES_USER: contenly
+      POSTGRES_PASSWORD: FF28xeunMRXDwqTvSPT8PtzJjko4Yr8s
+    volumes:
+      - contenly_contenly_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: contenly-local-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_DB: contenly
+      POSTGRES_USER: contenly
+      POSTGRES_PASSWORD: FF28xeunMRXDwqTvSPT8PtzJjko4Yr8s
+      DATABASE_URL: postgres://contenly:FF28xeunMRXDwqTvSPT8PtzJjko4Yr8s@postgres:5432/contenly
+      DB_SSL: "false"
+      NODE_ENV: production
+      PORT: 3001
+      API_URL: https://contenly-local.168.144.37.19.sslip.io
+      FRONTEND_URL: https://contenly-local.168.144.37.19.sslip.io
+      BETTER_AUTH_SECRET: UTK9apJVetCa8cH-b2mAqbgIFxKUM_BuqoNAPZy1lXH5g10s6O7Le6kGwYj4ekzj
+      JWT_SECRET: j1sp7P3rUx_L9f-2dQf5UOqsWD6CreiZPDUBDWo8bS9L1TsglF5w2Cjw7lg_pFM_
+      GOOGLE_CLIENT_ID: YOUR_GOOGLE_CLIENT_ID_HERE
+      GOOGLE_CLIENT_SECRET: YOUR_GOOGLE_CLIENT_SECRET_HERE
+      NEXT_PUBLIC_API_URL: https://contenly-local.168.144.37.19.sslip.io/api/v1
+      PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium
+      OPENROUTER_API_KEY: dummy-placeholder
+      OPENROUTER_MODEL: openai/gpt-4o-mini
+      ENCRYPTION_KEY: O9YnyBMLgN2KBk173itM0Z6Tt1AZ-Q4oRE-_FBF5dJNG3qU09fa_zV3efqVLojFq
+    networks:
+      - default
+      - dokploy-network
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      - traefik.http.routers.contenly-local-api.rule=Host(`contenly-local.168.144.37.19.sslip.io`) && (PathPrefix(`/api`) || PathPrefix(`/health`))
+      - traefik.http.routers.contenly-local-api.priority=100
+      - traefik.http.routers.contenly-local-api.entrypoints=websecure
+      - traefik.http.routers.contenly-local-api.tls.certresolver=letsencrypt
+      - traefik.http.routers.contenly-local-api-http.rule=Host(`contenly-local.168.144.37.19.sslip.io`) && (PathPrefix(`/api`) || PathPrefix(`/health`))
+      - traefik.http.routers.contenly-local-api-http.priority=100
+      - traefik.http.routers.contenly-local-api-http.entrypoints=web
+      - traefik.http.routers.contenly-local-api-http.middlewares=redirect-to-https@file
+      - traefik.http.services.contenly-local-api.loadbalancer.server.port=3001
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        NEXT_PUBLIC_API_URL: https://contenly-local.168.144.37.19.sslip.io/api/v1
+    container_name: contenly-local-frontend
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: https://contenly-local.168.144.37.19.sslip.io/api/v1
+    depends_on:
+      - backend
+    networks:
+      - default
+      - dokploy-network
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      - traefik.http.routers.contenly-local.rule=Host(`contenly-local.168.144.37.19.sslip.io`)
+      - traefik.http.routers.contenly-local.entrypoints=websecure
+      - traefik.http.routers.contenly-local.tls.certresolver=letsencrypt
+      - traefik.http.routers.contenly-local-http.rule=Host(`contenly-local.168.144.37.19.sslip.io`)
+      - traefik.http.routers.contenly-local-http.entrypoints=web
+      - traefik.http.routers.contenly-local-http.middlewares=redirect-to-https@file
+      - traefik.http.services.contenly-local.loadbalancer.server.port=3000
+
+volumes:
+  contenly_contenly_postgres_data:
+    external: true
+
+networks:
+  dokploy-network:
+    external: true

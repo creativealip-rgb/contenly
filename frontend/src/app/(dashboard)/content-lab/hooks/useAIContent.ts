@@ -38,9 +38,9 @@ export function useAIContent() {
         setSelectedArticle(article)
         setIsScanning(true)
         try {
-            const response = await fetch(`${API_BASE_URL}/scraper/scrape`, {
+            const response = await fetch('/api/scraper', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
                 body: JSON.stringify({ url: article.url })
             })
@@ -62,18 +62,19 @@ export function useAIContent() {
         setIsScraping(true)
         setSourceContent('')
         try {
-            const response = await fetch(`${API_BASE_URL}/scraper/scrape`, {
+            // Use frontend /api/scraper proxy (forwards cookies properly)
+            const response = await fetch('/api/scraper', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
                 body: JSON.stringify({ url: scrapeUrl })
             })
             const result = await response.json()
-            if (result.success) {
+            if (result.success && result.data) {
                 const content = result.data.content || result.data.excerpt || ''
                 setSourceContent(content)
-                setSelectedArticle({ id: 'scraped-' + Date.now(), title: result.data.title, url: result.data.url })
-                setGeneratedTitle(result.data.title)
+                setSelectedArticle({ id: 'scraped-' + Date.now(), title: result.data.title || '', url: scrapeUrl })
+                setGeneratedTitle(result.data.title || '')
                 toast.success('Konten berhasil ditarik')
             } else {
                 toast.error(result.error || 'Gagal menarik konten')
@@ -92,11 +93,6 @@ export function useAIContent() {
             toast.error(activeTab === 'idea' ? 'Harap masukkan ide Anda terlebih dahulu' : 'Harap pilih artikel terlebih dahulu')
             return
         }
-        if (!selectedCategoryId) {
-            toast.error('Silakan pilih kategori terlebih dahulu.')
-            return
-        }
-
         setIsRewriting(true)
         setGeneratedContent('')
         setGeneratedTitle('')
