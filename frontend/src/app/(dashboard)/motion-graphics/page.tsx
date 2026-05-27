@@ -101,6 +101,7 @@ export default function MotionGraphicsPage() {
   }
 
   const handleRender = async () => {
+    console.log('🎯 handleRender called', { selectedTemplate: selectedTemplate?.id, props, format })
     if (!selectedTemplate) return
     setIsRendering(true)
     try {
