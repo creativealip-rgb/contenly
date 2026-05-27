@@ -267,8 +267,41 @@ Return JSON with:
   }
 
   async generateImage(prompt: string): Promise<string> {
+    // Try chat-based image generation first (works with 9router/OpenRouter image models)
+    const imageModel = this.configService.get('IMAGE_GENERATION_MODEL') || 'cx/gpt-5.4-image';
+    try {
+      console.log(`🎨 Generating image via chat model: ${imageModel}`);
+      const response = await this.openai.chat.completions.create({
+        model: imageModel,
+        messages: [
+          {
+            role: 'user',
+            content: `Generate a professional, high-quality featured image for: ${prompt}. Return ONLY the image, no text.`,
+          },
+        ],
+        max_tokens: 4096,
+      });
+
+      const content = response.choices[0]?.message?.content || '';
+      // Extract image URL from response (could be markdown image or direct URL)
+      const urlMatch = content.match(/https?:\/\/[^\s"')]+\.(?:png|jpg|jpeg|webp)[^\s"')]*/i) ||
+                       content.match(/!\[.*?\]\((https?:\/\/[^)]+)\)/);
+      if (urlMatch) {
+        return urlMatch[1] || urlMatch[0];
+      }
+      // If response contains base64 image data
+      const b64Match = content.match(/data:image\/[^;]+;base64,[A-Za-z0-9+/=]+/);
+      if (b64Match) {
+        return b64Match[0];
+      }
+      console.warn('⚠️ Image model returned no parseable image URL, falling back to DALL-E');
+    } catch (err: any) {
+      console.warn(`⚠️ Chat image generation failed: ${err.message}, falling back to DALL-E`);
+    }
+
+    // Fallback to DALL-E if nativeOpenai is available
     if (!this.nativeOpenai) {
-      throw new Error('OPENAI_API_KEY is missing. Image generation requires a direct OpenAI API Key (DALL-E 3 is not supported via OpenRouter). Please add OPENAI_API_KEY to your VPS .env file.');
+      throw new Error('Image generation failed: no image-capable model or OpenAI key configured.');
     }
 
     const client = this.nativeOpenai;
