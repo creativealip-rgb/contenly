@@ -146,9 +146,9 @@ export default function ContentLabPage() {
     return (
         <div className="h-[calc(100vh-180px)] min-h-[600px] px-4 md:px-0 flex flex-col">
             {/* Header with Status */}
-            <div className="mb-6 flex items-center justify-between flex-shrink-0">
+            <div className="mb-6 flex items-center justify-between flex-wrap gap-3 flex-shrink-0">
                 <div className="space-y-1">
-                    <h1 className="text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
+                    <h1 className="text-2xl md:text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
                         Content Lab
                     </h1>
                     <p className="text-sm font-medium text-slate-500">Tulis dan sempurnakan konten unik Anda</p>

@@ -112,9 +112,9 @@ export default function ViewBoostPage() {
         animate="visible"
       >
         {/* Page Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="space-y-1">
-            <h1 className="text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
+            <h1 className="text-2xl md:text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
               View Boost
             </h1>
             <p className="text-slate-500 font-medium">Tingkatkan tayangan artikel Anda dengan lalu lintas otomatis.</p>
@@ -197,7 +197,7 @@ export default function ViewBoostPage() {
               <CardTitle className="text-sm uppercase tracking-wider text-muted-foreground font-semibold">Pekerjaan Aktif</CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
+              <div className="overflow-x-auto"><Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
                     <TableHead>URL</TableHead>
@@ -248,7 +248,7 @@ export default function ViewBoostPage() {
                     ))
                   )}
                 </TableBody>
-              </Table>
+              </Table></div>
             </CardContent>
           </Card>
         </motion.div>

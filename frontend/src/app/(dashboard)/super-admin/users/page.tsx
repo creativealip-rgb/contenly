@@ -224,9 +224,9 @@ export default function UserManagementPage() {
                 animate="visible"
             >
                 {/* Page Header */}
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-3">
                     <div className="space-y-1">
-                        <h1 className="text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
+                        <h1 className="text-2xl md:text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
                             Users
                         </h1>
                         <p className="text-slate-500 font-medium">Manage all users in the system.</p>
@@ -279,12 +279,12 @@ export default function UserManagementPage() {
                     <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                             <CardTitle className="text-sm uppercase tracking-wider text-muted-foreground font-semibold">Daftar Seluruh User</CardTitle>
-                            <div className="relative w-72">
+                            <div className="relative w-full md:w-72">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                                 <Input placeholder="Cari nama atau email..." className="pl-9" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                             </div>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="overflow-x-auto">
                             <Table>
                                 <TableHeader>
                                     <TableRow className="hover:bg-transparent">
@@ -351,7 +351,7 @@ export default function UserManagementPage() {
                             </Table>
 
                             {!loading && totalPages > 1 && (
-                                <div className="flex items-center justify-between py-4">
+                                <div className="flex items-center justify-between flex-wrap gap-3 py-4">
                                     <p className="text-sm text-muted-foreground">Show <strong>{startIndex + 1}</strong> to <strong>{Math.min(startIndex + itemsPerPage, filteredUsers.length)}</strong> of <strong>{filteredUsers.length}</strong></p>
                                     <div className="flex items-center space-x-2">
                                         <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}><ChevronLeft className="w-4 h-4 mr-1" /> Prev</Button>

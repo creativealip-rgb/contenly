@@ -213,7 +213,7 @@ export default function MotionGraphicsPage() {
 
   return (
     <div className="container mx-auto max-w-7xl p-6 space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="space-y-1">
           <h1 className="text-3xl font-black tracking-tight">Motion Graphics Studio</h1>
           <p className="text-slate-500">Pilih template, customize, dan render sebagai MP4/WebM/PNG.</p>

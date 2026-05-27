@@ -188,9 +188,9 @@ export default function FeedsPage() {
             className="space-y-8"
         >
             {/* Page Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="space-y-1">
-                    <h1 className="text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
+                    <h1 className="text-2xl md:text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
                         Sumber Web
                     </h1>
                     <p className="text-slate-500 font-medium">
@@ -329,7 +329,7 @@ export default function FeedsPage() {
                 </div>
 
                 <div className="rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-slate-800">
-                    <Table>
+                    <div className="overflow-x-auto"><Table>
                         <TableHeader className="bg-slate-50/50 dark:bg-slate-800/20">
                             <TableRow className="border-none hover:bg-transparent">
                                 <TableHead className="h-16 font-black text-slate-400 uppercase tracking-widest text-[10px] px-8">Nama Sumber</TableHead>
@@ -423,7 +423,7 @@ export default function FeedsPage() {
                                 ))
                             )}
                         </TableBody>
-                    </Table>
+                    </Table></div>
                 </div>
             </motion.div>
         </motion.div>

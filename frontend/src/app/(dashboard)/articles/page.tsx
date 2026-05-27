@@ -139,7 +139,7 @@ export default function ArticlesPage() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="space-y-1">
-          <h1 className="text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
+          <h1 className="text-2xl md:text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
             Library
           </h1>
           <p className="text-slate-500 font-medium">Arsip konten AI — draft otomatis tersimpan dari Content Lab.</p>
@@ -192,7 +192,7 @@ export default function ArticlesPage() {
       </div>
 
       {/* Table */}
-      <div className="glass rounded-3xl border-2 border-white/60 dark:border-white/20 overflow-hidden p-6">
+      <div className="glass rounded-3xl border-2 border-white/60 dark:border-white/20 overflow-x-auto p-4 md:p-6">
         <Table>
           <TableHeader>
             <TableRow className="border-none hover:bg-transparent">
