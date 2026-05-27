@@ -78,7 +78,7 @@ export default function NotificationsPage() {
       </div>
 
       {notifications.length === 0 ? (
-        <Card>
+        <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/30 transition-all duration-300">
           <CardContent className="flex flex-col items-center justify-center py-16">
             <Bell className="h-12 w-12 text-muted-foreground/50 mb-4" />
             <p className="text-muted-foreground">Belum ada notifikasi</p>
@@ -89,7 +89,7 @@ export default function NotificationsPage() {
           {notifications.map((notif) => (
             <Card
               key={notif.id}
-              className={`cursor-pointer transition-colors ${!notif.read ? 'border-primary/30 bg-primary/5' : ''}`}
+              className={`cursor-pointer glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/30 transition-all duration-300 ${!notif.read ? 'border-primary/30 bg-primary/5' : ''}`}
               onClick={() => !notif.read && markAsRead(notif.id)}
             >
               <CardContent className="flex items-start gap-4 py-4">

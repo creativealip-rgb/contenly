@@ -404,7 +404,7 @@ export default function IntegrationsPage() {
                         <Loader2 className="h-10 w-10 animate-spin text-blue-600 opacity-20" />
                     </div>
                 ) : sites.length === 0 ? (
-                    <div className="text-center py-16 border-2 border-dashed border-slate-100 rounded-[2rem] bg-slate-50/50">
+                    <div className="text-center py-16 glass border-2 border-dashed border-white/60 dark:border-white/20 rounded-2xl">
                         <Plug className="h-16 w-16 mx-auto mb-4 text-slate-200" />
                         <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Belum ada situs yang terhubung</p>
                     </div>
@@ -504,7 +504,7 @@ export default function IntegrationsPage() {
                     </Button>
                 </div>
 
-                <div className="rounded-[2rem] overflow-hidden border border-slate-100 dark:border-slate-800">
+                <div className="glass rounded-2xl border-2 border-white/60 dark:border-white/20 overflow-hidden">
                     <div className="overflow-x-auto"><Table>
                         <TableHeader className="bg-slate-50/50 dark:bg-slate-800/20">
                             <TableRow className="border-none hover:bg-transparent">

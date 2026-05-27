@@ -383,7 +383,7 @@ function TransactionHistory() {
 
     return (
         <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
-            <Card>
+            <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/30 transition-all duration-300">
                 <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
                         <CreditCard className="h-5 w-5" />

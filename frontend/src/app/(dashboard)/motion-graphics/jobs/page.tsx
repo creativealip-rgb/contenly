@@ -110,7 +110,7 @@ export default function RenderJobsPage() {
               ? Math.round((new Date(job.completedAt).getTime() - new Date(job.startedAt).getTime()) / 1000)
               : null
             return (
-              <Card key={job.id}>
+              <Card key={job.id} className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/30 transition-all duration-300">
                 <CardContent className="flex items-center justify-between py-4 px-5">
                   <div className="flex items-center gap-4">
                     <div className={`p-2 rounded-lg ${cfg.bg}`}>

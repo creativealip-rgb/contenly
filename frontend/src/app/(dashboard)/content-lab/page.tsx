@@ -171,12 +171,12 @@ export default function ContentLabPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4 flex-1 min-h-0">
                 {/* Left Panel: Editor (Wider) */}
-                <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-2xl border border-white/60 dark:border-slate-800/60 rounded-[40px] p-6 lg:p-10 overflow-y-auto shadow-2xl shadow-slate-200/50 dark:shadow-none flex-1 min-h-0" aria-live="polite">
+                <div className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden rounded-[40px] p-6 lg:p-10 overflow-y-auto shadow-2xl shadow-slate-200/50 dark:shadow-none flex-1 min-h-0" aria-live="polite">
                     <ContentEditor state={state} handlers={handlers} copied={copied} handleCopy={handleCopy} />
                 </div>
 
                 {/* Right Panel: Tabbed Sidebar (Sources & Tools) */}
-                <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/40 dark:border-slate-800/60 rounded-3xl overflow-hidden flex flex-col shadow-xl order-1 lg:order-2">
+                <div className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden rounded-3xl overflow-hidden flex flex-col shadow-xl order-1 lg:order-2">
                     <Tabs value={rightPanelTab} onValueChange={(v) => setRightPanelTab(v as 'sources' | 'tools')} className="flex flex-col h-full">
                         <div className="px-4 pt-4 pb-2">
                             <TabsList className="grid w-full grid-cols-2 rounded-xl bg-white/50 dark:bg-slate-800/50 p-1 h-10">

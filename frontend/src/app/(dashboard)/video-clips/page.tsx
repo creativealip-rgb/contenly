@@ -392,7 +392,7 @@ export default function VideoClipsPage() {
       )}
 
       {filtered.length === 0 && projects.length === 0 ? (
-        <Card>
+        <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/30 transition-all duration-300">
           <CardContent className="flex flex-col items-center justify-center py-16 gap-3">
             <Scissors className="h-12 w-12 text-muted-foreground/50" />
             <p className="text-muted-foreground">Belum ada project. Buat yang pertama!</p>
@@ -400,7 +400,7 @@ export default function VideoClipsPage() {
           </CardContent>
         </Card>
       ) : filtered.length === 0 ? (
-        <Card>
+        <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/30 transition-all duration-300">
           <CardContent className="text-center py-12 text-muted-foreground">
             Tidak ada project yang cocok dengan &ldquo;{search}&rdquo;.
           </CardContent>

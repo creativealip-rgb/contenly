@@ -412,7 +412,7 @@ function BrollItemEditor({ item, segDuration, onUpdate, onDelete, onSeek }: Brol
   }, [item.start, item.end])
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/30 transition-all duration-300">
       <CardContent className="p-2.5 space-y-2">
         <div className="flex items-start gap-2">
           {item.thumbnailUrl && (

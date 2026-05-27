@@ -236,7 +236,7 @@ export default function MotionGraphicsPage() {
                 const cfg = statusConfig[job.status]
                 const Icon = cfg.icon
                 return (
-                  <Card key={job.id}>
+                  <Card key={job.id} className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/30 transition-all duration-300">
                     <CardContent className="flex items-center justify-between py-3 px-4">
                       <div className="flex items-center gap-3">
                         <div className={`p-1.5 rounded-md ${cfg.bg}`}>
@@ -271,7 +271,7 @@ export default function MotionGraphicsPage() {
           {/* Template Grid */}
           <div className="lg:col-span-7 space-y-4">
             {/* AI Generator */}
-            <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50">
+            <Card className="glass border-2 border-purple-200/60 dark:border-purple-800/40 overflow-hidden hover:shadow-xl hover:shadow-purple-200/50 transition-all duration-300 bg-gradient-to-r from-purple-50/80 to-pink-50/80 dark:from-purple-950/30 dark:to-pink-950/30">
               <CardContent className="pt-5 space-y-3">
                 <div className="flex items-center gap-2 text-sm font-semibold text-purple-700">
                   <Sparkles className="h-4 w-4" /> AI Animation Generator
@@ -296,7 +296,7 @@ export default function MotionGraphicsPage() {
               {templates.map((template) => (
                 <Card
                   key={template.id}
-                  className={`cursor-pointer transition-all hover:ring-2 hover:ring-blue-400 ${
+                  className={`cursor-pointer glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/30 transition-all duration-300 hover:ring-2 hover:ring-blue-400 ${
                     selectedTemplate?.id === template.id ? 'ring-2 ring-blue-600 bg-blue-50/50' : ''
                   }`}
                   onClick={() => selectTemplate(template)}
@@ -327,7 +327,7 @@ export default function MotionGraphicsPage() {
           <div className="lg:col-span-5 space-y-4">
             {selectedTemplate ? (
               <>
-                <Card>
+                <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/30 transition-all duration-300">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Palette className="h-5 w-5 text-purple-600" />
@@ -361,7 +361,7 @@ export default function MotionGraphicsPage() {
                 </Card>
 
                 {/* Live Preview */}
-                <Card>
+                <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/30 transition-all duration-300">
                   <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2">
                       <Play className="h-4 w-4 text-green-600" /> Live Preview
@@ -378,7 +378,7 @@ export default function MotionGraphicsPage() {
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/30 transition-all duration-300">
                   <CardHeader>
                     <CardTitle className="text-base">Output</CardTitle>
                   </CardHeader>
@@ -401,7 +401,7 @@ export default function MotionGraphicsPage() {
                 </Card>
               </>
             ) : (
-              <div className="flex min-h-[300px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 p-8 text-center">
+              <div className="flex min-h-[300px] flex-col items-center justify-center glass rounded-2xl border-2 border-dashed border-white/60 dark:border-white/20 p-8 text-center">
                 <Palette className="mb-4 h-12 w-12 text-slate-300" />
                 <h3 className="text-lg font-semibold text-slate-700">Pilih Template</h3>
                 <p className="text-sm text-slate-500 mt-1">Klik salah satu template di kiri untuk mulai customize.</p>

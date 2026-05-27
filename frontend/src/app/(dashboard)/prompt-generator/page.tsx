@@ -110,7 +110,7 @@ export default function PromptGeneratorPage() {
                 </motion.div>
 
                 <div className="grid gap-6">
-                    <Card className="border-0 shadow-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
+                    <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/30 transition-all duration-300">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <Wand2 className="w-5 h-5 text-blue-600" />
@@ -173,7 +173,7 @@ export default function PromptGeneratorPage() {
                                 animate={{ opacity: 1, height: 'auto' }}
                                 exit={{ opacity: 0, height: 0 }}
                             >
-                                <Card className="border-0 shadow-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
+                                <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/30 transition-all duration-300">
                                     <CardHeader className="flex flex-row items-center justify-between">
                                         <div>
                                             <CardTitle className="flex items-center gap-2">

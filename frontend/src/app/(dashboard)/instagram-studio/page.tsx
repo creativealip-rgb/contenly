@@ -445,7 +445,7 @@ export default function InstagramStudioPage() {
             </div>
 
             {projects.length === 0 ? (
-                <Card className="border-dashed">
+                <Card className="border-dashed glass border-2 border-white/60 dark:border-white/20 overflow-hidden">
                     <CardContent className="flex flex-col items-center justify-center py-12">
                         <Instagram className="h-16 w-16 text-muted-foreground/50 mb-4" />
                         <h3 className="text-lg font-medium mb-2">Belum ada proyek</h3>

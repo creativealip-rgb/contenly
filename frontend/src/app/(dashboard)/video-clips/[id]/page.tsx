@@ -357,7 +357,7 @@ export default function VideoClipDetailPage() {
 
       {/* Status Banner */}
       {isProcessing && (
-        <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
+        <Card className="glass border-2 border-blue-200/60 dark:border-blue-800/40 overflow-hidden bg-blue-50/80 dark:bg-blue-950/20 transition-all duration-300">
           <CardContent className="flex items-center gap-3 py-4">
             <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
             <div>
@@ -373,7 +373,7 @@ export default function VideoClipDetailPage() {
       )}
 
       {project.status === 'failed' && (
-        <Card className="border-red-200 bg-red-50 dark:bg-red-950/20">
+        <Card className="glass border-2 border-red-200/60 dark:border-red-800/40 overflow-hidden bg-red-50/80 dark:bg-red-950/20 transition-all duration-300">
           <CardContent className="flex items-center gap-3 py-4">
             <AlertCircle className="h-5 w-5 text-red-600" />
             <div className="flex-1">
@@ -497,7 +497,7 @@ export default function VideoClipDetailPage() {
 
             {/* Center: Preview only (5 cols) */}
             <div className="lg:col-span-5 space-y-4">
-              <Card>
+              <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/30 transition-all duration-300">
                 <CardContent className="p-4 space-y-3">
                   {/* Aspect ratio + crop offset */}
                   <div className="flex flex-wrap items-center gap-2">
@@ -557,7 +557,7 @@ export default function VideoClipDetailPage() {
             {/* Right: Editor + Style tabs + Exports (4 cols) */}
             <div className="lg:col-span-4 space-y-4">
               {/* Segment editor */}
-              <Card>
+              <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/30 transition-all duration-300">
                 <CardHeader className="pb-2 pt-3 px-4">
                   <CardTitle className="text-sm flex items-center justify-between">
                     <span className="flex items-center gap-1.5">
@@ -637,21 +637,21 @@ export default function VideoClipDetailPage() {
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="subtitle">
-                  <Card>
+                  <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/30 transition-all duration-300">
                     <CardContent className="pt-4">
                       <SubtitleControls value={subtitleStyle} onChange={setSubtitleStyle} />
                     </CardContent>
                   </Card>
                 </TabsContent>
                 <TabsContent value="title">
-                  <Card>
+                  <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/30 transition-all duration-300">
                     <CardContent className="pt-4">
                       <TitleControls value={titleStyle} onChange={setTitleStyle} />
                     </CardContent>
                   </Card>
                 </TabsContent>
                 <TabsContent value="broll">
-                  <Card>
+                  <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/30 transition-all duration-300">
                     <CardContent className="pt-4">
                       <BrollPanel
                         projectId={id}
@@ -669,7 +669,7 @@ export default function VideoClipDetailPage() {
 
               {/* Exports */}
               {project.exports && project.exports.length > 0 && (
-                <Card>
+                <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/30 transition-all duration-300">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 text-green-600" />
@@ -699,7 +699,7 @@ export default function VideoClipDetailPage() {
       )}
 
       {project.status === 'ready' && segments.length === 0 && (
-        <Card>
+        <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/30 transition-all duration-300">
           <CardContent className="text-center py-12 space-y-4">
             <p className="text-muted-foreground">AI tidak menemukan segment viral untuk video ini.</p>
             <Button onClick={() => addCustomSegment()}><Plus className="h-4 w-4 mr-2" />Buat Custom Segment</Button>
