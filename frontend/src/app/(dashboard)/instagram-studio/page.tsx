@@ -146,7 +146,14 @@ export default function InstagramStudioPage() {
 
     const handleCreateProject = async () => {
         if (!newProject.title) return
-        createProject.mutate(newProject, {
+        // Strip empty optional fields to avoid @IsUrl() validation failure
+        const payload: Record<string, unknown> = { title: newProject.title }
+        if (newProject.sourceUrl) payload.sourceUrl = newProject.sourceUrl
+        if (newProject.sourceContent) payload.sourceContent = newProject.sourceContent
+        if (newProject.globalStyle) payload.globalStyle = newProject.globalStyle
+        if (newProject.fontFamily) payload.fontFamily = newProject.fontFamily
+        if (newProject.templateId) payload.templateId = newProject.templateId
+        createProject.mutate(payload as any, {
             onSuccess: (project) => router.push(`/instagram-studio/${project.id}`),
         })
     }

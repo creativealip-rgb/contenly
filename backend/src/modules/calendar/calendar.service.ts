@@ -148,7 +148,7 @@ export class CalendarService {
     return events.map(event => ({
       id: event.id,
       title: event.title,
-      date: event.scheduledAt,
+      scheduledAt: event.scheduledAt,
       platform: event.platform,
       status: event.status,
       contentType: event.contentType,

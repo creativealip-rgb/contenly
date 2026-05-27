@@ -1,4 +1,5 @@
 import {
+  Transform,
   IsString,
   IsOptional,
   IsInt,
@@ -13,6 +14,7 @@ export class CreateProjectDto {
   title: string;
 
   @IsOptional()
+  @Transform(({ value }) => value === '' ? undefined : value)
   @IsUrl()
   sourceUrl?: string;
 

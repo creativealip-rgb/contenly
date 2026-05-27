@@ -22,7 +22,7 @@ export function useInstagramProjects() {
 
 export function useCreateProject() {
   return useMutation<Project, Error, { title: string; sourceUrl: string; sourceContent: string; globalStyle: string; fontFamily: string; templateId: string }>({
-    mutationFn: (body) => api.post('/instagram-studio/projects', body),
+    mutationFn: (body: Record<string, unknown>) => api.post('/instagram-studio/projects', body),
   })
 }
 

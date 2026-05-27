@@ -141,9 +141,9 @@ export const auth = betterAuth({
   advanced: {
     defaultCookieAttributes: {
       sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      secure: false,
     },
-    useSecureCookies: process.env.NODE_ENV === 'production',
+    useSecureCookies: false,
     // Trust proxy headers from Traefik
     crossSubdomainCookies: {
       enabled: false,
