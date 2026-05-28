@@ -275,8 +275,15 @@ export class InstagramStudioService {
 
         const project = await this.getProject(userId, slide.projectId);
 
-        // Combine prompts for the AI
-        const finalPrompt = `${dto.prompt || slide.visualPrompt || ''}. Style: ${dto.style || project.globalStyle || 'Modern Minimalist'}`;
+        // Combine prompts for the AI - include text content so it's styled into the image
+        const textContent = slide.textContent || '';
+        const visualPrompt = dto.prompt || slide.visualPrompt || '';
+        const style = dto.style || project.globalStyle || 'Modern Minimalist';
+
+        // Build a prompt that includes the text as part of the design
+        const finalPrompt = textContent
+            ? `${visualPrompt}. Style: ${style}. The image must prominently feature the following text as an integral part of the design layout: "${textContent}". The text should be large, readable, and elegantly integrated into the visual composition with proper typography hierarchy.`
+            : `${visualPrompt}. Style: ${style}`;
 
         try {
             const imageUrl = await this.openAiService.generateImage(finalPrompt);
@@ -304,6 +311,58 @@ export class InstagramStudioService {
                 `Image generation failed: ${error.message}`,
             );
         }
+    }
+
+    async generateAllImages(
+        userId: string,
+        projectId: string,
+    ) {
+        const project = await this.getProject(userId, projectId);
+
+        if (!project.slides || project.slides.length === 0) {
+            throw new BadRequestException('No slides to generate images for');
+        }
+
+        const totalTokens = project.slides.length * 2;
+        const hasBalance = await this.billingService.checkBalance(userId, totalTokens);
+        if (!hasBalance) {
+            throw new BadRequestException(`Insufficient token balance. You need ${totalTokens} tokens for ${project.slides.length} slides.`);
+        }
+
+        const withinDailyLimit = await this.billingService.checkDailyLimit(userId, 'INSTAGRAM_GENERATION');
+        if (!withinDailyLimit) {
+            throw new BadRequestException('Daily limit reached for Instagram Image Generation.');
+        }
+
+        const results = [];
+        for (const slide of project.slides) {
+            try {
+                const textContent = slide.textContent || '';
+                const visualPrompt = slide.visualPrompt || '';
+                const style = project.globalStyle || 'Modern Minimalist';
+
+                const finalPrompt = textContent
+                    ? `${visualPrompt}. Style: ${style}. The image must prominently feature the following text as an integral part of the design layout: "${textContent}". The text should be large, readable, and elegantly integrated into the visual composition with proper typography hierarchy.`
+                    : `${visualPrompt}. Style: ${style}`;
+
+                const imageUrl = await this.openAiService.generateImage(finalPrompt);
+
+                await this.drizzle.db
+                    .update(instagramSlide)
+                    .set({ imageUrl })
+                    .where(eq(instagramSlide.id, slide.id));
+
+                await this.billingService.deductTokens(userId, 2, `Slide ${slide.slideNumber} image generation`);
+                await this.billingService.incrementDailyUsage(userId, 'INSTAGRAM_GENERATION');
+
+                results.push({ slideId: slide.id, slideNumber: slide.slideNumber, success: true });
+            } catch (error: any) {
+                this.logger.error(`[Generate All] Slide ${slide.slideNumber} failed: ${error.message}`);
+                results.push({ slideId: slide.id, slideNumber: slide.slideNumber, success: false, error: error.message });
+            }
+        }
+
+        return this.getProject(userId, projectId);
     }
 
     async generateTextOverlay(
