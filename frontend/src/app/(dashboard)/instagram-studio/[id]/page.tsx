@@ -52,6 +52,24 @@ export default function InstagramStudioEditorPage() {
     finally { setIsGeneratingStoryboard(false) }
   }
 
+  const [isGeneratingAll, setIsGeneratingAll] = useState(false)
+
+  const handleGenerateAll = async () => {
+    setIsGeneratingAll(true)
+    try {
+      const response = await fetch(`${API_BASE_URL}/instagram-studio/projects/${projectId}/generate-all`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include' })
+      if (response.ok) {
+        const updatedProject = await response.json()
+        setProject(updatedProject)
+        toast.success('Semua gambar berhasil dibuat!')
+      } else {
+        const errData = await response.json().catch(() => null)
+        toast.error(`Gagal: ${errData?.message || response.statusText}`)
+      }
+    } catch (error) { console.error('Failed to generate all:', error); toast.error('Terjadi kesalahan') }
+    finally { setIsGeneratingAll(false) }
+  }
+
   const handleGenerateImage = async (slideId: string) => {
     setIsGeneratingImage(slideId)
     try {
@@ -177,8 +195,8 @@ export default function InstagramStudioEditorPage() {
               onReorderSlide={handleReorderSlide} onDeleteSlide={handleDeleteSlide} onNavigate={setCurrentSlideIndex}
             />
             <div className="flex gap-2">
-              <Button variant="outline" disabled={true} className="flex-1 relative overflow-hidden">
-                <ImageIcon className="h-4 w-4 mr-2" />Buat Gambar yang Hilang<Badge className="ml-2 bg-yellow-500 hover:bg-yellow-600 text-white border-0 text-[10px] px-1 py-0 h-4">SEGERA</Badge>
+              <Button onClick={handleGenerateAll} disabled={isGeneratingAll || !project.slides?.length} className="flex-1 bg-gradient-to-r from-violet-500 to-pink-600 hover:from-violet-600 hover:to-pink-700">
+                {isGeneratingAll ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" />Membuat Semua Gambar...</>) : (<><Sparkles className="h-4 w-4 mr-2" />Generate Semua ({(project.slides?.length || 0) * 2} Token)</>)}
               </Button>
               <Button onClick={handleExport} disabled={isExporting || !project.slides?.some(s => s.imageUrl)} className="flex-1 bg-gradient-to-r from-pink-500 to-purple-600">
                 {isExporting ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" />Mengekspor...</>) : (<><Download className="h-4 w-4 mr-2" />Ekspor Korsel</>)}
