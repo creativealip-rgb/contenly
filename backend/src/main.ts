@@ -71,7 +71,7 @@ async function bootstrap() {
 
   // Global prefix with API versioning
   app.setGlobalPrefix('api/v1', {
-    exclude: ['health'], // Exclude health check from versioning if needed
+    exclude: ['health', 'uploads'], // Exclude health check and uploads from versioning
   });
 
   // Serve tmp files (for Remotion audio during compose) — require session cookie
@@ -82,6 +82,9 @@ async function bootstrap() {
     }
     next();
   }, expressStatic.static(path.resolve(process.cwd(), 'tmp')));
+
+  // Serve uploads files (for Instagram Studio images) — public access
+  app.use('/uploads', expressStatic.static(path.resolve(process.cwd(), 'uploads')));
 
   // Validation
   app.useGlobalPipes(

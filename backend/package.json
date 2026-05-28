@@ -39,7 +39,6 @@
     "@nestjs/throttler": "^6.5.0",
     "@nestjs/websockets": "^11.0.1",
     "@remotion/renderer": "^4.0.463",
-    "@supabase/supabase-js": "^2.90.1",
     "@types/xml2js": "^0.4.14",
     "archiver": "^7.0.1",
     "axios": "^1.13.5",

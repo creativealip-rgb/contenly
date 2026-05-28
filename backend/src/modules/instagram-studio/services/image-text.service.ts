@@ -2,22 +2,20 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import sharp from 'sharp';
 import axios from 'axios';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class ImageTextService {
     private readonly logger = new Logger(ImageTextService.name);
-    private supabase: SupabaseClient;
+    private readonly uploadsDir: string;
 
     constructor(private configService: ConfigService) {
-        const supabaseUrl = this.configService.get<string>('SUPABASE_URL');
-        const supabaseKey = this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY')
-            || this.configService.get<string>('SUPABASE_ANON_KEY');
-
-        if (!supabaseUrl || !supabaseKey) {
-            this.logger.warn('Supabase credentials missing. Image storage will fail.');
-        } else {
-            this.supabase = createClient(supabaseUrl, supabaseKey);
+        // Local uploads directory
+        this.uploadsDir = path.resolve(process.cwd(), 'uploads', 'instagram-studio');
+        if (!fs.existsSync(this.uploadsDir)) {
+            fs.mkdirSync(this.uploadsDir, { recursive: true });
+            this.logger.log(`Created uploads directory: ${this.uploadsDir}`);
         }
     }
 
@@ -210,31 +208,15 @@ export class ImageTextService {
 
             this.logger.log(`Successfully generated overlayed image buffer.`);
 
-            // Upload the buffer to Supabase Storage
-            if (!this.supabase) {
-                this.logger.error('Cannot upload image: Supabase client is not initialized due to missing credentials.');
-                throw new Error('Storage configuration is missing. Please configure SUPABASE_URL and Keys.');
-            }
-
+            // Save to local storage
             const fileName = `overlay-${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
-            const { data, error } = await this.supabase.storage
-                .from('instagram-studio')
-                .upload(`slides/${fileName}`, resultBuffer, {
-                    contentType: 'image/png',
-                    cacheControl: '3600',
-                    upsert: false
-                });
+            const filePath = path.join(this.uploadsDir, fileName);
+            
+            fs.writeFileSync(filePath, resultBuffer);
+            this.logger.log(`Saved image to: ${filePath}`);
 
-            if (error) {
-                this.logger.error(`Supabase Upload Error: ${error.message}`);
-                throw new Error(`Failed to upload to storage: ${error.message}`);
-            }
-
-            const { data: publicUrlData } = this.supabase.storage
-                .from('instagram-studio')
-                .getPublicUrl(`slides/${fileName}`);
-
-            return publicUrlData.publicUrl;
+            // Return public URL path
+            return `/uploads/instagram-studio/${fileName}`;
 
         } catch (error) {
             this.logger.error(`Failed to overlay text: ${error.message}`);
