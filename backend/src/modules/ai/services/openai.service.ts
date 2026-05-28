@@ -99,12 +99,11 @@ export class OpenAiService {
     if (!this.nativeOpenai) {
       const nativeApiKey = (
         this.configService.get('OPENAI_NATIVE_API_KEY') ||
-        this.configService.get('OPENAI_API_KEY') || ''
+        (useCustomEndpoint ? '' : this.configService.get('OPENAI_API_KEY') || '')
       ).trim();
       if (nativeApiKey) {
-        const nativeBaseURL = customBaseURL || undefined;
-        this.nativeOpenai = new OpenAI({ apiKey: nativeApiKey, ...(nativeBaseURL ? { baseURL: nativeBaseURL } : {}) });
-        console.log(`✅ Native OpenAI client initialized for DALL-E / TTS${nativeBaseURL ? ' (custom endpoint: ' + nativeBaseURL + ')' : ''}`);
+        this.nativeOpenai = new OpenAI({ apiKey: nativeApiKey });
+        console.log(`✅ Native OpenAI client initialized for DALL-E / TTS`);
       } else if (useCustomEndpoint) {
         console.log(
           `ℹ️  Native OpenAI client not initialized (custom endpoint mode). DALL-E / TTS disabled unless OPENAI_NATIVE_API_KEY is set.`,
@@ -267,84 +266,20 @@ Return JSON with:
   }
 
   async generateImage(prompt: string): Promise<string> {
-    const codexApiKey = this.configService.get('CODEX_API_KEY') || 'sk-752b90456c373287-7ndp1b-1930998e';
-    const codexBaseUrl = this.configService.get('CODEX_BASE_URL') || 'https://9router-168-144-37-19.sslip.io';
-    const imageModel = this.configService.get('IMAGE_GENERATION_MODEL') || 'cx/gpt-5.4-image';
-
-    // Enhance short prompts - Codex requires descriptive prompts (min ~40 chars)
-    let enhancedPrompt = prompt;
-    if (prompt.length < 40) {
-      enhancedPrompt = `${prompt}, high quality, detailed, professional photography, cinematic lighting, 4k resolution`;
-      console.log(`[generateImage] Enhanced short prompt: ${enhancedPrompt.substring(0, 80)}...`);
+    if (!this.nativeOpenai) {
+      throw new Error('OPENAI_API_KEY is missing. Image generation requires a direct OpenAI API Key (DALL-E 3 is not supported via OpenRouter). Please add OPENAI_API_KEY to your VPS .env file.');
     }
-    
-    console.log(`🎨 Generating image via Codex ${imageModel} for: ${enhancedPrompt.substring(0, 60)}...`);
 
-    try {
-      const response = await fetch(`${codexBaseUrl}/v1/images/generations`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${codexApiKey}`,
-          'Accept': 'text/event-stream',
-          'User-Agent': 'curl/8.5.0',
-        },
-        body: JSON.stringify({
-          model: imageModel,
-          prompt: enhancedPrompt,
-          n: 1,
-          size: 'auto',
-          quality: 'auto',
-          background: 'auto',
-          image_detail: 'low',
-          output_format: 'png',
-        }),
-        signal: AbortSignal.timeout(180000),
-      });
+    const client = this.nativeOpenai;
+    const response = await client.images.generate({
+      model: 'dall-e-3',
+      prompt: `Create a professional, high-quality featured image for an article about: ${prompt}. The image should be clean, modern, and suitable for a blog post.`,
+      n: 1,
+      size: '1024x1024',
+      quality: 'standard',
+    });
 
-      if (!response.ok) throw new Error(`Codex API ${response.status}: ${response.statusText}`);
-
-      // Parse SSE stream to extract image data
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let imageData: string | null = null;
-      let imageUrl: string | null = null;
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const parsed = JSON.parse(line.substring(6));
-              
-              // Handle both formats: {data: [{b64_json: "..."}]} and {b64_json: "...", index: 0}
-              if (parsed.data?.[0]?.b64_json) imageData = parsed.data[0].b64_json;
-              if (parsed.data?.[0]?.url) imageUrl = parsed.data[0].url;
-              if (parsed.b64_json && !imageData) imageData = parsed.b64_json;
-              if (parsed.url && !imageUrl) imageUrl = parsed.url;
-            } catch {}
-          }
-        }
-      }
-
-      if (imageUrl) { console.log(`✅ Image via Codex (URL)`); return imageUrl; }
-      if (imageData) { console.log(`✅ Image via Codex (${Math.round(imageData.length * 0.75 / 1024)}KB)`); return `data:image/png;base64,${imageData}`; }
-      throw new Error('No image data in Codex response');
-    } catch (err: any) {
-      console.warn(`⚠️ Codex image gen failed: ${err.message}, trying Pollinations.ai...`);
-      try {
-        const encodedPrompt = encodeURIComponent(prompt);
-        const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true`;
-        const r = await fetch(imageUrl, { method: 'HEAD', signal: AbortSignal.timeout(60000) });
-        if (r.ok && r.headers.get('content-type')?.startsWith('image/')) { console.log(`✅ Image via Pollinations.ai (fallback)`); return imageUrl; }
-      } catch {}
-      throw new Error('Image generation failed: all providers unavailable.');
-    }
+    return response.data[0]?.url || '';
   }
 
   async analyzeTrend(content: string, title: string, model?: string): Promise<any> {
@@ -494,46 +429,71 @@ Return JSON with:
     title: string,
     style: string = 'cinematic',
   ): Promise<string> {
-    // Enhance title into a detailed visual prompt via OpenRouter (9router doesn't support chat completions)
-    const openRouterKey = (this.configService.get('OPENROUTER_API_KEY') || '').trim();
-    const openRouterModel = this.configService.get('OPENROUTER_MODEL') || this.model;
-    
-    let enhancedPrompt = title;
-    
-    if (openRouterKey) {
-      try {
-        const orClient = new OpenAI({
-          apiKey: openRouterKey,
-          baseURL: 'https://openrouter.ai/api/v1',
-          defaultHeaders: {
-            'HTTP-Referer': this.configService.get('APP_URL') || 'https://contenly.app',
-            'X-Title': 'Contently AI Platform',
-          },
-        });
-        
-        const enhanceResponse = await orClient.chat.completions.create({
-          model: openRouterModel,
-          messages: [
-            {
-              role: 'system',
-              content: `You are a thumbnail design expert. Given a video title and style, generate a detailed image generation prompt for a vertical Reels/TikTok thumbnail (9:16 portrait). The prompt must be in English, highly descriptive (50-80 words), include subject, lighting, mood, composition optimized for vertical format. Output ONLY the prompt text, nothing else.`,
-            },
-            {
-              role: 'user',
-              content: `Title: "${title}"\nStyle: ${style}\n\nGenerate the thumbnail prompt:`,
-            },
-          ],
-          max_tokens: 200,
-        });
-        
-        enhancedPrompt = enhanceResponse.choices[0]?.message?.content?.trim() || title;
-      } catch (orError: any) {
-        console.warn(`[generateThumbnail] OpenRouter prompt enhancement failed, using title directly: ${orError.message}`);
-      }
+    // Build thumbnail prompt directly (avoid broken OpenRouter for enhancement)
+    const enhancedPrompt = `Vertical 9:16 portrait thumbnail for Instagram Reels/TikTok. ${style} style. Subject: ${title}. Professional lighting, vibrant colors, eye-catching composition, high contrast text area at top or bottom, modern social media aesthetic. Ultra quality, detailed, 4K resolution.`;
+
+    // Use the custom image generation endpoint (GPT-based image model)
+    const imageBaseUrl = (this.configService.get('OPENAI_BASE_URL') || 'https://api.openai.com/v1').replace(/\/+$/, '');
+    const imageApiKey = (this.configService.get('IMAGE_API_KEY') || this.configService.get('OPENAI_API_KEY') || '').trim();
+    const imageModel = this.configService.get('IMAGE_MODEL') || 'cx/gpt-5.4-image';
+
+    const response = await fetch(`${imageBaseUrl}/images/generations`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${imageApiKey}`,
+        'Accept': 'text/event-stream',
+      },
+      body: JSON.stringify({
+        model: imageModel,
+        prompt: enhancedPrompt,
+        n: 1,
+        size: 'auto',
+        quality: 'auto',
+        background: 'auto',
+        image_detail: 'high',
+        output_format: 'png',
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`Image generation failed: ${err}`);
     }
 
-    // Use generateImage method which has Pollinations fallback
-    return await this.generateImage(enhancedPrompt);
+    // Handle SSE streaming response from Codex
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('text/event-stream')) {
+      const text = await response.text();
+      const lines = text.split('\n');
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const jsonStr = line.slice(6).trim();
+        if (!jsonStr || jsonStr === '[DONE]') continue;
+        try {
+          const parsed = JSON.parse(jsonStr);
+          // Codex format: {b64_json: "...", index: 0}
+          if (parsed.b64_json) {
+            return `data:image/png;base64,${parsed.b64_json}`;
+          }
+          // OpenAI format: {data: [{b64_json: "..."}]}
+          if (parsed.data?.[0]?.b64_json) {
+            return `data:image/png;base64,${parsed.data[0].b64_json}`;
+          }
+          if (parsed.data?.[0]?.url) {
+            return parsed.data[0].url;
+          }
+        } catch {}
+      }
+      throw new Error('No image found in SSE stream');
+    }
+
+    // Standard JSON response
+    const data = await response.json() as any;
+    const imageData = data?.data?.[0];
+    if (imageData?.url) return imageData.url;
+    if (imageData?.b64_json) return `data:image/png;base64,${imageData.b64_json}`;
+    throw new Error('No image returned from generation API');
   }
 
   async generateSpeech(
