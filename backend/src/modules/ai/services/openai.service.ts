@@ -303,16 +303,19 @@ Return JSON with:
       let imageData: string | null = null;
       let imageUrl: string | null = null;
 
+      let lineCount = 0;
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) { console.log(`[generateImage] SSE stream done after ${lineCount} lines`); break; }
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
         buffer = lines.pop() || '';
         for (const line of lines) {
+          lineCount++;
           if (line.startsWith('data: ')) {
             try {
               const parsed = JSON.parse(line.substring(6));
+              if (lineCount <= 5 || parsed.b64_json) console.log(`[generateImage] SSE line ${lineCount}: ${line.substring(0, 100)}...`);
               // Handle both formats: {data: [{b64_json: "..."}]} and {b64_json: "...", index: 0}
               if (parsed.data?.[0]?.b64_json) imageData = parsed.data[0].b64_json;
               if (parsed.data?.[0]?.url) imageUrl = parsed.data[0].url;
