@@ -313,8 +313,11 @@ Return JSON with:
           if (line.startsWith('data: ')) {
             try {
               const parsed = JSON.parse(line.substring(6));
+              // Handle both formats: {data: [{b64_json: "..."}]} and {b64_json: "...", index: 0}
               if (parsed.data?.[0]?.b64_json) imageData = parsed.data[0].b64_json;
               if (parsed.data?.[0]?.url) imageUrl = parsed.data[0].url;
+              if (parsed.b64_json && !imageData) imageData = parsed.b64_json;
+              if (parsed.url && !imageUrl) imageUrl = parsed.url;
             } catch {}
           }
         }
