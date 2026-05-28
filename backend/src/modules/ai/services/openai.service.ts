@@ -280,6 +280,7 @@ Return JSON with:
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${codexApiKey}`,
           'Accept': 'text/event-stream',
+          'User-Agent': 'curl/8.5.0',
         },
         body: JSON.stringify({
           model: imageModel,
