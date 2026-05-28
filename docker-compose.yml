@@ -40,17 +40,12 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_URL: redis://redis:6379
-<<<<<<< HEAD
       ENCRYPTION_KEY: O9YnyBMLgN2KBk173itM0Z6Tt1AZ-Q4oRE-_FBF5dJNG3qU09fa_zV3efqVLojFq
       OPENROUTER_BASE_URL: https://9router-168-144-37-19.sslip.io/v1
       OPENAI_BASE_URL: https://9router-168-144-37-19.sslip.io/v1
       CODEX_API_KEY: sk-752b90456c373287-7ndp1b-1930998e
       CODEX_BASE_URL: https://9router-168-144-37-19.sslip.io
       OPENAI_API_KEY: sk-4dd43230cd861e78-jxy505-df7149e6
-=======
-    volumes:
-      - contenly_uploads:/app/uploads
->>>>>>> cce46d5 (refactor: remove Supabase dependency, use local storage for images)
     networks:
       - default
       - dokploy-network
