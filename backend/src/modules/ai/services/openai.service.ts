@@ -315,7 +315,7 @@ Return JSON with:
           if (line.startsWith('data: ')) {
             try {
               const parsed = JSON.parse(line.substring(6));
-              if (lineCount <= 5 || parsed.b64_json) console.log(`[generateImage] SSE line ${lineCount}: ${line.substring(0, 100)}...`);
+              console.log(`[generateImage] SSE line ${lineCount}: ${line.substring(0, 150)}...`);
               // Handle both formats: {data: [{b64_json: "..."}]} and {b64_json: "...", index: 0}
               if (parsed.data?.[0]?.b64_json) imageData = parsed.data[0].b64_json;
               if (parsed.data?.[0]?.url) imageUrl = parsed.data[0].url;
