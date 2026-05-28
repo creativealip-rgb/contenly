@@ -520,38 +520,8 @@ Return JSON with:
       }
     }
 
-    // Use the custom image generation endpoint (GPT-based image model)
-    const imageBaseUrl = (this.configService.get('OPENAI_BASE_URL') || 'https://api.openai.com/v1').replace(/\/+$/, '');
-    const imageApiKey = (this.configService.get('IMAGE_API_KEY') || this.configService.get('OPENAI_API_KEY') || '').trim();
-    const imageModel = this.configService.get('IMAGE_MODEL') || 'cx/gpt-5.4-image';
-
-    const response = await fetch(`${imageBaseUrl}/images/generations`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${imageApiKey}`,
-      },
-      body: JSON.stringify({
-        model: imageModel,
-        prompt: enhancedPrompt,
-        n: 1,
-        size: '1024x1792',
-        quality: 'auto',
-        output_format: 'png',
-      }),
-    });
-
-    if (!response.ok) {
-      const err = await response.text();
-      throw new Error(`Image generation failed: ${err}`);
-    }
-
-    const data = await response.json() as any;
-    // Response may have data[0].url or data[0].b64_json
-    const imageData = data?.data?.[0];
-    if (imageData?.url) return imageData.url;
-    if (imageData?.b64_json) return `data:image/png;base64,${imageData.b64_json}`;
-    throw new Error('No image returned from generation API');
+    // Use generateImage method which has Pollinations fallback
+    return await this.generateImage(enhancedPrompt);
   }
 
   async generateSpeech(
