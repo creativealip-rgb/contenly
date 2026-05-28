@@ -54,7 +54,8 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=dokploy-network
-      - traefik.http.routers.contenly-api.rule=Host(`contenly.app`) && PathPrefix(`/api`)
+      - traefik.http.routers.contenly-api.rule=Host(`contenly.app`) && (PathPrefix(`/api`) || PathPrefix(`/uploads`))
+      - traefik.http.routers.contenly-api.priority=100
       - traefik.http.routers.contenly-api.entrypoints=websecure
       - traefik.http.routers.contenly-api.tls.certresolver=letsencrypt
       - traefik.http.services.contenly-api.loadbalancer.server.port=3001
