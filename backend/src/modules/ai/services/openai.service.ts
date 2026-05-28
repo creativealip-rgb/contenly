@@ -271,7 +271,14 @@ Return JSON with:
     const codexBaseUrl = this.configService.get('CODEX_BASE_URL') || 'https://9router-168-144-37-19.sslip.io';
     const imageModel = this.configService.get('IMAGE_GENERATION_MODEL') || 'cx/gpt-5.4-image';
 
-    console.log(`🎨 Generating image via Codex ${imageModel} for: ${prompt.substring(0, 60)}...`);
+    // Enhance short prompts - Codex requires descriptive prompts (min ~40 chars)
+    let enhancedPrompt = prompt;
+    if (prompt.length < 40) {
+      enhancedPrompt = `${prompt}, high quality, detailed, professional photography, cinematic lighting, 4k resolution`;
+      console.log(`[generateImage] Enhanced short prompt: ${enhancedPrompt.substring(0, 80)}...`);
+    }
+    
+    console.log(`🎨 Generating image via Codex ${imageModel} for: ${enhancedPrompt.substring(0, 60)}...`);
 
     try {
       const response = await fetch(`${codexBaseUrl}/v1/images/generations`, {
@@ -284,7 +291,7 @@ Return JSON with:
         },
         body: JSON.stringify({
           model: imageModel,
-          prompt,
+          prompt: enhancedPrompt,
           n: 1,
           size: 'auto',
           quality: 'auto',
