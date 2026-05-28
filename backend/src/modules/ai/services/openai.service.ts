@@ -323,6 +323,7 @@ Return JSON with:
         }
       }
 
+      console.log(`[generateImage] Codex SSE parsing done. imageUrl=${imageUrl ? 'yes' : 'no'}, imageData=${imageData ? `${Math.round(imageData.length * 0.75 / 1024)}KB` : 'null'}`);
       if (imageUrl) { console.log(`✅ Image via Codex (URL)`); return imageUrl; }
       if (imageData) { console.log(`✅ Image via Codex (${Math.round(imageData.length * 0.75 / 1024)}KB)`); return `data:image/png;base64,${imageData}`; }
       throw new Error('No image data in Codex response');
