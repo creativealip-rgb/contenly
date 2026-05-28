@@ -429,23 +429,8 @@ Return JSON with:
     title: string,
     style: string = 'cinematic',
   ): Promise<string> {
-    // Enhance title into a detailed visual prompt via GPT
-    const enhanceResponse = await this.openai.chat.completions.create({
-      model: this.model,
-      messages: [
-        {
-          role: 'system',
-          content: `You are a thumbnail design expert. Given a video title and style, generate a detailed image generation prompt for a vertical Reels/TikTok thumbnail (9:16 portrait). The prompt must be in English, highly descriptive (50-80 words), include subject, lighting, mood, composition optimized for vertical format. Output ONLY the prompt text, nothing else.`,
-        },
-        {
-          role: 'user',
-          content: `Title: "${title}"\nStyle: ${style}\n\nGenerate the thumbnail prompt:`,
-        },
-      ],
-      max_tokens: 200,
-    });
-
-    const enhancedPrompt = enhanceResponse.choices[0]?.message?.content?.trim() || title;
+    // Build thumbnail prompt directly (avoid broken OpenRouter for enhancement)
+    const enhancedPrompt = `Vertical 9:16 portrait thumbnail for Instagram Reels/TikTok. ${style} style. Subject: ${title}. Professional lighting, vibrant colors, eye-catching composition, high contrast text area at top or bottom, modern social media aesthetic. Ultra quality, detailed, 4K resolution.`;
 
     // Use the custom image generation endpoint (GPT-based image model)
     const imageBaseUrl = (this.configService.get('OPENAI_BASE_URL') || 'https://api.openai.com/v1').replace(/\/+$/, '');
@@ -457,13 +442,16 @@ Return JSON with:
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${imageApiKey}`,
+        'Accept': 'text/event-stream',
       },
       body: JSON.stringify({
         model: imageModel,
         prompt: enhancedPrompt,
         n: 1,
-        size: '1024x1792',
+        size: 'auto',
         quality: 'auto',
+        background: 'auto',
+        image_detail: 'high',
         output_format: 'png',
       }),
     });
@@ -473,8 +461,35 @@ Return JSON with:
       throw new Error(`Image generation failed: ${err}`);
     }
 
+    // Handle SSE streaming response from Codex
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('text/event-stream')) {
+      const text = await response.text();
+      const lines = text.split('\n');
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const jsonStr = line.slice(6).trim();
+        if (!jsonStr || jsonStr === '[DONE]') continue;
+        try {
+          const parsed = JSON.parse(jsonStr);
+          // Codex format: {b64_json: "...", index: 0}
+          if (parsed.b64_json) {
+            return `data:image/png;base64,${parsed.b64_json}`;
+          }
+          // OpenAI format: {data: [{b64_json: "..."}]}
+          if (parsed.data?.[0]?.b64_json) {
+            return `data:image/png;base64,${parsed.data[0].b64_json}`;
+          }
+          if (parsed.data?.[0]?.url) {
+            return parsed.data[0].url;
+          }
+        } catch {}
+      }
+      throw new Error('No image found in SSE stream');
+    }
+
+    // Standard JSON response
     const data = await response.json() as any;
-    // Response may have data[0].url or data[0].b64_json
     const imageData = data?.data?.[0];
     if (imageData?.url) return imageData.url;
     if (imageData?.b64_json) return `data:image/png;base64,${imageData.b64_json}`;
