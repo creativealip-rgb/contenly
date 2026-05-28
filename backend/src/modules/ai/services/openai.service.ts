@@ -266,20 +266,77 @@ Return JSON with:
   }
 
   async generateImage(prompt: string): Promise<string> {
-    if (!this.nativeOpenai) {
-      throw new Error('OPENAI_API_KEY is missing. Image generation requires a direct OpenAI API Key (DALL-E 3 is not supported via OpenRouter). Please add OPENAI_API_KEY to your VPS .env file.');
+    const codexApiKey = this.configService.get('CODEX_API_KEY') || 'sk-752...998e';
+    const codexBaseUrl = this.configService.get('CODEX_BASE_URL') || 'https://9router-168-144-37-19.sslip.io';
+    const imageModel = this.configService.get('IMAGE_GENERATION_MODEL') || 'cx/gpt-5.4-image';
+
+    // Enhance short prompts - Codex requires descriptive prompts (min ~40 chars)
+    let enhancedPrompt = prompt;
+    if (prompt.length < 40) {
+      enhancedPrompt = `${prompt}, high quality, detailed, professional photography, cinematic lighting, 4k resolution`;
+      console.log(`[generateImage] Enhanced short prompt: ${enhancedPrompt.substring(0, 80)}...`);
     }
+    
+    console.log(`🎨 Generating image via Codex ${imageModel} for: ${enhancedPrompt.substring(0, 60)}...`);
 
-    const client = this.nativeOpenai;
-    const response = await client.images.generate({
-      model: 'dall-e-3',
-      prompt: `Create a professional, high-quality featured image for an article about: ${prompt}. The image should be clean, modern, and suitable for a blog post.`,
-      n: 1,
-      size: '1024x1024',
-      quality: 'standard',
-    });
+    try {
+      const response = await fetch(`${codexBaseUrl}/v1/images/generations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${codexApiKey}`,
+          'Accept': 'text/event-stream',
+          'User-Agent': 'curl/8.5.0',
+        },
+        body: JSON.stringify({
+          model: imageModel,
+          prompt: enhancedPrompt,
+          n: 1,
+          size: 'auto',
+          quality: 'auto',
+          background: 'auto',
+          image_detail: 'low',
+          output_format: 'png',
+        }),
+        signal: AbortSignal.timeout(180000),
+      });
 
-    return response.data[0]?.url || '';
+      if (!response.ok) throw new Error(`Codex API ${response.status}: ${response.statusText}`);
+
+      // Parse SSE stream to extract image data
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let imageData: string | null = null;
+      let imageUrl: string | null = null;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const parsed = JSON.parse(line.substring(6));
+              
+              // Handle both formats: {data: [{b64_json: "..."}]} and {b64_json: "...", index: 0}
+              if (parsed.data?.[0]?.b64_json) imageData = parsed.data[0].b64_json;
+              if (parsed.data?.[0]?.url) imageUrl = parsed.data[0].url;
+              if (parsed.b64_json && !imageData) imageData = parsed.b64_json;
+            } catch {}
+          }
+        }
+      }
+
+      if (imageUrl) return imageUrl;
+      if (imageData) return `data:image/png;base64,${imageData}`;
+      throw new Error('No image returned from Codex');
+    } catch (error: any) {
+      console.error(`[generateImage] Codex failed: ${error.message}`);
+      throw error;
+    }
   }
 
   async analyzeTrend(content: string, title: string, model?: string): Promise<any> {
