@@ -47,7 +47,7 @@ services:
       CODEX_BASE_URL: https://9router-168-144-37-19.sslip.io
       OPENAI_API_KEY: sk-4dd43230cd861e78-jxy505-df7149e6
     volumes:
-      - contenly_uploads:/app/uploads
+      - contenly_uploads:/app/backend/uploads
     networks:
       - default
       - dokploy-network
