@@ -34,7 +34,7 @@ async function bootstrap() {
   });
 
   // CORS Setup
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000,http://localhost:3010';
   const origins = frontendUrl.includes(',')
     ? frontendUrl.split(',').map((url) => url.trim())
     : [frontendUrl];
