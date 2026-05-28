@@ -51,6 +51,7 @@ export type ScriptProject = {
   status: string
   scenes: Scene[]
   createdAt: string
+  thumbnailUrl?: string | null
 }
 
 export type ProjectFormState = {

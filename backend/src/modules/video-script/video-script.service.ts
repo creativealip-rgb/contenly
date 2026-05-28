@@ -1,3 +1,5 @@
+import * as fs from "fs";
+import * as path from "path";
 import {
   BadRequestException,
   Injectable,
@@ -1469,15 +1471,30 @@ ${project.sourceContent}`;
       style || 'cinematic',
     );
 
+    // Save image to file instead of storing base64 in DB
+    let savedUrl = imageUrl;
+    if (imageUrl.startsWith('data:image/')) {
+      const uploadsDir = path.resolve(process.cwd(), 'uploads', 'video-thumbnails');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      const fileName = `thumb-${projectId}-${Date.now()}.png`;
+      const filePath = path.join(uploadsDir, fileName);
+      const base64Data = imageUrl.split(',')[1];
+      fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
+      savedUrl = `/uploads/video-thumbnails/${fileName}`;
+      this.logger.log(`Saved thumbnail to: ${savedUrl}`);
+    }
+
     await this.billingService.deductTokens(userId, 1, 'Thumbnail Generation');
 
     // Persist generated thumbnail URL to project
     await this.drizzle.db
       .update(schema.scriptProject)
-      .set({ thumbnailUrl: imageUrl, updatedAt: new Date() })
+      .set({ thumbnailUrl: savedUrl, updatedAt: new Date() })
       .where(eq(schema.scriptProject.id, projectId));
 
-    return { imageUrl, title, style: style || 'cinematic' };
+    return { imageUrl: savedUrl, title, style: style || 'cinematic' };
   }
 
   // ==========================================

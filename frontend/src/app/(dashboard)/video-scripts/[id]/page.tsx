@@ -117,6 +117,7 @@ export default function VideoScriptEditorPage() {
       const data: ScriptProject = await response.json()
       setProject(data)
       setScenes(data.scenes || [])
+      setThumbnailUrl(data.thumbnailUrl || null)
       setProjectForm({
         title: data.title || '',
         sourceContent: data.sourceContent || '',
