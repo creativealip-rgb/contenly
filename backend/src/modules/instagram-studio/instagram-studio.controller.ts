@@ -87,6 +87,15 @@ export class InstagramStudioController {
     return this.service.generateStoryboard(user.id, id, dto);
   }
 
+  @Post('projects/:id/generate-all')
+  @ApiOperation({ summary: 'Generate all slides - images + text overlay' })
+  async generateAll(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+  ) {
+    return this.service.generateAll(user.id, id);
+  }
+
   @Post('slides/:id/generate-image')
   @ApiOperation({ summary: 'Generate or swap an image for a slide' })
   async generateImage(

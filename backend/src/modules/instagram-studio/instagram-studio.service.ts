@@ -570,6 +570,109 @@ export class InstagramStudioService {
         return this.getProject(userId, projectId); // Return updated project with slides
     }
 
+    async generateAll(userId: string, projectId: string) {
+        const project = await this.getProject(userId, projectId);
+
+        if (!project.slides || project.slides.length === 0) {
+            throw new BadRequestException('No slides to generate');
+        }
+
+        // Check balance: 2 tokens per image + 1 token per text overlay
+        const slidesNeedingImage = project.slides.filter(s => !s.imageUrl);
+        const slidesNeedingText = project.slides.filter(s => s.imageUrl);
+        const totalTokensNeeded = slidesNeedingImage.length * 2 + slidesNeedingText.length * 1;
+
+        const hasBalance = await this.billingService.checkBalance(userId, totalTokensNeeded);
+        if (!hasBalance) {
+            throw new BadRequestException(`Insufficient tokens. Need ${totalTokensNeeded} tokens (${slidesNeedingImage.length} images \u00d7 2 + ${slidesNeedingText.length} text \u00d7 1).`);
+        }
+
+        const withinDailyLimit = await this.billingService.checkDailyLimit(userId, 'INSTAGRAM_GENERATION');
+        if (!withinDailyLimit) {
+            throw new BadRequestException('Daily limit reached for Instagram Generation on your current plan.');
+        }
+
+        const results: any[] = [];
+        let tokensUsed = 0;
+
+        for (const slide of project.slides) {
+            try {
+                let currentSlide: any = { ...slide };
+
+                // Step 1: Generate image if missing
+                if (!currentSlide.imageUrl) {
+                    const finalPrompt = `${currentSlide.visualPrompt || ''}. Style: ${project.globalStyle || 'Modern Minimalist'}`;
+                    const imageUrl = await this.openAiService.generateImage(finalPrompt);
+
+                    await this.drizzle.db
+                        .update(instagramSlide)
+                        .set({ imageUrl })
+                        .where(eq(instagramSlide.id, currentSlide.id));
+
+                    currentSlide.imageUrl = imageUrl;
+                    tokensUsed += 2;
+                    await this.billingService.deductTokens(userId, 2, `Slide ${slide.slideNumber} image generation`);
+                    await this.billingService.incrementDailyUsage(userId, 'INSTAGRAM_GENERATION');
+                }
+
+                // Step 2: Generate text overlay (burn headline + body onto image)
+                if (currentSlide.imageUrl) {
+                    try {
+                        const tier = await this.billingService.getSubscriptionTier(userId);
+                        const model = BILLING_TIERS[tier]?.aiModel;
+
+                        const layoutSuggestion = await this.openAiService.analyzeImageLayout(
+                            currentSlide.imageUrl,
+                            currentSlide.textContent || '',
+                            model,
+                        );
+
+                        const options = {
+                            fontFamily: project.fontFamily || 'Montserrat',
+                            fontSize: currentSlide.fontSize || undefined,
+                            fontColor: layoutSuggestion.fontColor || currentSlide.fontColor || '#FFFFFF',
+                            layoutPosition: layoutSuggestion.layoutPosition || currentSlide.layoutPosition || 'center',
+                        };
+
+                        const textToRender = layoutSuggestion.headerText
+                            ? JSON.stringify({ header: layoutSuggestion.headerText, body: layoutSuggestion.bodyText })
+                            : (currentSlide.textContent || '');
+
+                        const processedImageUrl = await this.imageTextService.overlayTextOnImage(
+                            currentSlide.imageUrl,
+                            textToRender,
+                            options,
+                        );
+
+                        await this.drizzle.db
+                            .update(instagramSlide)
+                            .set({ imageUrl: processedImageUrl })
+                            .where(eq(instagramSlide.id, currentSlide.id));
+
+                        tokensUsed += 1;
+                        await this.billingService.deductTokens(userId, 1, `Slide ${slide.slideNumber} text overlay`);
+                        await this.billingService.incrementDailyUsage(userId, 'INSTAGRAM_GENERATION');
+                    } catch (textError: any) {
+                        this.logger.warn(`[GenerateAll] Text overlay failed for slide ${slide.slideNumber}: ${textError.message}`);
+                    }
+                }
+
+                results.push({ slideNumber: slide.slideNumber, status: 'success' });
+            } catch (error: any) {
+                this.logger.error(`[GenerateAll] Failed for slide ${slide.slideNumber}: ${error.message}`);
+                results.push({ slideNumber: slide.slideNumber, status: 'failed', error: error.message });
+            }
+        }
+
+        return {
+            success: true,
+            message: `Generated ${results.filter(r => r.status === 'success').length} of ${project.slides.length} slides`,
+            tokensUsed,
+            results,
+            project: await this.getProject(userId, projectId),
+        };
+    }
+
     async applyStyleToAll(
         userId: string,
         projectId: string,
