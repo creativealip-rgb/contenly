@@ -44,7 +44,7 @@ async function bootstrap() {
   app.enableCors({
     origin: (origin, callback) => {
       // If no origin (like direct curl or same-origin), allow it
-      if (!origin) {
+      if (!origin || origin === 'null') {
         return callback(null, true);
       }
 
