@@ -268,7 +268,7 @@ export function SidebarPanels({
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold">Generate Thumbnail (DALL-E 3)</label>
+              <label className="text-sm font-semibold">Generate Thumbnail (9:16 Reels)</label>
               <Button
                 variant="outline"
                 className="w-full"
@@ -284,12 +284,14 @@ export function SidebarPanels({
               </Button>
               {thumbnailUrl && (
                 <div className="space-y-2">
-                  <img src={thumbnailUrl} alt="Generated thumbnail" className="w-full rounded-lg" />
+                  <div className="relative mx-auto max-w-[200px] overflow-hidden rounded-lg" style={{ aspectRatio: '9/16' }}>
+                    <img src={thumbnailUrl} alt="Generated thumbnail" className="h-full w-full object-cover" />
+                  </div>
                   <a
                     href={thumbnailUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-blue-600 hover:underline"
+                    className="block text-center text-xs text-blue-600 hover:underline"
                   >
                     Buka full-size ↗
                   </a>
