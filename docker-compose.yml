@@ -40,22 +40,17 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_URL: redis://redis:6379
-      ENCRYPTION_KEY: O9YnyBMLgN2KBk173itM0Z6Tt1AZ-Q4oRE-_FBF5dJNG3qU09fa_zV3efqVLojFq
-      OPENROUTER_BASE_URL: https://9router-168-144-37-19.sslip.io/v1
+    volumes:
+      - contenly_uploads:/app/uploads
     networks:
       - default
       - dokploy-network
     labels:
       - traefik.enable=true
       - traefik.docker.network=dokploy-network
-      - traefik.http.routers.contenly-api.rule=(Host(`contenly.app`) || Host(`www.contenly.app`)) && (PathPrefix(`/api`) || PathPrefix(`/health`))
-      - traefik.http.routers.contenly-api.priority=100
+      - traefik.http.routers.contenly-api.rule=Host(`contenly.app`) && PathPrefix(`/api`)
       - traefik.http.routers.contenly-api.entrypoints=websecure
       - traefik.http.routers.contenly-api.tls.certresolver=letsencrypt
-      - traefik.http.routers.contenly-api-http.rule=(Host(`contenly.app`) || Host(`www.contenly.app`)) && (PathPrefix(`/api`) || PathPrefix(`/health`))
-      - traefik.http.routers.contenly-api-http.priority=100
-      - traefik.http.routers.contenly-api-http.entrypoints=web
-      - traefik.http.routers.contenly-api-http.middlewares=redirect-to-https@file
       - traefik.http.services.contenly-api.loadbalancer.server.port=3001
     ports:
       - "3011:3001"
@@ -92,6 +87,7 @@ services:
 
 volumes:
   contenly_postgres_data:
+  contenly_uploads:
 
 networks:
   dokploy-network:
