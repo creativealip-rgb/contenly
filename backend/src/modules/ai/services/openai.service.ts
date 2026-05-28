@@ -482,23 +482,43 @@ Return JSON with:
     title: string,
     style: string = 'cinematic',
   ): Promise<string> {
-    // Enhance title into a detailed visual prompt via GPT
-    const enhanceResponse = await this.openai.chat.completions.create({
-      model: this.model,
-      messages: [
-        {
-          role: 'system',
-          content: `You are a thumbnail design expert. Given a video title and style, generate a detailed image generation prompt for a vertical Reels/TikTok thumbnail (9:16 portrait). The prompt must be in English, highly descriptive (50-80 words), include subject, lighting, mood, composition optimized for vertical format. Output ONLY the prompt text, nothing else.`,
-        },
-        {
-          role: 'user',
-          content: `Title: "${title}"\nStyle: ${style}\n\nGenerate the thumbnail prompt:`,
-        },
-      ],
-      max_tokens: 200,
-    });
-
-    const enhancedPrompt = enhanceResponse.choices[0]?.message?.content?.trim() || title;
+    // Enhance title into a detailed visual prompt via OpenRouter (9router doesn't support chat completions)
+    const openRouterKey = (this.configService.get('OPENROUTER_API_KEY') || '').trim();
+    const openRouterModel = this.configService.get('OPENROUTER_MODEL') || this.model;
+    
+    let enhancedPrompt = title;
+    
+    if (openRouterKey) {
+      try {
+        const orClient = new OpenAI({
+          apiKey: openRouterKey,
+          baseURL: 'https://openrouter.ai/api/v1',
+          defaultHeaders: {
+            'HTTP-Referer': this.configService.get('APP_URL') || 'https://contenly.app',
+            'X-Title': 'Contently AI Platform',
+          },
+        });
+        
+        const enhanceResponse = await orClient.chat.completions.create({
+          model: openRouterModel,
+          messages: [
+            {
+              role: 'system',
+              content: `You are a thumbnail design expert. Given a video title and style, generate a detailed image generation prompt for a vertical Reels/TikTok thumbnail (9:16 portrait). The prompt must be in English, highly descriptive (50-80 words), include subject, lighting, mood, composition optimized for vertical format. Output ONLY the prompt text, nothing else.`,
+            },
+            {
+              role: 'user',
+              content: `Title: "${title}"\nStyle: ${style}\n\nGenerate the thumbnail prompt:`,
+            },
+          ],
+          max_tokens: 200,
+        });
+        
+        enhancedPrompt = enhanceResponse.choices[0]?.message?.content?.trim() || title;
+      } catch (orError: any) {
+        console.warn(`[generateThumbnail] OpenRouter prompt enhancement failed, using title directly: ${orError.message}`);
+      }
+    }
 
     // Use the custom image generation endpoint (GPT-based image model)
     const imageBaseUrl = (this.configService.get('OPENAI_BASE_URL') || 'https://api.openai.com/v1').replace(/\/+$/, '');
