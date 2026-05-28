@@ -489,12 +489,12 @@ Return JSON with:
     // Build thumbnail prompt directly (avoid broken OpenRouter for enhancement)
     const enhancedPrompt = `Vertical 9:16 portrait thumbnail for Instagram Reels/TikTok. ${style} style. Subject: ${title}. Professional lighting, vibrant colors, eye-catching composition, high contrast text area at top or bottom, modern social media aesthetic. Ultra quality, detailed, 4K resolution.`;
 
-    // Use the custom image generation endpoint (GPT-based image model)
-    const imageBaseUrl = (this.configService.get('OPENAI_BASE_URL') || 'https://api.openai.com/v1').replace(/\/+$/, '');
-    const imageApiKey = (this.configService.get('IMAGE_API_KEY') || this.configService.get('OPENAI_API_KEY') || '').trim();
-    const imageModel = this.configService.get('IMAGE_MODEL') || 'cx/gpt-5.4-image';
+    // Use Codex endpoint (same as generateImage)
+    const imageBaseUrl = (this.configService.get('CODEX_BASE_URL') || 'https://9router-168-144-37-19.sslip.io').replace(/\/+$/, '');
+    const imageApiKey = (this.configService.get('CODEX_API_KEY') || 'sk-752b90456c373287-7ndp1b-1930998e').trim();
+    const imageModel = this.configService.get('IMAGE_GENERATION_MODEL') || 'cx/gpt-5.4-image';
 
-    const response = await fetch(`${imageBaseUrl}/images/generations`, {
+    const response = await fetch(`${imageBaseUrl}/v1/images/generations`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
