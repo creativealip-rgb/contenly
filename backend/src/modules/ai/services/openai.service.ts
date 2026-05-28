@@ -311,19 +311,17 @@ Return JSON with:
       let imageData: string | null = null;
       let imageUrl: string | null = null;
 
-      let lineCount = 0;
       while (true) {
         const { done, value } = await reader.read();
-        if (done) { console.log(`[generateImage] SSE stream done after ${lineCount} lines`); break; }
+        if (done) break;
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
         buffer = lines.pop() || '';
         for (const line of lines) {
-          lineCount++;
           if (line.startsWith('data: ')) {
             try {
               const parsed = JSON.parse(line.substring(6));
-              console.log(`[generateImage] SSE line ${lineCount}: ${line.substring(0, 150)}...`);
+              
               // Handle both formats: {data: [{b64_json: "..."}]} and {b64_json: "...", index: 0}
               if (parsed.data?.[0]?.b64_json) imageData = parsed.data[0].b64_json;
               if (parsed.data?.[0]?.url) imageUrl = parsed.data[0].url;
@@ -334,7 +332,6 @@ Return JSON with:
         }
       }
 
-      console.log(`[generateImage] Codex SSE parsing done. imageUrl=${imageUrl ? 'yes' : 'no'}, imageData=${imageData ? `${Math.round(imageData.length * 0.75 / 1024)}KB` : 'null'}`);
       if (imageUrl) { console.log(`✅ Image via Codex (URL)`); return imageUrl; }
       if (imageData) { console.log(`✅ Image via Codex (${Math.round(imageData.length * 0.75 / 1024)}KB)`); return `data:image/png;base64,${imageData}`; }
       throw new Error('No image data in Codex response');
