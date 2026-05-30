@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { motion } from 'framer-motion'
-import { Key, Save, Trash2, Eye, EyeOff, Loader2, CheckCircle2, XCircle, ExternalLink, MessageSquare, ImageIcon } from 'lucide-react'
+import { Key, Save, Trash2, Eye, EyeOff, Loader2, CheckCircle2, XCircle, ExternalLink, MessageSquare, ImageIcon, ShieldCheck, ShieldAlert } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '@/lib/api'
 import { containerVariants, itemVariants } from '@/lib/animations'
@@ -27,6 +27,8 @@ export default function ApiKeysPage() {
     const [keys, setKeys] = useState<Record<string, string>>({})
     const [showKeys, setShowKeys] = useState<Record<string, boolean>>({})
     const [saving, setSaving] = useState<string | null>(null)
+    const [validating, setValidating] = useState<string | null>(null)
+    const [keyStatus, setKeyStatus] = useState<Record<string, { valid: boolean; error?: string }>>({})
     const [testing, setTesting] = useState<string | null>(null)
     const [testResult, setTestResult] = useState<any>(null)
     const [selectedModels, setSelectedModels] = useState<Record<string, string>>({})
@@ -39,21 +41,48 @@ export default function ApiKeysPage() {
         try {
             const settings: any[] = await api.get('/admin/settings?category=api-keys')
             const mapped: Record<string, string> = {}
+            const statuses: Record<string, { valid: boolean }> = {}
             settings.forEach((s: any) => {
                 const provider = s.key.replace('api_key_', '')
-                mapped[provider] = s.value ? '••••••••' : ''
+                if (s.value) {
+                    mapped[provider] = '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022'
+                    statuses[provider] = { valid: true }
+                }
             })
             setKeys(mapped)
+            setKeyStatus(statuses)
         } catch (e) { /* ignore */ }
+    }
+
+    async function validateKey(provider: string, apiKey: string) {
+        setValidating(provider)
+        try {
+            const result: any = await api.post('/admin/settings/validate', { provider, apiKey })
+            setKeyStatus(prev => ({ ...prev, [provider]: result }))
+            if (result.valid) {
+                toast.success(`${provider} key valid! ${result.modelCount} models available`)
+            } else {
+                toast.error(`${provider} key invalid: ${result.error}`)
+            }
+            return result.valid
+        } catch (e: any) {
+            setKeyStatus(prev => ({ ...prev, [provider]: { valid: false, error: e.message } }))
+            toast.error(e.message || 'Validation failed')
+            return false
+        } finally {
+            setValidating(null)
+        }
     }
 
     async function saveKey(provider: string, value: string) {
         setSaving(provider)
         try {
+            const isValid = await validateKey(provider, value)
+            if (!isValid) { setSaving(null); return }
             await api.post('/admin/settings', {
                 key: `api_key_${provider}`, value, encrypted: true, category: 'api-keys', description: `${provider} API key`,
             })
-            toast.success(`${provider} key saved`)
+            toast.success(`${provider} key saved & validated`)
             loadKeys()
         } catch (e: any) { toast.error(e.message || 'Failed to save') }
         finally { setSaving(null) }
@@ -62,6 +91,7 @@ export default function ApiKeysPage() {
     async function deleteKey(provider: string) {
         try {
             await api.delete(`/admin/settings/api_key_${provider}`)
+            setKeyStatus(prev => { const n = { ...prev }; delete n[provider]; return n })
             toast.success(`${provider} key removed`)
             loadKeys()
         } catch (e: any) { toast.error(e.message || 'Failed to delete') }
@@ -84,16 +114,25 @@ export default function ApiKeysPage() {
         } finally { setTesting(null) }
     }
 
+    function getStatusBadge(provider: string) {
+        const status = keyStatus[provider]
+        if (!keys[provider]) return <Badge variant="secondary">Not set</Badge>
+        if (!status) return <Badge variant="secondary">Unknown</Badge>
+        if (validating === provider) return <Badge variant="outline" className="gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Validating</Badge>
+        if (status.valid) return <Badge variant="default" className="bg-green-600 gap-1"><ShieldCheck className="w-3 h-3" /> Valid</Badge>
+        return <Badge variant="destructive" className="gap-1"><ShieldAlert className="w-3 h-3" /> Invalid</Badge>
+    }
+
     return (
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
             <div>
-                <h1 className="text-2xl font-bold flex items-center gap-2"><Key className="w-6 h-6" /> API Keys</h1>
-                <p className="text-muted-foreground">Manage provider API keys and test features</p>
+                <h1 className="text-2xl font-bold flex items-center gap-2"><Key className="w-6 h-6" /> Kunci API</h1>
+                <p className="text-muted-foreground">Kelola API key provider dan test fitur AI</p>
             </div>
             <Tabs defaultValue="keys">
                 <TabsList>
                     <TabsTrigger value="keys">API Keys</TabsTrigger>
-                    <TabsTrigger value="test">Test Features</TabsTrigger>
+                    <TabsTrigger value="test">Test Fitur</TabsTrigger>
                 </TabsList>
                 <TabsContent value="keys" className="space-y-4">
                     {PROVIDERS.map((provider) => (
@@ -105,13 +144,11 @@ export default function ApiKeysPage() {
                                             <CardTitle className="text-base">{provider.label}</CardTitle>
                                             <CardDescription>
                                                 <a href={provider.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:underline">
-                                                    Get API key <ExternalLink className="w-3 h-3" />
+                                                    Dapatkan API key <ExternalLink className="w-3 h-3" />
                                                 </a>
                                             </CardDescription>
                                         </div>
-                                        <Badge variant={keys[provider.key] ? 'default' : 'secondary'}>
-                                            {keys[provider.key] ? 'Configured' : 'Not set'}
-                                        </Badge>
+                                        {getStatusBadge(provider.key)}
                                     </div>
                                 </CardHeader>
                                 <CardContent>
@@ -129,8 +166,12 @@ export default function ApiKeysPage() {
                                             </Button>
                                         </div>
                                         <Button onClick={() => saveKey(provider.key, keys[provider.key])}
-                                            disabled={saving === provider.key || !keys[provider.key] || keys[provider.key] === '••••••••'}>
+                                            disabled={saving === provider.key || !keys[provider.key] || keys[provider.key] === '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022'}>
                                             {saving === provider.key ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                        </Button>
+                                        <Button variant="outline" onClick={() => validateKey(provider.key, keys[provider.key])}
+                                            disabled={validating === provider.key || !keys[provider.key] || keys[provider.key] === '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022'}>
+                                            {validating === provider.key ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
                                         </Button>
                                         {keys[provider.key] && (
                                             <Button variant="destructive" onClick={() => deleteKey(provider.key)}>
@@ -149,7 +190,7 @@ export default function ApiKeysPage() {
                         <CardContent className="space-y-3">
                             <Textarea value={testPrompt} onChange={(e) => setTestPrompt(e.target.value)} placeholder="Test prompt..." />
                             <div className="flex flex-wrap gap-2">
-                                {PROVIDERS.filter(p => keys[p.key]).map((provider) => (
+                                {PROVIDERS.filter(p => keys[p.key] && keyStatus[p.key]?.valid).map((provider) => (
                                     <div key={provider.key} className="flex gap-1">
                                         <Select value={selectedModels[provider.key]} onValueChange={(v) => setSelectedModels({ ...selectedModels, [provider.key]: v })}>
                                             <SelectTrigger className="w-[180px]"><SelectValue placeholder={provider.models[0]} /></SelectTrigger>
@@ -164,6 +205,9 @@ export default function ApiKeysPage() {
                                     </div>
                                 ))}
                             </div>
+                            {PROVIDERS.filter(p => keys[p.key]).length > 0 && PROVIDERS.filter(p => keys[p.key] && keyStatus[p.key]?.valid).length === 0 && (
+                                <p className="text-sm text-muted-foreground">Validasi API key dulu di tab API Keys sebelum test.</p>
+                            )}
                         </CardContent>
                     </Card>
                     <Card>
@@ -171,7 +215,7 @@ export default function ApiKeysPage() {
                         <CardContent className="space-y-3">
                             <Input value={imagePrompt} onChange={(e) => setImagePrompt(e.target.value)} placeholder="Image prompt..." />
                             <div className="flex flex-wrap gap-2">
-                                {PROVIDERS.filter(p => keys[p.key]).map((provider) => (
+                                {PROVIDERS.filter(p => keys[p.key] && keyStatus[p.key]?.valid).map((provider) => (
                                     <Button key={provider.key} variant="outline" onClick={() => testFeature('image', provider.key)} disabled={testing === `image-${provider.key}`}>
                                         {testing === `image-${provider.key}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
                                         <span className="ml-1">{provider.label}</span>
@@ -185,7 +229,7 @@ export default function ApiKeysPage() {
                             <CardHeader className="pb-2">
                                 <CardTitle className="text-sm flex items-center gap-2">
                                     {testResult.success ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <XCircle className="w-4 h-4 text-red-500" />}
-                                    Test Result — {testResult.provider} ({testResult.type})
+                                    Hasil Test — {testResult.provider} ({testResult.type})
                                     {testResult.latency && <Badge variant="outline">{testResult.latency}ms</Badge>}
                                 </CardTitle>
                             </CardHeader>

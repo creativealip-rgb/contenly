@@ -23,6 +23,11 @@ export class SystemSettingsController {
     return this.service.delete(key);
   }
 
+  @Post('validate')
+  async validate(@Body() body: { provider: string; apiKey: string }) {
+    return this.service.validateKey(body.provider, body.apiKey);
+  }
+
   @Post('test/chat')
   async testChat(@Body() body: { provider: string; model: string; prompt: string }) {
     return this.service.testChat(body.provider, body.model, body.prompt);

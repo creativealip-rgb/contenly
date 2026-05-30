@@ -50,6 +50,31 @@ export class SystemSettingsService {
     return { deleted: true };
   }
 
+  // --- Validate API Key ---
+  async validateKey(provider: string, apiKey: string) {
+    const baseUrl = this.getProviderBaseUrl(provider);
+    const startTime = Date.now();
+
+    try {
+      // Try listing models as a lightweight validation
+      const res = await fetch(`${baseUrl}/v1/models`, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+      });
+      const latency = Date.now() - startTime;
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        return { valid: false, error: err.error?.message || `HTTP ${res.status}`, latency };
+      }
+
+      const data = await res.json();
+      const modelCount = data.data?.length || 0;
+      return { valid: true, modelCount, latency };
+    } catch (e: any) {
+      return { valid: false, error: e.message, latency: Date.now() - startTime };
+    }
+  }
+
   // --- Test AI Features ---
   async testChat(provider: string, model: string, prompt: string) {
     const keySetting = await this.getByKey(`api_key_${provider}`);
