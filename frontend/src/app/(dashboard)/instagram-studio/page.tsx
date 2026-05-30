@@ -492,7 +492,7 @@ export default function InstagramStudioPage() {
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400">
                                         <Calendar className="h-3.5 w-3.5" />
-                                        {new Date(project.createdAt).toLocaleDateString()}
+                                        {new Date(project.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                                     </div>
                                     <Button
                                         variant="ghost"

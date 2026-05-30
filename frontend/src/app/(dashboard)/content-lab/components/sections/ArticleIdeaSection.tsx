@@ -15,7 +15,7 @@ export function ArticleIdeaSection() {
                     placeholder="cth: 5 tips produktivitas pagi atau Masa depan web development..."
                     value={articleIdea}
                     onChange={(e) => setArticleIdea(e.target.value)}
-                    className="min-h-[200px] bg-white/50 backdrop-blur-sm border-slate-200 rounded-2xl p-4 resize-none focus:ring-blue-500"
+                    className="min-h-[200px] bg-white/50 backdrop-blur-sm border-slate-200 rounded-lg p-4 resize-none focus:ring-blue-500"
                 />
             </div>
         </div>

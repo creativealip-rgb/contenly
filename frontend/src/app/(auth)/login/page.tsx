@@ -157,7 +157,7 @@ export default function LoginPage() {
                                 placeholder="name@example.com"
                                 required
                                 disabled={isLoading}
-                                className="h-12 bg-gray-50 border-gray-200 focus:bg-white focus:ring-2 focus:ring-blue-500/20 dark:bg-gray-900 dark:border-gray-800 dark:focus:bg-gray-900 rounded-xl transition-all"
+                                className="h-12 bg-gray-50 border-gray-200 focus:bg-white focus:ring-2 focus:ring-blue-500/20 dark:bg-gray-900 dark:border-gray-800 dark:focus:bg-gray-900 rounded-lg transition-all"
                             />
                         </div>
 
@@ -179,7 +179,7 @@ export default function LoginPage() {
                                     placeholder="Masukkan kata sandi Anda"
                                     required
                                     disabled={isLoading}
-                                    className="h-12 bg-gray-50 border-gray-200 focus:bg-white focus:ring-2 focus:ring-blue-500/20 dark:bg-gray-900 dark:border-gray-800 dark:focus:bg-gray-900 rounded-xl transition-all pr-10"
+                                    className="h-12 bg-gray-50 border-gray-200 focus:bg-white focus:ring-2 focus:ring-blue-500/20 dark:bg-gray-900 dark:border-gray-800 dark:focus:bg-gray-900 rounded-lg transition-all pr-10"
                                 />
                                 <Button
                                     type="button"
@@ -195,7 +195,7 @@ export default function LoginPage() {
 
                         <Button
                             type="submit"
-                            className="relative w-full h-14 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-semibold text-base shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-1 flex items-center justify-center"
+                            className="relative w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-semibold text-base shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-1 flex items-center justify-center"
                             disabled={isLoading}
                         >
                             {isLoading && (
@@ -222,7 +222,7 @@ export default function LoginPage() {
                         <div className="mt-6">
                             <Button
                                 variant="outline"
-                                className="relative w-full h-14 rounded-xl border-2 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 font-semibold text-gray-700 dark:text-gray-200 transition-all hover:-translate-y-1 shadow-sm flex items-center justify-center"
+                                className="relative w-full h-12 rounded-lg border-2 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 font-semibold text-gray-700 dark:text-gray-200 transition-all hover:-translate-y-1 shadow-sm flex items-center justify-center"
                                 disabled={isGoogleLoading || isLoading}
                                 onClick={async () => {
                                     setIsGoogleLoading(true)
@@ -256,9 +256,9 @@ export default function LoginPage() {
                     </div>
 
                     <p className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                        Don't have an account?{' '}
+                        Belum punya akun?{' '}
                         <Link href="/register" className="font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
-                            Sign up here
+                            Daftar di sini
                         </Link>
                     </p>
 

@@ -19,7 +19,7 @@ export function CookieConsent() {
   if (!show) return null
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:max-w-sm z-50 bg-background border border-border rounded-xl p-4 shadow-lg animate-in slide-in-from-bottom-5">
+    <div className="fixed bottom-4 left-4 right-4 md:right-auto md:left-4 md:max-w-sm z-50 bg-background border border-border rounded-xl p-4 shadow-lg animate-in slide-in-from-bottom-5">
       <p className="text-sm text-muted-foreground mb-3">
         Kami menggunakan cookies untuk meningkatkan pengalaman Anda.{' '}
         <Link href="/privacy" className="underline text-foreground">Pelajari lebih lanjut</Link>

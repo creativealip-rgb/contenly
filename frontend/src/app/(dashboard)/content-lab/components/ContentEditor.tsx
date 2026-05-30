@@ -141,8 +141,8 @@ export function ContentEditor({ state, handlers, copied, handleCopy }: ContentEd
             <div className="flex-1 flex flex-col min-h-0">
                 <Tabs defaultValue="editor" className="flex-1 flex flex-col">
                     <TabsList className="w-fit bg-slate-100/50 dark:bg-slate-800/50 p-1 rounded-xl mb-4">
-                        <TabsTrigger value="editor" className="text-xs px-6 py-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold">Editor</TabsTrigger>
-                        <TabsTrigger value="source" className="text-xs px-6 py-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold">Referensi</TabsTrigger>
+                        <TabsTrigger value="editor" className="text-sm px-6 py-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold">Editor</TabsTrigger>
+                        <TabsTrigger value="source" className="text-sm px-6 py-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold">Referensi</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="editor" className="flex-1 flex flex-col gap-6 mt-0">
@@ -152,7 +152,7 @@ export function ContentEditor({ state, handlers, copied, handleCopy }: ContentEd
                                 value={generatedTitle}
                                 onChange={(e) => setGeneratedTitle(e.target.value)}
                                 placeholder="Klik buat untuk mendapatkan judul..."
-                                className="text-2xl font-black tracking-tight h-16 border-none bg-white hover:bg-blue-50/10 focus-visible:bg-white transition-all shadow-xl shadow-slate-200/40 dark:shadow-none px-6 rounded-2xl"
+                                className="text-2xl font-black tracking-tight h-16 border-none bg-white hover:bg-blue-50/10 focus-visible:bg-white transition-all shadow-xl shadow-slate-200/40 dark:shadow-none px-6 rounded-lg"
                             />
                         </div>
 

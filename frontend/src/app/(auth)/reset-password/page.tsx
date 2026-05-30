@@ -139,7 +139,7 @@ export default function ResetPasswordPage() {
                 <div className="text-center mb-8">
                     <Link href="/" className="inline-flex items-center">
                         <div className="flex items-center justify-center overflow-hidden">
-                            <Image src="/logo-full.png" alt="Contently Logo" width={180} height={50} className="object-contain h-12 w-auto" />
+                            <Image src="/logo-full.png" alt="Contenly Logo" width={180} height={50} className="object-contain h-12 w-auto" />
                         </div>
                     </Link>
                 </div>

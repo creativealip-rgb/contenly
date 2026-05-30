@@ -113,7 +113,7 @@ export default function DashboardPage() {
                                         <div className="p-2 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg">
                                             <TrendingUp className="w-4 h-4" />
                                         </div>
-                                        <h3 className="font-bold tracking-tight">Topik Populer Hari Ini</h3>
+                                        <h2 className="text-base font-bold tracking-tight">Topik Populer Hari Ini</h2>
                                     </div>
                                     <Link href="/trend-radar" className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1">
                                         Lihat Semua <ArrowRight className="w-3 h-3" />
@@ -158,7 +158,7 @@ export default function DashboardPage() {
                         <Card className="bg-gradient-to-br from-indigo-600 to-purple-700 text-white border-0 overflow-hidden rounded-[2.5rem]">
                             <CardContent className="p-6 relative">
                                 <Sparkles className="absolute top-4 right-4 w-8 h-8 opacity-20" />
-                                <h3 className="text-lg font-bold mb-2">Instagram Studio</h3>
+                                <h2 className="text-lg font-bold mb-2">Instagram Studio</h2>
                                 <p className="text-indigo-100 text-xs mb-4">Ubah artikel jadi carousel viral dalam hitungan detik.</p>
                                 <Button
                                     size="sm"

@@ -136,7 +136,7 @@ export function Navbar() {
                     <Link href="/dashboard" className="hidden md:flex items-center gap-3 group">
                         <div className="relative flex items-center justify-center overflow-hidden">
                             <div className="absolute -inset-4 bg-gradient-to-r from-blue-600/10 to-transparent blur-2xl opacity-0 group-hover:opacity-100 transition-all duration-700" />
-                            <Image src="/logo-full.png" alt="Contently Logo" width={140} height={40} className="relative object-contain h-9 w-auto transform transition-transform duration-500 group-hover:scale-[1.02]" />
+                            <Image src="/logo-full.png" alt="Contenly Logo" width={140} height={40} className="relative object-contain h-9 w-auto transform transition-transform duration-500 group-hover:scale-[1.02]" />
                         </div>
                     </Link>
                 </div>
@@ -146,7 +146,7 @@ export function Navbar() {
                     <Link href="/dashboard" className="flex items-center justify-center overflow-hidden">
                         <div className="relative group">
                             <div className="absolute -inset-2 bg-gradient-to-r from-blue-600/20 to-cyan-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-all duration-500" />
-                            <Image src="/logo-full.png" alt="Contently Logo" width={140} height={40} className="relative object-contain h-8 w-auto transform transition-transform duration-500 group-hover:scale-105" />
+                            <Image src="/logo-full.png" alt="Contenly Logo" width={140} height={40} className="relative object-contain h-8 w-auto transform transition-transform duration-500 group-hover:scale-105" />
                         </div>
                     </Link>
                 </div>
