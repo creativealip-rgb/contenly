@@ -636,14 +636,12 @@ export class InstagramStudioService {
             throw new BadRequestException('No slides to generate');
         }
 
-        // Check balance: 2 tokens per image + 1 token per text overlay
-        const slidesNeedingImage = project.slides.filter(s => !s.imageUrl);
-        const slidesNeedingText = project.slides.filter(s => s.imageUrl);
-        const totalTokensNeeded = slidesNeedingImage.length * 2 + slidesNeedingText.length * 1;
+        // Check balance: 2 tokens per image (text integrated into AI prompt, no separate overlay)
+        const totalTokensNeeded = project.slides.length * 2;
 
         const hasBalance = await this.billingService.checkBalance(userId, totalTokensNeeded);
         if (!hasBalance) {
-            throw new BadRequestException(`Insufficient tokens. Need ${totalTokensNeeded} tokens (${slidesNeedingImage.length} images \u00d7 2 + ${slidesNeedingText.length} text \u00d7 1).`);
+            throw new BadRequestException(`Insufficient tokens. Need ${totalTokensNeeded} tokens (${project.slides.length} images × 2).`);
         }
 
         const withinDailyLimit = await this.billingService.checkDailyLimit(userId, 'INSTAGRAM_GENERATION');
@@ -658,63 +656,26 @@ export class InstagramStudioService {
             try {
                 let currentSlide: any = { ...slide };
 
-                // Step 1: Generate image if missing
-                if (!currentSlide.imageUrl) {
-                    const finalPrompt = `${currentSlide.visualPrompt || ''}. Style: ${project.globalStyle || 'Modern Minimalist'}`;
-                    const imageUrl = await this.openAiService.generateImage(finalPrompt);
+                // Build prompt with text content integrated into the image design
+                const textContent = currentSlide.textContent || '';
+                const visualPrompt = currentSlide.visualPrompt || '';
+                const style = project.globalStyle || 'Modern Minimalist';
 
-                    await this.drizzle.db
-                        .update(instagramSlide)
-                        .set({ imageUrl })
-                        .where(eq(instagramSlide.id, currentSlide.id));
+                const finalPrompt = textContent
+                    ? `${visualPrompt}. Style: ${style}. The image must prominently feature the following text as an integral part of the design layout: \"${textContent}\". The text should be large, readable, and elegantly integrated into the visual composition with proper typography hierarchy.`
+                    : `${visualPrompt}. Style: ${style}`;
 
-                    currentSlide.imageUrl = imageUrl;
-                    tokensUsed += 2;
-                    await this.billingService.deductTokens(userId, 2, `Slide ${slide.slideNumber} image generation`);
-                    await this.billingService.incrementDailyUsage(userId, 'INSTAGRAM_GENERATION');
-                }
+                // Generate image with text baked into the AI-generated design
+                const imageUrl = await this.openAiService.generateImage(finalPrompt);
 
-                // Step 2: Generate text overlay (burn headline + body onto image)
-                if (currentSlide.imageUrl) {
-                    try {
-                        const tier = await this.billingService.getSubscriptionTier(userId);
-                        const model = BILLING_TIERS[tier]?.aiModel;
+                await this.drizzle.db
+                    .update(instagramSlide)
+                    .set({ imageUrl })
+                    .where(eq(instagramSlide.id, currentSlide.id));
 
-                        const layoutSuggestion = await this.openAiService.analyzeImageLayout(
-                            currentSlide.imageUrl,
-                            currentSlide.textContent || '',
-                            model,
-                        );
-
-                        const options = {
-                            fontFamily: project.fontFamily || 'Montserrat',
-                            fontSize: currentSlide.fontSize || undefined,
-                            fontColor: layoutSuggestion.fontColor || currentSlide.fontColor || '#FFFFFF',
-                            layoutPosition: layoutSuggestion.layoutPosition || currentSlide.layoutPosition || 'center',
-                        };
-
-                        const textToRender = layoutSuggestion.headerText
-                            ? JSON.stringify({ header: layoutSuggestion.headerText, body: layoutSuggestion.bodyText })
-                            : (currentSlide.textContent || '');
-
-                        const processedImageUrl = await this.imageTextService.overlayTextOnImage(
-                            currentSlide.imageUrl,
-                            textToRender,
-                            options,
-                        );
-
-                        await this.drizzle.db
-                            .update(instagramSlide)
-                            .set({ imageUrl: processedImageUrl })
-                            .where(eq(instagramSlide.id, currentSlide.id));
-
-                        tokensUsed += 1;
-                        await this.billingService.deductTokens(userId, 1, `Slide ${slide.slideNumber} text overlay`);
-                        await this.billingService.incrementDailyUsage(userId, 'INSTAGRAM_GENERATION');
-                    } catch (textError: any) {
-                        this.logger.warn(`[GenerateAll] Text overlay failed for slide ${slide.slideNumber}: ${textError.message}`);
-                    }
-                }
+                tokensUsed += 2;
+                await this.billingService.deductTokens(userId, 2, `Slide ${slide.slideNumber} image generation`);
+                await this.billingService.incrementDailyUsage(userId, 'INSTAGRAM_GENERATION');
 
                 results.push({ slideNumber: slide.slideNumber, status: 'success' });
             } catch (error: any) {

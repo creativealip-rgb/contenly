@@ -71,20 +71,12 @@ export class ExportService {
         imageBuffer = await this.createPlaceholderImage();
       }
 
-      const svgBuffer = this.createTextSvg(slide);
-
+      // Export image as-is (text is already integrated into AI-generated images)
       const processedImage = await sharp(imageBuffer)
         .resize(this.CANVAS_WIDTH, this.CANVAS_HEIGHT, {
           fit: 'cover',
           position: 'center',
         })
-        .composite([
-          {
-            input: svgBuffer,
-            top: 0,
-            left: 0,
-          },
-        ])
         .toFormat(format === 'png' ? 'png' : 'jpeg', {
           quality: format === 'jpg' ? 90 : undefined,
         })

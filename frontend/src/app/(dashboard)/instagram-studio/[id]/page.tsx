@@ -22,7 +22,6 @@ export default function InstagramStudioEditorPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isGeneratingStoryboard, setIsGeneratingStoryboard] = useState(false)
   const [isGeneratingImage, setIsGeneratingImage] = useState<string | null>(null)
-  const [isGeneratingText, setIsGeneratingText] = useState<string | null>(null)
   const [isExporting, setIsExporting] = useState(false)
   const [isGeneratingAll, setIsGeneratingAll] = useState(false)
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
@@ -60,16 +59,6 @@ export default function InstagramStudioEditorPage() {
       if (response.ok) { fetchProject(); toast.success('Gambar berhasil dibuat!') }
     } catch (error) { console.error('Failed to generate image:', error); toast.error('Gagal membuat gambar') }
     finally { setIsGeneratingImage(null) }
-  }
-
-  const handleGenerateText = async (slideId: string) => {
-    setIsGeneratingText(slideId)
-    try {
-      const response = await fetch(`${API_BASE_URL}/instagram-studio/slides/${slideId}/generate-text`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include' })
-      if (response.ok) { fetchProject(); toast.success('Pembuatan teks berhasil disimulasikan!') }
-      else { const errData = await response.json().catch(() => null); toast.error(`Gagal membuat teks overlay: ${errData?.message || response.statusText}`) }
-    } catch (error) { console.error('Failed to generate text:', error); toast.error('Terjadi kesalahan saat membuat teks overlay') }
-    finally { setIsGeneratingText(null) }
   }
 
   const handleUpdateSlide = async (slideId: string, updates: Partial<Slide>) => {
@@ -189,8 +178,8 @@ export default function InstagramStudioEditorPage() {
               currentSlide={currentSlide} currentSlideIndex={currentSlideIndex} totalSlides={project.slides.length}
               editedContent={editedContent} setEditedContent={setEditedContent}
               hasUnsavedChanges={hasUnsavedChanges} setHasUnsavedChanges={setHasUnsavedChanges}
-              isGeneratingImage={isGeneratingImage} isGeneratingText={isGeneratingText}
-              onUpdateSlide={handleUpdateSlide} onGenerateImage={handleGenerateImage} onGenerateText={handleGenerateText}
+              isGeneratingImage={isGeneratingImage}
+              onUpdateSlide={handleUpdateSlide} onGenerateImage={handleGenerateImage}
               onReorderSlide={handleReorderSlide} onDeleteSlide={handleDeleteSlide} onNavigate={setCurrentSlideIndex}
             />
             <div className="flex gap-2">
