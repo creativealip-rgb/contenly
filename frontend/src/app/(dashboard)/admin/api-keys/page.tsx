@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { motion } from 'framer-motion'
-import { Key, Save, Trash2, Eye, EyeOff, Loader2, CheckCircle2, XCircle, ExternalLink, MessageSquare, ImageIcon, ShieldCheck, ShieldAlert, Cookie, RefreshCw, Info } from 'lucide-react'
+import { Key, Save, Trash2, Eye, EyeOff, Loader2, CheckCircle2, XCircle, ExternalLink, MessageSquare, ImageIcon, ShieldCheck, ShieldAlert, Cookie, RefreshCw, Info, Plus, Server, Globe } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '@/lib/api'
 import { containerVariants, itemVariants } from '@/lib/animations'
@@ -22,6 +22,8 @@ interface Provider {
     link: string
     authType: 'apikey' | 'cookie'
     cookieInstructions?: string
+    custom?: boolean
+    baseUrl?: string
 }
 
 const PROVIDERS: Provider[] = [
@@ -91,10 +93,70 @@ export default function ApiKeysPage() {
     const [imagePrompt, setImagePrompt] = useState('A cute cat wearing a hat')
     const [showInstructions, setShowInstructions] = useState<Record<string, boolean>>({})
 
+    // Custom providers (OpenAI-compatible endpoints e.g. 9Router/LiteLLM)
+    const [customProviders, setCustomProviders] = useState<Provider[]>([])
+    const [showAddForm, setShowAddForm] = useState(false)
+    const [savingCustom, setSavingCustom] = useState(false)
+    const [newProvider, setNewProvider] = useState({ label: '', baseUrl: '', models: '', apiKey: '' })
+
     useEffect(() => {
         loadKeys()
         loadCookieStatuses()
+        loadCustomProviders()
     }, [])
+
+    async function loadCustomProviders() {
+        try {
+            const rows: any[] = await api.get('/admin/settings/custom-providers')
+            const mapped: Provider[] = (rows || []).map((r: any) => ({
+                key: r.key,
+                label: r.label,
+                models: Array.isArray(r.models) && r.models.length ? r.models : ['gpt-4o'],
+                link: r.baseUrl,
+                authType: 'apikey' as const,
+                custom: true,
+                baseUrl: r.baseUrl,
+            }))
+            setCustomProviders(mapped)
+        } catch (e) { /* ignore */ }
+    }
+
+    async function saveCustomProvider() {
+        const { label, baseUrl, models, apiKey } = newProvider
+        if (!label.trim() || !baseUrl.trim()) {
+            toast.error('Nama dan Base URL wajib diisi')
+            return
+        }
+        setSavingCustom(true)
+        try {
+            await api.post('/admin/settings/custom-provider', {
+                label: label.trim(),
+                baseUrl: baseUrl.trim(),
+                models: models.split(',').map(m => m.trim()).filter(Boolean),
+                apiKey: apiKey.trim() || undefined,
+            })
+            toast.success(`Provider "${label}" ditambahkan`)
+            setNewProvider({ label: '', baseUrl: '', models: '', apiKey: '' })
+            setShowAddForm(false)
+            await loadCustomProviders()
+            await loadKeys()
+        } catch (e: any) {
+            toast.error(e.message || 'Gagal menyimpan provider')
+        } finally {
+            setSavingCustom(false)
+        }
+    }
+
+    async function deleteCustomProvider(id: string) {
+        try {
+            await api.delete(`/admin/settings/custom-provider/${id}`)
+            setCustomProviders(prev => prev.filter(p => p.key !== id))
+            setKeyStatus(prev => { const n = { ...prev }; delete n[id]; return n })
+            toast.success('Provider custom dihapus')
+        } catch (e: any) {
+            toast.error(e.message || 'Gagal menghapus')
+        }
+    }
 
     async function loadKeys() {
         try {
@@ -171,7 +233,8 @@ export default function ApiKeysPage() {
     async function validateKey(provider: string, apiKey: string) {
         setValidating(provider)
         try {
-            const result: any = await api.post('/admin/settings/validate', { provider, apiKey })
+            const baseUrl = customProviders.find(p => p.key === provider)?.baseUrl
+            const result: any = await api.post('/admin/settings/validate', { provider, apiKey, baseUrl })
             setKeyStatus(prev => ({ ...prev, [provider]: result }))
             if (result.valid) {
                 toast.success(`${provider} key valid! ${result.modelCount} models available`)
@@ -215,7 +278,7 @@ export default function ApiKeysPage() {
         setTesting(`${type}-${provider}`)
         setTestResult(null)
         try {
-            const model = selectedModels[provider] || PROVIDERS.find(p => p.key === provider)?.models[0] || ''
+            const model = selectedModels[provider] || [...PROVIDERS, ...customProviders].find(p => p.key === provider)?.models[0] || ''
             const endpoint = type === 'chat' ? '/admin/settings/test/chat' : '/admin/settings/test/image'
             const result: any = await api.post(endpoint, {
                 provider, model, prompt: type === 'chat' ? testPrompt : imagePrompt,
@@ -229,13 +292,13 @@ export default function ApiKeysPage() {
     }
 
     function isProviderReady(provider: string) {
-        const p = PROVIDERS.find(pr => pr.key === provider)
+        const p = [...PROVIDERS, ...customProviders].find(pr => pr.key === provider)
         if (p?.authType === 'cookie') return cookieStatus[provider]?.connected
         return keyStatus[provider]?.valid
     }
 
     function getStatusBadge(provider: string) {
-        const p = PROVIDERS.find(pr => pr.key === provider)
+        const p = [...PROVIDERS, ...customProviders].find(pr => pr.key === provider)
 
         if (p?.authType === 'cookie') {
             const cookie = cookieStatus[provider]
@@ -356,11 +419,20 @@ export default function ApiKeysPage() {
                 <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                         <div>
-                            <CardTitle className="text-base">{provider.label}</CardTitle>
+                            <CardTitle className="text-base flex items-center gap-2">
+                                {provider.label}
+                                {provider.custom && <Badge variant="outline" className="text-xs gap-1"><Server className="w-3 h-3" /> Custom</Badge>}
+                            </CardTitle>
                             <CardDescription>
-                                <a href={provider.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:underline">
-                                    Dapatkan API key <ExternalLink className="w-3 h-3" />
-                                </a>
+                                {provider.custom ? (
+                                    <span className="flex items-center gap-1 font-mono text-xs">
+                                        <Globe className="w-3 h-3" /> {provider.baseUrl}
+                                    </span>
+                                ) : (
+                                    <a href={provider.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:underline">
+                                        Dapatkan API key <ExternalLink className="w-3 h-3" />
+                                    </a>
+                                )}
                             </CardDescription>
                         </div>
                         {getStatusBadge(provider.key)}
@@ -388,8 +460,8 @@ export default function ApiKeysPage() {
                             disabled={validating === provider.key || !keys[provider.key] || keys[provider.key] === '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022'}>
                             {validating === provider.key ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
                         </Button>
-                        {keys[provider.key] && (
-                            <Button variant="destructive" onClick={() => deleteKey(provider.key)}>
+                        {(keys[provider.key] || provider.custom) && (
+                            <Button variant="destructive" onClick={() => provider.custom ? deleteCustomProvider(provider.key) : deleteKey(provider.key)}>
                                 <Trash2 className="w-4 h-4" />
                             </Button>
                         )}
@@ -399,7 +471,8 @@ export default function ApiKeysPage() {
         )
     }
 
-    const readyProviders = PROVIDERS.filter(p => isProviderReady(p.key))
+    const ALL_PROVIDERS: Provider[] = [...PROVIDERS, ...customProviders]
+    const readyProviders = ALL_PROVIDERS.filter(p => isProviderReady(p.key))
 
     return (
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
@@ -418,6 +491,84 @@ export default function ApiKeysPage() {
                             {provider.authType === 'cookie' ? renderCookieCard(provider) : renderApiKeyCard(provider)}
                         </motion.div>
                     ))}
+
+                    {/* Custom providers */}
+                    {customProviders.length > 0 && (
+                        <div className="pt-2">
+                            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-2">
+                                <Server className="w-4 h-4" /> Provider Custom
+                            </div>
+                            <div className="space-y-4">
+                                {customProviders.map((provider) => (
+                                    <motion.div key={provider.key} variants={itemVariants}>
+                                        {renderApiKeyCard(provider)}
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Add custom provider */}
+                    {showAddForm ? (
+                        <Card className="border-dashed">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-base flex items-center gap-2">
+                                    <Globe className="w-4 h-4" /> Tambah Provider Custom
+                                </CardTitle>
+                                <CardDescription>
+                                    Endpoint OpenAI-compatible (mis. 9Router, LiteLLM, atau server sendiri).
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                <div className="space-y-1">
+                                    <label className="text-xs text-muted-foreground">Nama / Label</label>
+                                    <Input
+                                        placeholder="mis. 9Router VPS"
+                                        value={newProvider.label}
+                                        onChange={(e) => setNewProvider({ ...newProvider, label: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs text-muted-foreground">Base URL / Endpoint</label>
+                                    <Input
+                                        placeholder="https://9router-xxx.sslip.io  (tanpa /v1)"
+                                        value={newProvider.baseUrl}
+                                        onChange={(e) => setNewProvider({ ...newProvider, baseUrl: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs text-muted-foreground">Models (pisah koma)</label>
+                                    <Input
+                                        placeholder="cx/gpt-5, ag/gemini-3-pro, gc/gemini-2.5-flash"
+                                        value={newProvider.models}
+                                        onChange={(e) => setNewProvider({ ...newProvider, models: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs text-muted-foreground">API Key</label>
+                                    <Input
+                                        type="password"
+                                        placeholder="sk-..."
+                                        value={newProvider.apiKey}
+                                        onChange={(e) => setNewProvider({ ...newProvider, apiKey: e.target.value })}
+                                    />
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button onClick={saveCustomProvider} disabled={savingCustom}>
+                                        {savingCustom ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                                        Simpan
+                                    </Button>
+                                    <Button variant="ghost" onClick={() => { setShowAddForm(false); setNewProvider({ label: '', baseUrl: '', models: '', apiKey: '' }) }}>
+                                        Batal
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <Button variant="outline" className="w-full border-dashed" onClick={() => setShowAddForm(true)}>
+                            <Plus className="w-4 h-4 mr-2" /> Tambah Provider Custom
+                        </Button>
+                    )}
                 </TabsContent>
                 <TabsContent value="test" className="space-y-4">
                     <Card>

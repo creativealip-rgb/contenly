@@ -25,8 +25,27 @@ export class SystemSettingsController {
   }
 
   @Post('validate')
-  async validate(@Body() body: { provider: string; apiKey: string }) {
-    return this.service.validateKey(body.provider, body.apiKey);
+  async validate(@Body() body: { provider: string; apiKey: string; baseUrl?: string }) {
+    return this.service.validateKey(body.provider, body.apiKey, body.baseUrl);
+  }
+
+  // --- Custom Providers (OpenAI-compatible endpoints) ---
+  @Get('custom-providers')
+  async getCustomProviders() {
+    return this.service.getCustomProviders();
+  }
+
+  @Post('custom-provider')
+  async saveCustomProvider(
+    @Body()
+    body: { id?: string; label: string; baseUrl: string; models?: string[] | string; apiKey?: string },
+  ) {
+    return this.service.saveCustomProvider(body);
+  }
+
+  @Delete('custom-provider/:id')
+  async deleteCustomProvider(@Param('id') id: string) {
+    return this.service.deleteCustomProvider(id);
   }
 
   // --- Cookie-based auth for Codex & Antigravity ---

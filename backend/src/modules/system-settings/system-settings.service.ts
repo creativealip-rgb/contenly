@@ -54,9 +54,95 @@ export class SystemSettingsService {
     return { deleted: true };
   }
 
+  // --- Custom Providers (OpenAI-compatible endpoints, e.g. 9Router/LiteLLM) ---
+  private normalizeBaseUrl(raw: string): string {
+    // Strip trailing slashes and a trailing /v1 so callers append /v1/... uniformly
+    return String(raw || '')
+      .trim()
+      .replace(/\/+$/, '')
+      .replace(/\/v1$/, '');
+  }
+
+  private slugifyProviderId(input: string): string {
+    return String(input || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 40);
+  }
+
+  async getCustomProviders() {
+    const rows = await this.getAll('custom-providers');
+    return rows.map((r) => {
+      let cfg: any = {};
+      try {
+        cfg = JSON.parse(r.value || '{}');
+      } catch {
+        /* ignore malformed */
+      }
+      const id = r.key.replace('custom_provider_', '');
+      return {
+        key: id,
+        label: cfg.label || id,
+        baseUrl: cfg.baseUrl || '',
+        models: Array.isArray(cfg.models) ? cfg.models : [],
+        custom: true as const,
+      };
+    });
+  }
+
+  async saveCustomProvider(body: {
+    id?: string;
+    label: string;
+    baseUrl: string;
+    models?: string[] | string;
+    apiKey?: string;
+  }) {
+    const id = this.slugifyProviderId(body.id || body.label);
+    if (!id) throw new Error('Label/ID provider tidak valid');
+
+    const baseUrl = this.normalizeBaseUrl(body.baseUrl);
+    if (!baseUrl) throw new Error('Base URL wajib diisi');
+
+    const models = Array.isArray(body.models)
+      ? body.models
+      : String(body.models || '')
+          .split(',')
+          .map((m) => m.trim())
+          .filter(Boolean);
+
+    await this.set(
+      `custom_provider_${id}`,
+      JSON.stringify({ label: body.label || id, baseUrl, models }),
+      {
+        category: 'custom-providers',
+        encrypted: false,
+        description: `Custom provider ${body.label || id}`,
+      },
+    );
+
+    if (body.apiKey && body.apiKey !== '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022') {
+      await this.set(`api_key_${id}`, body.apiKey, {
+        category: 'api-keys',
+        encrypted: true,
+        description: `${id} API key`,
+      });
+    }
+
+    return { saved: true, id, baseUrl, models };
+  }
+
+  async deleteCustomProvider(id: string) {
+    await this.delete(`custom_provider_${id}`);
+    await this.delete(`api_key_${id}`);
+    return { deleted: true, id };
+  }
+
   // --- Validate API Key ---
-  async validateKey(provider: string, apiKey: string) {
-    const baseUrl = this.getProviderBaseUrl(provider);
+  async validateKey(provider: string, apiKey: string, baseUrlOverride?: string) {
+    const baseUrl = baseUrlOverride
+      ? this.normalizeBaseUrl(baseUrlOverride)
+      : await this.getProviderBaseUrl(provider);
     const startTime = Date.now();
 
     try {
@@ -304,7 +390,7 @@ export class SystemSettingsService {
       apiKey = keySetting.value;
     }
 
-    const baseUrl = this.getProviderBaseUrl(provider);
+    const baseUrl = await this.getProviderBaseUrl(provider);
     const startTime = Date.now();
 
     let headers: Record<string, string>;
@@ -391,7 +477,7 @@ export class SystemSettingsService {
       apiKey = keySetting.value;
     }
 
-    const baseUrl = this.getProviderBaseUrl(provider);
+    const baseUrl = await this.getProviderBaseUrl(provider);
     const startTime = Date.now();
 
     let headers: Record<string, string>;
@@ -428,7 +514,7 @@ export class SystemSettingsService {
     };
   }
 
-  private getProviderBaseUrl(provider: string): string {
+  private async getProviderBaseUrl(provider: string): Promise<string> {
     const urls: Record<string, string> = {
       openai: 'https://api.openai.com',
       openrouter: 'https://openrouter.ai',
@@ -439,6 +525,18 @@ export class SystemSettingsService {
       codex: 'https://api.openai.com',
       antigravity: 'https://api.openai.com',
     };
-    return urls[provider] || `https://api.openai.com`;
+    if (urls[provider]) return urls[provider];
+
+    // Custom provider lookup (OpenAI-compatible)
+    const row = await this.getByKey(`custom_provider_${provider}`);
+    if (row?.value) {
+      try {
+        const cfg = JSON.parse(row.value);
+        if (cfg.baseUrl) return this.normalizeBaseUrl(cfg.baseUrl);
+      } catch {
+        /* ignore */
+      }
+    }
+    return `https://api.openai.com`;
   }
 }
