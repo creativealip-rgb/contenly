@@ -849,6 +849,17 @@ export const contentTemplate = pgTable('content_template', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+export const systemSettings = pgTable('system_settings', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  key: varchar('key', { length: 100 }).notNull().unique(),
+  value: text('value'),
+  encrypted: boolean('encrypted').default(false),
+  category: varchar('category', { length: 50 }).default('general'),
+  description: text('description'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
 // Export all schemas for Better Auth
 export const schema = {
   user,
@@ -881,4 +892,5 @@ export const schema = {
   videoClipProjects,
   videoClipPreset,
   contentTemplate,
+  systemSettings,
 };
