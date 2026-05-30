@@ -230,10 +230,11 @@ export function Sidebar() {
         }
     }
 
-    const isAdmin = user?.role === 'admin' || user?.role === 'super_admin'
+    const _role = user?.role?.toLowerCase();
+    const isAdmin = _role === 'admin' || _role === 'super_admin'
 
     const renderNavItem = (item: NavItem, isSubItem: boolean = false) => {
-        if (item.role === 'super_admin' && user?.role !== 'super_admin') {
+        if (item.role === 'super_admin' && _role !== 'super_admin') {
             return null
         }
 
@@ -311,7 +312,7 @@ export function Sidebar() {
                     <nav role="navigation" aria-label="Menu utama" className="flex-1 space-y-1.5 p-4 overflow-y-auto">
                         {navGroups.map((group) => {
                             const filteredItems = group.items.filter(item => {
-                                if (item.role === 'super_admin' && user?.role !== 'super_admin') {
+                                if (item.role === 'super_admin' && _role !== 'super_admin') {
                                     return false
                                 }
                                 if (item.role === 'admin' && !isAdmin) {

@@ -22,7 +22,8 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
         )
     }
 
-    if (user?.role !== 'admin' && user?.role !== 'super_admin') {
+    const _r = user?.role?.toLowerCase();
+    if (_r !== 'admin' && _r !== 'super_admin') {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-4">
                 <div className="h-20 w-20 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
