@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, Query, Res, UseGuards } from '@nestjs/common';
+import { Response } from 'express';
 import { SystemSettingsService } from './system-settings.service';
 import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
 import { SuperAdminGuard } from '../../common/guards/super-admin.guard';
@@ -28,6 +29,28 @@ export class SystemSettingsController {
     return this.service.validateKey(body.provider, body.apiKey);
   }
 
+  // --- Cookie-based auth for Codex & Antigravity ---
+  @Post('cookie/:provider/save')
+  async saveCookie(@Param('provider') provider: string, @Body() body: { cookies: string }) {
+    return this.service.saveCookies(provider, body.cookies);
+  }
+
+  @Get('cookie/:provider/status')
+  async getCookieStatus(@Param('provider') provider: string) {
+    return this.service.getCookieStatus(provider);
+  }
+
+  @Post('cookie/:provider/test')
+  async testCookie(@Param('provider') provider: string) {
+    return this.service.testCookies(provider);
+  }
+
+  @Delete('cookie/:provider')
+  async deleteCookie(@Param('provider') provider: string) {
+    return this.service.deleteCookies(provider);
+  }
+
+  // --- Test ---
   @Post('test/chat')
   async testChat(@Body() body: { provider: string; model: string; prompt: string }) {
     return this.service.testChat(body.provider, body.model, body.prompt);

@@ -1,3 +1,7 @@
+// Resolve the AI model from env so all tiers stay in sync with deployment config.
+// Falls back to a healthy 9Router model (Antigravity) instead of the dead cx/ Codex models.
+const DEFAULT_AI_MODEL = (process.env.OPENAI_MODEL || process.env.OPENROUTER_MODEL || 'ag/claude-sonnet-4-6').trim();
+
 export const BILLING_TIERS = {
     FREE: {
         monthlyTokens: 5,
@@ -7,7 +11,7 @@ export const BILLING_TIERS = {
             VIDEO_GENERATION: 2,
         },
         maxWpSites: 1,
-        aiModel: 'cx/gpt-5.5',
+        aiModel: DEFAULT_AI_MODEL,
         canAutoSync: false,
         minSyncInterval: 0,
         canAccessViewBoost: false,
@@ -21,7 +25,7 @@ export const BILLING_TIERS = {
             VIDEO_GENERATION: 20,
         },
         maxWpSites: 2,
-        aiModel: 'cx/gpt-5.5',
+        aiModel: DEFAULT_AI_MODEL,
         canAutoSync: true,
         minSyncInterval: 60, // 60 minutes
         canAccessViewBoost: true,
@@ -35,7 +39,7 @@ export const BILLING_TIERS = {
             VIDEO_GENERATION: 70,
         },
         maxWpSites: 5,
-        aiModel: 'cx/gpt-5.5',
+        aiModel: DEFAULT_AI_MODEL,
         canAutoSync: true,
         minSyncInterval: 15, // 15 minutes
         canAccessViewBoost: true,
