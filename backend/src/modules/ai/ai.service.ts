@@ -53,6 +53,11 @@ export class AiService {
     this.logger.log(`Raw content generated, length: ${content?.length}`);
     content = this.convertMarkdownToHtml(content);
     this.logger.log(`Content converted to HTML, length: ${content?.length}`);
+    // Fix malformed HTML structure (headings inside lists)
+    content = this.sanitizeListStructure(content);
+    this.logger.log(`Content sanitized, length: ${content?.length}`);
+    
+    
 
     // Fetch and inject "Baca Juga" links if we have a site and category
     try {
@@ -309,5 +314,72 @@ Keep each field concise but descriptive. Use English.`;
     });
 
     return { reply: response.choices[0]?.message?.content || 'Maaf, saya tidak bisa menjawab saat ini.' };
+  }
+
+  /**
+   * Fix malformed HTML where headings/paragraphs are incorrectly nested inside lists.
+   * AI sometimes generates: <ul><li>...</li><h2>...</h2><li>...</li></ul>
+   * This method fixes it to: <ul><li>...</li></ul><h2>...</h2><ul><li>...</li></ul>
+   */
+  private sanitizeListStructure(html: string): string {
+    if (!html) return html;
+    
+    // Fix: heading or paragraph tags directly inside ul/ol
+    // Uses iterative string scanning instead of regex to avoid backreference issues
+    const fixListPattern = (tag: 'ul' | 'ol') => {
+      let prevHtml = '';
+      let result = html;
+      let iterations = 0;
+      const maxIterations = 10;
+      
+      while (result !== prevHtml && iterations < maxIterations) {
+        prevHtml = result;
+        iterations++;
+        
+        const openTag = `<${tag}>`;
+        const closeTag = `</${tag}>`;
+        let pos = 0;
+        
+        while (pos < result.length) {
+          const startIdx = result.indexOf(openTag, pos);
+          if (startIdx === -1) break;
+          
+          const endIdx = result.indexOf(closeTag, startIdx);
+          if (endIdx === -1) break;
+          
+          const listContent = result.substring(startIdx + openTag.length, endIdx);
+          
+          // Check if this list contains any heading tags
+          const headingRegex = /<h([1-6])>([\s\S]*?)<\/h\1>/i;
+          const headingMatch = listContent.match(headingRegex);
+          if (headingMatch) {
+            const headingStart = listContent.indexOf(headingMatch[0]);
+            const before = listContent.substring(0, headingStart);
+            const after = listContent.substring(headingStart + headingMatch[0].length);
+            
+            let replacement = '';
+            if (before.trim()) {
+              replacement += openTag + before + closeTag;
+            }
+            replacement += headingMatch[0];
+            if (after.trim()) {
+              replacement += openTag + after + closeTag;
+            }
+            
+            result = result.substring(0, startIdx) + replacement + result.substring(endIdx + closeTag.length);
+            break; // Restart search
+          }
+          
+          pos = endIdx + closeTag.length;
+        }
+      }
+      
+      return result;
+    };
+    
+    html = fixListPattern('ul');
+    html = fixListPattern('ol');
+    
+    return html;
   }
 }
