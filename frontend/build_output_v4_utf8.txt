@@ -1,0 +1,100 @@
+﻿
+> frontend@0.1.0 build
+> next build
+
+node.exe : ΓÜá Warning: 
+Next.js inferred your 
+workspace root, but it 
+may not be correct.
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo       
+       : NotSpecified:   
+  (ΓÜá Warning: Ne...n   
+ ot be correct.:Strin    
+g) [], RemoteExcepti    
+on
+    + FullyQualifiedErro 
+   rId : NativeCommandE  
+  rror
+ 
+ We detected multiple 
+lockfiles and selected 
+the directory of C:\Users
+\62812\OneDrive\Documents
+\Vibe Coding\Saas\contenl
+y\package-lock.json as 
+the root directory.
+ To silence this 
+warning, set 
+`turbopack.root` in your 
+Next.js config, or 
+consider removing one of 
+the lockfiles if it's 
+not needed.
+   See https://nextjs.org
+/docs/app/api-reference/c
+onfig/next-config-js/turb
+opack#root-directory for 
+more information.
+ Detected additional 
+lockfiles: 
+   * C:\Users\62812\OneDr
+ive\Documents\Vibe Coding
+\Saas\contenly\frontend\p
+ackage-lock.json
+
+Γû▓ Next.js 16.1.1 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 38.4s
+  Running TypeScript ...
+Failed to compile.
+
+./src/app/(dashboard)/con
+tent-lab/components/Tools
+Panel.tsx:260:18
+Type error: Cannot find 
+name 'AnimatePresence'.
+
+[0m [90m 258 |[39m    
+         {[90m/* 
+Publishing */[39m}
+ [90m 259 |[39m        
+     
+[33m<[39m[33mdiv[39m 
+className[33m=[39m[32m
+"space-y-4 
+pt-2"[39m[33m>[39m
+[31m[1m>[22m[39m[90m
+ 260 |[39m              
+   [33m<[39m[33mAnimat
+ePresence[39m[33m>[39m
+ [90m     |[39m        
+          
+[31m[1m^[22m[39m
+ [90m 261 |[39m        
+             
+{publishResult 
+[33m&&[39m (
+ [90m 262 |[39m        
+                 [33m<[
+39m[33mmotion[39m[33m.
+[39mdiv
+ [90m 263 |[39m        
+                     
+initial[33m=[39m{{ 
+opacity[33m:[39m 
+[35m0[39m[33m,[39m 
+scale[33m:[39m 
+[35m0.95[39m }}[0m
+Next.js build worker 
+exited with code: 1 and 
+signal: null

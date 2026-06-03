@@ -1,0 +1,256 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Res,
+} from '@nestjs/common';
+import { Response } from 'express';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import type { User } from '../../db/types';
+import { InstagramStudioService } from './instagram-studio.service';
+import {
+  CreateProjectDto,
+  UpdateProjectDto,
+  UpdateSlideDto,
+  GenerateStoryboardDto,
+  InstagramGenerateImageDto,
+  ExportCarouselDto,
+  CreateSlideDto,
+  ReorderSlidesDto,
+} from './dto';
+
+@ApiTags('Instagram Studio')
+@ApiBearerAuth()
+@UseGuards(SessionAuthGuard)
+@Controller('instagram-studio')
+export class InstagramStudioController {
+  constructor(private readonly service: InstagramStudioService) { }
+
+  @Get('fetch-url')
+  @ApiOperation({ summary: 'Scrape article from a URL' })
+  async fetchUrl(@Query('url') url: string) {
+    return this.service.fetchUrlContent(url);
+  }
+
+  @Post('projects')
+  @ApiOperation({ summary: 'Create a new Instagram project' })
+  async createProject(
+    @CurrentUser() user: User,
+    @Body() dto: CreateProjectDto,
+  ) {
+    return this.service.createProject(user.id, dto);
+  }
+
+  @Get('projects')
+  @ApiOperation({ summary: 'List all Instagram projects' })
+  async getProjects(@CurrentUser() user: User) {
+    return this.service.getProjects(user.id);
+  }
+
+  @Get('projects/:id')
+  @ApiOperation({ summary: 'Get project details with slides' })
+  async getProject(@CurrentUser() user: User, @Param('id') id: string) {
+    return this.service.getProject(user.id, id);
+  }
+
+  @Patch('projects/:id')
+  @ApiOperation({ summary: 'Update project settings' })
+  async updateProject(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body() dto: UpdateProjectDto,
+  ) {
+    return this.service.updateProject(user.id, id, dto);
+  }
+
+  @Delete('projects/:id')
+  @ApiOperation({ summary: 'Delete a project' })
+  async deleteProject(@CurrentUser() user: User, @Param('id') id: string) {
+    return this.service.deleteProject(user.id, id);
+  }
+
+  @Post('projects/:id/generate-storyboard')
+  @ApiOperation({ summary: 'Generate storyboard from content' })
+  async generateStoryboard(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body() dto: GenerateStoryboardDto,
+  ) {
+    return this.service.generateStoryboard(user.id, id, dto);
+  }
+
+  @Post('projects/:id/generate-all')
+  @ApiOperation({ summary: 'Generate all slides - images + text overlay' })
+  async generateAll(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+  ) {
+    return this.service.generateAll(user.id, id);
+  }
+
+  @Post('slides/:id/generate-image')
+  @ApiOperation({ summary: 'Generate or swap an image for a slide' })
+  async generateImage(
+    @CurrentUser() user: User,
+    @Param('id') slideId: string,
+    @Body() dto: InstagramGenerateImageDto,
+  ) {
+    return this.service.generateImage(user.id, slideId, dto);
+  }
+
+  @Post('slides/:id/generate-text')
+  @ApiOperation({ summary: 'Generate text overlay for a slide image' })
+  async generateTextOverlay(
+    @CurrentUser() user: User,
+    @Param('id') slideId: string,
+  ) {
+    return this.service.generateTextOverlay(user.id, slideId);
+  }
+
+  @Patch('slides/:id')
+  @ApiOperation({ summary: 'Update slide content and settings' })
+  async updateSlide(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body() dto: UpdateSlideDto,
+  ) {
+    return this.service.updateSlide(user.id, id, dto);
+  }
+
+  @Post('projects/:id/export')
+  @ApiOperation({ summary: 'Export carousel as images' })
+  async exportCarousel(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body() dto: ExportCarouselDto,
+  ) {
+    return this.service.exportCarousel(user.id, id, dto);
+  }
+
+  @Post('projects/:id/export/zip')
+  @ApiOperation({ summary: 'Export carousel as ZIP file' })
+  async exportCarouselZip(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body() dto: ExportCarouselDto,
+    @Res() res: Response,
+  ) {
+    const result = await this.service.exportCarouselZip(user.id, id, dto);
+    
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+    res.send(result.buffer);
+  }
+
+  @Post('batch-export')
+  @ApiOperation({ summary: 'Export multiple projects as batch' })
+  async batchExport(
+    @CurrentUser() user: User,
+    @Body() dto: { projectIds: string[]; format: 'png' | 'jpg' | 'pdf' },
+    @Res() res: Response,
+  ) {
+    const result = await this.service.batchExport(user.id, dto.projectIds, dto.format);
+    
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+    res.send(result.buffer);
+  }
+
+  @Get('fonts')
+  @ApiOperation({ summary: 'List available Google Fonts' })
+  async getFonts() {
+    return this.service.getFonts();
+  }
+
+  @Get('styles')
+  @ApiOperation({ summary: 'List available style presets' })
+  async getStyles() {
+    return this.service.getStyles();
+  }
+
+  @Get('templates')
+  @ApiOperation({ summary: 'List all available carousel templates' })
+  async getTemplates(
+    @Query('category') category?: string,
+    @Query('platform') platform?: 'instagram' | 'linkedin' | 'twitter',
+  ) {
+    return this.service.getTemplates(category as any, platform);
+  }
+
+  @Get('templates/categories')
+  @ApiOperation({ summary: 'List template categories' })
+  async getTemplateCategories() {
+    return this.service.getTemplateCategories();
+  }
+
+  @Get('templates/:id')
+  @ApiOperation({ summary: 'Get template details by ID' })
+  async getTemplateById(@Param('id') id: string) {
+    return this.service.getTemplateById(id);
+  }
+
+  @Post('templates/:id/generate-prompt')
+  @ApiOperation({ summary: 'Generate AI prompt from template' })
+  async generateTemplatePrompt(
+    @Param('id') id: string,
+    @Body() body: { customStyle?: string },
+  ) {
+    return this.service.generateTemplatePrompt(id, body.customStyle);
+  }
+
+  @Post('projects/:id/hashtags')
+  @ApiOperation({ summary: 'Generate hashtags and caption for carousel' })
+  async generateHashtags(
+    @CurrentUser() user: User,
+    @Param('id') projectId: string,
+    @Body() body: { content?: string },
+  ) {
+    return this.service.generateHashtags(user.id, projectId, body.content);
+  }
+
+  // --- Slide Management APIs ---
+
+  @Post('projects/:id/slides')
+  @ApiOperation({ summary: 'Add a new slide to a project' })
+  async createSlide(
+    @CurrentUser() user: User,
+    @Param('id') projectId: string,
+    @Body() dto: CreateSlideDto,
+  ) {
+    return this.service.createSlide(user.id, projectId, dto);
+  }
+
+  @Delete('slides/:id')
+  @ApiOperation({ summary: 'Delete a slide' })
+  async deleteSlide(@CurrentUser() user: User, @Param('id') slideId: string) {
+    return this.service.deleteSlide(user.id, slideId);
+  }
+
+  @Patch('projects/:id/slides/reorder')
+  @ApiOperation({ summary: 'Reorder slides in a project' })
+  async reorderSlides(
+    @CurrentUser() user: User,
+    @Param('id') projectId: string,
+    @Body() dto: ReorderSlidesDto,
+  ) {
+    return this.service.reorderSlides(user.id, projectId, dto);
+  }
+
+  @Patch('projects/:id/apply-style-to-all')
+  @ApiOperation({ summary: 'Apply styles to all slides in a project' })
+  async applyStyleToAll(
+    @CurrentUser() user: User,
+    @Param('id') projectId: string,
+    @Body() dto: UpdateSlideDto,
+  ) {
+    return this.service.applyStyleToAll(user.id, projectId, dto);
+  }
+}

@@ -1,0 +1,48 @@
+﻿
+> frontend@0.1.0 build
+> next build
+
+node.exe : ΓÜá Warning: Next.js inferred your workspace root, but it may not be 
+correct.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (ΓÜá Warning: Ne...not be correct.: 
+   String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ We detected multiple lockfiles and selected the directory of 
+C:\Users\62812\OneDrive\Documents\Vibe Coding\Saas\contenly\package-lock.json 
+as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or 
+consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack
+#root-directory for more information.
+ Detected additional lockfiles: 
+   * C:\Users\62812\OneDrive\Documents\Vibe 
+Coding\Saas\contenly\frontend\package-lock.json
+
+Γû▓ Next.js 16.1.1 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 15.0s
+  Running TypeScript ...
+Failed to compile.
+
+./src/components/layout/sidebar.tsx:171:38
+Type error: Cannot find name 'Link'.
+
+[0m [90m 169 |[39m                                     whileTap[33m=[39m{{ 
+scale[33m:[39m [35m0.98[39m }}
+ [90m 170 |[39m                                 [33m>[39m
+[31m[1m>[22m[39m[90m 171 |[39m                                     
+[33m<[39m[33mLink[39m
+ [90m     |[39m                                      [31m[1m^[22m[39m
+ [90m 172 |[39m                                         
+href[33m=[39m{item[33m.[39mhref}
+ [90m 173 |[39m                                         
+onClick[33m=[39m{handleMobileLinkClick}
+ [90m 174 |[39m                                         
+className[33m=[39m{cn([0m
+Next.js build worker exited with code: 1 and signal: null

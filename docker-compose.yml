@@ -1,0 +1,115 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: contenly-postgres
+    restart: unless-stopped
+    env_file:
+      - .env.dokploy
+    volumes:
+      - contenly_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - dokploy-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: contenly-redis
+    restart: unless-stopped
+    volumes:
+      - contenly_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - dokploy-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: contenly-backend
+    restart: unless-stopped
+    env_file:
+      - .env.dokploy
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - default
+      - dokploy-network
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      - traefik.http.routers.contenly-api.rule=(Host(`contenly.app`) || Host(`www.contenly.app`)) && (PathPrefix(`/api/v1`) || PathPrefix(`/health`))
+      - traefik.http.routers.contenly-api.priority=100
+      - traefik.http.routers.contenly-api.entrypoints=websecure
+      - traefik.http.routers.contenly-api.tls.certresolver=letsencrypt
+      - traefik.http.routers.contenly-api-http.rule=(Host(`contenly.app`) || Host(`www.contenly.app`)) && (PathPrefix(`/api/v1`) || PathPrefix(`/health`))
+      - traefik.http.routers.contenly-api-http.priority=100
+      - traefik.http.routers.contenly-api-http.entrypoints=web
+      - traefik.http.routers.contenly-api-http.middlewares=redirect-to-https@file
+      - traefik.http.services.contenly-api.loadbalancer.server.port=3001
+    ports:
+      - "3011:3001"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        NEXT_PUBLIC_API_URL: https://contenly.app/api/v1
+    container_name: contenly-frontend
+    restart: unless-stopped
+    env_file:
+      - .env.dokploy
+    environment:
+      PORT: 3000
+      BACKEND_URL: http://backend:3001
+    depends_on:
+      - backend
+    networks:
+      - default
+      - dokploy-network
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      - traefik.http.routers.contenly.rule=Host(`contenly.app`) || Host(`www.contenly.app`)
+      - traefik.http.routers.contenly.entrypoints=websecure
+      - traefik.http.routers.contenly.tls.certresolver=letsencrypt
+      - traefik.http.routers.contenly-http.rule=Host(`contenly.app`) || Host(`www.contenly.app`)
+      - traefik.http.routers.contenly-http.entrypoints=web
+      - traefik.http.routers.contenly-http.middlewares=redirect-to-https@file
+      - traefik.http.services.contenly.loadbalancer.server.port=3000
+    ports:
+      - "3010:3000"
+
+  autoheal:
+    image: willfarrell/autoheal
+    container_name: contenly-autoheal
+    restart: unless-stopped
+    environment:
+      - AUTOHEAL_CONTAINER_LABEL=all
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - dokploy-network
+
+volumes:
+  contenly_postgres_data:
+  contenly_redis_data:
+
+networks:
+  default:
+  dokploy-network:
+    external: true

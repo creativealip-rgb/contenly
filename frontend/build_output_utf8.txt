@@ -1,0 +1,1030 @@
+﻿
+> frontend@0.1.0 build
+> next build
+
+node.exe : ΓÜá Warning: 
+Next.js inferred your 
+workspace root, but it 
+may not be correct.
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo       
+       : NotSpecified:   
+  (ΓÜá Warning: Ne...n   
+ ot be correct.:Strin    
+g) [], RemoteExcepti    
+on
+    + FullyQualifiedErro 
+   rId : NativeCommandE  
+  rror
+ 
+ We detected multiple 
+lockfiles and selected 
+the directory of C:\Users
+\62812\OneDrive\Documents
+\Vibe Coding\Saas\contenl
+y\package-lock.json as 
+the root directory.
+ To silence this 
+warning, set 
+`turbopack.root` in your 
+Next.js config, or 
+consider removing one of 
+the lockfiles if it's 
+not needed.
+   See https://nextjs.org
+/docs/app/api-reference/c
+onfig/next-config-js/turb
+opack#root-directory for 
+more information.
+ Detected additional 
+lockfiles: 
+   * C:\Users\62812\OneDr
+ive\Documents\Vibe Coding
+\Saas\contenly\frontend\p
+ackage-lock.json
+
+Γû▓ Next.js 16.1.1 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+
+> Build error occurred
+Error: Turbopack build 
+failed with 10 errors:
+./frontend/src/app/(dashb
+oard)/content-lab/compone
+nts/SourceSidebar.tsx:232
+:10
+Ecmascript file had an 
+error
+[0m [90m 230 |[39m }
+ [90m 231 |[39m
+[31m[1m>[22m[39m[90m
+ 232 |[39m 
+[36mfunction[39m 
+[33mLabel[39m({ 
+children[33m,[39m 
+className }[33m:[39m { 
+children[33m:[39m [33m
+React[39m[33m.[39m[33
+mReactNode[39m[33m,[39
+m className[33m?[39m[3
+3m:[39m string }) {
+ [90m     |[39m        
+  [31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m
+ [90m 233 |[39m     
+[36mreturn[39m 
+[33m<[39m[33mp[39m cl
+assName[33m=[39m{classN
+ame}[33m>[39m{children}
+[33m<[39m[33m/[39m[3
+3mp[39m[33m>[39m
+ [90m 234 |[39m }
+ [90m 235 |[39m[0m
+
+the name `Label` is 
+defined multiple times
+
+Import traces:
+  Client Component 
+Browser:
+    ./frontend/src/app/(d
+ashboard)/content-lab/com
+ponents/SourceSidebar.tsx
+ [Client Component 
+Browser]
+    ./frontend/src/app/(d
+ashboard)/content-lab/pag
+e.tsx [Client Component 
+Browser]
+    ./frontend/src/app/(d
+ashboard)/content-lab/pag
+e.tsx [Server Component]
+
+  Client Component SSR:
+    ./frontend/src/app/(d
+ashboard)/content-lab/com
+ponents/SourceSidebar.tsx
+ [Client Component SSR]
+    ./frontend/src/app/(d
+ashboard)/content-lab/pag
+e.tsx [Client Component 
+SSR]
+    ./frontend/src/app/(d
+ashboard)/content-lab/pag
+e.tsx [Server Component]
+
+
+./frontend/src/app/(dashb
+oard)/content-lab/compone
+nts/ToolsPanel.tsx:333:5
+Parsing ecmascript 
+source code failed
+[0m [90m 331 |[39m    
+ )
+ [90m 332 |[39m }
+[31m[1m>[22m[39m[90m
+ 333 |[39m     )
+ [90m     |[39m     
+[31m[1m^[22m[39m
+ [90m 334 |[39m }
+ [90m 335 |[39m[0m
+
+Expression expected
+
+Import traces:
+  Client Component 
+Browser:
+    ./frontend/src/app/(d
+ashboard)/content-lab/com
+ponents/ToolsPanel.tsx 
+[Client Component 
+Browser]
+    ./frontend/src/app/(d
+ashboard)/content-lab/pag
+e.tsx [Client Component 
+Browser]
+    ./frontend/src/app/(d
+ashboard)/content-lab/pag
+e.tsx [Server Component]
+
+  Client Component SSR:
+    ./frontend/src/app/(d
+ashboard)/content-lab/com
+ponents/ToolsPanel.tsx 
+[Client Component SSR]
+    ./frontend/src/app/(d
+ashboard)/content-lab/pag
+e.tsx [Client Component 
+SSR]
+    ./frontend/src/app/(d
+ashboard)/content-lab/pag
+e.tsx [Server Component]
+
+
+./frontend/src/components
+/layout/navbar.tsx:110:5
+Parsing ecmascript 
+source code failed
+[0m [90m 108 |[39m
+ [90m 109 |[39m     
+[36mreturn[39m (
+[31m[1m>[22m[39m[90m
+ 110 |[39m     
+[36mreturn[39m (
+ [90m     |[39m     [3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m
+ [90m 111 |[39m        
+ [33m<[39m[33mheader[
+39m className[33m=[39m
+[32m"fixed top-0 z-50 
+w-full bg-white/60 
+dark:bg-slate-900/60 
+backdrop-blur-2xl 
+border-b border-white/20 
+dark:border-slate-800/40"
+[39m[33m>[39m
+ [90m 112 |[39m        
+     
+[33m<[39m[33mdiv[39m 
+className[33m=[39m[32m
+"flex h-20 items-center 
+justify-between px-6 
+md:px-10"[39m[33m>[39m
+ [90m 113 |[39m        
+         {[90m/* Left: 
+Menu Toggle && Logo 
+(Desktop) */[39m}[0m
+
+Expression expected
+
+Import traces:
+  Server Component:
+    ./frontend/src/compon
+ents/layout/navbar.tsx
+    ./frontend/src/compon
+ents/layout/index.ts
+    ./frontend/src/app/(d
+ashboard)/layout.tsx
+
+  Client Component 
+Browser:
+    ./frontend/src/compon
+ents/layout/navbar.tsx 
+[Client Component 
+Browser]
+    ./frontend/src/compon
+ents/layout/index.ts 
+[Client Component 
+Browser]
+    ./frontend/src/app/pa
+ge.tsx [Client Component 
+Browser]
+    ./frontend/src/app/pa
+ge.tsx [Server Component]
+
+  Client Component SSR:
+    ./frontend/src/compon
+ents/layout/navbar.tsx 
+[Client Component SSR]
+    ./frontend/src/compon
+ents/layout/index.ts 
+[Client Component SSR]
+    ./frontend/src/app/pa
+ge.tsx [Client Component 
+SSR]
+    ./frontend/src/app/pa
+ge.tsx [Server Component]
+
+
+./frontend/src/app/(dashb
+oard)/articles/page.tsx:2
+7:1
+Module not found: Can't 
+resolve 'framer-motion'
+[0m [90m 25 |[39m     
+[33mDropdownMenuTrigger
+[39m[33m,[39m
+ [90m 26 |[39m } 
+[36mfrom[39m [32m'@/co
+mponents/ui/dropdown-menu
+'[39m
+[31m[1m>[22m[39m[90m
+ 27 |[39m 
+[36mimport[39m { 
+motion[33m,[39m [33mAn
+imatePresence[39m } 
+[36mfrom[39m 
+[32m'framer-motion'[39m
+ [90m    |[39m [31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m
+ [90m 28 |[39m 
+[36mimport[39m {
+ [90m 29 |[39m     [33
+mSearch[39m[33m,[39m
+ [90m 30 |[39m     [33
+mFilter[39m[33m,[39m[
+0m
+
+
+
+Import traces:
+  Client Component 
+Browser:
+    ./frontend/src/app/(d
+ashboard)/articles/page.t
+sx [Client Component 
+Browser]
+    ./frontend/src/app/(d
+ashboard)/articles/page.t
+sx [Server Component]
+
+  Client Component SSR:
+    ./frontend/src/app/(d
+ashboard)/articles/page.t
+sx [Client Component SSR]
+    ./frontend/src/app/(d
+ashboard)/articles/page.t
+sx [Server Component]
+
+https://nextjs.org/docs/m
+essages/module-not-found
+
+
+./frontend/src/app/(dashb
+oard)/content-lab/compone
+nts/ContentEditor.tsx:9:1
+Module not found: Can't 
+resolve 'framer-motion'
+[0m [90m  7 |[39m 
+[36mimport[39m { 
+[33mBadge[39m } 
+[36mfrom[39m [32m'@/co
+mponents/ui/badge'[39m
+ [90m  8 |[39m 
+[36mimport[39m { [33mT
+abs[39m[33m,[39m [33m
+TabsContent[39m[33m,[3
+9m [33mTabsList[39m[33
+m,[39m 
+[33mTabsTrigger[39m } 
+[36mfrom[39m [32m"@/co
+mponents/ui/tabs"[39m
+[31m[1m>[22m[39m[90m
+  9 |[39m 
+[36mimport[39m { 
+motion } [36mfrom[39m 
+[32m'framer-motion'[39m
+ [90m    |[39m [31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m
+ [90m 10 |[39m 
+[36mimport[39m {
+ [90m 11 |[39m     
+[33mCopy[39m[33m,[39m
+ [90m 12 |[39m     [33
+mCheck[39m[33m,[39m[0
+m
+
+
+
+Import traces:
+  Client Component 
+Browser:
+    ./frontend/src/app/(d
+ashboard)/content-lab/com
+ponents/ContentEditor.tsx
+ [Client Component 
+Browser]
+    ./frontend/src/app/(d
+ashboard)/content-lab/pag
+e.tsx [Client Component 
+Browser]
+    ./frontend/src/app/(d
+ashboard)/content-lab/pag
+e.tsx [Server Component]
+
+  Client Component SSR:
+    ./frontend/src/app/(d
+ashboard)/content-lab/com
+ponents/ContentEditor.tsx
+ [Client Component SSR]
+    ./frontend/src/app/(d
+ashboard)/content-lab/pag
+e.tsx [Client Component 
+SSR]
+    ./frontend/src/app/(d
+ashboard)/content-lab/pag
+e.tsx [Server Component]
+
+https://nextjs.org/docs/m
+essages/module-not-found
+
+
+./frontend/src/app/(dashb
+oard)/content-lab/compone
+nts/SourceSidebar.tsx:25:
+1
+Module not found: Can't 
+resolve 'framer-motion'
+[0m [90m 23 |[39m     
+[33mDialogTrigger[39m[
+33m,[39m
+ [90m 24 |[39m } 
+[36mfrom[39m [32m'@/co
+mponents/ui/dialog'[39m
+[31m[1m>[22m[39m[90m
+ 25 |[39m 
+[36mimport[39m { 
+motion[33m,[39m [33mAn
+imatePresence[39m } 
+[36mfrom[39m 
+[32m'framer-motion'[39m
+ [90m    |[39m [31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m
+ [90m 26 |[39m 
+[36mimport[39m {
+ [90m 27 |[39m     
+[33mRss[39m[33m,[39m
+ [90m 28 |[39m     [33
+mLoader2[39m[33m,[39m
+[0m
+
+
+
+Import traces:
+  Client Component 
+Browser:
+    ./frontend/src/app/(d
+ashboard)/content-lab/com
+ponents/SourceSidebar.tsx
+ [Client Component 
+Browser]
+    ./frontend/src/app/(d
+ashboard)/content-lab/pag
+e.tsx [Client Component 
+Browser]
+    ./frontend/src/app/(d
+ashboard)/content-lab/pag
+e.tsx [Server Component]
+
+  Client Component SSR:
+    ./frontend/src/app/(d
+ashboard)/content-lab/com
+ponents/SourceSidebar.tsx
+ [Client Component SSR]
+    ./frontend/src/app/(d
+ashboard)/content-lab/pag
+e.tsx [Client Component 
+SSR]
+    ./frontend/src/app/(d
+ashboard)/content-lab/pag
+e.tsx [Server Component]
+
+https://nextjs.org/docs/m
+essages/module-not-found
+
+
+./frontend/src/app/(dashb
+oard)/feeds/page.tsx:51:1
+Module not found: Can't 
+resolve 'framer-motion'
+[0m [90m 49 |[39m     
+[33mDropdownMenuTrigger
+[39m[33m,[39m
+ [90m 50 |[39m } 
+[36mfrom[39m [32m'@/co
+mponents/ui/dropdown-menu
+'[39m
+[31m[1m>[22m[39m[90m
+ 51 |[39m 
+[36mimport[39m { 
+motion[33m,[39m [33mAn
+imatePresence[39m } 
+[36mfrom[39m 
+[32m'framer-motion'[39m
+ [90m    |[39m [31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m
+ [90m 52 |[39m 
+[36mimport[39m { [33mR
+ssFeed[39m[33m,[39m 
+getFeeds[33m,[39m 
+addFeed[33m,[39m 
+removeFeed[33m,[39m 
+updateFeed[33m,[39m 
+pollFeed } 
+[36mfrom[39m [32m'@/li
+b/feeds-store'[39m
+ [90m 53 |[39m 
+[36mimport[39m { toast 
+} [36mfrom[39m 
+[32m'sonner'[39m
+ [90m 54 |[39m[0m
+
+
+
+Import traces:
+  Client Component 
+Browser:
+    ./frontend/src/app/(d
+ashboard)/feeds/page.tsx 
+[Client Component 
+Browser]
+    ./frontend/src/app/(d
+ashboard)/feeds/page.tsx 
+[Server Component]
+
+  Client Component SSR:
+    ./frontend/src/app/(d
+ashboard)/feeds/page.tsx 
+[Client Component SSR]
+    ./frontend/src/app/(d
+ashboard)/feeds/page.tsx 
+[Server Component]
+
+https://nextjs.org/docs/m
+essages/module-not-found
+
+
+./frontend/src/app/(dashb
+oard)/integrations/page.t
+sx:37:1
+Module not found: Can't 
+resolve 'framer-motion'
+[0m [90m 35 |[39m     
+[33mDropdownMenuTrigger
+[39m[33m,[39m
+ [90m 36 |[39m } 
+[36mfrom[39m [32m'@/co
+mponents/ui/dropdown-menu
+'[39m
+[31m[1m>[22m[39m[90m
+ 37 |[39m 
+[36mimport[39m { 
+motion[33m,[39m [33mAn
+imatePresence[39m } 
+[36mfrom[39m 
+[32m'framer-motion'[39m
+ [90m    |[39m [31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m
+ [90m 38 |[39m 
+[36mimport[39m {
+ [90m 39 |[39m     
+[33mPlus[39m[33m,[39m
+ [90m 40 |[39m     [33
+mPlug[39m[33m,[39m[0m
+
+
+
+Import traces:
+  Client Component 
+Browser:
+    ./frontend/src/app/(d
+ashboard)/integrations/pa
+ge.tsx [Client Component 
+Browser]
+    ./frontend/src/app/(d
+ashboard)/integrations/pa
+ge.tsx [Server Component]
+
+  Client Component SSR:
+    ./frontend/src/app/(d
+ashboard)/integrations/pa
+ge.tsx [Client Component 
+SSR]
+    ./frontend/src/app/(d
+ashboard)/integrations/pa
+ge.tsx [Server Component]
+
+https://nextjs.org/docs/m
+essages/module-not-found
+
+
+./frontend/src/app/(dashb
+oard)/video-scripts/page.
+tsx:13:1
+Module not found: Can't 
+resolve 'framer-motion'
+[0m [90m 11 |[39m 
+[36mimport[39m { 
+[33mInput[39m } 
+[36mfrom[39m [32m'@/co
+mponents/ui/input'[39m
+ [90m 12 |[39m 
+[36mimport[39m { 
+[33mLabel[39m } 
+[36mfrom[39m [32m'@/co
+mponents/ui/label'[39m
+[31m[1m>[22m[39m[90m
+ 13 |[39m 
+[36mimport[39m { 
+motion[33m,[39m [33mAn
+imatePresence[39m } 
+[36mfrom[39m 
+[32m'framer-motion'[39m
+ [90m    |[39m [31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[3
+9m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m
+ [90m 14 |[39m
+ [90m 15 |[39m 
+[36mconst[39m 
+[33mAPI_BASE_URL[39m 
+[33m=[39m process[33m.
+[39menv[33m.[39m[33mN
+EXT_PUBLIC_API_URL[39m 
+[33m||[39m [32m'http:/
+/localhost:3001/api'[39m
+ [90m 16 |[39m[0m
+
+
+
+Import traces:
+  Client Component 
+Browser:
+    ./frontend/src/app/(d
+ashboard)/video-scripts/p
+age.tsx [Client 
+Component Browser]
+    ./frontend/src/app/(d
+ashboard)/video-scripts/p
+age.tsx [Server 
+Component]
+
+  Client Component SSR:
+    ./frontend/src/app/(d
+ashboard)/video-scripts/p
+age.tsx [Client 
+Component SSR]
+    ./frontend/src/app/(d
+ashboard)/video-scripts/p
+age.tsx [Server 
+Component]
+
+https://nextjs.org/docs/m
+essages/module-not-found
+
+
+./frontend/src/components
+/layout/sidebar.tsx:6:1
+Module not found: Can't 
+resolve 'framer-motion'
+[0m [90m 4 |[39m 
+[36mimport[39m { 
+[33mButton[39m } 
+[36mfrom[39m [32m'@/co
+mponents/ui/button'[39m
+ [90m 5 |[39m 
+[36mimport[39m { useSid
+ebarStore[33m,[39m 
+useAuthStore } 
+[36mfrom[39m 
+[32m'@/stores'[39m
+[31m[1m>[22m[39m[90m
+ 6 |[39m 
+[36mimport[39m { 
+motion } [36mfrom[39m 
+[32m'framer-motion'[39m
+ [90m   |[39m [31m[1m
+^[22m[39m[31m[1m^[22
+m[39m[31m[1m^[22m[39
+m[31m[1m^[22m[39m[31
+m[1m^[22m[39m[31m[1m
+^[22m[39m[31m[1m^[22
+m[39m[31m[1m^[22m[39
+m[31m[1m^[22m[39m[31
+m[1m^[22m[39m[31m[1m
+^[22m[39m[31m[1m^[22
+m[39m[31m[1m^[22m[39
+m[31m[1m^[22m[39m[31
+m[1m^[22m[39m[31m[1m
+^[22m[39m[31m[1m^[22
+m[39m[31m[1m^[22m[39
+m[31m[1m^[22m[39m[31
+m[1m^[22m[39m[31m[1m
+^[22m[39m[31m[1m^[22
+m[39m[31m[1m^[22m[39
+m[31m[1m^[22m[39m[31
+m[1m^[22m[39m[31m[1m
+^[22m[39m[31m[1m^[22
+m[39m[31m[1m^[22m[39
+m[31m[1m^[22m[39m[31
+m[1m^[22m[39m[31m[1m
+^[22m[39m[31m[1m^[22
+m[39m[31m[1m^[22m[39
+m[31m[1m^[22m[39m[31
+m[1m^[22m[39m[31m[1m
+^[22m[39m[31m[1m^[22
+m[39m[31m[1m^[22m[39
+m
+ [90m 7 |[39m
+ [90m 8 |[39m [90m// 
+Custom SVG icons for a 
+unique look[39m
+ [90m 9 |[39m 
+[36mconst[39m icons 
+[33m=[39m {[0m
+
+
+
+Import traces:
+  Server Component:
+    ./frontend/src/compon
+ents/layout/sidebar.tsx
+    ./frontend/src/compon
+ents/layout/index.ts
+    ./frontend/src/app/(d
+ashboard)/layout.tsx
+
+  Client Component 
+Browser:
+    ./frontend/src/compon
+ents/layout/sidebar.tsx 
+[Client Component 
+Browser]
+    ./frontend/src/compon
+ents/layout/dashboard-lay
+out.tsx [Client 
+Component Browser]
+    ./frontend/src/compon
+ents/layout/dashboard-lay
+out.tsx [Server 
+Component]
+    ./frontend/src/app/(d
+ashboard)/layout.tsx 
+[Server Component]
+
+  Client Component SSR:
+    ./frontend/src/compon
+ents/layout/sidebar.tsx 
+[Client Component SSR]
+    ./frontend/src/compon
+ents/layout/dashboard-lay
+out.tsx [Client 
+Component SSR]
+    ./frontend/src/compon
+ents/layout/dashboard-lay
+out.tsx [Server 
+Component]
+    ./frontend/src/app/(d
+ashboard)/layout.tsx 
+[Server Component]
+
+https://nextjs.org/docs/m
+essages/module-not-found
+
+
+    at <unknown> (./front
+end/src/app/(dashboard)/c
+ontent-lab/components/Sou
+rceSidebar.tsx:232:10)
+    at <unknown> (./front
+end/src/app/(dashboard)/c
+ontent-lab/components/Too
+lsPanel.tsx:333:5)
+    at <unknown> (./front
+end/src/components/layout
+/navbar.tsx:110:5)
+    at <unknown> (./front
+end/src/app/(dashboard)/a
+rticles/page.tsx:27:1)
+    at <unknown> (https:/
+/nextjs.org/docs/messages
+/module-not-found)
+    at <unknown> (./front
+end/src/app/(dashboard)/c
+ontent-lab/components/Con
+tentEditor.tsx:9:1)
+    at <unknown> (https:/
+/nextjs.org/docs/messages
+/module-not-found)
+    at <unknown> (./front
+end/src/app/(dashboard)/c
+ontent-lab/components/Sou
+rceSidebar.tsx:25:1)
+    at <unknown> (https:/
+/nextjs.org/docs/messages
+/module-not-found)
+    at <unknown> (./front
+end/src/app/(dashboard)/f
+eeds/page.tsx:51:1)
+    at <unknown> (https:/
+/nextjs.org/docs/messages
+/module-not-found)
+    at <unknown> (./front
+end/src/app/(dashboard)/i
+ntegrations/page.tsx:37:1
+)
+    at <unknown> (https:/
+/nextjs.org/docs/messages
+/module-not-found)
+    at <unknown> (./front
+end/src/app/(dashboard)/v
+ideo-scripts/page.tsx:13:
+1)
+    at <unknown> (https:/
+/nextjs.org/docs/messages
+/module-not-found)
+    at <unknown> (./front
+end/src/components/layout
+/sidebar.tsx:6:1)
+    at <unknown> (https:/
+/nextjs.org/docs/messages
+/module-not-found)

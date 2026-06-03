@@ -1,0 +1,1 @@
+ALTER TABLE "script_scene" ADD COLUMN "director_notes" text;

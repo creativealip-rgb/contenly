@@ -1,0 +1,36 @@
+import { Controller, Get, Patch, Param, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { NotificationsService } from './notifications.service';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
+import type { User } from '../../db/types';
+
+@ApiTags('notifications')
+@ApiBearerAuth()
+@UseGuards(SessionAuthGuard)
+@Controller('notifications')
+export class NotificationsController {
+  constructor(private notificationsService: NotificationsService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'List notifications' })
+  async findAll(
+    @CurrentUser() user: User,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.notificationsService.findAll(user.id, Number(page) || 1, Number(limit) || 20);
+  }
+
+  @Patch(':id/read')
+  @ApiOperation({ summary: 'Mark as read' })
+  async markAsRead(@CurrentUser() user: User, @Param('id') id: string) {
+    return this.notificationsService.markAsRead(user.id, id);
+  }
+
+  @Patch('read-all')
+  @ApiOperation({ summary: 'Mark all as read' })
+  async markAllAsRead(@CurrentUser() user: User) {
+    return this.notificationsService.markAllAsRead(user.id);
+  }
+}
