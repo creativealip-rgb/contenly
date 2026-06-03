@@ -48,14 +48,16 @@ services:
     networks:
       - default
       - dokploy-network
+    volumes:
+      - contenly_uploads:/app/backend/uploads
     labels:
       - traefik.enable=true
       - traefik.docker.network=dokploy-network
-      - traefik.http.routers.contenly-api.rule=(Host(`contenly.app`) || Host(`www.contenly.app`)) && (PathPrefix(`/api/v1`) || PathPrefix(`/health`))
+      - traefik.http.routers.contenly-api.rule=(Host(`contenly.app`) || Host(`www.contenly.app`)) && (PathPrefix(`/api/v1`) || PathPrefix(`/health`) || PathPrefix(`/uploads`))
       - traefik.http.routers.contenly-api.priority=100
       - traefik.http.routers.contenly-api.entrypoints=websecure
       - traefik.http.routers.contenly-api.tls.certresolver=letsencrypt
-      - traefik.http.routers.contenly-api-http.rule=(Host(`contenly.app`) || Host(`www.contenly.app`)) && (PathPrefix(`/api/v1`) || PathPrefix(`/health`))
+      - traefik.http.routers.contenly-api-http.rule=(Host(`contenly.app`) || Host(`www.contenly.app`)) && (PathPrefix(`/api/v1`) || PathPrefix(`/health`) || PathPrefix(`/uploads`))
       - traefik.http.routers.contenly-api-http.priority=100
       - traefik.http.routers.contenly-api-http.entrypoints=web
       - traefik.http.routers.contenly-api-http.middlewares=redirect-to-https@file
@@ -108,6 +110,7 @@ services:
 volumes:
   contenly_postgres_data:
   contenly_redis_data:
+  contenly_uploads:
 
 networks:
   default:
