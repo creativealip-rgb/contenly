@@ -323,63 +323,55 @@ Keep each field concise but descriptive. Use English.`;
    */
   private sanitizeListStructure(html: string): string {
     if (!html) return html;
-    
-    // Fix: heading or paragraph tags directly inside ul/ol
-    // Uses iterative string scanning instead of regex to avoid backreference issues
-    const fixListPattern = (tag: 'ul' | 'ol') => {
-      let prevHtml = '';
-      let result = html;
-      let iterations = 0;
-      const maxIterations = 10;
-      
-      while (result !== prevHtml && iterations < maxIterations) {
-        prevHtml = result;
-        iterations++;
-        
-        const openTag = `<${tag}>`;
-        const closeTag = `</${tag}>`;
-        let pos = 0;
-        
-        while (pos < result.length) {
-          const startIdx = result.indexOf(openTag, pos);
-          if (startIdx === -1) break;
-          
-          const endIdx = result.indexOf(closeTag, startIdx);
-          if (endIdx === -1) break;
-          
-          const listContent = result.substring(startIdx + openTag.length, endIdx);
-          
-          // Check if this list contains any heading tags
-          const headingRegex = /<h([1-6])>([\s\S]*?)<\/h\1>/i;
-          const headingMatch = listContent.match(headingRegex);
-          if (headingMatch) {
-            const headingStart = listContent.indexOf(headingMatch[0]);
-            const before = listContent.substring(0, headingStart);
-            const after = listContent.substring(headingStart + headingMatch[0].length);
-            
-            let replacement = '';
-            if (before.trim()) {
-              replacement += openTag + before + closeTag;
-            }
-            replacement += headingMatch[0];
-            if (after.trim()) {
-              replacement += openTag + after + closeTag;
-            }
-            
-            result = result.substring(0, startIdx) + replacement + result.substring(endIdx + closeTag.length);
-            break; // Restart search
+
+    // Fix block elements (headings, paragraphs, divs) incorrectly nested inside ul/ol
+    // AI sometimes generates: <ul><li>...</li><h2>...</h2><p>...</p><li>...</li></ul>
+    // This fixes it to: <ul><li>...</li></ul><h2>...</h2><p>...</p><ul><li>...</li></ul>
+    return html.replace(/(<(?:ul|ol)[^>]*>)([\s\S]*?)(<\/(?:ul|ol)>)/gi, (match, openTag, listContent, closeTag) => {
+      const listType = openTag.match(/<(ul|ol)/i)[1].toLowerCase();
+      const closeAll = '</' + listType + '>';
+
+      // Split content into segments: li items vs non-li items
+      const segments: Array<{ type: 'li' | 'block'; html: string }> = [];
+      const regex = /(<li[\s>][\s\S]*?<\/li>)/gi;
+      let lastIndex = 0;
+      let match2: RegExpExecArray | null;
+
+      while ((match2 = regex.exec(listContent)) !== null) {
+        if (match2.index > lastIndex) {
+          const before = listContent.substring(lastIndex, match2.index).trim();
+          if (before) segments.push({ type: 'block', html: before });
+        }
+        segments.push({ type: 'li', html: match2[0] });
+        lastIndex = regex.lastIndex;
+      }
+      if (lastIndex < listContent.length) {
+        const after = listContent.substring(lastIndex).trim();
+        if (after) segments.push({ type: 'block', html: after });
+      }
+
+      const hasNonLi = segments.some(s => s.type === 'block');
+      if (!hasNonLi) return match;
+
+      let result = '';
+      let currentLis: string[] = [];
+
+      for (const seg of segments) {
+        if (seg.type === 'li') {
+          currentLis.push(seg.html);
+        } else {
+          if (currentLis.length > 0) {
+            result += openTag + currentLis.join('') + closeAll;
+            currentLis = [];
           }
-          
-          pos = endIdx + closeTag.length;
+          result += seg.html;
         }
       }
-      
+      if (currentLis.length > 0) {
+        result += openTag + currentLis.join('') + closeAll;
+      }
+
       return result;
-    };
-    
-    html = fixListPattern('ul');
-    html = fixListPattern('ol');
-    
-    return html;
+    });
   }
 }
