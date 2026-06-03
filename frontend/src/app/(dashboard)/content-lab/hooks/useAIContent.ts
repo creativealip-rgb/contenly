@@ -105,7 +105,7 @@ export function useAIContent() {
                 body: JSON.stringify({
                     originalContent: activeTab === 'idea' ? articleIdea : sourceContent,
                     title: selectedArticle?.title || 'Rewritten Article',
-                    sourceUrl: selectedArticle?.url || scrapeUrl || '',
+                    sourceUrl: selectedArticle?.url || scrapeUrl || undefined,
                     mode: activeTab === 'idea' ? 'idea' : 'rewrite',
                     categoryId: selectedCategoryId,
                     options: {
@@ -133,7 +133,7 @@ export function useAIContent() {
                             title: result.data.title,
                             generatedContent: result.data.content,
                             originalContent: sourceText,
-                            sourceUrl: selectedArticle?.url || scrapeUrl || '',
+                            sourceUrl: selectedArticle?.url || scrapeUrl || undefined,
                             metaTitle: result.data.title,
                             metaDescription: result.data.metaDescription || '',
                             slug: result.data.slug || '',
