@@ -317,7 +317,7 @@ export class InstagramStudioService {
                 .where(eq(instagramSlide.id, slideId))
                 .returning();
 
-            // Usage recorded by ensureBilling
+            await this.billingService.recordUsage(userId, 'SLIDE_IMAGE', billingSLIDE_IMAGE);
 
             return updated;
         } catch (error: any) {
@@ -341,17 +341,16 @@ export class InstagramStudioService {
             throw new BadRequestException('No slides to generate images for');
         }
 
-        const billingIMAGE_GENERATION = await this.billingService.ensureBilling(userId, 'IMAGE_GENERATION');
-
-        if (!billingIMAGE_GENERATION.allowed) {
-
-          throw new BadRequestException(billingIMAGE_GENERATION.reason);
-
-        }
 
         const results = [];
         for (const slide of project.slides) {
             try {
+                // Check billing PER SLIDE to enforce limits correctly
+                const billingCheck = await this.billingService.ensureBilling(userId, 'SLIDE_IMAGE');
+                if (!billingCheck.allowed) {
+                    results.push({ slideId: slide.id, slideNumber: slide.slideNumber, success: false, error: billingCheck.reason });
+                    continue;
+                }
                 const textContent = slide.textContent || '';
                 const visualPrompt = slide.visualPrompt || '';
                 const style = project.globalStyle || 'Modern Minimalist';
@@ -368,7 +367,7 @@ export class InstagramStudioService {
                     .set({ imageUrl })
                     .where(eq(instagramSlide.id, slide.id));
 
-                await this.billingService.recordUsage(userId, 'SLIDE_IMAGE', billingIMAGE_GENERATION);
+                await this.billingService.recordUsage(userId, 'SLIDE_IMAGE', billingCheck);
 
                 results.push({ slideId: slide.id, slideNumber: slide.slideNumber, success: true });
             } catch (error: any) {
@@ -645,19 +644,18 @@ export class InstagramStudioService {
         }
 
         // Check balance: 2 tokens per image (text integrated into AI prompt, no separate overlay)
-        const billingIMAGE_GENERATION = await this.billingService.ensureBilling(userId, 'IMAGE_GENERATION');
-
-        if (!billingIMAGE_GENERATION.allowed) {
-
-          throw new BadRequestException(billingIMAGE_GENERATION.reason);
-
-        }
 
         const results: any[] = [];
         let tokensUsed = 0;
 
         for (const slide of project.slides) {
             try {
+                // Check billing PER SLIDE to enforce limits correctly
+                const billingCheck = await this.billingService.ensureBilling(userId, 'SLIDE_IMAGE');
+                if (!billingCheck.allowed) {
+                    results.push({ slideId: slide.id, slideNumber: slide.slideNumber, success: false, error: billingCheck.reason });
+                    continue;
+                }
                 let currentSlide: any = { ...slide };
 
                 // Build prompt with text content integrated into the image design
@@ -679,7 +677,7 @@ export class InstagramStudioService {
                     .where(eq(instagramSlide.id, currentSlide.id));
 
                 tokensUsed += 2;
-                await this.billingService.recordUsage(userId, 'SLIDE_IMAGE', billingIMAGE_GENERATION);
+                await this.billingService.recordUsage(userId, 'SLIDE_IMAGE', billingCheck);
 
                 results.push({ slideNumber: slide.slideNumber, status: 'success' });
             } catch (error: any) {
