@@ -3,547 +3,559 @@ import { ConfigService } from '@nestjs/config';
 import { eq, sql, and } from 'drizzle-orm';
 import { DrizzleService } from '../../db/drizzle.service';
 import { tokenBalance, transaction, subscription, dailyUsage } from '../../db/schema';
-import { BILLING_TIERS } from './billing.constants';
+import { BILLING_TIERS, FEATURE_TO_CATEGORY, KREDIT_COSTS } from './billing.constants';
 import Stripe from 'stripe';
+
+export interface BillingResult {
+    allowed: boolean;
+    reason?: string;
+    usingKredit: boolean;
+    kreditCost: number;
+}
 
 @Injectable()
 export class BillingService {
-  private readonly logger = new Logger(BillingService.name);
-  private stripe: Stripe | null = null;
+    private readonly logger = new Logger(BillingService.name);
+    private stripe: Stripe | null = null;
 
-  constructor(
-    private drizzle: DrizzleService,
-    private configService: ConfigService,
-  ) {
-    const stripeSecretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
-    if (stripeSecretKey) {
-      this.stripe = new Stripe(stripeSecretKey);
+    constructor(
+        private drizzle: DrizzleService,
+        private configService: ConfigService,
+    ) {
+        const stripeSecretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
+        if (stripeSecretKey) {
+            this.stripe = new Stripe(stripeSecretKey);
+        }
     }
-  }
 
-  get db() {
-    return this.drizzle.db;
-  }
-
-  async initializeBalance(userId: string) {
-    const existing = await this.db.query.tokenBalance.findFirst({
-      where: eq(tokenBalance.userId, userId),
-    });
-    if (!existing) {
-      await this.db.insert(tokenBalance).values({
-        userId,
-        balance: BILLING_TIERS.FREE.monthlyQuota,
-        monthlyQuota: BILLING_TIERS.FREE.monthlyQuota,
-        monthlyUsed: 0,
-        credits: 0,
-      });
+    get db() {
+        return this.drizzle.db;
     }
-  }
 
-  async getBalance(userId: string) {
-    let balance = await this.db.query.tokenBalance.findFirst({
-      where: eq(tokenBalance.userId, userId),
-    });
-    if (!balance) {
-      const [newBalance] = await this.db
-        .insert(tokenBalance)
-        .values({
-          userId,
-          balance: BILLING_TIERS.FREE.monthlyQuota,
-          monthlyQuota: BILLING_TIERS.FREE.monthlyQuota,
-          monthlyUsed: 0,
-          credits: 0,
-        })
-        .returning();
-      balance = newBalance;
-    }
-    return balance;
-  }
-
-  async getMonthlyUsageByCategory(userId: string, monthStart: Date): Promise<Record<string, number>> {
-    const usageRows = await this.db.query.dailyUsage.findMany({
-      where: and(
-        eq(dailyUsage.userId, userId),
-        sql`${dailyUsage.date} >= ${monthStart.toISOString()}`
-      ),
-    });
-    const result: Record<string, number> = {};
-    for (const row of usageRows) {
-      const key = row.featureType;
-      result[key] = (result[key] || 0) + (row.count || 0);
-    }
-    return result;
-  }
-
-  async getSubscriptionTier(userId: string) {
-    const sub = await this.getSubscription(userId);
-    const plan = sub?.plan || 'FREE';
-    // Map ENTERPRISE to BUSINESS (legacy naming)
-    return plan === 'ENTERPRISE' ? 'BUSINESS' : plan;
-  }
-
-  async checkDailyLimit(userId: string, featureType: string): Promise<boolean> {
-    const tier = await this.getSubscriptionTier(userId);
-    const limit = BILLING_TIERS[tier]?.monthlyLimits?.[featureType] || 0;
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const usageRows = await this.db.query.dailyUsage.findMany({
-      where: and(
-        eq(dailyUsage.userId, userId),
-        eq(dailyUsage.featureType, featureType as any),
-        sql`${dailyUsage.date} >= ${monthStart.toISOString()}`
-      ),
-    });
-    const currentUsage = usageRows.reduce((sum, row) => sum + (row.count || 0), 0);
-    return currentUsage < limit;
-  }
-
-  async incrementDailyUsage(userId: string, featureType: string) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    // Still track daily for analytics, but limits are now checked monthly
-    try {
-      await this.db.transaction(async (tx) => {
-        const existing = await tx.query.dailyUsage.findFirst({
-          where: and(
-            eq(dailyUsage.userId, userId),
-            eq(dailyUsage.featureType, featureType as any),
-            sql`${dailyUsage.date}::date = ${today.toISOString().split('T')[0]}::date`
-          ),
+    async initializeBalance(userId: string) {
+        const existing = await this.db.query.tokenBalance.findFirst({
+            where: eq(tokenBalance.userId, userId),
         });
-        if (existing) {
-          await tx.update(dailyUsage)
-            .set({ count: sql`${dailyUsage.count} + 1` })
-            .where(eq(dailyUsage.id, existing.id));
-        } else {
-          await tx.insert(dailyUsage).values({
+        if (!existing) {
+            await this.db.insert(tokenBalance).values({
+                userId,
+                balance: 0,
+                monthlyQuota: 0,
+                monthlyUsed: 0,
+                credits: 0,
+            });
+        }
+    }
+
+    async getBalance(userId: string) {
+        let balance = await this.db.query.tokenBalance.findFirst({
+            where: eq(tokenBalance.userId, userId),
+        });
+        if (!balance) {
+            const [newBalance] = await this.db
+                .insert(tokenBalance)
+                .values({
+                    userId,
+                    balance: 0,
+                    monthlyQuota: 0,
+                    monthlyUsed: 0,
+                    credits: 0,
+                })
+                .returning();
+            balance = newBalance;
+        }
+        return balance;
+    }
+
+    async getMonthlyUsageByCategory(userId: string, monthStart: Date): Promise<Record<string, number>> {
+        const usageRows = await this.db.query.dailyUsage.findMany({
+            where: and(
+                eq(dailyUsage.userId, userId),
+                sql`${dailyUsage.date} >= ${monthStart.toISOString()}`
+            ),
+        });
+        const result: Record<string, number> = {};
+        for (const row of usageRows) {
+            const key = row.featureType;
+            result[key] = (result[key] || 0) + (row.count || 0);
+        }
+        return result;
+    }
+
+    async getSubscriptionTier(userId: string) {
+        const sub = await this.getSubscription(userId);
+        const plan = sub?.plan || 'FREE';
+        return plan === 'ENTERPRISE' ? 'BUSINESS' : plan;
+    }
+
+    async checkDailyLimit(userId: string, featureType: string): Promise<boolean> {
+        const tier = await this.getSubscriptionTier(userId);
+        const limit = BILLING_TIERS[tier]?.monthlyLimits?.[featureType] || 0;
+        if (limit <= 0) return false;
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const usageRows = await this.db.query.dailyUsage.findMany({
+            where: and(
+                eq(dailyUsage.userId, userId),
+                eq(dailyUsage.featureType, featureType as any),
+                sql`${dailyUsage.date} >= ${monthStart.toISOString()}`
+            ),
+        });
+        const currentUsage = usageRows.reduce((sum, row) => sum + (row.count || 0), 0);
+        return currentUsage < limit;
+    }
+
+    async incrementDailyUsage(userId: string, featureType: string) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        try {
+            await this.db.transaction(async (tx) => {
+                const existing = await tx.query.dailyUsage.findFirst({
+                    where: and(
+                        eq(dailyUsage.userId, userId),
+                        eq(dailyUsage.featureType, featureType as any),
+                        sql`${dailyUsage.date}::date = ${today.toISOString().split('T')[0]}::date`
+                    ),
+                });
+                if (existing) {
+                    await tx.update(dailyUsage)
+                        .set({ count: sql`${dailyUsage.count} + 1` })
+                        .where(eq(dailyUsage.id, existing.id));
+                } else {
+                    await tx.insert(dailyUsage).values({
+                        userId,
+                        featureType: featureType as any,
+                        date: today,
+                        count: 1,
+                    });
+                }
+            });
+        } catch (e) {
+            // Ignore duplicate key errors
+        }
+    }
+
+    async checkDailyChatLimit(userId: string, dailyLimit: number): Promise<{ allowed: boolean; remaining: number; limit: number }> {
+        const tier = await this.getSubscriptionTier(userId);
+        if (tier === 'FREE') {
+            return { allowed: false, remaining: 0, limit: 0 };
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayStr = today.toISOString().split('T')[0];
+
+        const usageRow = await this.db.query.dailyUsage.findFirst({
+            where: and(
+                eq(dailyUsage.userId, userId),
+                eq(dailyUsage.featureType, 'AI_CHAT' as any),
+                sql`${dailyUsage.date}::date = ${todayStr}::date`,
+            ),
+        });
+
+        const currentCount = usageRow?.count || 0;
+        return {
+            allowed: currentCount < dailyLimit,
+            remaining: Math.max(0, dailyLimit - currentCount),
+            limit: dailyLimit,
+        };
+    }
+
+    async checkCategoryLimit(userId: string, featureType: string): Promise<boolean> {
+        const categoryFeature = FEATURE_TO_CATEGORY[featureType];
+        if (!categoryFeature) return true;
+        return this.checkDailyLimit(userId, categoryFeature);
+    }
+
+    /**
+     * Main billing gate. 2-layer:
+     * Layer 1: Per-kategori count limit (primary)
+     * Layer 2: Kredit (fallback when category limit exceeded)
+     */
+    async ensureBilling(userId: string, featureType: string): Promise<BillingResult> {
+        const withinCategory = await this.checkCategoryLimit(userId, featureType);
+        if (withinCategory) {
+            return { allowed: true, usingKredit: false, kreditCost: 0 };
+        }
+
+        const kreditCost = KREDIT_COSTS[featureType] || 0;
+        if (kreditCost <= 0) {
+            const category = FEATURE_TO_CATEGORY[featureType] || featureType;
+            return {
+                allowed: false,
+                reason: `Kuota ${this.getCategoryLabel(category)} sudah habis bulanan ini. Upgrade plan untuk menambah jatah.`,
+                usingKredit: false,
+                kreditCost: 0,
+            };
+        }
+
+        const balance = await this.getBalance(userId);
+        const credits = balance.credits || 0;
+        if (credits >= kreditCost) {
+            return { allowed: true, usingKredit: true, kreditCost };
+        }
+
+        const category = FEATURE_TO_CATEGORY[featureType] || featureType;
+        return {
+            allowed: false,
+            reason: `Kuota ${this.getCategoryLabel(category)} habis dan kredit tidak cukup (butuh ${kreditCost} kredit). Upgrade plan atau beli kredit tambahan.`,
+            usingKredit: false,
+            kreditCost,
+        };
+    }
+
+    /**
+     * Record usage AFTER successful AI work.
+     * Always increments category count. Deducts kredits if overflow.
+     */
+    async recordUsage(userId: string, featureType: string, billingResult?: BillingResult) {
+        const category = FEATURE_TO_CATEGORY[featureType];
+        if (category) {
+            await this.incrementDailyUsage(userId, category);
+        }
+        if (billingResult?.usingKredit && billingResult.kreditCost > 0) {
+            await this.deductKredits(userId, billingResult.kreditCost, `${featureType} (overflow kredit)`);
+        }
+    }
+
+    private async deductKredits(userId: string, amount: number, description: string) {
+        const balance = await this.getBalance(userId);
+        const credits = balance.credits || 0;
+        if (credits < amount) {
+            throw new BadRequestException('Kredit tidak mencukupi.');
+        }
+        await this.db.transaction(async (tx) => {
+            await tx
+                .update(tokenBalance)
+                .set({
+                    credits: sql`${tokenBalance.credits} - ${amount}`,
+                    totalUsed: sql`${tokenBalance.totalUsed} + ${amount}`,
+                    updatedAt: new Date(),
+                })
+                .where(eq(tokenBalance.userId, userId));
+
+            await tx.insert(transaction).values({
+                userId,
+                type: 'USAGE',
+                amount: 0,
+                tokens: -amount,
+                status: 'COMPLETED',
+                metadata: { description, deductedFrom: 'kredit' },
+            });
+        });
+    }
+
+    // =============================================
+    // LEGACY METHODS - backward compat
+    // =============================================
+
+    /** @deprecated Use ensureBilling() + recordUsage() instead. Now just checks kredits as fallback. */
+    async checkBalance(userId: string, required: number): Promise<boolean> {
+        // Legacy callers also check checkCategoryLimit separately,
+        // so we only need to verify kredits as overflow here.
+        const balance = await this.getBalance(userId);
+        const credits = balance.credits || 0;
+        return credits >= required;
+    }
+
+    /** @deprecated Use ensureBilling() + recordUsage() instead. Only deducts kredits. */
+    async deductTokens(userId: string, amount: number, description: string) {
+        await this.deductKredits(userId, amount, description);
+    }
+
+    // =============================================
+    // KREDIT MANAGEMENT
+    // =============================================
+
+    async addCredits(userId: string, amount: number, stripePaymentId?: string) {
+        await this.db.transaction(async (tx) => {
+            const existing = await tx.query.tokenBalance.findFirst({
+                where: eq(tokenBalance.userId, userId),
+            });
+            if (existing) {
+                await tx
+                    .update(tokenBalance)
+                    .set({
+                        credits: sql`${tokenBalance.credits} + ${amount}`,
+                        totalPurchased: sql`${tokenBalance.totalPurchased} + ${amount}`,
+                        updatedAt: new Date(),
+                    })
+                    .where(eq(tokenBalance.userId, userId));
+            } else {
+                await tx.insert(tokenBalance).values({
+                    userId,
+                    balance: 0,
+                    monthlyQuota: 0,
+                    monthlyUsed: 0,
+                    credits: amount,
+                    totalPurchased: amount,
+                });
+            }
+            await tx.insert(transaction).values({
+                userId,
+                type: 'PURCHASE',
+                amount: 0,
+                tokens: amount,
+                stripePaymentId,
+                status: 'COMPLETED',
+                metadata: { type: 'kredit' },
+            });
+        });
+    }
+
+    async resetMonthlyQuota(userId: string, newQuota: number) {
+        this.logger.log(`Legacy resetMonthlyQuota for user ${userId}: ${newQuota} (no-op in count-based billing)`);
+    }
+
+    // =============================================
+    // TRANSACTIONS & SUBSCRIPTIONS
+    // =============================================
+
+    async getTransactions(userId: string, page = 1, limit = 20) {
+        const offset = (page - 1) * limit;
+        const transactions = await this.db.query.transaction.findMany({
+            where: eq(transaction.userId, userId),
+            orderBy: (t, { desc }) => [desc(t.createdAt)],
+            offset,
+            limit,
+        });
+        const [{ count }] = await this.db
+            .select({ count: sql<number>`count(*)` })
+            .from(transaction)
+            .where(eq(transaction.userId, userId));
+        return {
+            data: transactions,
+            meta: {
+                total: Number(count),
+                page,
+                limit,
+                totalPages: Math.ceil(Number(count) / limit),
+            },
+        };
+    }
+
+    async getSubscription(userId: string) {
+        return this.db.query.subscription.findFirst({
+            where: and(
+                eq(subscription.userId, userId),
+                eq(subscription.status, 'ACTIVE'),
+            ),
+            orderBy: (s, { desc }) => [desc(s.createdAt)],
+        });
+    }
+
+    // =============================================
+    // STRIPE HANDLERS
+    // =============================================
+
+    async handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
+        this.logger.log(`Processing checkout session: ${session.id}`);
+        const userId = session.metadata?.userId;
+        if (!userId) {
+            this.logger.error('No userId in checkout session metadata');
+            return;
+        }
+        if (session.mode === 'payment') {
+            const tokens = parseInt(session.metadata?.tokens || '0', 10);
+            const amount = session.amount_total ? session.amount_total / 100 : 0;
+            if (tokens > 0) {
+                await this.addCredits(userId, tokens, session.payment_intent as string);
+                await this.db
+                    .update(transaction)
+                    .set({ amount })
+                    .where(eq(transaction.stripePaymentId, session.payment_intent as string));
+                this.logger.log(`Added ${tokens} kredit to user ${userId}`);
+            }
+        }
+        if (session.mode === 'subscription' && session.subscription) {
+            await this.handleSubscriptionCreated(userId, session.subscription as string, session);
+        }
+    }
+
+    async handleSubscriptionCreated(userId: string, subscriptionId: string, session: Stripe.Checkout.Session) {
+        this.logger.log(`Creating subscription ${subscriptionId} for user ${userId}`);
+        if (!this.stripe) {
+            this.logger.error('Stripe not initialized');
+            return;
+        }
+        const stripeSubscription = await this.stripe.subscriptions.retrieve(subscriptionId);
+        const plan = session.metadata?.plan || 'PRO';
+        await this.db.insert(subscription).values({
             userId,
-            featureType: featureType as any,
-            date: today,
-            count: 1,
-          });
-        }
-      });
-    } catch (e) {
-      // Ignore duplicate key errors
-    }
-  }
-
-  /**
-   * Check daily chat message limit (not token-based, just count-based).
-   * Returns { allowed: boolean, remaining: number, limit: number }.
-   */
-  async checkDailyChatLimit(userId: string, dailyLimit: number): Promise<{ allowed: boolean; remaining: number; limit: number }> {
-    const tier = await this.getSubscriptionTier(userId);
-    if (tier === 'FREE') {
-      return { allowed: false, remaining: 0, limit: 0 };
-    }
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayStr = today.toISOString().split('T')[0];
-
-    const usageRow = await this.db.query.dailyUsage.findFirst({
-      where: and(
-        eq(dailyUsage.userId, userId),
-        eq(dailyUsage.featureType, 'AI_CHAT' as any),
-        sql`${dailyUsage.date}::date = ${todayStr}::date`,
-      ),
-    });
-
-    const currentCount = usageRow?.count || 0;
-    return {
-      allowed: currentCount < dailyLimit,
-      remaining: Math.max(0, dailyLimit - currentCount),
-      limit: dailyLimit,
-    };
-  }
-
-  async checkBalance(userId: string, required: number): Promise<boolean> {
-    const balance = await this.getBalance(userId);
-    const monthlyRemaining = (balance.monthlyQuota || 0) - (balance.monthlyUsed || 0);
-    if (monthlyRemaining >= required) return true;
-    const creditsRemaining = balance.credits || 0;
-    if (creditsRemaining >= required) return true;
-    return false;
-  }
-
-  /**
-   * Map feature type to its category and check the per-category monthly limit.
-   * Returns true if within limit, false if exceeded.
-   */
-  async checkCategoryLimit(userId: string, featureType: string): Promise<boolean> {
-    const FEATURE_TO_CATEGORY: Record<string, string> = {
-      // Artikel
-      ARTICLE_GENERATION: 'ARTICLE_GENERATION',
-      // Generate (Instagram + Video)
-      INSTAGRAM_GENERATION: 'INSTAGRAM_GENERATION',
-      VIDEO_GENERATION: 'VIDEO_GENERATION',
-      STORYBOARD_GENERATION: 'INSTAGRAM_GENERATION',
-      HASHTAG_GENERATION: 'INSTAGRAM_GENERATION',
-      VIDEO_SCRIPT: 'VIDEO_GENERATION',
-      ALTERNATE_HOOKS: 'VIDEO_GENERATION',
-      BROLL_KEYWORDS: 'VIDEO_GENERATION',
-      AUTO_CUTAWAY: 'VIDEO_GENERATION',
-      TTS_PREVIEW: 'VIDEO_GENERATION',
-      TTS_VOICEOVER: 'VIDEO_GENERATION',
-      REGENERATE_FIELD: 'VIDEO_GENERATION',
-      REGENERATE_VOICEOVER: 'VIDEO_GENERATION',
-      IMPROVE_VISUAL: 'VIDEO_GENERATION',
-      VIDEO_ANALYSIS: 'VIDEO_GENERATION',
-      VIDEO_EXPORT: 'VIDEO_GENERATION',
-      // Gambar
-      IMAGE_GENERATION: 'IMAGE_GENERATION',
-      SLIDE_IMAGE: 'IMAGE_GENERATION',
-      THUMBNAIL_GENERATION: 'IMAGE_GENERATION',
-      MOTION_GRAPHICS_RENDER: 'IMAGE_GENERATION',
-      TEXT_OVERLAY: 'IMAGE_GENERATION',
-    };
-    const categoryFeature = FEATURE_TO_CATEGORY[featureType];
-    if (!categoryFeature) return true; // unknown feature, skip check
-    return this.checkDailyLimit(userId, categoryFeature);
-  }
-
-  async deductTokens(userId: string, amount: number, description: string) {
-    const balance = await this.getBalance(userId);
-    const monthlyRemaining = (balance.monthlyQuota || 0) - (balance.monthlyUsed || 0);
-    await this.db.transaction(async (tx) => {
-      let remainingToDeduct = amount;
-      if (monthlyRemaining > 0) {
-        const deductFromMonthly = Math.min(remainingToDeduct, monthlyRemaining);
-        await tx
-          .update(tokenBalance)
-          .set({
-            monthlyUsed: sql`${tokenBalance.monthlyUsed} + ${deductFromMonthly}`,
-            balance: sql`${tokenBalance.balance} - ${deductFromMonthly}`,
-            totalUsed: sql`${tokenBalance.totalUsed} + ${deductFromMonthly}`,
-            updatedAt: new Date(),
-          })
-          .where(eq(tokenBalance.userId, userId));
-        remainingToDeduct -= deductFromMonthly;
-      }
-      if (remainingToDeduct > 0) {
-        const creditsAvailable = balance.credits || 0;
-        if (creditsAvailable < remainingToDeduct) {
-          throw new BadRequestException('Kuota bulanan dan kredit tidak mencukupi. Silakan upgrade plan, top up kredit, atau tunggu reset kuota bulanan.');
-        }
-        await tx
-          .update(tokenBalance)
-          .set({
-            credits: sql`${tokenBalance.credits} - ${remainingToDeduct}`,
-            totalUsed: sql`${tokenBalance.totalUsed} + ${remainingToDeduct}`,
-            updatedAt: new Date(),
-          })
-          .where(eq(tokenBalance.userId, userId));
-      }
-      await tx.insert(transaction).values({
-        userId,
-        type: 'USAGE',
-        amount: 0,
-        tokens: -amount,
-        status: 'COMPLETED',
-        metadata: { description, deductedFrom: monthlyRemaining > 0 ? 'monthly' : 'credits' },
-      });
-    });
-  }
-
-  async addCredits(userId: string, amount: number, stripePaymentId?: string) {
-    await this.db.transaction(async (tx) => {
-      const existing = await tx.query.tokenBalance.findFirst({
-        where: eq(tokenBalance.userId, userId),
-      });
-      if (existing) {
-        await tx
-          .update(tokenBalance)
-          .set({
-            credits: sql`${tokenBalance.credits} + ${amount}`,
-            totalPurchased: sql`${tokenBalance.totalPurchased} + ${amount}`,
-            updatedAt: new Date(),
-          })
-          .where(eq(tokenBalance.userId, userId));
-      } else {
-        await tx.insert(tokenBalance).values({
-          userId,
-          balance: 0,
-          monthlyQuota: 0,
-          monthlyUsed: 0,
-          credits: amount,
-          totalPurchased: amount,
+            plan: plan as 'PRO' | 'ENTERPRISE',
+            stripeSubscriptionId: subscriptionId,
+            status: 'ACTIVE',
+            tokensPerMonth: 0,
+            currentPeriodStart: new Date((stripeSubscription as any).current_period_start * 1000),
+            currentPeriodEnd: new Date((stripeSubscription as any).current_period_end * 1000),
         });
-      }
-      await tx.insert(transaction).values({
-        userId,
-        type: 'PURCHASE',
-        amount: 0,
-        tokens: amount,
-        stripePaymentId,
-        status: 'COMPLETED',
-        metadata: { type: 'credits' },
-      });
-    });
-  }
-
-  async resetMonthlyQuota(userId: string, newQuota: number) {
-    await this.db.transaction(async (tx) => {
-      const existing = await tx.query.tokenBalance.findFirst({
-        where: eq(tokenBalance.userId, userId),
-      });
-      if (existing) {
-        await tx
-          .update(tokenBalance)
-          .set({
-            monthlyQuota: newQuota,
-            monthlyUsed: 0,
-            balance: (existing.credits || 0) + newQuota,
-            updatedAt: new Date(),
-          })
-          .where(eq(tokenBalance.userId, userId));
-      }
-      this.logger.log(`Monthly quota reset for user ${userId}: ${newQuota}`);
-    });
-  }
-
-  async getTransactions(userId: string, page = 1, limit = 20) {
-    const offset = (page - 1) * limit;
-    const transactions = await this.db.query.transaction.findMany({
-      where: eq(transaction.userId, userId),
-      orderBy: (t, { desc }) => [desc(t.createdAt)],
-      offset,
-      limit,
-    });
-    const [{ count }] = await this.db
-      .select({ count: sql<number>`count(*)` })
-      .from(transaction)
-      .where(eq(transaction.userId, userId));
-    return {
-      data: transactions,
-      meta: {
-        total: Number(count),
-        page,
-        limit,
-        totalPages: Math.ceil(Number(count) / limit),
-      },
-    };
-  }
-
-  async getSubscription(userId: string) {
-    return this.db.query.subscription.findFirst({
-      where: and(
-        eq(subscription.userId, userId),
-        eq(subscription.status, 'ACTIVE'),
-      ),
-      orderBy: (s, { desc }) => [desc(s.createdAt)],
-    });
-  }
-
-  async handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
-    this.logger.log(`Processing checkout session: ${session.id}`);
-    const userId = session.metadata?.userId;
-    if (!userId) {
-      this.logger.error('No userId in checkout session metadata');
-      return;
+        this.logger.log(`Subscription created for user ${userId}: plan ${plan}`);
     }
-    if (session.mode === 'payment') {
-      const tokens = parseInt(session.metadata?.tokens || '0', 10);
-      const amount = session.amount_total ? session.amount_total / 100 : 0;
-      if (tokens > 0) {
-        await this.addCredits(userId, tokens, session.payment_intent as string);
+
+    async handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
+        this.logger.log(`Processing invoice payment: ${invoice.id}`);
+        const subscriptionId = (invoice as any).subscription;
+        if (!subscriptionId) return;
+        const userId = invoice.metadata?.userId;
+        if (!userId) {
+            this.logger.error('No userId in invoice metadata');
+            return;
+        }
+        const sub = await this.db.query.subscription.findFirst({
+            where: eq(subscription.stripeSubscriptionId, subscriptionId as string),
+        });
+        if (sub) {
+            await this.db
+                .update(subscription)
+                .set({
+                    status: 'ACTIVE',
+                    currentPeriodStart: new Date((invoice as any).period_start * 1000),
+                    currentPeriodEnd: new Date((invoice as any).period_end * 1000),
+                })
+                .where(eq(subscription.stripeSubscriptionId, subscriptionId as string));
+            this.logger.log(`Subscription renewed for user ${userId}`);
+        }
+    }
+
+    async handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
+        this.logger.warn(`Invoice payment failed: ${invoice.id}`);
+        const subscriptionId = (invoice as any).subscription;
+        if (!subscriptionId) return;
         await this.db
-          .update(transaction)
-          .set({ amount })
-          .where(eq(transaction.stripePaymentId, session.payment_intent as string));
-        this.logger.log(`Added ${tokens} credits to user ${userId}`);
-      }
-    }
-    if (session.mode === 'subscription' && session.subscription) {
-      await this.handleSubscriptionCreated(userId, session.subscription as string, session);
-    }
-  }
-
-  async handleSubscriptionCreated(userId: string, subscriptionId: string, session: Stripe.Checkout.Session) {
-    this.logger.log(`Creating subscription ${subscriptionId} for user ${userId}`);
-    if (!this.stripe) {
-      this.logger.error('Stripe not initialized');
-      return;
-    }
-    const stripeSubscription = await this.stripe.subscriptions.retrieve(subscriptionId);
-    const plan = session.metadata?.plan || 'PRO';
-    const tokensPerMonth = parseInt(session.metadata?.tokensPerMonth || '1000', 10);
-    await this.db.insert(subscription).values({
-      userId,
-      plan: plan as 'PRO' | 'ENTERPRISE',
-      stripeSubscriptionId: subscriptionId,
-      status: 'ACTIVE',
-      tokensPerMonth,
-      currentPeriodStart: new Date((stripeSubscription as any).current_period_start * 1000),
-      currentPeriodEnd: new Date((stripeSubscription as any).current_period_end * 1000),
-    });
-    await this.resetMonthlyQuota(userId, tokensPerMonth);
-    this.logger.log(`Subscription created for user ${userId} with ${tokensPerMonth} monthly quota`);
-  }
-
-  async handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
-    this.logger.log(`Processing invoice payment: ${invoice.id}`);
-    const subscriptionId = (invoice as any).subscription;
-    if (!subscriptionId) return;
-    const userId = invoice.metadata?.userId;
-    if (!userId) {
-      this.logger.error('No userId in invoice metadata');
-      return;
-    }
-    const sub = await this.db.query.subscription.findFirst({
-      where: eq(subscription.stripeSubscriptionId, subscriptionId as string),
-    });
-    if (sub) {
-      await this.resetMonthlyQuota(userId, sub.tokensPerMonth);
-      await this.db
-        .update(subscription)
-        .set({
-          status: 'ACTIVE',
-          currentPeriodStart: new Date((invoice as any).period_start * 1000),
-          currentPeriodEnd: new Date((invoice as any).period_end * 1000),
-        })
-        .where(eq(subscription.stripeSubscriptionId, subscriptionId as string));
-      this.logger.log(`Reset monthly quota for user ${userId}: ${sub.tokensPerMonth}`);
-    }
-  }
-
-  async handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
-    this.logger.warn(`Invoice payment failed: ${invoice.id}`);
-    const subscriptionId = (invoice as any).subscription;
-    if (!subscriptionId) return;
-    await this.db
-      .update(subscription)
-      .set({ status: 'PAST_DUE' })
-      .where(eq(subscription.stripeSubscriptionId, subscriptionId as string));
-  }
-
-  async handleCustomerSubscriptionDeleted(stripeSubscription: Stripe.Subscription) {
-    this.logger.log(`Subscription deleted: ${stripeSubscription.id}`);
-    await this.db
-      .update(subscription)
-      .set({ status: 'CANCELED', canceledAt: new Date() })
-      .where(eq(subscription.stripeSubscriptionId, stripeSubscription.id));
-  }
-
-  async createCheckoutSession(userId: string, priceId: string, mode: 'payment' | 'subscription', tokens?: number, plan?: string) {
-    if (!this.stripe) throw new BadRequestException('Stripe is not configured');
-    const session = await this.stripe.checkout.sessions.create({
-      mode,
-      payment_method_types: ['card'],
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${this.configService.get('FRONTEND_URL')}/billing?success=true`,
-      cancel_url: `${this.configService.get('FRONTEND_URL')}/billing?canceled=true`,
-      metadata: { userId, tokens: tokens?.toString() || '0', plan: plan || 'PRO' },
-    });
-    return { url: session.url };
-  }
-
-  async createCustomerPortalSession(userId: string, customerId: string) {
-    if (!this.stripe) throw new BadRequestException('Stripe is not configured');
-    const session = await this.stripe.billingPortal.sessions.create({
-      customer: customerId,
-      return_url: `${this.configService.get('FRONTEND_URL')}/billing`,
-    });
-    return { url: session.url };
-  }
-
-  async createPendingTransaction(userId: string, orderId: string, plan: string, amount: number) {
-    const planTokens: Record<string, number> = {
-      STARTER: BILLING_TIERS.STARTER.monthlyQuota,
-      PRO: BILLING_TIERS.PRO.monthlyQuota,
-      BUSINESS: BILLING_TIERS.BUSINESS.monthlyQuota,
-    };
-    await this.db.insert(transaction).values({
-      userId,
-      type: 'PURCHASE',
-      amount,
-      tokens: planTokens[plan] || 0,
-      status: 'PENDING',
-      metadata: { orderId, plan, gateway: 'midtrans' },
-    });
-    this.logger.log(`Pending transaction created: ${orderId} for user ${userId}`);
-  }
-
-  async handleMidtransSuccess(orderId: string) {
-    this.logger.log(`Processing Midtrans success: ${orderId}`);
-    const pendingTx = await this.db.query.transaction.findFirst({
-      where: eq(transaction.metadata, { orderId, gateway: 'midtrans' } as any),
-    });
-    if (!pendingTx) {
-      this.logger.error(`Transaction not found for order: ${orderId}`);
-      return;
-    }
-    if (pendingTx.status === 'COMPLETED') {
-      this.logger.log(`Transaction already completed: ${orderId}`);
-      return;
-    }
-    const metadata = pendingTx.metadata as any;
-    const plan = metadata?.plan;
-    const planTokens: Record<string, number> = {
-      STARTER: BILLING_TIERS.STARTER.monthlyQuota,
-      PRO: BILLING_TIERS.PRO.monthlyQuota,
-      BUSINESS: BILLING_TIERS.BUSINESS.monthlyQuota,
-    };
-    const tokens = planTokens[plan] || pendingTx.tokens;
-    await this.db
-      .update(transaction)
-      .set({ status: 'COMPLETED' })
-      .where(eq(transaction.id, pendingTx.id));
-    await this.resetMonthlyQuota(pendingTx.userId, tokens);
-    const existingSub = await this.db.query.subscription.findFirst({
-      where: eq(subscription.userId, pendingTx.userId),
-    });
-    const now = new Date();
-    const periodEnd = new Date(now);
-    periodEnd.setMonth(periodEnd.getMonth() + 1);
-    if (existingSub) {
-      await this.db
-        .update(subscription)
-        .set({
-          plan,
-          status: 'ACTIVE',
-          currentPeriodStart: now,
-          currentPeriodEnd: periodEnd,
-          metadata: { ...((existingSub.metadata as any) || {}), gateway: 'midtrans', orderId },
-          updatedAt: now,
-        })
-        .where(eq(subscription.userId, pendingTx.userId));
-    } else {
-      await this.db.insert(subscription).values({
-        userId: pendingTx.userId,
-        plan,
-        status: 'ACTIVE',
-        currentPeriodStart: now,
-        currentPeriodEnd: periodEnd,
-        tokensPerMonth: tokens,
-        metadata: { gateway: 'midtrans', orderId },
-      });
-    }
-    this.logger.log(`Midtrans success: added ${tokens} monthly quota to user ${pendingTx.userId}`);
-  }
-
-  async handleMidtransFailure(orderId: string, reason: string) {
-    this.logger.log(`Processing Midtrans failure: ${orderId} - ${reason}`);
-    
-    const pendingTx = await this.db.query.transaction.findFirst({
-      where: eq(transaction.metadata, { orderId, gateway: "midtrans" } as any),
-    });
-
-    if (!pendingTx) {
-      this.logger.error(`Transaction not found for order: ${orderId}`);
-      return;
+            .update(subscription)
+            .set({ status: 'PAST_DUE' })
+            .where(eq(subscription.stripeSubscriptionId, subscriptionId as string));
     }
 
-    await this.db
-      .update(transaction)
-      .set({ 
-        status: "FAILED",
-        metadata: { ...((pendingTx.metadata as any) || {}), failureReason: reason }
-      })
-      .where(eq(transaction.id, pendingTx.id));
+    async handleCustomerSubscriptionDeleted(stripeSubscription: Stripe.Subscription) {
+        this.logger.log(`Subscription deleted: ${stripeSubscription.id}`);
+        await this.db
+            .update(subscription)
+            .set({ status: 'CANCELED', canceledAt: new Date() })
+            .where(eq(subscription.stripeSubscriptionId, stripeSubscription.id));
+    }
 
-    this.logger.log(`Transaction ${orderId} marked as failed: ${reason}`);
-  }
+    async createCheckoutSession(userId: string, priceId: string, mode: 'payment' | 'subscription', tokens?: number, plan?: string) {
+        if (!this.stripe) throw new BadRequestException('Stripe is not configured');
+        const session = await this.stripe.checkout.sessions.create({
+            mode,
+            payment_method_types: ['card'],
+            line_items: [{ price: priceId, quantity: 1 }],
+            success_url: `${this.configService.get('FRONTEND_URL')}/billing?success=true`,
+            cancel_url: `${this.configService.get('FRONTEND_URL')}/billing?canceled=true`,
+            metadata: { userId, tokens: tokens?.toString() || '0', plan: plan || 'PRO' },
+        });
+        return { url: session.url };
+    }
+
+    async createCustomerPortalSession(userId: string, customerId: string) {
+        if (!this.stripe) throw new BadRequestException('Stripe is not configured');
+        const session = await this.stripe.billingPortal.sessions.create({
+            customer: customerId,
+            return_url: `${this.configService.get('FRONTEND_URL')}/billing`,
+        });
+        return { url: session.url };
+    }
+
+    // =============================================
+    // MIDTRANS HANDLERS
+    // =============================================
+
+    async createPendingTransaction(userId: string, orderId: string, plan: string, amount: number) {
+        await this.db.insert(transaction).values({
+            userId,
+            type: 'PURCHASE',
+            amount,
+            tokens: 0,
+            status: 'PENDING',
+            metadata: { orderId, plan, gateway: 'midtrans' },
+        });
+        this.logger.log(`Pending transaction created: ${orderId} for user ${userId}`);
+    }
+
+    async handleMidtransSuccess(orderId: string) {
+        this.logger.log(`Processing Midtrans success: ${orderId}`);
+        const pendingTx = await this.db.query.transaction.findFirst({
+            where: eq(transaction.metadata, { orderId, gateway: 'midtrans' } as any),
+        });
+        if (!pendingTx) {
+            this.logger.error(`Transaction not found for order: ${orderId}`);
+            return;
+        }
+        if (pendingTx.status === 'COMPLETED') {
+            this.logger.log(`Transaction already completed: ${orderId}`);
+            return;
+        }
+        const metadata = pendingTx.metadata as any;
+        const plan = metadata?.plan;
+
+        await this.db
+            .update(transaction)
+            .set({ status: 'COMPLETED' })
+            .where(eq(transaction.id, pendingTx.id));
+
+        const existingSub = await this.db.query.subscription.findFirst({
+            where: eq(subscription.userId, pendingTx.userId),
+        });
+        const now = new Date();
+        const periodEnd = new Date(now);
+        periodEnd.setMonth(periodEnd.getMonth() + 1);
+        if (existingSub) {
+            await this.db
+                .update(subscription)
+                .set({
+                    plan,
+                    status: 'ACTIVE',
+                    currentPeriodStart: now,
+                    currentPeriodEnd: periodEnd,
+                    metadata: { ...((existingSub.metadata as any) || {}), gateway: 'midtrans', orderId },
+                    updatedAt: now,
+                })
+                .where(eq(subscription.userId, pendingTx.userId));
+        } else {
+            await this.db.insert(subscription).values({
+                userId: pendingTx.userId,
+                plan,
+                status: 'ACTIVE',
+                currentPeriodStart: now,
+                currentPeriodEnd: periodEnd,
+                tokensPerMonth: 0,
+                metadata: { gateway: 'midtrans', orderId },
+            });
+        }
+        this.logger.log(`Midtrans success: plan ${plan} activated for user ${pendingTx.userId}`);
+    }
+
+    async handleMidtransFailure(orderId: string, reason: string) {
+        this.logger.log(`Processing Midtrans failure: ${orderId} - ${reason}`);
+        
+        const pendingTx = await this.db.query.transaction.findFirst({
+            where: eq(transaction.metadata, { orderId, gateway: "midtrans" } as any),
+        });
+
+        if (!pendingTx) {
+            this.logger.error(`Transaction not found for order: ${orderId}`);
+            return;
+        }
+
+        await this.db
+            .update(transaction)
+            .set({ 
+                status: "FAILED",
+                metadata: { ...((pendingTx.metadata as any) || {}), failureReason: reason }
+            })
+            .where(eq(transaction.id, pendingTx.id));
+
+        this.logger.log(`Transaction ${orderId} marked as failed: ${reason}`);
+    }
+
+    private getCategoryLabel(category: string): string {
+        const labels: Record<string, string> = {
+            ARTICLE_GENERATION: 'Artikel',
+            INSTAGRAM_GENERATION: 'Instagram',
+            VIDEO_GENERATION: 'Video',
+            IMAGE_GENERATION: 'Gambar',
+        };
+        return labels[category] || category;
+    }
 }
-

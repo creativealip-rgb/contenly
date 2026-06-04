@@ -228,15 +228,9 @@ export class VideoScriptService {
   ) {
     const project = await this.getProject(userId, projectId);
 
-    const hasBalance = await this.billingService.checkBalance(userId, TOKEN_COSTS.VIDEO_SCRIPT);
-    if (!hasBalance) {
-      throw new BadRequestException(
-        'Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.',
-      );
-    }
-    const withinCatLimit = await this.billingService.checkCategoryLimit(userId, 'VIDEO_SCRIPT');
-    if (!withinCatLimit) {
-          throw new BadRequestException('Bulanan limit untuk kategori sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
+    const billingVIDEO_SCRIPT = await this.billingService.ensureBilling(userId, 'VIDEO_SCRIPT');
+    if (!billingVIDEO_SCRIPT.allowed) {
+      throw new BadRequestException(billingVIDEO_SCRIPT.reason);
     }
 
     await this.drizzle.db
@@ -302,13 +296,8 @@ export class VideoScriptService {
         })
         .where(eq(schema.scriptProject.id, projectId));
 
-      await this.billingService.deductTokens(
-        userId,
-        TOKEN_COSTS.VIDEO_SCRIPT,
-        'Video script generation',
-      );
-      await this.billingService.incrementDailyUsage(userId, 'VIDEO_GENERATION');
-
+      await this.billingService.recordUsage(userId, 'VIDEO_SCRIPT', billingVIDEO_SCRIPT);
+  
       return this.getProject(userId, projectId);
     } catch (error: any) {
       this.logger.error('Script generation error:', error?.message || error);
@@ -332,15 +321,9 @@ export class VideoScriptService {
       throw new BadRequestException('Project source content is empty');
     }
 
-    const hasBalance = await this.billingService.checkBalance(userId, TOKEN_COSTS.REGENERATE_FIELD);
-    if (!hasBalance) {
-      throw new BadRequestException(
-        'Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.',
-      );
-    }
-    const withinCatLimit = await this.billingService.checkCategoryLimit(userId, 'REGENERATE_FIELD');
-    if (!withinCatLimit) {
-          throw new BadRequestException('Bulanan limit untuk kategori sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
+    const billingREGENERATE_FIELD = await this.billingService.ensureBilling(userId, 'REGENERATE_FIELD');
+    if (!billingREGENERATE_FIELD.allowed) {
+      throw new BadRequestException(billingREGENERATE_FIELD.reason);
     }
 
     const fieldPrompt = this.buildFieldRegenerationPrompt(field, project);
@@ -377,12 +360,7 @@ export class VideoScriptService {
       .where(eq(schema.scriptProject.id, projectId))
       .returning();
 
-    await this.billingService.deductTokens(
-      userId,
-      TOKEN_COSTS.REGENERATE_FIELD,
-      `Video script regenerate field: ${field}`,
-    );
-    await this.billingService.incrementDailyUsage(userId, 'VIDEO_GENERATION');
+    await this.billingService.recordUsage(userId, 'REGENERATE_FIELD', billingREGENERATE_FIELD);
 
     return {
       ...updatedProject,
@@ -447,15 +425,9 @@ export class VideoScriptService {
       throw new BadRequestException('Project source content is empty');
     }
 
-    const hasBalance = await this.billingService.checkBalance(userId, TOKEN_COSTS.REGENERATE_VOICEOVER);
-    if (!hasBalance) {
-      throw new BadRequestException(
-        'Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.',
-      );
-    }
-    const withinCatLimit = await this.billingService.checkCategoryLimit(userId, 'REGENERATE_VOICEOVER');
-    if (!withinCatLimit) {
-          throw new BadRequestException('Bulanan limit untuk kategori sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
+    const billingREGENERATE_VOICEOVER = await this.billingService.ensureBilling(userId, 'REGENERATE_VOICEOVER');
+    if (!billingREGENERATE_VOICEOVER.allowed) {
+      throw new BadRequestException(billingREGENERATE_VOICEOVER.reason);
     }
 
     const tier = await this.billingService.getSubscriptionTier(userId);
@@ -509,12 +481,7 @@ ${project.sourceContent}`;
       .where(eq(schema.scriptScene.id, sceneId))
       .returning();
 
-    await this.billingService.deductTokens(
-      userId,
-      TOKEN_COSTS.REGENERATE_VOICEOVER,
-      `Video script regenerate voiceover (scene ${scene.sceneNumber})`,
-    );
-    await this.billingService.incrementDailyUsage(userId, 'VIDEO_GENERATION');
+    await this.billingService.recordUsage(userId, 'REGENERATE_VOICEOVER', billingREGENERATE_VOICEOVER);
 
     return {
       ...updatedScene,
@@ -571,16 +538,6 @@ ${project.sourceContent}`;
     if (!scene) throw new NotFoundException('Scene not found');
     const project = await this.getProject(userId, scene.projectId);
 
-    // Billing check
-    const hasBalance = await this.billingService.checkBalance(userId, 1);
-    if (!hasBalance) {
-      throw new BadRequestException('Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.');
-    }
-    const withinCatLimit = await this.billingService.checkCategoryLimit(userId, 'VIDEO_SCRIPT');
-    if (!withinCatLimit) {
-      throw new BadRequestException('Bulanan limit untuk kategori Generate sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
-    }
-
     const tier = await this.billingService.getSubscriptionTier(userId);
     const model = this.getTierModel(tier);
     const prompt = `You are a stock footage curator helping creators find b-roll for short-form video.
@@ -604,14 +561,10 @@ Project hook: ${project.hook || ''}`;
     )) as { keywords?: unknown };
 
     const raw = Array.isArray(result.keywords) ? result.keywords : [];
-    const keywords = raw
+    return raw
       .map((k) => (typeof k === 'string' ? k.trim() : ''))
       .filter((k) => k.length > 0)
       .slice(0, count);
-
-    await this.billingService.deductTokens(userId, 1, 'Suggest footage keywords');
-
-    return keywords;
   }
 
   async improveSceneVisual(
@@ -626,15 +579,9 @@ Project hook: ${project.hook || ''}`;
     if (!scene) throw new NotFoundException('Scene not found');
     const project = await this.getProject(userId, scene.projectId);
 
-    const hasBalance = await this.billingService.checkBalance(userId, TOKEN_COSTS.IMPROVE_VISUAL);
-    if (!hasBalance) {
-      throw new BadRequestException(
-        'Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.',
-      );
-    }
-    const withinCatLimit = await this.billingService.checkCategoryLimit(userId, 'IMPROVE_VISUAL');
-    if (!withinCatLimit) {
-          throw new BadRequestException('Bulanan limit untuk kategori sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
+    const billingIMPROVE_VISUAL = await this.billingService.ensureBilling(userId, 'IMPROVE_VISUAL');
+    if (!billingIMPROVE_VISUAL.allowed) {
+      throw new BadRequestException(billingIMPROVE_VISUAL.reason);
     }
 
     const tier = await this.billingService.getSubscriptionTier(userId);
@@ -681,12 +628,7 @@ Project headline: ${project.headline || ''}`;
       .where(eq(schema.scriptScene.id, sceneId))
       .returning();
 
-    await this.billingService.deductTokens(
-      userId,
-      TOKEN_COSTS.IMPROVE_VISUAL,
-      `Video script improve visual (scene ${scene.sceneNumber})`,
-    );
-    await this.billingService.incrementDailyUsage(userId, 'VIDEO_GENERATION');
+    await this.billingService.recordUsage(userId, 'IMPROVE_VISUAL', billingIMPROVE_VISUAL);
 
     return {
       ...updatedScene,
@@ -947,23 +889,13 @@ Project headline: ${project.headline || ''}`;
       throw new BadRequestException('Scene voiceover text is empty');
     }
 
-    const hasBalance = await this.billingService.checkBalance(userId, TOKEN_COSTS.TTS_PREVIEW);
-    if (!hasBalance) {
-      throw new BadRequestException(
-        'Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.',
-      );
-    }
-    const withinCatLimit = await this.billingService.checkCategoryLimit(userId, 'TTS_PREVIEW');
-    if (!withinCatLimit) {
-          throw new BadRequestException('Bulanan limit untuk kategori sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
+    const billingTTS_PREVIEW = await this.billingService.ensureBilling(userId, 'TTS_PREVIEW');
+    if (!billingTTS_PREVIEW.allowed) {
+      throw new BadRequestException(billingTTS_PREVIEW.reason);
     }
 
     const buffer = await this.openAiService.generateSpeech(text, voice);
-    await this.billingService.deductTokens(
-      userId,
-      TOKEN_COSTS.TTS_PREVIEW,
-      `Video script TTS preview (scene ${scene.sceneNumber}, voice ${voice})`,
-    );
+    await this.billingService.recordUsage(userId, 'TTS_PREVIEW', billingTTS_PREVIEW);
     return {
       buffer,
       filename: `scene-${scene.sceneNumber}-${voice}.mp3`,
@@ -1386,15 +1318,9 @@ ${project.sourceContent}`;
       throw new BadRequestException('No scenes to generate audio from');
     }
 
-    const hasBalance = await this.billingService.checkBalance(userId, TOKEN_COSTS.TTS_VOICEOVER);
-    if (!hasBalance) {
-      throw new BadRequestException(
-        'Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.',
-      );
-    }
-    const withinCatLimit = await this.billingService.checkCategoryLimit(userId, 'TTS_VOICEOVER');
-    if (!withinCatLimit) {
-          throw new BadRequestException('Bulanan limit untuk kategori sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
+    const billingTTS_VOICEOVER = await this.billingService.ensureBilling(userId, 'TTS_VOICEOVER');
+    if (!billingTTS_VOICEOVER.allowed) {
+      throw new BadRequestException(billingTTS_VOICEOVER.reason);
     }
 
     const fullScript = project.scenes
@@ -1411,11 +1337,7 @@ ${project.sourceContent}`;
         fullScript,
         voice,
       );
-      await this.billingService.deductTokens(
-        userId,
-        TOKEN_COSTS.TTS_VOICEOVER,
-        'TTS Voiceover Generation',
-      );
+      await this.billingService.recordUsage(userId, 'TTS_VOICEOVER', billingTTS_VOICEOVER);
 
       return {
         buffer: mp3Buffer,
@@ -1444,14 +1366,9 @@ ${project.sourceContent}`;
   ) {
     await this.getProject(userId, projectId);
 
-    const hasBalance = await this.billingService.checkBalance(userId, TOKEN_COSTS.VIDEO_SCRIPT);
-    if (!hasBalance) {
-      throw new BadRequestException('Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.');
-    }
-
-    const withinCatLimitTrans = await this.billingService.checkCategoryLimit(userId, 'VIDEO_SCRIPT');
-    if (!withinCatLimitTrans) {
-      throw new BadRequestException('Bulanan limit untuk kategori Generate sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
+    const billingVIDEO_SCRIPT = await this.billingService.ensureBilling(userId, 'VIDEO_SCRIPT');
+    if (!billingVIDEO_SCRIPT.allowed) {
+      throw new BadRequestException(billingVIDEO_SCRIPT.reason);
     }
 
     const result = await this.openAiService.transcribeAudio(fileBuffer, language);
@@ -1476,7 +1393,7 @@ ${project.sourceContent}`;
         })
         .join('\n');
 
-    await this.billingService.deductTokens(userId, TOKEN_COSTS.VIDEO_SCRIPT, "Audio Transcription");
+    await this.billingService.recordUsage(userId, 'VIDEO_SCRIPT', billingVIDEO_SCRIPT);
 
     return {
       text: result.text,
@@ -1497,15 +1414,9 @@ ${project.sourceContent}`;
   ) {
     const project = await this.getProject(userId, projectId);
 
-    const hasBalance = await this.billingService.checkBalance(userId, TOKEN_COSTS.THUMBNAIL_GENERATION);
-    if (!hasBalance) {
-      throw new BadRequestException('Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.');
-    }
-
-    // Check per-category limit for thumbnail/gambar
-    const withinCategoryLimit = await this.billingService.checkCategoryLimit(userId, 'THUMBNAIL_GENERATION');
-    if (!withinCategoryLimit) {
-      throw new BadRequestException('Bulanan limit untuk kategori Gambar sudah habis. Silakan upgrade plan atau tunggu bulan depan.');
+    const billingThumbnail = await this.billingService.ensureBilling(userId, 'THUMBNAIL_GENERATION');
+    if (!billingThumbnail.allowed) {
+      throw new BadRequestException(billingThumbnail.reason);
     }
 
     const title = project.headline || project.title;
@@ -1529,8 +1440,7 @@ ${project.sourceContent}`;
       this.logger.log(`Saved thumbnail to: ${savedUrl}`);
     }
 
-    await this.billingService.deductTokens(userId, TOKEN_COSTS.THUMBNAIL_GENERATION, "Thumbnail Generation");
-    await this.billingService.incrementDailyUsage(userId, 'THUMBNAIL_GENERATION');
+    await this.billingService.recordUsage(userId, 'THUMBNAIL_GENERATION', billingThumbnail);
 
     // Persist generated thumbnail URL to project
     await this.drizzle.db

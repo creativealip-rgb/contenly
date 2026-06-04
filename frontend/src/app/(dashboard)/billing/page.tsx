@@ -30,7 +30,6 @@ export default function BillingPage() {
 
     const loading = balanceLoading || subLoading
     const balance = balanceData?.balance ?? null
-    const monthlyQuotaRemaining = balanceData?.monthlyQuota ? (balanceData.monthlyQuota - (balanceData.monthlyUsed || 0)) : 0
 
     const getPlanName = (plan: string) => {
         switch (plan?.toUpperCase()) {
@@ -56,7 +55,7 @@ export default function BillingPage() {
                     <h1 className="text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
                         Penagihan
                     </h1>
-                    <p className="text-slate-500 font-medium">Kelola token dan penggunaan Anda.</p>
+                    <p className="text-slate-500 font-medium">Kelola jatah dan penggunaan Anda.</p>
                 </div>
             </div>
 
@@ -306,7 +305,7 @@ export default function BillingPage() {
                             <div className="flex-1">
                                 <h3 className="font-semibold mb-1">Beli Kredit Tambahan</h3>
                                 <p className="text-sm text-muted-foreground mb-4">
-                                    Beli token tambahan untuk melanjutkan pembuatan konten.
+                                    Beli kredit tambahan untuk melanjutkan jika jatah bulanan habis.
                                 </p>
                                 <WhatsAppActionModal
                                     trigger={
@@ -360,7 +359,7 @@ export default function BillingPage() {
                                     <span className="font-medium text-sm">Pembuatan Konten</span>
                                 </div>
                                 <p className="text-xs text-muted-foreground">
-                                    Setiap pembuatan artikel menggunakan 17 token, sudah termasuk meta SEO.
+                                    Setiap paket punya jatah artikel per bulan. Kredit dipakai kalau jatah habis.
                                 </p>
                             </div>
                             <div className="p-4 rounded-xl bg-muted/50">
@@ -369,7 +368,7 @@ export default function BillingPage() {
                                     <span className="font-medium text-sm">Pembuatan Gambar</span>
                                 </div>
                                 <p className="text-xs text-muted-foreground">
-                                    Pembuatan gambar AI menggunakan 85 token per gambar.
+                                    Setiap paket punya jatah gambar per bulan. Kredit dipakai kalau jatah habis.
                                 </p>
                             </div>
                             <div className="p-4 rounded-xl bg-muted/50">
@@ -422,7 +421,7 @@ function TransactionHistory() {
                                         <p className="text-xs text-muted-foreground">{new Date(tx.createdAt).toLocaleString('id-ID')}</p>
                                     </div>
                                     <span className={`text-sm font-bold ${tx.tokens >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                        {tx.tokens >= 0 ? '+' : ''}{tx.tokens} tokens
+                                        {tx.tokens >= 0 ? '+' : ''}{tx.tokens} kredit
                                     </span>
                                 </div>
                             ))}

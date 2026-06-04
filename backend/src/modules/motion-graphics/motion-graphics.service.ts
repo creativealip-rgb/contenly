@@ -251,12 +251,8 @@ export class MotionGraphicsService {
     if (!this.bundlePath) throw new BadRequestException('Remotion bundle not available.');
 
     const cost = (options.format || 'mp4') === 'png' ? 1 : 3;
-    const hasBalance = await this.billingService.checkBalance(userId, cost);
-    if (!hasBalance) throw new BadRequestException('Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.');
-
-    await this.billingService.deductTokens(userId, cost, `Motion graphics render: ${templateId} (${options.format || 'mp4'})`);
-    const withinCatLimitMG = await this.billingService.checkCategoryLimit(userId, 'MOTION_GRAPHICS_RENDER');
-    if (!withinCatLimitMG) throw new BadRequestException('Bulanan limit untuk kategori Gambar sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
+    const billingMG = await this.billingService.ensureBilling(userId, 'MOTION_GRAPHICS_RENDER');
+    if (!billingMG.allowed) throw new BadRequestException(billingMG.reason);
 
     const db = this.drizzle.getDb();
     const [job] = await db.insert(renderJobs).values({
@@ -404,12 +400,8 @@ Resolution: ${width}x${height}`;
     if (!words.length) throw new BadRequestException('No words provided for caption rendering.');
 
     const CAPTION_COST = 3;
-    const hasBalance = await this.billingService.checkBalance(userId, CAPTION_COST);
-    if (!hasBalance) throw new BadRequestException('Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.');
-
-    await this.billingService.deductTokens(userId, CAPTION_COST, `Motion graphics render: AutoCaption (${words.length} words)`);
-    const withinCatLimitMG = await this.billingService.checkCategoryLimit(userId, 'MOTION_GRAPHICS_RENDER');
-    if (!withinCatLimitMG) throw new BadRequestException('Bulanan limit untuk kategori Gambar sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
+    const billingCaption = await this.billingService.ensureBilling(userId, 'MOTION_GRAPHICS_RENDER');
+    if (!billingCaption.allowed) throw new BadRequestException(billingCaption.reason);
 
     const db = this.drizzle.getDb();
     const [job] = await db.insert(renderJobs).values({
@@ -481,12 +473,8 @@ Resolution: ${width}x${height}`;
 
     const includeAudio = options.includeAudio !== false;
     const COMPOSE_COST = includeAudio ? 10 : 5;
-    const hasBalance = await this.billingService.checkBalance(userId, COMPOSE_COST);
-    if (!hasBalance) throw new BadRequestException('Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.');
-
-    await this.billingService.deductTokens(userId, COMPOSE_COST, `Motion graphics compose: ${project.scenes.length} scenes`);
-    const withinCatLimitMG = await this.billingService.checkCategoryLimit(userId, 'MOTION_GRAPHICS_RENDER');
-    if (!withinCatLimitMG) throw new BadRequestException('Bulanan limit untuk kategori Gambar sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
+    const billingCompose = await this.billingService.ensureBilling(userId, 'MOTION_GRAPHICS_RENDER');
+    if (!billingCompose.allowed) throw new BadRequestException(billingCompose.reason);
 
     const db = this.drizzle.getDb();
     const [job] = await db.insert(renderJobs).values({
@@ -782,13 +770,8 @@ Resolution: ${width}x${height}`;
     if (!this.bundlePath) throw new BadRequestException('Remotion bundle not available.');
     if (items.length > 10) throw new BadRequestException('Maximum 10 items per batch.');
 
-    const totalCost = items.reduce((sum, item) => sum + ((item.format || 'mp4') === 'png' ? 1 : 3), 0);
-    const hasBalance = await this.billingService.checkBalance(userId, totalCost);
-    if (!hasBalance) throw new BadRequestException('Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.');
-
-    await this.billingService.deductTokens(userId, totalCost, `Batch render: ${items.length} items`);
-    const withinCatLimitMG = await this.billingService.checkCategoryLimit(userId, 'MOTION_GRAPHICS_RENDER');
-    if (!withinCatLimitMG) throw new BadRequestException('Bulanan limit untuk kategori Gambar sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
+    const billingBatch = await this.billingService.ensureBilling(userId, 'MOTION_GRAPHICS_RENDER');
+    if (!billingBatch.allowed) throw new BadRequestException(billingBatch.reason);
 
     const db = this.drizzle.getDb();
     const jobIds: string[] = [];

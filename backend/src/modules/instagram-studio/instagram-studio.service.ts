@@ -197,14 +197,12 @@ export class InstagramStudioService {
     ) {
         const project = await this.getProject(userId, projectId);
 
-        const hasBalance = await this.billingService.checkBalance(userId, TOKEN_COSTS.STORYBOARD_GENERATION);
-        if (!hasBalance) {
-            throw new BadRequestException('Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.');
-        }
+        const billingSTORYBOARD_GENERATION = await this.billingService.ensureBilling(userId, 'STORYBOARD_GENERATION');
 
-        const withinCategoryLimit = await this.billingService.checkCategoryLimit(userId, 'INSTAGRAM_GENERATION');
-        if (!withinCategoryLimit) {
-            throw new BadRequestException('Bulanan limit untuk kategori Generate sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
+        if (!billingSTORYBOARD_GENERATION.allowed) {
+
+          throw new BadRequestException(billingSTORYBOARD_GENERATION.reason);
+
         }
 
         let content = dto.content || project.sourceContent;
@@ -268,8 +266,7 @@ export class InstagramStudioService {
             })
             .where(eq(instagramProject.id, projectId));
 
-        await this.billingService.deductTokens(userId, TOKEN_COSTS.STORYBOARD_GENERATION, "Storyboard generation");
-        await this.billingService.incrementDailyUsage(userId, 'INSTAGRAM_GENERATION');
+        await this.billingService.recordUsage(userId, 'STORYBOARD_GENERATION', billingSTORYBOARD_GENERATION);
 
         return this.getProject(userId, projectId);
     }
@@ -288,16 +285,12 @@ export class InstagramStudioService {
             throw new NotFoundException('Slide not found');
         }
 
-        const hasBalance = await this.billingService.checkBalance(userId, TOKEN_COSTS.SLIDE_IMAGE);
-        if (!hasBalance) {
-            throw new BadRequestException(
-                'Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.',
-            );
-        }
+        const billingSLIDE_IMAGE = await this.billingService.ensureBilling(userId, 'SLIDE_IMAGE');
 
-        const withinCatLimitIG = await this.billingService.checkCategoryLimit(userId, 'IMAGE_GENERATION');
-        if (!withinCatLimitIG) {
-            throw new BadRequestException('Bulanan limit untuk kategori Gambar sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
+        if (!billingSLIDE_IMAGE.allowed) {
+
+          throw new BadRequestException(billingSLIDE_IMAGE.reason);
+
         }
 
         const project = await this.getProject(userId, slide.projectId);
@@ -322,12 +315,7 @@ export class InstagramStudioService {
                 .where(eq(instagramSlide.id, slideId))
                 .returning();
 
-            await this.billingService.deductTokens(
-                userId,
-                2,
-                'Slide image generation',
-            );
-            await this.billingService.incrementDailyUsage(userId, 'INSTAGRAM_GENERATION');
+            // Usage recorded by ensureBilling
 
             return updated;
         } catch (error: any) {
@@ -351,15 +339,12 @@ export class InstagramStudioService {
             throw new BadRequestException('No slides to generate images for');
         }
 
-        const totalTokens = project.slides.length * 2;
-        const hasBalance = await this.billingService.checkBalance(userId, totalTokens);
-        if (!hasBalance) {
-            throw new BadRequestException('Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.');
-        }
+        const billingIMAGE_GENERATION = await this.billingService.ensureBilling(userId, 'IMAGE_GENERATION');
 
-        const withinCatLimitIG2 = await this.billingService.checkCategoryLimit(userId, 'IMAGE_GENERATION');
-        if (!withinCatLimitIG2) {
-            throw new BadRequestException('Bulanan limit untuk kategori Gambar sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
+        if (!billingIMAGE_GENERATION.allowed) {
+
+          throw new BadRequestException(billingIMAGE_GENERATION.reason);
+
         }
 
         const results = [];
@@ -381,8 +366,7 @@ export class InstagramStudioService {
                     .set({ imageUrl })
                     .where(eq(instagramSlide.id, slide.id));
 
-                await this.billingService.deductTokens(userId, TOKEN_COSTS.SLIDE_IMAGE, `Slide ${slide.slideNumber} image generation`);
-                await this.billingService.incrementDailyUsage(userId, 'IMAGE_GENERATION');
+                await this.billingService.recordUsage(userId, 'SLIDE_IMAGE', billingIMAGE_GENERATION);
 
                 results.push({ slideId: slide.id, slideNumber: slide.slideNumber, success: true });
             } catch (error: any) {
@@ -413,14 +397,12 @@ export class InstagramStudioService {
 
         const project = await this.getProject(userId, slide.projectId);
 
-        const hasBalance = await this.billingService.checkBalance(userId, TOKEN_COSTS.TEXT_OVERLAY);
-        if (!hasBalance) {
-            throw new BadRequestException('Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.');
-        }
+        const billingTEXT_OVERLAY = await this.billingService.ensureBilling(userId, 'TEXT_OVERLAY');
 
-        const withinCategoryLimit = await this.billingService.checkCategoryLimit(userId, 'IMAGE_GENERATION');
-        if (!withinCategoryLimit) {
-            throw new BadRequestException('Daily limit reached for Instagram Text Generation on your current plan.');
+        if (!billingTEXT_OVERLAY.allowed) {
+
+          throw new BadRequestException(billingTEXT_OVERLAY.reason);
+
         }
 
         this.logger.log(`[Text Overlay] Analyzing image layout for slide ${slideId} using Vision AI.`);
@@ -463,12 +445,7 @@ export class InstagramStudioService {
                 .where(eq(instagramSlide.id, slideId))
                 .returning();
 
-            await this.billingService.deductTokens(
-                userId,
-                1,
-                'Slide text generation',
-            );
-            await this.billingService.incrementDailyUsage(userId, 'IMAGE_GENERATION');
+            // Usage recorded by ensureBilling
 
             return {
                 success: true,
@@ -666,16 +643,12 @@ export class InstagramStudioService {
         }
 
         // Check balance: 2 tokens per image (text integrated into AI prompt, no separate overlay)
-        const totalTokensNeeded = project.slides.length * 2;
+        const billingIMAGE_GENERATION = await this.billingService.ensureBilling(userId, 'IMAGE_GENERATION');
 
-        const hasBalance = await this.billingService.checkBalance(userId, totalTokensNeeded);
-        if (!hasBalance) {
-            throw new BadRequestException('Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.');
-        }
+        if (!billingIMAGE_GENERATION.allowed) {
 
-        const withinCatLimitIG3 = await this.billingService.checkCategoryLimit(userId, 'IMAGE_GENERATION');
-        if (!withinCatLimitIG3) {
-            throw new BadRequestException('Bulanan limit untuk kategori Gambar sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
+          throw new BadRequestException(billingIMAGE_GENERATION.reason);
+
         }
 
         const results: any[] = [];
@@ -704,8 +677,7 @@ export class InstagramStudioService {
                     .where(eq(instagramSlide.id, currentSlide.id));
 
                 tokensUsed += 2;
-                await this.billingService.deductTokens(userId, TOKEN_COSTS.SLIDE_IMAGE, `Slide ${slide.slideNumber} image generation`);
-                await this.billingService.incrementDailyUsage(userId, 'IMAGE_GENERATION');
+                await this.billingService.recordUsage(userId, 'SLIDE_IMAGE', billingIMAGE_GENERATION);
 
                 results.push({ slideNumber: slide.slideNumber, status: 'success' });
             } catch (error: any) {

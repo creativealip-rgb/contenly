@@ -1,10 +1,8 @@
 // Resolve the AI model from env so all tiers stay in sync with deployment config.
-// Falls back to a healthy 9Router model (Antigravity) instead of the dead cx/ Codex models.
 const DEFAULT_AI_MODEL = (process.env.OPENAI_MODEL || process.env.OPENROUTER_MODEL || 'ag/claude-sonnet-4-6').trim();
 
-export const BILLING_TIERS = {
+export const BILLING_TIERS: Record<string, any> = {
     FREE: {
-        monthlyQuota: 120,
         monthlyLimits: {
             ARTICLE_GENERATION: 5,
             INSTAGRAM_GENERATION: 30,
@@ -19,7 +17,6 @@ export const BILLING_TIERS = {
         canAnalyzeTrends: false,
     },
     STARTER: {
-        monthlyQuota: 600,
         monthlyLimits: {
             ARTICLE_GENERATION: 40,
             INSTAGRAM_GENERATION: 100,
@@ -29,13 +26,12 @@ export const BILLING_TIERS = {
         maxWpSites: 2,
         aiModel: DEFAULT_AI_MODEL,
         canAutoSync: true,
-        minSyncInterval: 120, // 2 hours
+        minSyncInterval: 120,
         canAccessViewBoost: false,
         canAnalyzeTrends: true,
-        price: 99000, // Rp 99K
+        price: 99000,
     },
     PRO: {
-        monthlyQuota: 2000,
         monthlyLimits: {
             ARTICLE_GENERATION: 150,
             INSTAGRAM_GENERATION: 300,
@@ -45,13 +41,12 @@ export const BILLING_TIERS = {
         maxWpSites: 5,
         aiModel: DEFAULT_AI_MODEL,
         canAutoSync: true,
-        minSyncInterval: 60, // 1 hour
+        minSyncInterval: 60,
         canAccessViewBoost: true,
         canAnalyzeTrends: true,
-        price: 399000, // Rp 399K
+        price: 399000,
     },
     BUSINESS: {
-        monthlyQuota: 5000,
         monthlyLimits: {
             ARTICLE_GENERATION: 400,
             INSTAGRAM_GENERATION: 800,
@@ -61,18 +56,40 @@ export const BILLING_TIERS = {
         maxWpSites: 10,
         aiModel: DEFAULT_AI_MODEL,
         canAutoSync: true,
-        minSyncInterval: 15, // 15 minutes
+        minSyncInterval: 15,
         canAccessViewBoost: true,
         canAnalyzeTrends: true,
-        price: 999000, // Rp 999K
+        price: 999000,
     },
 };
 
-// Token costs per operation (aligned with 3x markup of API costs)
-// Text gen (Antigravity): ~Rp 583/request → 17 tokens @ Rp 100/token = Rp 1,700
-// Image gen (Codex): ~Rp 2,836/request → 85 tokens @ Rp 100/token = Rp 8,500
-export const TOKEN_COSTS = {
-    // Text generation operations (Antigravity ~Rp 583)
+/** Feature type to category key */
+export const FEATURE_TO_CATEGORY: Record<string, string> = {
+    ARTICLE_GENERATION: 'ARTICLE_GENERATION',
+    INSTAGRAM_GENERATION: 'INSTAGRAM_GENERATION',
+    STORYBOARD_GENERATION: 'INSTAGRAM_GENERATION',
+    HASHTAG_GENERATION: 'INSTAGRAM_GENERATION',
+    VIDEO_GENERATION: 'VIDEO_GENERATION',
+    VIDEO_SCRIPT: 'VIDEO_GENERATION',
+    ALTERNATE_HOOKS: 'VIDEO_GENERATION',
+    BROLL_KEYWORDS: 'VIDEO_GENERATION',
+    AUTO_CUTAWAY: 'VIDEO_GENERATION',
+    TTS_PREVIEW: 'VIDEO_GENERATION',
+    TTS_VOICEOVER: 'VIDEO_GENERATION',
+    REGENERATE_FIELD: 'VIDEO_GENERATION',
+    REGENERATE_VOICEOVER: 'VIDEO_GENERATION',
+    IMPROVE_VISUAL: 'VIDEO_GENERATION',
+    VIDEO_ANALYSIS: 'VIDEO_GENERATION',
+    VIDEO_EXPORT: 'VIDEO_GENERATION',
+    IMAGE_GENERATION: 'IMAGE_GENERATION',
+    SLIDE_IMAGE: 'IMAGE_GENERATION',
+    THUMBNAIL_GENERATION: 'IMAGE_GENERATION',
+    MOTION_GRAPHICS_RENDER: 'IMAGE_GENERATION',
+    TEXT_OVERLAY: 'IMAGE_GENERATION',
+};
+
+/** Kredit cost per operation - only charged when category limit exceeded */
+export const KREDIT_COSTS: Record<string, number> = {
     ARTICLE_GENERATION: 3,
     STORYBOARD_GENERATION: 3,
     VIDEO_SCRIPT: 3,
@@ -85,15 +102,13 @@ export const TOKEN_COSTS = {
     REGENERATE_FIELD: 1,
     REGENERATE_VOICEOVER: 1,
     IMPROVE_VISUAL: 1,
-    
-    // Image generation operations (Codex ~Rp 2,836)
     IMAGE_GENERATION: 2,
     SLIDE_IMAGE: 2,
     THUMBNAIL_GENERATION: 2,
     MOTION_GRAPHICS_RENDER: 2,
     TEXT_OVERLAY: 2,
-    
-    // Video/Heavy operations
     VIDEO_ANALYSIS: 50,
     VIDEO_EXPORT: 30,
 };
+
+export const TOKEN_COSTS = KREDIT_COSTS;

@@ -33,7 +33,7 @@ export class BillingController {
     }
 
     @Get('balance')
-    @ApiOperation({ summary: 'Get token balance with per-category limits' })
+    @ApiOperation({ summary: 'Get billing balance with per-category limits' })
     async getBalance(@CurrentUser() user: User) {
         const balance = await this.billingService.getBalance(user.id);
         const tier = await this.billingService.getSubscriptionTier(user.id);
@@ -46,7 +46,7 @@ export class BillingController {
         const usage = await this.billingService.getMonthlyUsageByCategory(user.id, monthStart);
         
         return {
-            ...balance,
+            credits: balance.credits || 0,
             tier,
             categories: {
                 artikel: {
@@ -55,13 +55,18 @@ export class BillingController {
                     label: 'Artikel',
                 },
                 generate: {
-                    used: (usage.VIDEO_GENERATION || 0) + (usage.STORYBOARD_GENERATION || 0),
+                    used: (usage.VIDEO_GENERATION || 0) + (usage.STORYBOARD_GENERATION || 0)
+                         + (usage.VIDEO_SCRIPT || 0) + (usage.ALTERNATE_HOOKS || 0)
+                         + (usage.BROLL_KEYWORDS || 0) + (usage.AUTO_CUTAWAY || 0)
+                         + (usage.TTS_PREVIEW || 0) + (usage.TTS_VOICEOVER || 0)
+                         + (usage.REGENERATE_FIELD || 0) + (usage.REGENERATE_VOICEOVER || 0)
+                         + (usage.IMPROVE_VISUAL || 0) + (usage.HASHTAG_GENERATION || 0),
                     limit: tierConfig.monthlyLimits.VIDEO_GENERATION,
                     label: 'Generate',
                 },
                 gambar: {
                     used: (usage.IMAGE_GENERATION || 0) + (usage.SLIDE_IMAGE || 0) + (usage.THUMBNAIL_GENERATION || 0),
-                    limit: tierConfig.monthlyLimits.IMAGE_GENERATION || tierConfig.monthlyLimits.ARTICLE_GENERATION,
+                    limit: tierConfig.monthlyLimits.IMAGE_GENERATION,
                     label: 'Gambar',
                 },
             },

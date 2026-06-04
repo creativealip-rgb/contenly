@@ -10,8 +10,6 @@ export interface BillingCategory {
 export function useBillingBalance() {
   return useQuery<{ 
     balance: number
-    monthlyQuota: number
-    monthlyUsed: number
     credits: number
     tier: string
     categories: {

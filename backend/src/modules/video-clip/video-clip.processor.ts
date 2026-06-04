@@ -70,7 +70,7 @@ export class VideoClipProcessor {
       }).where(eq(videoClipProjects.id, projectId));
 
       // Deduct tokens
-      await this.billingService.deductTokens(userId, TOKEN_COSTS.VIDEO_ANALYSIS, `Analyzed video: ${project.title}`);
+      await this.billingService.recordUsage(userId, 'VIDEO_ANALYSIS');
 
       await this.notificationsService.create(userId, 'JOB_SUCCESS',
         'Video Analysis Complete',
@@ -156,7 +156,7 @@ export class VideoClipProcessor {
       await db.update(videoClipProjects).set({ exports }).where(eq(videoClipProjects.id, projectId));
 
       // Deduct tokens
-      await this.billingService.deductTokens(userId, TOKEN_COSTS.VIDEO_EXPORT, `Exported clip from "${project.title}"`);
+      await this.billingService.recordUsage(userId, 'VIDEO_EXPORT');
 
       await this.notificationsService.create(userId, 'JOB_SUCCESS',
         'Clip Export Complete',
