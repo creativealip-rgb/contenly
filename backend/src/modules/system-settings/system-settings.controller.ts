@@ -79,4 +79,14 @@ export class SystemSettingsController {
   async testImage(@Body() body: { provider: string; model: string; prompt: string }) {
     return this.service.testImage(body.provider, body.model, body.prompt);
   }
+
+  @Get('providers/status')
+  async getProvidersStatus() {
+    return this.service.getProvidersStatus();
+  }
+
+  @Post('providers/test-connection')
+  async testProviderConnection(@Body() body: { provider: string; model?: string }) {
+    return this.service.testProviderConnection(body.provider, body.model);
+  }
 }

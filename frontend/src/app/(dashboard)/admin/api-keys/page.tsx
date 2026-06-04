@@ -108,6 +108,10 @@ export default function ApiKeysPage() {
     const [testPrompt, setTestPrompt] = useState('Hello, respond in one sentence.')
     const [imagePrompt, setImagePrompt] = useState('A cute cat wearing a hat')
     const [showInstructions, setShowInstructions] = useState<Record<string, boolean>>({})
+    const [providerStatuses, setProviderStatuses] = useState<any[]>([])
+    const [testingProvider, setTestingProvider] = useState<string | null>(null)
+    const [testingAll, setTestingAll] = useState(false)
+    const [connectionResults, setConnectionResults] = useState<Record<string, any>>({})
 
     // Custom providers (OpenAI-compatible endpoints e.g. 9Router/LiteLLM)
     const [customProviders, setCustomProviders] = useState<Provider[]>([])
@@ -119,6 +123,7 @@ export default function ApiKeysPage() {
         loadKeys()
         loadCookieStatuses()
         loadCustomProviders()
+        loadProviderStatuses()
     }, [])
 
     async function loadCustomProviders() {
@@ -198,6 +203,39 @@ export default function ApiKeysPage() {
                 setCookieStatus(prev => ({ ...prev, [p.key]: status }))
             } catch (e) { /* ignore */ }
         }
+    }
+
+    async function loadProviderStatuses() {
+        try {
+            const data: any[] = await api.get('/admin/settings/providers/status')
+            setProviderStatuses(data)
+        } catch (e) { /* ignore */ }
+    }
+
+    async function testConnection(provider: string) {
+        setTestingProvider(provider)
+        try {
+            const result: any = await api.post('/admin/settings/providers/test-connection', { provider })
+            setConnectionResults(prev => ({ ...prev, [provider]: result }))
+            if (result.status === 'ok') {
+                toast.success(provider + ': OK (' + result.latency + 'ms, ' + result.modelCount + ' models)')
+            } else {
+                toast.error(provider + ': ' + result.error)
+            }
+        } catch (e: any) {
+            toast.error(provider + ': ' + e.message)
+        } finally {
+            setTestingProvider(null)
+        }
+    }
+
+    async function testAllProviders() {
+        setTestingAll(true)
+        const configured = providerStatuses.filter(p => p.status === 'configured')
+        for (const p of configured) {
+            await testConnection(p.provider)
+        }
+        setTestingAll(false)
     }
 
     async function saveCookies(provider: string) {
@@ -499,6 +537,7 @@ export default function ApiKeysPage() {
             <Tabs defaultValue="keys">
                 <TabsList>
                     <TabsTrigger value="keys">API Keys & Koneksi</TabsTrigger>
+                    <TabsTrigger value="status">Status Provider</TabsTrigger>
                     <TabsTrigger value="test">Test Fitur</TabsTrigger>
                 </TabsList>
                 <TabsContent value="keys" className="space-y-4">
@@ -586,6 +625,66 @@ export default function ApiKeysPage() {
                         </Button>
                     )}
                 </TabsContent>
+                <TabsContent value="status" className="space-y-4">
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <CardTitle>Status Provider AI</CardTitle>
+                                    <CardDescription>Cek koneksi dan ketersediaan semua provider</CardDescription>
+                                </div>
+                                <Button onClick={testAllProviders} disabled={testingAll} className="gap-2">
+                                    {testingAll ? 'Testing...' : 'Test Semua Provider'}
+                                </Button>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-3">
+                                {providerStatuses.map((p) => {
+                                    const result = connectionResults[p.provider]
+                                    const isTesting = testingProvider === p.provider
+                                    return (
+                                        <div key={p.provider} className="flex items-center justify-between p-3 rounded-lg border">
+                                            <div className="flex items-center gap-3">
+                                                <div className={'w-2.5 h-2.5 rounded-full ' + (
+                                                    result?.status === 'ok' ? 'bg-green-500' :
+                                                    result?.status === 'error' ? 'bg-red-500' :
+                                                    p.status === 'configured' ? 'bg-yellow-500' : 'bg-gray-300'
+                                                )} />
+                                                <div>
+                                                    <div className="font-medium flex items-center gap-2">
+                                                        {p.label}
+                                                        {p.custom && <Badge variant="outline" className="text-xs">Custom</Badge>}
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground">
+                                                        {p.models?.slice(0, 3).join(', ')}
+                                                        {p.baseUrl && <span className="ml-2 opacity-60">({p.baseUrl})</span>}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                {result && (
+                                                    <div className="text-xs text-right mr-2">
+                                                        {result.status === 'ok' && <span className="text-green-600">{result.latency}ms, {result.modelCount} models</span>}
+                                                        {result.status === 'error' && <span className="text-red-600">{String(result.error).substring(0, 40)}</span>}
+                                                    </div>
+                                                )}
+                                                {p.status === 'configured' ? (
+                                                    <Button size="sm" variant="outline" onClick={() => testConnection(p.provider)} disabled={isTesting} className="gap-1">
+                                                        {isTesting ? 'Testing...' : 'Test Koneksi'}
+                                                    </Button>
+                                                ) : (
+                                                    <Badge variant="secondary">Belum diatur</Badge>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
                 <TabsContent value="test" className="space-y-4">
                     <Card>
                         <CardHeader><CardTitle className="text-base">Test Chat Completion</CardTitle></CardHeader>

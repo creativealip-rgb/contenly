@@ -553,6 +553,80 @@ export class SystemSettingsService {
     };
   }
 
+
+  // --- Provider Status and Connection Test ---
+  async getProvidersStatus() {
+    const results: any[] = [];
+    const builtIn = [
+      { key: 'openai', label: 'OpenAI', models: ['gpt-4o', 'gpt-4o-mini', 'o3-mini', 'dall-e-3'] },
+      { key: 'openrouter', label: 'OpenRouter', models: ['openai/gpt-4o', 'anthropic/claude-sonnet-4'] },
+      { key: 'gemini', label: 'Google Gemini', models: ['gemini-2.0-flash', 'gemini-2.5-flash'] },
+      { key: 'groq', label: 'Groq', models: ['llama-3.3-70b-versatile'] },
+      { key: 'deepseek', label: 'DeepSeek', models: ['deepseek-chat', 'deepseek-reasoner'] },
+      { key: 'mistral', label: 'Mistral', models: ['mistral-large-latest'] },
+    ];
+    for (const p of builtIn) {
+      const keyRow = await this.getByKey('api_key_' + p.key);
+      results.push({ provider: p.key, label: p.label, hasApiKey: !!keyRow?.value, models: p.models, status: keyRow?.value ? 'configured' : 'not_configured', custom: false });
+    }
+    for (const cp of ['codex', 'antigravity']) {
+      const cookies = await this.getByKey('cookies_' + cp);
+      results.push({ provider: cp, label: cp === 'codex' ? 'Codex (OpenAI)' : 'Antigravity', hasApiKey: false, models: cp === 'codex' ? ['gpt-4o'] : ['default'], status: cookies?.value ? 'configured' : 'not_configured', custom: false });
+    }
+    const customRows = await this.getAll('custom-providers');
+    for (const row of customRows) {
+      let cfg: any = {};
+      try { cfg = JSON.parse(row.value || '{}'); } catch {}
+      const id = row.key.replace('custom_provider_', '');
+      const keyRow = await this.getByKey('api_key_' + id);
+      results.push({ provider: id, label: cfg.label || id, hasApiKey: !!keyRow?.value, models: Array.isArray(cfg.models) ? cfg.models : [], status: keyRow?.value ? 'configured' : 'not_configured', custom: true, baseUrl: cfg.baseUrl });
+    }
+    return results;
+  }
+
+  async testProviderConnection(provider: string, model?: string) {
+    const startTime = Date.now();
+    try {
+      const keyRow = await this.getByKey('api_key_' + provider);
+      if (!keyRow?.value) {
+        const cookies = await this.getByKey('cookies_' + provider);
+        if (!cookies?.value) return { provider, status: 'not_configured', error: 'No API key or cookies found' };
+      }
+      const baseUrl = await this.getProviderBaseUrl(provider);
+      const apiKey = keyRow?.value;
+      if (!apiKey) return { provider, status: 'not_configured', error: 'No API key found' };
+
+      const modelsRes = await fetch(baseUrl + '/v1/models', {
+        headers: { Authorization: 'Bearer ' + apiKey },
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!modelsRes.ok) {
+        const err = await modelsRes.json().catch(() => ({}));
+        return { provider, status: 'error', error: err.error?.message || 'HTTP ' + modelsRes.status, latency: Date.now() - startTime };
+      }
+      const modelsData = await modelsRes.json();
+      const availableModels = modelsData.data?.map((m: any) => m.id) || [];
+
+      if (model) {
+        const chatRes = await fetch(baseUrl + '/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + apiKey },
+          body: JSON.stringify({ model, messages: [{ role: 'user', content: 'Say OK' }], max_tokens: 10 }),
+          signal: AbortSignal.timeout(15000),
+        });
+        if (!chatRes.ok) {
+          const err = await chatRes.json().catch(() => ({}));
+          return { provider, status: 'error', model, error: err.error?.message || 'HTTP ' + chatRes.status, latency: Date.now() - startTime, modelCount: availableModels.length };
+        }
+        const chatData = await chatRes.json();
+        return { provider, status: 'ok', model, response: chatData.choices?.[0]?.message?.content || 'OK', latency: Date.now() - startTime, modelCount: availableModels.length, availableModels: availableModels.slice(0, 20) };
+      }
+      return { provider, status: 'ok', latency: Date.now() - startTime, modelCount: availableModels.length, availableModels: availableModels.slice(0, 20) };
+    } catch (e: any) {
+      return { provider, status: 'error', error: e.message, latency: Date.now() - startTime };
+    }
+  }
+
   private async getProviderBaseUrl(provider: string): Promise<string> {
     const urls: Record<string, string> = {
       openai: 'https://api.openai.com',
