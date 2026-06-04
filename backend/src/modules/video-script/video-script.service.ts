@@ -21,6 +21,7 @@ import { AdvancedScraperService } from '../scraper/advanced-scraper.service';
 import { BillingService } from '../billing/billing.service';
 import { BILLING_TIERS } from '../billing/billing.constants';
 import { FootageService, FootageItem } from './footage.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 type EditableProjectField =
   | 'headline'
@@ -79,7 +80,8 @@ export class VideoScriptService {
     private readonly scraperService: AdvancedScraperService,
     private readonly billingService: BillingService,
     private readonly footageService: FootageService,
-  ) {}
+  
+    private notificationsService: NotificationsService,) {}
 
   async createProject(userId: string, dto: CreateScriptProjectDto) {
     let content = dto.sourceContent || '';
@@ -297,6 +299,17 @@ export class VideoScriptService {
         .where(eq(schema.scriptProject.id, projectId));
 
       await this.billingService.recordUsage(userId, 'VIDEO_SCRIPT', billingVIDEO_SCRIPT);
+      
+      // Send notification
+      try {
+        await this.notificationsService.create(
+          userId,
+          'JOB_SUCCESS',
+          'Video Script Berhasil Dibuat',
+          `Video script "${result.title || project.title}" berhasil di-generate.`,
+          { projectId, title: result.title || project.title },
+        );
+      } catch (e) { /* notification failure should not block */ }
   
       return this.getProject(userId, projectId);
     } catch (error: any) {

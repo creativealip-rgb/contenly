@@ -6,6 +6,8 @@ import { GenerateContentDto, GenerateSeoDto, AiGenerateImageDto, GeneratePromptD
 import { ArticlesService } from '../articles/articles.service';
 import { WordpressService } from '../wordpress/wordpress.service';
 import { BILLING_TIERS } from '../billing/billing.constants';
+import { SystemSettingsService } from '../system-settings/system-settings.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class AiService {
@@ -16,7 +18,9 @@ export class AiService {
     private billingService: BillingService,
     private articlesService: ArticlesService,
     private wordpressService: WordpressService,
-  ) { }
+    private settingsService: SystemSettingsService,
+  
+    private notificationsService: NotificationsService,) { }
 
   async generateContent(userId: string, dto: GenerateContentDto) {
     // Billing gate: category limit (primary) + kredit (fallback)
@@ -26,7 +30,9 @@ export class AiService {
     }
 
     const tier = await this.billingService.getSubscriptionTier(userId);
-    const model = BILLING_TIERS[tier]?.aiModel;
+    // Get model from settings first, fall back to tier default
+    const settingsModel = await this.settingsService.getByKey('model_text_generation');
+    const model = settingsModel?.value || BILLING_TIERS[tier]?.aiModel;
 
     // Generate content
     this.logger.log(`Generating content for user tier: ${tier}, mode: ${dto.mode}`);
@@ -77,6 +83,17 @@ export class AiService {
 
     // Record usage (category count + kredit if overflow)
     await this.billingService.recordUsage(userId, 'ARTICLE_GENERATION', billingArticle);
+    
+    // Send notification
+    try {
+      await this.notificationsService.create(
+        userId,
+        'JOB_SUCCESS',
+        'Artikel Berhasil Dibuat',
+        `Artikel "${generatedTitle || 'Artikel Baru'}" berhasil di-generate.`,
+        { articleTitle: generatedTitle, slug },
+      );
+    } catch (e) { /* notification failure should not block */ }
 
     // Save generated content as a draft article
     let articleId = null;
@@ -228,11 +245,24 @@ export class AiService {
       throw new BadRequestException(billingImage.reason);
     }
 
-    // Generate image
-    const imageUrl = await this.openAiService.generateImage(dto.prompt);
+    // Generate image with configured model
+    const imageModelSetting = await this.settingsService.getByKey('model_image_generation');
+    const imageModel = imageModelSetting?.value || undefined;
+    const imageUrl = await this.openAiService.generateImage(dto.prompt, imageModel);
 
     // Record usage
     await this.billingService.recordUsage(userId, 'IMAGE_GENERATION', billingImage);
+
+    // Send notification
+    try {
+      await this.notificationsService.create(
+        userId,
+        'JOB_SUCCESS',
+        'Gambar Berhasil Di-generate',
+        'Gambar AI berhasil di-generate.',
+        { imageUrl },
+      );
+    } catch (e) { /* notification failure should not block */ }
 
     return {
       imageUrl,

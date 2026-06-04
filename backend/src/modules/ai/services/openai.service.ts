@@ -267,10 +267,10 @@ Return JSON with:
     };
   }
 
-  async generateImage(prompt: string): Promise<string> {
+  async generateImage(prompt: string, overrideModel?: string): Promise<string> {
     const codexApiKey = this.configService.get('CODEX_API_KEY') || 'sk-752...998e';
     const codexBaseUrl = this.configService.get('CODEX_BASE_URL') || 'https://9router-168-144-37-19.sslip.io';
-    const imageModel = this.configService.get('IMAGE_GENERATION_MODEL') || 'cx/gpt-5.5';
+    const imageModel = overrideModel || this.configService.get('IMAGE_GENERATION_MODEL') || 'cx/gpt-5.5';
 
     // Enhance short prompts - Codex requires descriptive prompts (min ~40 chars)
     let enhancedPrompt = prompt;

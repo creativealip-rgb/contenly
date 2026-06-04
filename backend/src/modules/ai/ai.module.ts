@@ -6,6 +6,8 @@ import { OpenAiService } from './services/openai.service';
 import { BillingModule } from '../billing/billing.module';
 import { ArticlesModule } from '../articles/articles.module';
 import { WordpressModule } from '../wordpress/wordpress.module';
+import { SystemSettingsModule } from '../system-settings/system-settings.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -13,6 +15,8 @@ import { WordpressModule } from '../wordpress/wordpress.module';
     AuthModule,
     forwardRef(() => ArticlesModule),
     forwardRef(() => WordpressModule),
+    SystemSettingsModule,
+    NotificationsModule,
   ],
   controllers: [AiController],
   providers: [AiService, OpenAiService],

@@ -5,6 +5,8 @@ import { DrizzleService } from '../../db/drizzle.service';
 import { tokenBalance, transaction, subscription, dailyUsage } from '../../db/schema';
 import { BILLING_TIERS, FEATURE_TO_CATEGORY, KREDIT_COSTS } from './billing.constants';
 import Stripe from 'stripe';
+import { ModuleRef } from '@nestjs/core';
+import { NotificationsService } from '../notifications/notifications.service';
 
 export interface BillingResult {
     allowed: boolean;
@@ -18,14 +20,26 @@ export class BillingService {
     private readonly logger = new Logger(BillingService.name);
     private stripe: Stripe | null = null;
 
+    private notificationsService: NotificationsService;
+
     constructor(
         private drizzle: DrizzleService,
         private configService: ConfigService,
+        private moduleRef: ModuleRef,
     ) {
         const stripeSecretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
         if (stripeSecretKey) {
             this.stripe = new Stripe(stripeSecretKey);
         }
+    }
+
+    private getNotificationsService(): NotificationsService | null {
+        try {
+            if (!this.notificationsService) {
+                this.notificationsService = this.moduleRef.get(NotificationsService, { strict: false });
+            }
+            return this.notificationsService;
+        } catch { return null; }
     }
 
     get db() {
@@ -243,6 +257,19 @@ export class BillingService {
                 metadata: { description, deductedFrom: 'kredit' },
             });
         });
+        
+        // Check if credits are running low and notify
+        const newBal = await this.getBalance(userId);
+        const remaining = newBal.credits || 0;
+        if (remaining <= 10 && remaining > amount) {
+            try {
+                await this.getNotificationsService()?.notifyLowTokens(userId, remaining);
+            } catch (e) { /* notification failure should not block */ }
+        } else if (remaining === 0) {
+            try {
+                await this.getNotificationsService()?.create(userId, 'LOW_TOKENS', 'Kredit Habis', 'Kredit Anda sudah habis. Silakan top up untuk melanjutkan.', { credits: 0 });
+            } catch (e) { /* notification failure should not block */ }
+        }
     }
 
     // =============================================

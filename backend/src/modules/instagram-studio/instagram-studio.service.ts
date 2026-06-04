@@ -21,6 +21,7 @@ import archiver from 'archiver';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Readable } from 'stream';
+import { NotificationsService } from '../notifications/notifications.service';
 import {
     CreateProjectDto,
     UpdateProjectDto,
@@ -46,6 +47,7 @@ export class InstagramStudioService {
         private scraperService: ScraperService,
         private imageTextService: ImageTextService,
         private templateService: TemplateService,
+        private notificationsService: NotificationsService,
     ) { }
 
     /**
@@ -686,9 +688,22 @@ export class InstagramStudioService {
             }
         }
 
+        const successCount = results.filter(r => r.status === 'success').length;
+        
+        // Send notification
+        try {
+            await this.notificationsService.create(
+                userId,
+                'JOB_SUCCESS',
+                'Carousel Instagram Berhasil',
+                `Berhasil generate ${successCount} dari ${project.slides.length} slide untuk carousel "${project.title || 'Instagram Carousel'}".`,
+                { projectId, successCount, totalSlides: project.slides.length },
+            );
+        } catch (e) { /* notification failure should not block */ }
+
         return {
             success: true,
-            message: `Generated ${results.filter(r => r.status === 'success').length} of ${project.slides.length} slides`,
+            message: `Generated ${successCount} of ${project.slides.length} slides`,
             tokensUsed,
             results,
             project: await this.getProject(userId, projectId),

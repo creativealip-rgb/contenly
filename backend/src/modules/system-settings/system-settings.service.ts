@@ -166,7 +166,7 @@ export class SystemSettingsService {
 
   // --- Cookie/Session-based auth for Codex & Antigravity ---
   async saveCookies(provider: string, cookies: string) {
-    if (!['codex', 'antigravity'].includes(provider)) {
+    if (!['codex', 'antigravity', 'youtube'].includes(provider)) {
       throw new Error(`Cookie auth not supported for ${provider}`);
     }
     
@@ -174,15 +174,20 @@ export class SystemSettingsService {
     let accessToken: string | null = null;
     let sessionData: any = null;
     
-    try {
-      sessionData = JSON.parse(cookies);
-      if (sessionData.accessToken) {
-        accessToken = sessionData.accessToken;
-        this.logger.log(`Parsed session data for ${provider}, found accessToken`);
+    // YouTube uses Netscape cookies.txt format, skip JSON parsing
+    if (provider === 'youtube') {
+      this.logger.log(`YouTube cookies (Netscape format) for ${provider}`);
+    } else {
+      try {
+        sessionData = JSON.parse(cookies);
+        if (sessionData.accessToken) {
+          accessToken = sessionData.accessToken;
+          this.logger.log(`Parsed session data for ${provider}, found accessToken`);
+        }
+      } catch {
+        // Not JSON, treat as raw cookies
+        this.logger.log(`Raw cookies format for ${provider}`);
       }
-    } catch {
-      // Not JSON, treat as raw cookies
-      this.logger.log(`Raw cookies format for ${provider}`);
     }
     
     // Store cookies/session data
@@ -557,22 +562,7 @@ export class SystemSettingsService {
   // --- Provider Status and Connection Test ---
   async getProvidersStatus() {
     const results: any[] = [];
-    const builtIn = [
-      { key: 'openai', label: 'OpenAI', models: ['gpt-4o', 'gpt-4o-mini', 'o3-mini', 'dall-e-3'] },
-      { key: 'openrouter', label: 'OpenRouter', models: ['openai/gpt-4o', 'anthropic/claude-sonnet-4'] },
-      { key: 'gemini', label: 'Google Gemini', models: ['gemini-2.0-flash', 'gemini-2.5-flash'] },
-      { key: 'groq', label: 'Groq', models: ['llama-3.3-70b-versatile'] },
-      { key: 'deepseek', label: 'DeepSeek', models: ['deepseek-chat', 'deepseek-reasoner'] },
-      { key: 'mistral', label: 'Mistral', models: ['mistral-large-latest'] },
-    ];
-    for (const p of builtIn) {
-      const keyRow = await this.getByKey('api_key_' + p.key);
-      results.push({ provider: p.key, label: p.label, hasApiKey: !!keyRow?.value, models: p.models, status: keyRow?.value ? 'configured' : 'not_configured', custom: false });
-    }
-    for (const cp of ['codex', 'antigravity']) {
-      const cookies = await this.getByKey('cookies_' + cp);
-      results.push({ provider: cp, label: cp === 'codex' ? 'Codex (OpenAI)' : 'Antigravity', hasApiKey: false, models: cp === 'codex' ? ['gpt-4o'] : ['default'], status: cookies?.value ? 'configured' : 'not_configured', custom: false });
-    }
+    // Only return custom providers (9Router, etc) — built-in providers removed
     const customRows = await this.getAll('custom-providers');
     for (const row of customRows) {
       let cfg: any = {};
@@ -581,6 +571,9 @@ export class SystemSettingsService {
       const keyRow = await this.getByKey('api_key_' + id);
       results.push({ provider: id, label: cfg.label || id, hasApiKey: !!keyRow?.value, models: Array.isArray(cfg.models) ? cfg.models : [], status: keyRow?.value ? 'configured' : 'not_configured', custom: true, baseUrl: cfg.baseUrl });
     }
+    // Also check YouTube cookies
+    const ytCookies = await this.getByKey('cookies_youtube');
+    results.push({ provider: 'youtube', label: 'YouTube (Video Clips)', hasApiKey: false, models: [], status: ytCookies?.value ? 'configured' : 'not_configured', custom: false });
     return results;
   }
 
@@ -611,35 +604,38 @@ export class SystemSettingsService {
         const chatRes = await fetch(baseUrl + '/v1/chat/completions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + apiKey },
-          body: JSON.stringify({ model, messages: [{ role: 'user', content: 'Say OK' }], max_tokens: 10 }),
+          body: JSON.stringify({ model, messages: [{ role: 'user', content: 'Say OK' }], max_tokens: 10, stream: false }),
           signal: AbortSignal.timeout(15000),
         });
         if (!chatRes.ok) {
           const err = await chatRes.json().catch(() => ({}));
           return { provider, status: 'error', model, error: err.error?.message || 'HTTP ' + chatRes.status, latency: Date.now() - startTime, modelCount: availableModels.length };
         }
-        const chatData = await chatRes.json();
-        return { provider, status: 'ok', model, response: chatData.choices?.[0]?.message?.content || 'OK', latency: Date.now() - startTime, modelCount: availableModels.length, availableModels: availableModels.slice(0, 20) };
+        // Handle both JSON and SSE (streaming) responses
+        const rawText = await chatRes.text();
+        let responseText = 'OK';
+        try {
+          const chatData = JSON.parse(rawText);
+          responseText = chatData.choices?.[0]?.message?.content || 'OK';
+        } catch {
+          // SSE format: "data: {...}\n\n" — extract content from last data chunk
+          const dataLines = rawText.split('\n').filter(l => l.startsWith('data: ') && l !== 'data: [DONE]');
+          if (dataLines.length > 0) {
+            try {
+              const lastChunk = JSON.parse(dataLines[dataLines.length - 1].slice(6));
+              responseText = lastChunk.choices?.[0]?.delta?.content || lastChunk.choices?.[0]?.message?.content || 'OK (streaming)';
+            } catch { responseText = 'OK (streaming response received)'; }
+          }
+        }
+        return { provider, status: 'ok', model, response: responseText, latency: Date.now() - startTime, modelCount: availableModels.length, availableModels };
       }
-      return { provider, status: 'ok', latency: Date.now() - startTime, modelCount: availableModels.length, availableModels: availableModels.slice(0, 20) };
+      return { provider, status: 'ok', latency: Date.now() - startTime, modelCount: availableModels.length, availableModels };
     } catch (e: any) {
       return { provider, status: 'error', error: e.message, latency: Date.now() - startTime };
     }
   }
 
   private async getProviderBaseUrl(provider: string): Promise<string> {
-    const urls: Record<string, string> = {
-      openai: 'https://api.openai.com',
-      openrouter: 'https://openrouter.ai',
-      gemini: 'https://generativelanguage.googleapis.com/v1beta/openai',
-      groq: 'https://api.groq.com/openai',
-      deepseek: 'https://api.deepseek.com',
-      mistral: 'https://api.mistral.ai',
-      codex: 'https://api.openai.com',
-      antigravity: 'https://api.openai.com',
-    };
-    if (urls[provider]) return urls[provider];
-
     // Custom provider lookup (OpenAI-compatible)
     const row = await this.getByKey(`custom_provider_${provider}`);
     if (row?.value) {
@@ -652,4 +648,72 @@ export class SystemSettingsService {
     }
     return `https://api.openai.com`;
   }
+
+  // --- Model Configuration ---
+  async getModelConfig() {
+    const textModel = await this.getByKey('model_text_generation');
+    const imageModel = await this.getByKey('model_image_generation');
+    
+    // Get available models from configured providers
+    const providers = await this.getProvidersStatus();
+    const configuredProviders = providers.filter(p => p.status === 'configured');
+    
+    let availableModels: string[] = [];
+    for (const p of configuredProviders) {
+      try {
+        const baseUrl = await this.getProviderBaseUrl(p.provider);
+        const keyRow = await this.getByKey('api_key_' + p.provider);
+        if (!keyRow?.value) continue;
+        
+        const modelsRes = await fetch(baseUrl + '/v1/models', {
+          headers: { Authorization: 'Bearer ' + keyRow.value },
+          signal: AbortSignal.timeout(10000),
+        });
+        if (modelsRes.ok) {
+          const modelsData = await modelsRes.json();
+          const models = modelsData.data?.map((m: any) => m.id) || [];
+          availableModels = [...availableModels, ...models];
+        }
+      } catch (e) {
+        this.logger.warn(`Failed to fetch models for ${p.provider}: ${e.message}`);
+      }
+    }
+    
+    // Default models
+    const defaultTextModel = process.env.OPENAI_MODEL || process.env.OPENROUTER_MODEL || 'ag/claude-sonnet-4-6';
+    const defaultImageModel = process.env.OPENAI_IMAGE_MODEL || 'dall-e-3';
+    
+    return {
+      textModel: textModel?.value || defaultTextModel,
+      imageModel: imageModel?.value || defaultImageModel,
+      availableModels: [...new Set(availableModels)].sort(),
+      defaults: {
+        textModel: defaultTextModel,
+        imageModel: defaultImageModel,
+      },
+    };
+  }
+
+  async saveModelConfig(body: { textModel?: string; imageModel?: string }) {
+    if (body.textModel) {
+      await this.set('model_text_generation', body.textModel, {
+        category: 'model-config',
+        description: 'AI model for text generation (articles, scripts, etc.)',
+      });
+    }
+    if (body.imageModel) {
+      await this.set('model_image_generation', body.imageModel, {
+        category: 'model-config',
+        description: 'AI model for image generation',
+      });
+    }
+    
+    return { 
+      success: true, 
+      message: 'Model configuration saved',
+      textModel: body.textModel,
+      imageModel: body.imageModel,
+    };
+  }
+
 }

@@ -89,4 +89,15 @@ export class SystemSettingsController {
   async testProviderConnection(@Body() body: { provider: string; model?: string }) {
     return this.service.testProviderConnection(body.provider, body.model);
   }
+
+  // --- Model Configuration ---
+  @Get('models/config')
+  async getModelConfig() {
+    return this.service.getModelConfig();
+  }
+
+  @Post('models/config')
+  async saveModelConfig(@Body() body: { textModel?: string; imageModel?: string }) {
+    return this.service.saveModelConfig(body);
+  }
 }
