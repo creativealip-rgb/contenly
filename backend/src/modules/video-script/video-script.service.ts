@@ -551,6 +551,12 @@ ${project.sourceContent}`;
     if (!scene) throw new NotFoundException('Scene not found');
     const project = await this.getProject(userId, scene.projectId);
 
+    // Billing gate
+    const billingKeywords = await this.billingService.ensureBilling(userId, 'SUGGEST_FOOTAGE_KEYWORDS');
+    if (!billingKeywords.allowed) {
+      throw new BadRequestException(billingKeywords.reason);
+    }
+
     const tier = await this.billingService.getSubscriptionTier(userId);
     const model = this.getTierModel(tier);
     const prompt = `You are a stock footage curator helping creators find b-roll for short-form video.
@@ -572,6 +578,9 @@ Project hook: ${project.hook || ''}`;
       scene.visualContext || project.title,
       { mode: 'custom', systemPrompt: prompt, model },
     )) as { keywords?: unknown };
+
+    // Record usage
+    await this.billingService.recordUsage(userId, 'SUGGEST_FOOTAGE_KEYWORDS', billingKeywords);
 
     const raw = Array.isArray(result.keywords) ? result.keywords : [];
     return raw
