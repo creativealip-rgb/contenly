@@ -72,6 +72,48 @@ export class BillingController {
             },
         };
     }
+    @Get('usage-breakdown')
+    @ApiOperation({ summary: 'Get per-feature usage breakdown for current month' })
+    async getUsageBreakdown(@CurrentUser() user: User) {
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const usage = await this.billingService.getMonthlyUsageByCategory(user.id, monthStart);
+        
+        const FEATURE_LABELS: Record<string, string> = {
+            ARTICLE_GENERATION: 'Artikel',
+            INSTAGRAM_GENERATION: 'IG Carousel',
+            STORYBOARD_GENERATION: 'Storyboard',
+            HASHTAG_GENERATION: 'Hashtag',
+            VIDEO_GENERATION: 'Video Clips',
+            VIDEO_SCRIPT: 'Video Script',
+            ALTERNATE_HOOKS: 'Alternate Hooks',
+            BROLL_KEYWORDS: 'B-Roll Keywords',
+            AUTO_CUTAWAY: 'Auto Cutaway',
+            TTS_PREVIEW: 'TTS Preview',
+            TTS_VOICEOVER: 'TTS Voiceover',
+            REGENERATE_FIELD: 'Regenerate Field',
+            REGENERATE_VOICEOVER: 'Regenerate Voiceover',
+            IMPROVE_VISUAL: 'Improve Visual',
+            IMAGE_GENERATION: 'Generate Gambar',
+            SLIDE_IMAGE: 'IG Slide Image',
+            THUMBNAIL_GENERATION: 'Thumbnail',
+            MOTION_GRAPHICS_RENDER: 'Motion Graphics',
+            TEXT_OVERLAY: 'Text Overlay',
+            AI_CHAT: 'AI Chat',
+            SUGGEST_FOOTAGE_KEYWORDS: 'Suggest Keywords',
+        };
+        
+        const breakdown = Object.entries(usage)
+            .filter(([_, count]) => count > 0)
+            .map(([feature, count]) => ({
+                feature,
+                label: FEATURE_LABELS[feature] || feature,
+                count,
+            }))
+            .sort((a, b) => b.count - a.count);
+        
+        return { breakdown };
+    }
 
     @Get('transactions')
     @ApiOperation({ summary: 'List transactions' })

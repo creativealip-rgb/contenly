@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -20,7 +21,7 @@ import {
     TrendingUp,
     Check,
     CheckCircle2
-} from 'lucide-react'
+, BarChart3 } from 'lucide-react'
 import { useBillingBalance, useBillingSubscription, useBillingTransactions } from '@/hooks/use-billing'
 import { containerVariants, itemVariants } from '@/lib/animations'
 
@@ -385,8 +386,64 @@ export default function BillingPage() {
                 </Card>
             </motion.div>
 
+            {/* Usage Breakdown */}
+            <UsageBreakdown />
             {/* Transaction History */}
             <TransactionHistory />
+        </motion.div>
+    )
+}
+
+function UsageBreakdown() {
+    const [breakdown, setBreakdown] = useState<Array<{ feature: string; label: string; count: number }>>([])
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        const fetchBreakdown = async () => {
+            try {
+                const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
+                const res = await fetch(`${API_URL}/billing/usage-breakdown`, { credentials: 'include' })
+                if (res.ok) {
+                    const data = await res.json()
+                    setBreakdown(data.breakdown || [])
+                }
+            } catch { /* silent */ }
+            setLoading(false)
+        }
+        fetchBreakdown()
+    }, [])
+
+    if (loading || breakdown.length === 0) return null
+
+    const maxCount = Math.max(...breakdown.map(b => b.count))
+
+    return (
+        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+            <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/30 transition-all duration-300">
+                <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                        <BarChart3 className="h-5 w-5" />
+                        Detail Penggunaan Bulan Ini
+                    </CardTitle>
+                    <CardDescription>Breakdown per fitur yang digunakan</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-3">
+                        {breakdown.map((item) => (
+                            <div key={item.feature} className="flex items-center gap-3">
+                                <div className="w-32 text-sm text-right truncate">{item.label}</div>
+                                <div className="flex-1 h-6 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all"
+                                        style={{ width: `${(item.count / maxCount) * 100}%` }}
+                                    />
+                                </div>
+                                <div className="w-10 text-sm font-medium text-right">{item.count}</div>
+                            </div>
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
         </motion.div>
     )
 }
