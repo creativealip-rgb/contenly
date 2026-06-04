@@ -4,10 +4,10 @@ const DEFAULT_AI_MODEL = (process.env.OPENAI_MODEL || process.env.OPENROUTER_MOD
 
 export const BILLING_TIERS = {
     FREE: {
-        monthlyQuota: 20,
+        monthlyQuota: 120,
         monthlyLimits: {
             ARTICLE_GENERATION: 5,
-            INSTAGRAM_GENERATION: 150,
+            INSTAGRAM_GENERATION: 30,
             VIDEO_GENERATION: 3,
             IMAGE_GENERATION: 2,
         },
@@ -19,10 +19,10 @@ export const BILLING_TIERS = {
         canAnalyzeTrends: false,
     },
     STARTER: {
-        monthlyQuota: 500,
+        monthlyQuota: 600,
         monthlyLimits: {
             ARTICLE_GENERATION: 40,
-            INSTAGRAM_GENERATION: 900,
+            INSTAGRAM_GENERATION: 100,
             VIDEO_GENERATION: 20,
             IMAGE_GENERATION: 8,
         },
@@ -38,7 +38,7 @@ export const BILLING_TIERS = {
         monthlyQuota: 2000,
         monthlyLimits: {
             ARTICLE_GENERATION: 150,
-            INSTAGRAM_GENERATION: 3000,
+            INSTAGRAM_GENERATION: 300,
             VIDEO_GENERATION: 80,
             IMAGE_GENERATION: 15,
         },
@@ -54,7 +54,7 @@ export const BILLING_TIERS = {
         monthlyQuota: 5000,
         monthlyLimits: {
             ARTICLE_GENERATION: 400,
-            INSTAGRAM_GENERATION: 9000,
+            INSTAGRAM_GENERATION: 800,
             VIDEO_GENERATION: 200,
             IMAGE_GENERATION: 35,
         },

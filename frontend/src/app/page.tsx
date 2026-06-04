@@ -103,7 +103,7 @@ const faqJsonLd = {
       name: 'Bagaimana sistem token bekerja?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Setiap operasi AI menggunakan token. Artikel menggunakan 17 token, gambar AI menggunakan 85 token. Token tidak hangus dan bisa digunakan kapan saja.',
+        text: 'Setiap operasi AI menggunakan token dari kuota bulanan Anda. Artikel, video script, dan carousel Instagram masing-masing menggunakan token. Kuota reset setiap bulan.',
       },
     },
     {
@@ -111,7 +111,7 @@ const faqJsonLd = {
       name: 'Apakah ada batasan bulanan?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Ya, setiap paket memiliki batasan bulanan. Free: 5 artikel/bulan, Starter: 40 artikel/bulan, Pro: 150 artikel/bulan, Business: 400 artikel/bulan.',
+        text: 'Ya, setiap paket memiliki batasan bulanan per kategori. Free: 5 artikel + 30 carousel. Starter: 40 artikel + 100 carousel. Pro: 150 artikel + 300 carousel. Business: 400 artikel + 800 carousel.',
       },
     },
     {
@@ -470,7 +470,7 @@ export default function LandingPage() {
           <FaqAccordion faqs={[
             {
               question: "Bagaimana sistem token bekerja?",
-              answer: "Setiap operasi AI menggunakan token. Artikel menggunakan 17 token, gambar AI menggunakan 85 token. Token tidak hangus dan bisa digunakan kapan saja."
+              answer: "Setiap operasi AI menggunakan token dari kuota bulanan Anda. Artikel, video script, dan carousel Instagram masing-masing menggunakan token. Kuota reset setiap bulan."
             },
             {
               question: "Apakah ada batasan bulanan?",
