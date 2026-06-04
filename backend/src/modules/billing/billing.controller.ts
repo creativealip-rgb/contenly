@@ -45,27 +45,35 @@ export class BillingController {
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
         const usage = await this.billingService.getMonthlyUsageByCategory(user.id, monthStart);
         
+        // Aggregate by category
+        const { FEATURE_TO_CATEGORY } = await import('./billing.constants');
+        const categoryUsage: Record<string, number> = {};
+        for (const [feature, count] of Object.entries(usage)) {
+            const cat = FEATURE_TO_CATEGORY[feature] || feature;
+            categoryUsage[cat] = (categoryUsage[cat] || 0) + count;
+        }
+        
         return {
             credits: balance.credits || 0,
             tier,
             categories: {
                 artikel: {
-                    used: usage.ARTICLE_GENERATION || 0,
+                    used: categoryUsage.ARTICLE_GENERATION || 0,
                     limit: tierConfig.monthlyLimits.ARTICLE_GENERATION,
                     label: 'Artikel',
                 },
-                video_ig: {
-                    used: (usage.VIDEO_GENERATION || 0) + (usage.STORYBOARD_GENERATION || 0)
-                         + (usage.VIDEO_SCRIPT || 0) + (usage.ALTERNATE_HOOKS || 0)
-                         + (usage.BROLL_KEYWORDS || 0) + (usage.AUTO_CUTAWAY || 0)
-                         + (usage.TTS_PREVIEW || 0) + (usage.TTS_VOICEOVER || 0)
-                         + (usage.REGENERATE_FIELD || 0) + (usage.REGENERATE_VOICEOVER || 0)
-                         + (usage.IMPROVE_VISUAL || 0) + (usage.HASHTAG_GENERATION || 0),
+                instagram: {
+                    used: categoryUsage.INSTAGRAM_GENERATION || 0,
+                    limit: tierConfig.monthlyLimits.INSTAGRAM_GENERATION,
+                    label: 'IG Carousel',
+                },
+                video: {
+                    used: categoryUsage.VIDEO_GENERATION || 0,
                     limit: tierConfig.monthlyLimits.VIDEO_GENERATION,
-                    label: 'Video & IG',
+                    label: 'Video',
                 },
                 gambar: {
-                    used: (usage.IMAGE_GENERATION || 0) + (usage.SLIDE_IMAGE || 0) + (usage.THUMBNAIL_GENERATION || 0),
+                    used: categoryUsage.IMAGE_GENERATION || 0,
                     limit: tierConfig.monthlyLimits.IMAGE_GENERATION,
                     label: 'Gambar',
                 },

@@ -14,7 +14,8 @@ export function useBillingBalance() {
     tier: string
     categories: {
       artikel: BillingCategory
-      video_ig: BillingCategory
+      instagram: BillingCategory
+      video: BillingCategory
       gambar: BillingCategory
     }
   }>({

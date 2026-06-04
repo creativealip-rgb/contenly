@@ -75,7 +75,7 @@ export default function BillingPage() {
                         </div>
 
                         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-8">
-                            <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-4">
                                 {/* Artikel */}
                                 <div className="bg-white/10 rounded-xl p-4">
                                     <div className="text-xs text-blue-100 uppercase tracking-wider mb-2">Artikel</div>
@@ -87,15 +87,26 @@ export default function BillingPage() {
                                         <div className="h-full bg-white rounded-full transition-all" style={{ width: `${Math.min(100, ((balanceData?.categories?.artikel?.used || 0) / (balanceData?.categories?.artikel?.limit || 1)) * 100)}%` }} />
                                     </div>
                                 </div>
-                                {/* Video & IG */}
+                                {/* IG Carousel */}
                                 <div className="bg-white/10 rounded-xl p-4">
-                                    <div className="text-xs text-blue-100 uppercase tracking-wider mb-2">Video & IG</div>
+                                    <div className="text-xs text-blue-100 uppercase tracking-wider mb-2">IG Carousel</div>
                                     <div className="text-2xl font-bold tabular-nums">
-                                        {loading ? '...' : (balanceData?.categories?.video_ig?.used || 0)}
-                                        <span className="text-sm font-normal text-blue-200"> / {balanceData?.categories?.video_ig?.limit || 0}</span>
+                                        {loading ? '...' : (balanceData?.categories?.instagram?.used || 0)}
+                                        <span className="text-sm font-normal text-blue-200"> / {balanceData?.categories?.instagram?.limit || 0}</span>
                                     </div>
                                     <div className="mt-2 h-1.5 bg-white/20 rounded-full overflow-hidden">
-                                        <div className="h-full bg-white rounded-full transition-all" style={{ width: `${Math.min(100, ((balanceData?.categories?.video_ig?.used || 0) / (balanceData?.categories?.video_ig?.limit || 1)) * 100)}%` }} />
+                                        <div className="h-full bg-white rounded-full transition-all" style={{ width: `${Math.min(100, ((balanceData?.categories?.instagram?.used || 0) / (balanceData?.categories?.instagram?.limit || 1)) * 100)}%` }} />
+                                    </div>
+                                </div>
+                                {/* Video */}
+                                <div className="bg-white/10 rounded-xl p-4">
+                                    <div className="text-xs text-blue-100 uppercase tracking-wider mb-2">Video</div>
+                                    <div className="text-2xl font-bold tabular-nums">
+                                        {loading ? '...' : (balanceData?.categories?.video?.used || 0)}
+                                        <span className="text-sm font-normal text-blue-200"> / {balanceData?.categories?.video?.limit || 0}</span>
+                                    </div>
+                                    <div className="mt-2 h-1.5 bg-white/20 rounded-full overflow-hidden">
+                                        <div className="h-full bg-white rounded-full transition-all" style={{ width: `${Math.min(100, ((balanceData?.categories?.video?.used || 0) / (balanceData?.categories?.video?.limit || 1)) * 100)}%` }} />
                                     </div>
                                 </div>
                                 {/* Gambar */}
@@ -178,7 +189,11 @@ export default function BillingPage() {
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                    <span>3 Generate / bulan</span>
+                                    <span>30 IG Carousel / bulan</span>
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                    <span>3 Video / bulan</span>
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
@@ -220,15 +235,22 @@ export default function BillingPage() {
                             <ul className="space-y-2 text-sm">
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                    <span className="font-bold">150 Artikel / bulan</span>
-                                <li className="flex items-center gap-2">
-                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                    <span className="font-bold">80 Generate / bulan</span>
+                                    <span className="font-bold">40 Artikel / bulan</span>
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                    <span className="font-bold">15 Gambar / bulan</span>
+                                    <span className="font-bold">100 IG Carousel / bulan</span>
                                 </li>
+                                <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                    <span className="font-bold">20 Video / bulan</span>
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                    <span className="font-bold">8 Gambar / bulan</span>
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                                     <span className="font-bold">5 Situs WordPress</span>
                                 </li>
                                 <li className="flex items-center gap-2">
@@ -267,14 +289,21 @@ export default function BillingPage() {
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                                     <span className="font-bold">400 Artikel / bulan</span>
+                                </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                    <span className="font-bold">200 Generate / bulan</span>
+                                    <span className="font-bold">800 IG Carousel / bulan</span>
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                    <span className="font-bold">200 Video / bulan</span>
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                                     <span className="font-bold">35 Gambar / bulan</span>
                                 </li>
+                                <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                                     <span className="font-bold">10 Situs WordPress</span>
                                 </li>
                                 <li className="flex items-center gap-2">
