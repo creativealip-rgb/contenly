@@ -266,7 +266,10 @@ export class AiService {
 
     return {
       imageUrl,
-      tokensUsed: 2,
+      billing: {
+        usingKredit: billingImage.usingKredit,
+        kreditCost: billingImage.kreditCost,
+      },
     };
   }
 
