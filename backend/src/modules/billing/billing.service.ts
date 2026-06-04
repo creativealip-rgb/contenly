@@ -129,6 +129,36 @@ export class BillingService {
     }
   }
 
+  /**
+   * Check daily chat message limit (not token-based, just count-based).
+   * Returns { allowed: boolean, remaining: number, limit: number }.
+   */
+  async checkDailyChatLimit(userId: string, dailyLimit: number): Promise<{ allowed: boolean; remaining: number; limit: number }> {
+    const tier = await this.getSubscriptionTier(userId);
+    if (tier === 'FREE') {
+      return { allowed: false, remaining: 0, limit: 0 };
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().split('T')[0];
+
+    const usageRow = await this.db.query.dailyUsage.findFirst({
+      where: and(
+        eq(dailyUsage.userId, userId),
+        eq(dailyUsage.featureType, 'AI_CHAT' as any),
+        sql`${dailyUsage.date}::date = ${todayStr}::date`,
+      ),
+    });
+
+    const currentCount = usageRow?.count || 0;
+    return {
+      allowed: currentCount < dailyLimit,
+      remaining: Math.max(0, dailyLimit - currentCount),
+      limit: dailyLimit,
+    };
+  }
+
   async checkBalance(userId: string, required: number): Promise<boolean> {
     const balance = await this.getBalance(userId);
     const monthlyRemaining = (balance.monthlyQuota || 0) - (balance.monthlyUsed || 0);

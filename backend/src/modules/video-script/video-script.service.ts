@@ -571,6 +571,16 @@ ${project.sourceContent}`;
     if (!scene) throw new NotFoundException('Scene not found');
     const project = await this.getProject(userId, scene.projectId);
 
+    // Billing check
+    const hasBalance = await this.billingService.checkBalance(userId, 1);
+    if (!hasBalance) {
+      throw new BadRequestException('Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.');
+    }
+    const withinCatLimit = await this.billingService.checkCategoryLimit(userId, 'VIDEO_SCRIPT');
+    if (!withinCatLimit) {
+      throw new BadRequestException('Bulanan limit untuk kategori Generate sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
+    }
+
     const tier = await this.billingService.getSubscriptionTier(userId);
     const model = this.getTierModel(tier);
     const prompt = `You are a stock footage curator helping creators find b-roll for short-form video.
@@ -594,10 +604,14 @@ Project hook: ${project.hook || ''}`;
     )) as { keywords?: unknown };
 
     const raw = Array.isArray(result.keywords) ? result.keywords : [];
-    return raw
+    const keywords = raw
       .map((k) => (typeof k === 'string' ? k.trim() : ''))
       .filter((k) => k.length > 0)
       .slice(0, count);
+
+    await this.billingService.deductTokens(userId, 1, 'Suggest footage keywords');
+
+    return keywords;
   }
 
   async improveSceneVisual(

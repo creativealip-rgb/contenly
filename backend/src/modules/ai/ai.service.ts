@@ -305,7 +305,20 @@ Keep each field concise but descriptive. Use English.`;
     return { prompt };
   }
 
-  async chat(message: string, history: Array<{ role: string; content: string }>) {
+  async chat(userId: string, message: string, history: Array<{ role: string; content: string }>) {
+    // Check plan — FREE users cannot use AI Chat
+    const chatLimit = await this.billingService.checkDailyChatLimit(userId, 30);
+    if (!chatLimit.allowed) {
+      const tier = await this.billingService.getSubscriptionTier(userId);
+      if (tier === 'FREE') {
+        throw new BadRequestException('AI Chat tidak tersedia di paket Free. Silakan upgrade ke paket Starter atau lebih tinggi.');
+      }
+      throw new BadRequestException(`Batas harian AI Chat (${chatLimit.limit} pesan/hari) sudah tercapai. Coba lagi besok.`);
+    }
+
+    // Track usage
+    await this.billingService.incrementDailyUsage(userId, 'AI_CHAT');
+
     const client = this.openAiService.getClient();
     const messages = [
       { role: 'system' as const, content: 'Kamu adalah AI assistant untuk platform Contenly — platform otomasi konten. Bantu user dengan pertanyaan tentang content creation, SEO, social media strategy, copywriting, dan penggunaan platform. Jawab dalam Bahasa Indonesia, singkat dan actionable.' },

@@ -103,6 +103,7 @@ export const featureTypeEnum = pgEnum('feature_type', [
   'THUMBNAIL_GENERATION',
   'STORYBOARD_GENERATION',
   'MOTION_GRAPHICS_RENDER',
+  'AI_CHAT',
 ]);
 
 // ==========================================

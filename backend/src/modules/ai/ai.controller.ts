@@ -59,7 +59,10 @@ export class AiController {
   @Post('chat')
   @Throttle({ default: { limit: 20, ttl: 60000 } })
   @ApiOperation({ summary: 'AI chat assistant' })
-  async chat(@Body() dto: { message: string; history?: Array<{ role: string; content: string }> }) {
-    return this.aiService.chat(dto.message, dto.history || []);
+  async chat(
+    @CurrentUser() user: User,
+    @Body() dto: { message: string; history?: Array<{ role: string; content: string }> },
+  ) {
+    return this.aiService.chat(user.id, dto.message, dto.history || []);
   }
 }
