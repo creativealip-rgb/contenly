@@ -73,6 +73,22 @@ Atau cara lebih gampang:
 2. Ketik \`document.cookie\` → Enter
 3. Copy hasilnya`
     },
+    { 
+        key: 'youtube', 
+        label: 'YouTube (Video Clips)', 
+        models: [], 
+        link: 'https://youtube.com', 
+        authType: 'cookie',
+        cookieInstructions: `**Cara dapat YouTube cookies (Netscape format):**
+1. Install extension "Get cookies.txt LOCALLY" di Chrome
+   (https://chrome.google.com/webstore/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc)
+2. Login ke YouTube (https://youtube.com)
+3. Klik extension icon → "Export" → Copy semua isi file
+4. Paste hasilnya di sini
+
+**Format:** Netscape cookies.txt (bukan JSON)
+**Expired:** Biasanya 1-2 minggu, update kalau download gagal`
+    },
 ]
 
 export default function ApiKeysPage() {
@@ -478,7 +494,7 @@ export default function ApiKeysPage() {
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
             <div>
                 <h1 className="text-2xl font-bold flex items-center gap-2"><Key className="w-6 h-6" /> Kunci API</h1>
-                <p className="text-muted-foreground">Kelola API key dan cookie/session authentication provider AI</p>
+                <p className="text-muted-foreground">Kelola API key, cookie provider AI, dan YouTube cookies untuk Video Clips</p>
             </div>
             <Tabs defaultValue="keys">
                 <TabsList>

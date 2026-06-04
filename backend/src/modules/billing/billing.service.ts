@@ -82,7 +82,7 @@ export class BillingService {
     return plan === 'ENTERPRISE' ? 'BUSINESS' : plan;
   }
 
-  async checkDailyLimit(userId: string, featureType: 'ARTICLE_GENERATION' | 'INSTAGRAM_GENERATION' | 'VIDEO_GENERATION'): Promise<boolean> {
+  async checkDailyLimit(userId: string, featureType: string): Promise<boolean> {
     const tier = await this.getSubscriptionTier(userId);
     const limit = BILLING_TIERS[tier]?.monthlyLimits?.[featureType] || 0;
     const now = new Date();
@@ -90,7 +90,7 @@ export class BillingService {
     const usageRows = await this.db.query.dailyUsage.findMany({
       where: and(
         eq(dailyUsage.userId, userId),
-        eq(dailyUsage.featureType, featureType),
+        eq(dailyUsage.featureType, featureType as any),
         sql`${dailyUsage.date} >= ${monthStart.toISOString()}`
       ),
     });
@@ -98,7 +98,7 @@ export class BillingService {
     return currentUsage < limit;
   }
 
-  async incrementDailyUsage(userId: string, featureType: 'ARTICLE_GENERATION' | 'INSTAGRAM_GENERATION' | 'VIDEO_GENERATION') {
+  async incrementDailyUsage(userId: string, featureType: string) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     // Still track daily for analytics, but limits are now checked monthly
@@ -107,7 +107,7 @@ export class BillingService {
         const existing = await tx.query.dailyUsage.findFirst({
           where: and(
             eq(dailyUsage.userId, userId),
-            eq(dailyUsage.featureType, featureType),
+            eq(dailyUsage.featureType, featureType as any),
             sql`${dailyUsage.date}::date = ${today.toISOString().split('T')[0]}::date`
           ),
         });
@@ -118,7 +118,7 @@ export class BillingService {
         } else {
           await tx.insert(dailyUsage).values({
             userId,
-            featureType,
+            featureType: featureType as any,
             date: today,
             count: 1,
           });
@@ -136,6 +136,42 @@ export class BillingService {
     const creditsRemaining = balance.credits || 0;
     if (creditsRemaining >= required) return true;
     return false;
+  }
+
+  /**
+   * Map feature type to its category and check the per-category monthly limit.
+   * Returns true if within limit, false if exceeded.
+   */
+  async checkCategoryLimit(userId: string, featureType: string): Promise<boolean> {
+    const FEATURE_TO_CATEGORY: Record<string, string> = {
+      // Artikel
+      ARTICLE_GENERATION: 'ARTICLE_GENERATION',
+      // Generate (Instagram + Video)
+      INSTAGRAM_GENERATION: 'INSTAGRAM_GENERATION',
+      VIDEO_GENERATION: 'VIDEO_GENERATION',
+      STORYBOARD_GENERATION: 'INSTAGRAM_GENERATION',
+      HASHTAG_GENERATION: 'INSTAGRAM_GENERATION',
+      VIDEO_SCRIPT: 'VIDEO_GENERATION',
+      ALTERNATE_HOOKS: 'VIDEO_GENERATION',
+      BROLL_KEYWORDS: 'VIDEO_GENERATION',
+      AUTO_CUTAWAY: 'VIDEO_GENERATION',
+      TTS_PREVIEW: 'VIDEO_GENERATION',
+      TTS_VOICEOVER: 'VIDEO_GENERATION',
+      REGENERATE_FIELD: 'VIDEO_GENERATION',
+      REGENERATE_VOICEOVER: 'VIDEO_GENERATION',
+      IMPROVE_VISUAL: 'VIDEO_GENERATION',
+      VIDEO_ANALYSIS: 'VIDEO_GENERATION',
+      VIDEO_EXPORT: 'VIDEO_GENERATION',
+      // Gambar
+      IMAGE_GENERATION: 'IMAGE_GENERATION',
+      SLIDE_IMAGE: 'IMAGE_GENERATION',
+      THUMBNAIL_GENERATION: 'IMAGE_GENERATION',
+      MOTION_GRAPHICS_RENDER: 'IMAGE_GENERATION',
+      TEXT_OVERLAY: 'IMAGE_GENERATION',
+    };
+    const categoryFeature = FEATURE_TO_CATEGORY[featureType];
+    if (!categoryFeature) return true; // unknown feature, skip check
+    return this.checkDailyLimit(userId, categoryFeature);
   }
 
   async deductTokens(userId: string, amount: number, description: string) {
@@ -159,7 +195,7 @@ export class BillingService {
       if (remainingToDeduct > 0) {
         const creditsAvailable = balance.credits || 0;
         if (creditsAvailable < remainingToDeduct) {
-          throw new BadRequestException('Saldo kredit tidak mencukupi. Silakan top up kredit atau tunggu reset kuota bulanan.');
+          throw new BadRequestException('Kuota bulanan dan kredit tidak mencukupi. Silakan upgrade plan, top up kredit, atau tunggu reset kuota bulanan.');
         }
         await tx
           .update(tokenBalance)

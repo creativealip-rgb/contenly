@@ -4,7 +4,7 @@ const DEFAULT_AI_MODEL = (process.env.OPENAI_MODEL || process.env.OPENROUTER_MOD
 
 export const BILLING_TIERS = {
     FREE: {
-        monthlyQuota: 5,
+        monthlyQuota: 20,
         monthlyLimits: {
             ARTICLE_GENERATION: 5,
             INSTAGRAM_GENERATION: 150,
@@ -73,19 +73,27 @@ export const BILLING_TIERS = {
 // Image gen (Codex): ~Rp 2,836/request → 85 tokens @ Rp 100/token = Rp 8,500
 export const TOKEN_COSTS = {
     // Text generation operations (Antigravity ~Rp 583)
-    ARTICLE_GENERATION: 17,
-    STORYBOARD_GENERATION: 17,
-    VIDEO_SCRIPT: 17,
-    HASHTAG_GENERATION: 10,
+    ARTICLE_GENERATION: 3,
+    STORYBOARD_GENERATION: 3,
+    VIDEO_SCRIPT: 3,
+    HASHTAG_GENERATION: 2,
+    ALTERNATE_HOOKS: 1,
+    BROLL_KEYWORDS: 1,
+    AUTO_CUTAWAY: 2,
+    TTS_PREVIEW: 1,
+    TTS_VOICEOVER: 1,
+    REGENERATE_FIELD: 1,
+    REGENERATE_VOICEOVER: 1,
+    IMPROVE_VISUAL: 1,
     
     // Image generation operations (Codex ~Rp 2,836)
-    IMAGE_GENERATION: 85,
-    SLIDE_IMAGE: 85,
-    THUMBNAIL_GENERATION: 85,
-    MOTION_GRAPHICS_RENDER: 85,
+    IMAGE_GENERATION: 2,
+    SLIDE_IMAGE: 2,
+    THUMBNAIL_GENERATION: 2,
+    MOTION_GRAPHICS_RENDER: 2,
+    TEXT_OVERLAY: 2,
     
-    // Mixed operations
-    VIDEO_ANALYSIS: 17,      // Text heavy
-    VIDEO_EXPORT: 85,        // Image/render heavy
-    TEXT_OVERLAY: 30,        // Light image processing
+    // Video/Heavy operations
+    VIDEO_ANALYSIS: 50,
+    VIDEO_EXPORT: 30,
 };

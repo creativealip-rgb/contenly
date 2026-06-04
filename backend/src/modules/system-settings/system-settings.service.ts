@@ -247,6 +247,45 @@ export class SystemSettingsService {
       throw new Error(`No cookies found for ${provider}. Please save cookies first.`);
     }
 
+    // YouTube: test by trying to fetch video metadata with cookies
+    if (provider === 'youtube') {
+      const startTime = Date.now();
+      const { execFile } = require('child_process');
+      const { promisify } = require('util');
+      const execFileAsync = promisify(execFile);
+      const fs = require('fs');
+      const path = require('path');
+      const os = require('os');
+
+      const tmpFile = path.join(os.tmpdir(), 'yt-test-cookies.txt');
+      await fs.promises.writeFile(tmpFile, cookies.value, 'utf-8');
+
+      try {
+        await execFileAsync('yt-dlp', [
+          '--cookies', tmpFile,
+          '--skip-download',
+          '--print', '%(title)s',
+          'https://www.youtube.com/watch?v=jNQXAC9IVRw',
+        ], { timeout: 15000 });
+
+        await fs.promises.unlink(tmpFile).catch(() => {});
+        return {
+          valid: true,
+          latency: Date.now() - startTime,
+          message: 'YouTube cookies valid! Video download should work.',
+        };
+      } catch (e: any) {
+        await fs.promises.unlink(tmpFile).catch(() => {});
+        const isExpired = e.message?.includes('Sign in') || e.message?.includes('bot') || e.message?.includes('cookie');
+        return {
+          valid: false,
+          error: isExpired
+            ? 'Cookies expired. Update dari extension "Get cookies.txt LOCALLY".'
+            : `Test failed: ${e.message?.substring(0, 200)}`,
+        };
+      }
+    }
+
     const startTime = Date.now();
 
     try {

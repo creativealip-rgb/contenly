@@ -5,6 +5,7 @@ import { Queue } from 'bull';
 import { OpenAiService } from '../ai/services/openai.service';
 import { VideoScriptService } from '../video-script/video-script.service';
 import { BillingService } from '../billing/billing.service';
+import { TOKEN_COSTS } from '../billing/billing.constants';
 import { DrizzleService } from '../../db/drizzle.service';
 import { renderJobs, renderPresets } from '../../db/schema';
 import { eq, desc, and } from 'drizzle-orm';
@@ -251,9 +252,11 @@ export class MotionGraphicsService {
 
     const cost = (options.format || 'mp4') === 'png' ? 1 : 3;
     const hasBalance = await this.billingService.checkBalance(userId, cost);
-    if (!hasBalance) throw new BadRequestException('Saldo kredit Anda tidak mencukupi untuk request ini.');
+    if (!hasBalance) throw new BadRequestException('Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.');
 
     await this.billingService.deductTokens(userId, cost, `Motion graphics render: ${templateId} (${options.format || 'mp4'})`);
+    const withinCatLimitMG = await this.billingService.checkCategoryLimit(userId, 'MOTION_GRAPHICS_RENDER');
+    if (!withinCatLimitMG) throw new BadRequestException('Bulanan limit untuk kategori Gambar sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
 
     const db = this.drizzle.getDb();
     const [job] = await db.insert(renderJobs).values({
@@ -402,9 +405,11 @@ Resolution: ${width}x${height}`;
 
     const CAPTION_COST = 3;
     const hasBalance = await this.billingService.checkBalance(userId, CAPTION_COST);
-    if (!hasBalance) throw new BadRequestException('Saldo kredit Anda tidak mencukupi untuk request ini.');
+    if (!hasBalance) throw new BadRequestException('Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.');
 
     await this.billingService.deductTokens(userId, CAPTION_COST, `Motion graphics render: AutoCaption (${words.length} words)`);
+    const withinCatLimitMG = await this.billingService.checkCategoryLimit(userId, 'MOTION_GRAPHICS_RENDER');
+    if (!withinCatLimitMG) throw new BadRequestException('Bulanan limit untuk kategori Gambar sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
 
     const db = this.drizzle.getDb();
     const [job] = await db.insert(renderJobs).values({
@@ -477,9 +482,11 @@ Resolution: ${width}x${height}`;
     const includeAudio = options.includeAudio !== false;
     const COMPOSE_COST = includeAudio ? 10 : 5;
     const hasBalance = await this.billingService.checkBalance(userId, COMPOSE_COST);
-    if (!hasBalance) throw new BadRequestException('Saldo kredit Anda tidak mencukupi untuk request ini.');
+    if (!hasBalance) throw new BadRequestException('Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.');
 
     await this.billingService.deductTokens(userId, COMPOSE_COST, `Motion graphics compose: ${project.scenes.length} scenes`);
+    const withinCatLimitMG = await this.billingService.checkCategoryLimit(userId, 'MOTION_GRAPHICS_RENDER');
+    if (!withinCatLimitMG) throw new BadRequestException('Bulanan limit untuk kategori Gambar sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
 
     const db = this.drizzle.getDb();
     const [job] = await db.insert(renderJobs).values({
@@ -777,9 +784,11 @@ Resolution: ${width}x${height}`;
 
     const totalCost = items.reduce((sum, item) => sum + ((item.format || 'mp4') === 'png' ? 1 : 3), 0);
     const hasBalance = await this.billingService.checkBalance(userId, totalCost);
-    if (!hasBalance) throw new BadRequestException('Saldo kredit Anda tidak mencukupi.');
+    if (!hasBalance) throw new BadRequestException('Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.');
 
     await this.billingService.deductTokens(userId, totalCost, `Batch render: ${items.length} items`);
+    const withinCatLimitMG = await this.billingService.checkCategoryLimit(userId, 'MOTION_GRAPHICS_RENDER');
+    if (!withinCatLimitMG) throw new BadRequestException('Bulanan limit untuk kategori Gambar sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
 
     const db = this.drizzle.getDb();
     const jobIds: string[] = [];

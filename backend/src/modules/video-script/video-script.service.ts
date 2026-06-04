@@ -228,21 +228,15 @@ export class VideoScriptService {
   ) {
     const project = await this.getProject(userId, projectId);
 
-    const hasBalance = await this.billingService.checkBalance(userId, 1);
+    const hasBalance = await this.billingService.checkBalance(userId, TOKEN_COSTS.VIDEO_SCRIPT);
     if (!hasBalance) {
       throw new BadRequestException(
-        'Saldo kredit Anda tidak mencukupi untuk request ini.',
+        'Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.',
       );
     }
-
-    const withinDailyLimit = await this.billingService.checkDailyLimit(
-      userId,
-      'VIDEO_GENERATION',
-    );
-    if (!withinDailyLimit) {
-      throw new BadRequestException(
-        'Daily limit reached for Video Script Generation on your current plan. Please upgrade or try again tomorrow.',
-      );
+    const withinCatLimit = await this.billingService.checkCategoryLimit(userId, 'VIDEO_SCRIPT');
+    if (!withinCatLimit) {
+          throw new BadRequestException('Bulanan limit untuk kategori sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
     }
 
     await this.drizzle.db
@@ -310,7 +304,7 @@ export class VideoScriptService {
 
       await this.billingService.deductTokens(
         userId,
-        1,
+        TOKEN_COSTS.VIDEO_SCRIPT,
         'Video script generation',
       );
       await this.billingService.incrementDailyUsage(userId, 'VIDEO_GENERATION');
@@ -338,11 +332,15 @@ export class VideoScriptService {
       throw new BadRequestException('Project source content is empty');
     }
 
-    const hasBalance = await this.billingService.checkBalance(userId, 1);
+    const hasBalance = await this.billingService.checkBalance(userId, TOKEN_COSTS.REGENERATE_FIELD);
     if (!hasBalance) {
       throw new BadRequestException(
-        'Saldo kredit Anda tidak mencukupi untuk request ini.',
+        'Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.',
       );
+    }
+    const withinCatLimit = await this.billingService.checkCategoryLimit(userId, 'REGENERATE_FIELD');
+    if (!withinCatLimit) {
+          throw new BadRequestException('Bulanan limit untuk kategori sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
     }
 
     const fieldPrompt = this.buildFieldRegenerationPrompt(field, project);
@@ -381,9 +379,10 @@ export class VideoScriptService {
 
     await this.billingService.deductTokens(
       userId,
-      1,
+      TOKEN_COSTS.REGENERATE_FIELD,
       `Video script regenerate field: ${field}`,
     );
+    await this.billingService.incrementDailyUsage(userId, 'VIDEO_GENERATION');
 
     return {
       ...updatedProject,
@@ -448,11 +447,15 @@ export class VideoScriptService {
       throw new BadRequestException('Project source content is empty');
     }
 
-    const hasBalance = await this.billingService.checkBalance(userId, 1);
+    const hasBalance = await this.billingService.checkBalance(userId, TOKEN_COSTS.REGENERATE_VOICEOVER);
     if (!hasBalance) {
       throw new BadRequestException(
-        'Saldo kredit Anda tidak mencukupi untuk request ini.',
+        'Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.',
       );
+    }
+    const withinCatLimit = await this.billingService.checkCategoryLimit(userId, 'REGENERATE_VOICEOVER');
+    if (!withinCatLimit) {
+          throw new BadRequestException('Bulanan limit untuk kategori sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
     }
 
     const tier = await this.billingService.getSubscriptionTier(userId);
@@ -508,9 +511,10 @@ ${project.sourceContent}`;
 
     await this.billingService.deductTokens(
       userId,
-      1,
+      TOKEN_COSTS.REGENERATE_VOICEOVER,
       `Video script regenerate voiceover (scene ${scene.sceneNumber})`,
     );
+    await this.billingService.incrementDailyUsage(userId, 'VIDEO_GENERATION');
 
     return {
       ...updatedScene,
@@ -608,11 +612,15 @@ Project hook: ${project.hook || ''}`;
     if (!scene) throw new NotFoundException('Scene not found');
     const project = await this.getProject(userId, scene.projectId);
 
-    const hasBalance = await this.billingService.checkBalance(userId, 1);
+    const hasBalance = await this.billingService.checkBalance(userId, TOKEN_COSTS.IMPROVE_VISUAL);
     if (!hasBalance) {
       throw new BadRequestException(
-        'Saldo kredit Anda tidak mencukupi untuk request ini.',
+        'Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.',
       );
+    }
+    const withinCatLimit = await this.billingService.checkCategoryLimit(userId, 'IMPROVE_VISUAL');
+    if (!withinCatLimit) {
+          throw new BadRequestException('Bulanan limit untuk kategori sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
     }
 
     const tier = await this.billingService.getSubscriptionTier(userId);
@@ -661,9 +669,10 @@ Project headline: ${project.headline || ''}`;
 
     await this.billingService.deductTokens(
       userId,
-      1,
+      TOKEN_COSTS.IMPROVE_VISUAL,
       `Video script improve visual (scene ${scene.sceneNumber})`,
     );
+    await this.billingService.incrementDailyUsage(userId, 'VIDEO_GENERATION');
 
     return {
       ...updatedScene,
@@ -924,17 +933,21 @@ Project headline: ${project.headline || ''}`;
       throw new BadRequestException('Scene voiceover text is empty');
     }
 
-    const hasBalance = await this.billingService.checkBalance(userId, 1);
+    const hasBalance = await this.billingService.checkBalance(userId, TOKEN_COSTS.TTS_PREVIEW);
     if (!hasBalance) {
       throw new BadRequestException(
-        'Saldo kredit Anda tidak mencukupi untuk request ini.',
+        'Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.',
       );
+    }
+    const withinCatLimit = await this.billingService.checkCategoryLimit(userId, 'TTS_PREVIEW');
+    if (!withinCatLimit) {
+          throw new BadRequestException('Bulanan limit untuk kategori sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
     }
 
     const buffer = await this.openAiService.generateSpeech(text, voice);
     await this.billingService.deductTokens(
       userId,
-      1,
+      TOKEN_COSTS.TTS_PREVIEW,
       `Video script TTS preview (scene ${scene.sceneNumber}, voice ${voice})`,
     );
     return {
@@ -1359,11 +1372,15 @@ ${project.sourceContent}`;
       throw new BadRequestException('No scenes to generate audio from');
     }
 
-    const hasBalance = await this.billingService.checkBalance(userId, 1);
+    const hasBalance = await this.billingService.checkBalance(userId, TOKEN_COSTS.TTS_VOICEOVER);
     if (!hasBalance) {
       throw new BadRequestException(
-        'Saldo kredit Anda tidak mencukupi untuk request ini.',
+        'Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.',
       );
+    }
+    const withinCatLimit = await this.billingService.checkCategoryLimit(userId, 'TTS_VOICEOVER');
+    if (!withinCatLimit) {
+          throw new BadRequestException('Bulanan limit untuk kategori sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
     }
 
     const fullScript = project.scenes
@@ -1382,7 +1399,7 @@ ${project.sourceContent}`;
       );
       await this.billingService.deductTokens(
         userId,
-        1,
+        TOKEN_COSTS.TTS_VOICEOVER,
         'TTS Voiceover Generation',
       );
 
@@ -1413,9 +1430,14 @@ ${project.sourceContent}`;
   ) {
     await this.getProject(userId, projectId);
 
-    const hasBalance = await this.billingService.checkBalance(userId, 1);
+    const hasBalance = await this.billingService.checkBalance(userId, TOKEN_COSTS.VIDEO_SCRIPT);
     if (!hasBalance) {
-      throw new BadRequestException('Saldo kredit Anda tidak mencukupi.');
+      throw new BadRequestException('Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.');
+    }
+
+    const withinCatLimitTrans = await this.billingService.checkCategoryLimit(userId, 'VIDEO_SCRIPT');
+    if (!withinCatLimitTrans) {
+      throw new BadRequestException('Bulanan limit untuk kategori Generate sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
     }
 
     const result = await this.openAiService.transcribeAudio(fileBuffer, language);
@@ -1461,9 +1483,15 @@ ${project.sourceContent}`;
   ) {
     const project = await this.getProject(userId, projectId);
 
-    const hasBalance = await this.billingService.checkBalance(userId, 1);
+    const hasBalance = await this.billingService.checkBalance(userId, TOKEN_COSTS.THUMBNAIL_GENERATION);
     if (!hasBalance) {
-      throw new BadRequestException('Saldo kredit Anda tidak mencukupi.');
+      throw new BadRequestException('Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.');
+    }
+
+    // Check per-category limit for thumbnail/gambar
+    const withinCategoryLimit = await this.billingService.checkCategoryLimit(userId, 'THUMBNAIL_GENERATION');
+    if (!withinCategoryLimit) {
+      throw new BadRequestException('Bulanan limit untuk kategori Gambar sudah habis. Silakan upgrade plan atau tunggu bulan depan.');
     }
 
     const title = project.headline || project.title;
@@ -1488,6 +1516,7 @@ ${project.sourceContent}`;
     }
 
     await this.billingService.deductTokens(userId, TOKEN_COSTS.THUMBNAIL_GENERATION, "Thumbnail Generation");
+    await this.billingService.incrementDailyUsage(userId, 'THUMBNAIL_GENERATION');
 
     // Persist generated thumbnail URL to project
     await this.drizzle.db

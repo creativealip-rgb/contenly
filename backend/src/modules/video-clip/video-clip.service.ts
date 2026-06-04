@@ -7,6 +7,8 @@ import { schema } from '../../db/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { OpenAiService } from '../ai/services/openai.service';
 import { BillingService } from '../billing/billing.service';
+import { TOKEN_COSTS } from '../billing/billing.constants';
+import { SystemSettingsService } from '../system-settings/system-settings.service';
 import { FootageService, FootageSearchResult } from '../video-script/footage.service';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
@@ -101,6 +103,7 @@ export class VideoClipService {
     private drizzle: DrizzleService,
     private openAiService: OpenAiService,
     private billingService: BillingService,
+    private systemSettingsService: SystemSettingsService,
     private footageService: FootageService,
     @InjectQueue('video-clip') private clipQueue: Queue,
   ) {
@@ -215,7 +218,9 @@ export class VideoClipService {
   }
 
   async analyzeVideo(userId: string, projectId: string) {
-    await this.billingService.checkBalance(userId, 50);
+    await this.billingService.checkBalance(userId, TOKEN_COSTS.VIDEO_ANALYSIS);
+    const withinLimit = await this.billingService.checkCategoryLimit(userId, 'VIDEO_ANALYSIS');
+    if (!withinLimit) throw new BadRequestException('Bulanan limit untuk kategori Generate sudah habis. Silakan upgrade plan atau tunggu bulan depan.');
     const project = await this.getProject(userId, projectId);
     if (project.status === 'analyzing') throw new BadRequestException('Already analyzing');
 
@@ -231,15 +236,38 @@ export class VideoClipService {
     
     // yt-dlp download — max 60 min, best quality up to 1080p
     const ytdlp = process.env.YTDLP_PATH || 'yt-dlp';
-    await execFileAsync(ytdlp, [
+    const args = [
       '-f', 'bestvideo[height<=1080]+bestaudio/best[height<=1080]',
       '--merge-output-format', 'mp4',
       '--max-filesize', '2G',
       '--match-filter', 'duration<=3600',
       '-o', outputPath,
       '--no-playlist',
-      sourceUrl,
-    ], { timeout: 600000 }); // 10 min timeout for download
+    ];
+
+    // Load YouTube cookies from DB if available
+    let cookiesFile: string | null = null;
+    try {
+      const cookiesSetting = await this.systemSettingsService.getByKey('cookies_youtube');
+      if (cookiesSetting?.value) {
+        cookiesFile = path.join(this.outputDir, `${projectId}-cookies.txt`);
+        await fs.writeFile(cookiesFile, cookiesSetting.value, 'utf-8');
+        args.push('--cookies', cookiesFile);
+        this.logger.log(`Using YouTube cookies for download`);
+      }
+    } catch (e) {
+      this.logger.warn(`Failed to load YouTube cookies: ${(e as Error).message}`);
+    }
+
+    try {
+      args.push(sourceUrl);
+      await execFileAsync(ytdlp, args, { timeout: 600000 }); // 10 min timeout
+    } finally {
+      // Cleanup temp cookies file
+      if (cookiesFile) {
+        await fs.unlink(cookiesFile).catch(() => {});
+      }
+    }
 
     return outputPath;
   }
@@ -476,9 +504,11 @@ export class VideoClipService {
     );
     const transcriptSnippet = words.map((w) => w.word).join(' ').slice(0, 1500);
 
-    const hasBalance = await this.billingService.checkBalance(userId, 1);
+    const hasBalance = await this.billingService.checkBalance(userId, TOKEN_COSTS.ALTERNATE_HOOKS);
+    const withinLimitHooks = await this.billingService.checkCategoryLimit(userId, 'ALTERNATE_HOOKS');
+    if (!withinLimitHooks) throw new BadRequestException('Bulanan limit untuk kategori Generate sudah habis.');
     if (!hasBalance) {
-      throw new BadRequestException('Saldo kredit tidak mencukupi');
+      throw new BadRequestException('Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.');
     }
 
     const prompt = `You are a viral short-form video copywriter.
@@ -507,35 +537,50 @@ Transcript snippet: ${transcriptSnippet}`;
       .filter((h) => h.length > 0)
       .slice(0, count);
 
-    await this.billingService.deductTokens(userId, 1, `Alternate hooks for clip ${segmentIndex}`);
+    await this.billingService.deductTokens(userId, TOKEN_COSTS.ALTERNATE_HOOKS, `Alternate hooks for clip ${segmentIndex}`);
     return hooks;
   }
 
   async transcribeVideo(videoPath: string): Promise<{ text: string; words: TranscriptWord[] }> {
-    const audioPath = videoPath.replace('.mp4', '.wav');
-    const srtPath = videoPath.replace('.mp4', '-transcript.srt');
-    const modelPath = process.env.WHISPER_MODEL_PATH || path.join(__dirname, '..', '..', '..', 'models', 'ggml-base.bin');
-    const language = process.env.WHISPER_LANGUAGE || 'id'; // Force Indonesian by default
+    const audioPath = videoPath.replace(/\.mp4$/, '.wav');
+    const srtPath = videoPath.replace(/\.mp4$/, '-transcript.srt');
+    const modelPath = process.env.WHISPER_MODEL_PATH || path.join('/app', 'backend', 'models', 'ggml-tiny.bin');
+    const language = process.env.WHISPER_LANGUAGE || 'id';
 
-    // Extract 16kHz mono audio
+    // Extract 16kHz mono audio for whisper
     await execFileAsync('ffmpeg', [
       '-i', videoPath, '-vn', '-acodec', 'pcm_s16le', '-ar', '16000', '-ac', '1',
       '-y', audioPath,
     ], { timeout: 300000 });
 
-    // Transcribe using ffmpeg whisper filter with forced language
-    const escapedModel = modelPath.replace(/\\/g, '/').replace(/:/g, '\\:');
-    const escapedSrt = srtPath.replace(/\\/g, '/').replace(/:/g, '\\:');
-    await execFileAsync('ffmpeg', [
-      '-i', audioPath,
-      '-af', `whisper=model='${escapedModel}':language=${language}:format=srt:destination='${escapedSrt}'`,
-      '-f', 'null', '-',
-    ], { timeout: 600000 });
+    // Transcribe using whisper-cli (whisper.cpp)
+    const whisperBin = process.env.WHISPER_BIN_PATH || 'whisper-cli';
+    try {
+      await execFileAsync(whisperBin, [
+        '-m', modelPath,
+        '-f', audioPath,
+        '-l', language,
+        '-osrt',
+        '-of', videoPath.replace(/\.mp4$/, '-transcript'),
+        '-t', String(Math.max(1, (require('os').cpus()?.length || 2) - 1)),
+      ], { timeout: 600000 });
+    } catch (whisperErr: any) {
+      this.logger.error(`[Whisper] whisper-cli failed: ${whisperErr.message}`);
+      throw new Error(`Transcription failed: ${whisperErr.message}`);
+    }
 
     // Parse SRT to get text and word-level timestamps
-    const srtContent = await fs.readFile(srtPath, 'utf-8');
+    let srtContent: string;
+    try {
+      srtContent = await fs.readFile(srtPath, 'utf-8');
+    } catch {
+      // whisper-cli may output with different extension
+      const altPath = videoPath.replace(/\.mp4$/, '-transcript.srt');
+      srtContent = await fs.readFile(altPath, 'utf-8');
+    }
     const { text, words } = this.parseSRT(srtContent);
 
+    // Cleanup temp files
     await fs.unlink(audioPath).catch(() => {});
     await fs.unlink(srtPath).catch(() => {});
 
@@ -634,7 +679,9 @@ Rules:
     titleStyle?: TitleStyleInput,
     options?: { aspectRatio?: AspectRatio; cropOffsetX?: number; includeBroll?: boolean },
   ) {
-    await this.billingService.checkBalance(userId, 30);
+    await this.billingService.checkBalance(userId, TOKEN_COSTS.VIDEO_EXPORT);
+    const withinLimitExport = await this.billingService.checkCategoryLimit(userId, 'VIDEO_EXPORT');
+    if (!withinLimitExport) throw new BadRequestException('Bulanan limit untuk kategori Generate sudah habis. Silakan upgrade plan atau tunggu bulan depan.');
     const project = await this.getProject(userId, projectId);
     if (!project.videoPath) throw new BadRequestException('Video not downloaded yet');
     if (!project.segments) throw new BadRequestException('No segments analyzed yet');
@@ -1246,8 +1293,10 @@ Rules:
     const inSeg = allWords.filter((w) => w.start >= seg.startTime && w.end <= seg.endTime);
     const text = inSeg.map((w) => w.word).join(' ').slice(0, 1500);
 
-    const hasBalance = await this.billingService.checkBalance(userId, 1);
-    if (!hasBalance) throw new BadRequestException('Saldo kredit tidak mencukupi');
+    const hasBalance = await this.billingService.checkBalance(userId, TOKEN_COSTS.BROLL_KEYWORDS);
+    const withinLimitBroll = await this.billingService.checkCategoryLimit(userId, 'BROLL_KEYWORDS');
+    if (!withinLimitBroll) throw new BadRequestException('Bulanan limit untuk kategori Generate sudah habis.');
+    if (!hasBalance) throw new BadRequestException('Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.');
 
     const prompt = `You are a stock footage curator. Suggest ${Math.max(3, Math.min(12, count))} concrete English keywords or 2-3 word phrases that match the visual context of this short-form video clip.
 
@@ -1274,7 +1323,7 @@ Transcript snippet: ${text}`;
       .filter((k) => k.length > 0)
       .slice(0, count);
 
-    await this.billingService.deductTokens(userId, 1, `B-roll keywords for clip ${segmentIndex}`);
+    await this.billingService.deductTokens(userId, TOKEN_COSTS.BROLL_KEYWORDS, `B-roll keywords for clip ${segmentIndex}`);
     return keywords;
   }
 
@@ -1304,8 +1353,10 @@ Transcript snippet: ${text}`;
       throw new BadRequestException('Transcript untuk segment ini terlalu sedikit untuk auto-cutaway');
     }
 
-    const hasBalance = await this.billingService.checkBalance(userId, 2);
-    if (!hasBalance) throw new BadRequestException('Saldo kredit tidak mencukupi');
+    const hasBalance = await this.billingService.checkBalance(userId, TOKEN_COSTS.AUTO_CUTAWAY);
+    const withinLimitCutaway = await this.billingService.checkCategoryLimit(userId, 'AUTO_CUTAWAY');
+    if (!withinLimitCutaway) throw new BadRequestException('Bulanan limit untuk kategori Generate sudah habis.');
+    if (!hasBalance) throw new BadRequestException('Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.');
 
     const maxOverlays = Math.max(2, Math.min(10, options.maxOverlays ?? 5));
 
@@ -1375,12 +1426,12 @@ Clip duration: ${segDuration}s`;
       : [];
 
     if (rawCutaways.length === 0) {
-      await this.billingService.deductTokens(userId, 1, `Auto-cutaway analysis (no matches) clip ${segmentIndex}`);
+      await this.billingService.deductTokens(userId, TOKEN_COSTS.AUTO_CUTAWAY, `Auto-cutaway analysis (no matches) clip ${segmentIndex}`);
       return { added: [], skipped: 0 };
     }
 
     // Deduct base token for AI analysis
-    await this.billingService.deductTokens(userId, 2, `Auto-cutaway AI for clip ${segmentIndex}`);
+    await this.billingService.deductTokens(userId, TOKEN_COSTS.AUTO_CUTAWAY, `Auto-cutaway AI for clip ${segmentIndex}`);
 
     // For each cutaway, fetch footage and add to plan
     const plan = ((project.brollPlan as BrollItem[]) || []).slice();

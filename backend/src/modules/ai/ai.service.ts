@@ -20,9 +20,9 @@ export class AiService {
 
   async generateContent(userId: string, dto: GenerateContentDto) {
     // Check token balance
-    const hasBalance = await this.billingService.checkBalance(userId, 1);
+    const hasBalance = await this.billingService.checkBalance(userId, TOKEN_COSTS.ARTICLE_GENERATION);
     if (!hasBalance) {
-      throw new BadRequestException('Saldo kredit Anda tidak mencukupi untuk request ini.');
+      throw new BadRequestException('Kuota bulanan tidak mencukupi untuk generate artikel. Silakan upgrade plan atau tunggu reset kuota.');
     }
 
     const withinDailyLimit = await this.billingService.checkDailyLimit(userId, 'ARTICLE_GENERATION');
@@ -229,16 +229,23 @@ export class AiService {
 
   async generateImage(userId: string, dto: AiGenerateImageDto) {
     // Check token balance (image costs 2 tokens)
-    const hasBalance = await this.billingService.checkBalance(userId, 2);
+    const hasBalance = await this.billingService.checkBalance(userId, TOKEN_COSTS.IMAGE_GENERATION);
     if (!hasBalance) {
-      throw new BadRequestException('Insufficient token balance');
+      throw new BadRequestException('Kuota bulanan tidak mencukupi untuk generate gambar. Silakan upgrade plan atau tunggu reset kuota.');
+    }
+
+    // Check per-category limit for image generation
+    const withinCategoryLimit = await this.billingService.checkCategoryLimit(userId, 'IMAGE_GENERATION');
+    if (!withinCategoryLimit) {
+      throw new BadRequestException('Bulanan limit untuk kategori Gambar sudah habis. Silakan upgrade plan atau tunggu bulan depan.');
     }
 
     // Generate image
     const imageUrl = await this.openAiService.generateImage(dto.prompt);
 
     // Deduct tokens
-    await this.billingService.deductTokens(userId, 2, 'Image generation');
+    await this.billingService.deductTokens(userId, TOKEN_COSTS.IMAGE_GENERATION, 'Image generation');
+    await this.billingService.incrementDailyUsage(userId, 'IMAGE_GENERATION');
 
     return {
       imageUrl,

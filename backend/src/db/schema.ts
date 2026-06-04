@@ -98,6 +98,11 @@ export const featureTypeEnum = pgEnum('feature_type', [
   'ARTICLE_GENERATION',
   'INSTAGRAM_GENERATION',
   'VIDEO_GENERATION',
+  'IMAGE_GENERATION',
+  'SLIDE_IMAGE',
+  'THUMBNAIL_GENERATION',
+  'STORYBOARD_GENERATION',
+  'MOTION_GRAPHICS_RENDER',
 ]);
 
 // ==========================================

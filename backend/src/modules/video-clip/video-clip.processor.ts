@@ -6,6 +6,7 @@ import { videoClipProjects } from '../../db/schema';
 import { eq } from 'drizzle-orm';
 import { VideoClipService } from './video-clip.service';
 import { BillingService } from '../billing/billing.service';
+import { TOKEN_COSTS } from '../billing/billing.constants';
 import { NotificationsService } from '../notifications/notifications.service';
 
 @Processor('video-clip')
@@ -69,7 +70,7 @@ export class VideoClipProcessor {
       }).where(eq(videoClipProjects.id, projectId));
 
       // Deduct tokens
-      await this.billingService.deductTokens(userId, 50, `Analyzed video: ${project.title}`);
+      await this.billingService.deductTokens(userId, TOKEN_COSTS.VIDEO_ANALYSIS, `Analyzed video: ${project.title}`);
 
       await this.notificationsService.create(userId, 'JOB_SUCCESS',
         'Video Analysis Complete',
@@ -155,7 +156,7 @@ export class VideoClipProcessor {
       await db.update(videoClipProjects).set({ exports }).where(eq(videoClipProjects.id, projectId));
 
       // Deduct tokens
-      await this.billingService.deductTokens(userId, 30, `Exported clip from "${project.title}"`);
+      await this.billingService.deductTokens(userId, TOKEN_COSTS.VIDEO_EXPORT, `Exported clip from "${project.title}"`);
 
       await this.notificationsService.create(userId, 'JOB_SUCCESS',
         'Clip Export Complete',

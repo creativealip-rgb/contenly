@@ -197,14 +197,14 @@ export class InstagramStudioService {
     ) {
         const project = await this.getProject(userId, projectId);
 
-        const hasBalance = await this.billingService.checkBalance(userId, 1);
+        const hasBalance = await this.billingService.checkBalance(userId, TOKEN_COSTS.STORYBOARD_GENERATION);
         if (!hasBalance) {
-            throw new BadRequestException('Insufficient token balance');
+            throw new BadRequestException('Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.');
         }
 
-        const withinDailyLimit = await this.billingService.checkDailyLimit(userId, 'INSTAGRAM_GENERATION');
-        if (!withinDailyLimit) {
-            throw new BadRequestException('Daily limit reached for Instagram Content Generation on your current plan. Please upgrade or try again tomorrow.');
+        const withinCategoryLimit = await this.billingService.checkCategoryLimit(userId, 'INSTAGRAM_GENERATION');
+        if (!withinCategoryLimit) {
+            throw new BadRequestException('Bulanan limit untuk kategori Generate sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
         }
 
         let content = dto.content || project.sourceContent;
@@ -288,19 +288,16 @@ export class InstagramStudioService {
             throw new NotFoundException('Slide not found');
         }
 
-        const hasBalance = await this.billingService.checkBalance(userId, 2);
+        const hasBalance = await this.billingService.checkBalance(userId, TOKEN_COSTS.SLIDE_IMAGE);
         if (!hasBalance) {
-            this.logger.error(
-                `[Image Generation] User ${userId} has insufficient tokens.`,
-            );
             throw new BadRequestException(
-                'Insufficient token balance. You need at least 2 tokens.',
+                'Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.',
             );
         }
 
-        const withinDailyLimit = await this.billingService.checkDailyLimit(userId, 'INSTAGRAM_GENERATION');
-        if (!withinDailyLimit) {
-            throw new BadRequestException('Daily limit reached for Instagram Image Generation on your current plan.');
+        const withinCatLimitIG = await this.billingService.checkCategoryLimit(userId, 'IMAGE_GENERATION');
+        if (!withinCatLimitIG) {
+            throw new BadRequestException('Bulanan limit untuk kategori Gambar sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
         }
 
         const project = await this.getProject(userId, slide.projectId);
@@ -357,12 +354,12 @@ export class InstagramStudioService {
         const totalTokens = project.slides.length * 2;
         const hasBalance = await this.billingService.checkBalance(userId, totalTokens);
         if (!hasBalance) {
-            throw new BadRequestException(`Insufficient token balance. You need ${totalTokens} tokens for ${project.slides.length} slides.`);
+            throw new BadRequestException('Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.');
         }
 
-        const withinDailyLimit = await this.billingService.checkDailyLimit(userId, 'INSTAGRAM_GENERATION');
-        if (!withinDailyLimit) {
-            throw new BadRequestException('Daily limit reached for Instagram Image Generation.');
+        const withinCatLimitIG2 = await this.billingService.checkCategoryLimit(userId, 'IMAGE_GENERATION');
+        if (!withinCatLimitIG2) {
+            throw new BadRequestException('Bulanan limit untuk kategori Gambar sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
         }
 
         const results = [];
@@ -385,7 +382,7 @@ export class InstagramStudioService {
                     .where(eq(instagramSlide.id, slide.id));
 
                 await this.billingService.deductTokens(userId, TOKEN_COSTS.SLIDE_IMAGE, `Slide ${slide.slideNumber} image generation`);
-                await this.billingService.incrementDailyUsage(userId, 'INSTAGRAM_GENERATION');
+                await this.billingService.incrementDailyUsage(userId, 'IMAGE_GENERATION');
 
                 results.push({ slideId: slide.id, slideNumber: slide.slideNumber, success: true });
             } catch (error: any) {
@@ -416,13 +413,13 @@ export class InstagramStudioService {
 
         const project = await this.getProject(userId, slide.projectId);
 
-        const hasBalance = await this.billingService.checkBalance(userId, 1);
+        const hasBalance = await this.billingService.checkBalance(userId, TOKEN_COSTS.TEXT_OVERLAY);
         if (!hasBalance) {
-            throw new BadRequestException('Insufficient token balance. You need 1 token to add text.');
+            throw new BadRequestException('Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.');
         }
 
-        const withinDailyLimit = await this.billingService.checkDailyLimit(userId, 'INSTAGRAM_GENERATION');
-        if (!withinDailyLimit) {
+        const withinCategoryLimit = await this.billingService.checkCategoryLimit(userId, 'IMAGE_GENERATION');
+        if (!withinCategoryLimit) {
             throw new BadRequestException('Daily limit reached for Instagram Text Generation on your current plan.');
         }
 
@@ -471,7 +468,7 @@ export class InstagramStudioService {
                 1,
                 'Slide text generation',
             );
-            await this.billingService.incrementDailyUsage(userId, 'INSTAGRAM_GENERATION');
+            await this.billingService.incrementDailyUsage(userId, 'IMAGE_GENERATION');
 
             return {
                 success: true,
@@ -673,12 +670,12 @@ export class InstagramStudioService {
 
         const hasBalance = await this.billingService.checkBalance(userId, totalTokensNeeded);
         if (!hasBalance) {
-            throw new BadRequestException(`Insufficient tokens. Need ${totalTokensNeeded} tokens (${project.slides.length} images × 2).`);
+            throw new BadRequestException('Kuota bulanan tidak mencukupi. Silakan upgrade plan atau tunggu reset kuota.');
         }
 
-        const withinDailyLimit = await this.billingService.checkDailyLimit(userId, 'INSTAGRAM_GENERATION');
-        if (!withinDailyLimit) {
-            throw new BadRequestException('Daily limit reached for Instagram Generation on your current plan.');
+        const withinCatLimitIG3 = await this.billingService.checkCategoryLimit(userId, 'IMAGE_GENERATION');
+        if (!withinCatLimitIG3) {
+            throw new BadRequestException('Bulanan limit untuk kategori Gambar sudah habis. Silakan upgrade plan atau tunggu reset kuota.');
         }
 
         const results: any[] = [];
@@ -708,7 +705,7 @@ export class InstagramStudioService {
 
                 tokensUsed += 2;
                 await this.billingService.deductTokens(userId, TOKEN_COSTS.SLIDE_IMAGE, `Slide ${slide.slideNumber} image generation`);
-                await this.billingService.incrementDailyUsage(userId, 'INSTAGRAM_GENERATION');
+                await this.billingService.incrementDailyUsage(userId, 'IMAGE_GENERATION');
 
                 results.push({ slideNumber: slide.slideNumber, status: 'success' });
             } catch (error: any) {

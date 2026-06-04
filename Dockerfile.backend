@@ -4,7 +4,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PUPPETEER_SKIP_DOWNLOAD=true
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 make g++ pkg-config \
+    python3 make g++ pkg-config cmake git \
     libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev libvips-dev \
     chromium \
     && rm -rf /var/lib/apt/lists/*
@@ -14,6 +14,14 @@ COPY backend/package*.json ./
 RUN npm ci
 COPY backend/ ./
 RUN rm -f tsconfig.tsbuildinfo && npm run build
+
+# Build whisper.cpp for transcription
+WORKDIR /tmp
+RUN git clone --depth 1 https://github.com/ggerganov/whisper.cpp.git \
+    && cd whisper.cpp \
+    && cmake -B build -DCMAKE_BUILD_TYPE=Release -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_EXAMPLES=ON \
+    && cmake --build build -j$(nproc) \
+    && cp build/bin/whisper-cli /usr/local/bin/whisper-cli
 
 # Build Remotion bundle
 WORKDIR /app/remotion
@@ -31,11 +39,13 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     chromium \
-    ffmpeg curl python3 \
+    ffmpeg curl python3 git unzip \
     libcairo2 libpango-1.0-0 libjpeg62-turbo libgif7 librsvg2-2 libvips \
     ca-certificates \
     && curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp \
     && chmod +x /usr/local/bin/yt-dlp \
+    && curl -fsSL https://deno.land/install.sh | sh \
+    && ln -s /root/.deno/bin/deno /usr/local/bin/deno \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app/backend
@@ -45,8 +55,18 @@ COPY --from=build /app/backend/dist ./dist
 COPY --from=build /app/backend/src ./src
 COPY --from=build /app/remotion /app/remotion
 COPY --from=build /app/backend/drizzle.config.ts ./drizzle.config.ts
+COPY --from=build /usr/local/bin/whisper-cli /usr/local/bin/whisper-cli
+COPY --from=build /tmp/whisper.cpp/build/src/libwhisper.so.1.8.6 /usr/lib/x86_64-linux-gnu/libwhisper.so.1
+COPY --from=build /tmp/whisper.cpp/build/ggml/src/libggml.so.0.13.1 /usr/lib/x86_64-linux-gnu/libggml.so.0
+COPY --from=build /tmp/whisper.cpp/build/ggml/src/libggml-cpu.so.0.13.1 /usr/lib/x86_64-linux-gnu/libggml-cpu.so.0
+COPY --from=build /tmp/whisper.cpp/build/ggml/src/libggml-base.so.0.13.1 /usr/lib/x86_64-linux-gnu/libggml-base.so.0
+RUN ldconfig
 COPY --from=build /app/backend/start.sh ./start.sh
 RUN chmod +x ./start.sh
+
+# Download whisper model (tiny, ~75MB)
+RUN mkdir -p /app/backend/models \
+    && curl -sL "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin" -o /app/backend/models/ggml-tiny.bin
 
 EXPOSE 3001
 CMD ["/bin/sh", "./start.sh"]
