@@ -906,6 +906,6 @@ export const schema = {
 };
 
 // Add new fields to tokenBalance table
-// monthlyQuota: Monthly quota from subscription plan (resets each month)
-// monthlyUsed: Monthly quota used this billing cycle
+// monthlyQuota: DEPRECATED - no longer used in billing logic
+// monthlyUsed: DEPRECATED - no longer used in billing logic
 // credits: Pay-as-you-go credits (never expires)

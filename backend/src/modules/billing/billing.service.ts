@@ -54,6 +54,7 @@ export class BillingService {
             await this.db.insert(tokenBalance).values({
                 userId,
                 balance: 0,
+                // DEPRECATED: monthlyQuota/monthlyUsed no longer used in billing logic
                 monthlyQuota: 0,
                 monthlyUsed: 0,
                 credits: 0,

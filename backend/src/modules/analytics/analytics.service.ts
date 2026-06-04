@@ -88,7 +88,7 @@ export class AnalyticsService {
         .insert(tokenBalance)
         .values({
           userId,
-          balance: BILLING_TIERS.FREE.monthlyQuota,
+          balance: 0,
           totalPurchased: 0,
           totalUsed: 0,
         })
