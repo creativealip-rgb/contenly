@@ -14,7 +14,7 @@ export function useBillingBalance() {
     tier: string
     categories: {
       artikel: BillingCategory
-      generate: BillingCategory
+      video_ig: BillingCategory
       gambar: BillingCategory
     }
   }>({
@@ -48,8 +48,6 @@ export function useBilling() {
     data: !l1 && !l2 ? { 
       tier: subscription?.plan || 'FREE', 
       balance: balanceData?.balance ?? 0, 
-      monthlyQuota: balanceData?.monthlyQuota ?? 0,
-      monthlyUsed: balanceData?.monthlyUsed ?? 0,
       credits: balanceData?.credits ?? 0,
       subscription 
     } : null,
