@@ -86,15 +86,15 @@ export default function BillingPage() {
                                         <div className="h-full bg-white rounded-full transition-all" style={{ width: `${Math.min(100, ((balanceData?.categories?.artikel?.used || 0) / (balanceData?.categories?.artikel?.limit || 1)) * 100)}%` }} />
                                     </div>
                                 </div>
-                                {/* Generate */}
+                                {/* Video & IG */}
                                 <div className="bg-white/10 rounded-xl p-4">
-                                    <div className="text-xs text-blue-100 uppercase tracking-wider mb-2">Generate</div>
+                                    <div className="text-xs text-blue-100 uppercase tracking-wider mb-2">Video & IG</div>
                                     <div className="text-2xl font-bold tabular-nums">
-                                        {loading ? '...' : (balanceData?.categories?.generate?.used || 0)}
-                                        <span className="text-sm font-normal text-blue-200"> / {balanceData?.categories?.generate?.limit || 0}</span>
+                                        {loading ? '...' : (balanceData?.categories?.video_ig?.used || 0)}
+                                        <span className="text-sm font-normal text-blue-200"> / {balanceData?.categories?.video_ig?.limit || 0}</span>
                                     </div>
                                     <div className="mt-2 h-1.5 bg-white/20 rounded-full overflow-hidden">
-                                        <div className="h-full bg-white rounded-full transition-all" style={{ width: `${Math.min(100, ((balanceData?.categories?.generate?.used || 0) / (balanceData?.categories?.generate?.limit || 1)) * 100)}%` }} />
+                                        <div className="h-full bg-white rounded-full transition-all" style={{ width: `${Math.min(100, ((balanceData?.categories?.video_ig?.used || 0) / (balanceData?.categories?.video_ig?.limit || 1)) * 100)}%` }} />
                                     </div>
                                 </div>
                                 {/* Gambar */}

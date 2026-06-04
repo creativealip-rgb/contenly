@@ -54,7 +54,7 @@ export class BillingController {
                     limit: tierConfig.monthlyLimits.ARTICLE_GENERATION,
                     label: 'Artikel',
                 },
-                generate: {
+                video_ig: {
                     used: (usage.VIDEO_GENERATION || 0) + (usage.STORYBOARD_GENERATION || 0)
                          + (usage.VIDEO_SCRIPT || 0) + (usage.ALTERNATE_HOOKS || 0)
                          + (usage.BROLL_KEYWORDS || 0) + (usage.AUTO_CUTAWAY || 0)
@@ -62,7 +62,7 @@ export class BillingController {
                          + (usage.REGENERATE_FIELD || 0) + (usage.REGENERATE_VOICEOVER || 0)
                          + (usage.IMPROVE_VISUAL || 0) + (usage.HASHTAG_GENERATION || 0),
                     limit: tierConfig.monthlyLimits.VIDEO_GENERATION,
-                    label: 'Generate',
+                    label: 'Video & IG',
                 },
                 gambar: {
                     used: (usage.IMAGE_GENERATION || 0) + (usage.SLIDE_IMAGE || 0) + (usage.THUMBNAIL_GENERATION || 0),
