@@ -159,6 +159,39 @@ describe('BillingService', () => {
         });
     });
 
+    describe('quota and kredit flow', () => {
+        it('allows Starter heavy video while monthly quota remains', async () => {
+            mockDb.query.subscription.findFirst.mockResolvedValue({ plan: 'STARTER', status: 'ACTIVE' });
+            mockDb.query.dailyUsage = { findMany: jest.fn().mockResolvedValue([{ count: 1 }]) };
+
+            const result = await service.ensureBilling(mockUserId, 'VIDEO_ANALYSIS');
+
+            expect(result).toEqual({ allowed: true, usingKredit: false, kreditCost: 0 });
+        });
+
+        it('uses kredit overflow after Starter heavy video quota is exhausted', async () => {
+            mockDb.query.subscription.findFirst.mockResolvedValue({ plan: 'STARTER', status: 'ACTIVE' });
+            mockDb.query.dailyUsage = { findMany: jest.fn().mockResolvedValue([{ count: 2 }]) };
+            mockDb.query.tokenBalance.findFirst.mockResolvedValue({ balance: 100 });
+
+            const result = await service.ensureBilling(mockUserId, 'VIDEO_ANALYSIS');
+
+            expect(result).toEqual({ allowed: true, usingKredit: true, kreditCost: 50 });
+        });
+
+        it('blocks Free motion render when quota and kredit are unavailable', async () => {
+            mockDb.query.subscription.findFirst.mockResolvedValue(null);
+            mockDb.query.tokenBalance.findFirst.mockResolvedValue({ balance: 0 });
+
+            const result = await service.ensureBilling(mockUserId, 'MOTION_GRAPHICS_RENDER');
+
+            expect(result.allowed).toBe(false);
+            expect(result.usingKredit).toBe(false);
+            expect(result.kreditCost).toBe(30);
+            expect(result.reason).toContain('Motion Render');
+        });
+    });
+
     describe('recordUsage', () => {
         it('increments category usage without deducting kredit for included quota', async () => {
             const incrementSpy = jest.spyOn(service, 'incrementDailyUsage').mockResolvedValue(undefined);
