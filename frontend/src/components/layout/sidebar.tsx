@@ -204,6 +204,7 @@ const navGroups: NavGroup[] = [
             { href: '/notifications', label: 'Notifikasi', icon: icons.billing },
             { href: '/billing', label: 'Tagihan', icon: icons.billing },
             { href: '/settings', label: 'Pengaturan', icon: icons.settings },
+            { href: '/admin/api-keys', label: 'Provider & Model', icon: icons.settings, role: 'super_admin' },
             { href: '/super-admin/users', label: 'Pengguna', icon: icons.userManagement, role: 'super_admin' },
         ],
     },

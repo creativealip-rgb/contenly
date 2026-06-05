@@ -265,7 +265,7 @@ Respond ONLY with valid JSON in this exact format:
 Keep each field concise but descriptive. Use English.`;
 
     const response = await this.openAiService.getClient().chat.completions.create({
-      model: this.openAiService.getModel() || 'gpt-4o-mini',
+      model: await this.openAiService.getTextModel(),
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: dto.text },
@@ -291,7 +291,7 @@ Keep each field concise but descriptive. Use English.`;
     ];
 
     const response = await client.chat.completions.create({
-      model: this.openAiService.getModel(),
+      model: await this.openAiService.getTextModel(),
       messages,
       max_tokens: 500,
       temperature: 0.7,

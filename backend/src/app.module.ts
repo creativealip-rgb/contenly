@@ -39,6 +39,7 @@ import { BrandKitModule } from './modules/brand-kit/brand-kit.module';
 import { CalendarModule } from './modules/calendar/calendar.module';
 import { MotionGraphicsModule } from './modules/motion-graphics/motion-graphics.module';
 import { VideoClipModule } from './modules/video-clip/video-clip.module';
+import { AdminSettingsModule } from './modules/admin-settings/admin-settings.module';
 
 @Module({
   imports: [
@@ -98,6 +99,7 @@ import { VideoClipModule } from './modules/video-clip/video-clip.module';
     CalendarModule,
     MotionGraphicsModule,
     VideoClipModule,
+    AdminSettingsModule,
   ],
   controllers: [AppController],
   providers: [
