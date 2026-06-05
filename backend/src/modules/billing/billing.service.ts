@@ -79,6 +79,9 @@ export class BillingService {
       ARTICLE_GENERATION: 'Artikel',
       INSTAGRAM_GENERATION: 'IG Carousel',
       VIDEO_GENERATION: 'Video',
+      VIDEO_LIGHT: 'Video Light',
+      VIDEO_HEAVY: 'Video Heavy',
+      MOTION_RENDER: 'Motion Render',
       IMAGE_GENERATION: 'Gambar',
     };
     return labels[category] || category;

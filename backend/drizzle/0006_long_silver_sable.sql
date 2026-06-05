@@ -20,3 +20,8 @@ ALTER TYPE "public"."feature_type" ADD VALUE IF NOT EXISTS 'TEXT_OVERLAY';--> st
 ALTER TYPE "public"."feature_type" ADD VALUE IF NOT EXISTS 'AI_CHAT';--> statement-breakpoint
 ALTER TYPE "public"."subscription_plan" ADD VALUE IF NOT EXISTS 'STARTER' BEFORE 'PRO';--> statement-breakpoint
 ALTER TYPE "public"."subscription_plan" ADD VALUE IF NOT EXISTS 'BUSINESS' BEFORE 'ENTERPRISE';
+ALTER TYPE "public"."feature_type" ADD VALUE IF NOT EXISTS 'VIDEO_LIGHT';--> statement-breakpoint
+ALTER TYPE "public"."feature_type" ADD VALUE IF NOT EXISTS 'VIDEO_HEAVY';--> statement-breakpoint
+ALTER TYPE "public"."feature_type" ADD VALUE IF NOT EXISTS 'MOTION_RENDER';--> statement-breakpoint
+ALTER TYPE "public"."feature_type" ADD VALUE IF NOT EXISTS 'MOTION_GRAPHICS_PNG_RENDER';--> statement-breakpoint
+ALTER TYPE "public"."feature_type" ADD VALUE IF NOT EXISTS 'AUDIO_TRANSCRIPTION';--> statement-breakpoint

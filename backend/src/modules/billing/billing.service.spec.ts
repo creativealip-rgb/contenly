@@ -166,7 +166,7 @@ describe('BillingService', () => {
 
             await service.recordUsage(mockUserId, 'VIDEO_SCRIPT', { usingKredit: false, kreditCost: 0 });
 
-            expect(incrementSpy).toHaveBeenCalledWith(mockUserId, 'VIDEO_GENERATION');
+            expect(incrementSpy).toHaveBeenCalledWith(mockUserId, 'VIDEO_LIGHT');
             expect(deductSpy).not.toHaveBeenCalled();
         });
 

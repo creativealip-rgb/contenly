@@ -38,6 +38,7 @@ export default function BillingPage() {
             case 'FREE': return 'Free'
             case 'FREE_TRIAL': return 'Free Trial'
             case 'PRO': return 'Pro'
+            case 'BUSINESS': return 'Business'
             case 'ENTERPRISE': return 'Enterprise'
             default: return 'Free'
         }
@@ -218,7 +219,7 @@ export default function BillingPage() {
                             </CardTitle>
                             <CardDescription>Untuk kreator profesional</CardDescription>
                             <div className="pt-4">
-                                <span className="text-3xl font-bold">Rp 499rb</span>
+                                <span className="text-3xl font-bold">Rp 399rb</span>
                                 <span className="text-slate-500 text-sm"> / bulan</span>
                             </div>
                         </CardHeader>
@@ -226,15 +227,15 @@ export default function BillingPage() {
                             <ul className="space-y-2 text-sm">
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                    <span className="font-bold">500 Token Kredit</span>
+                                    <span className="font-bold">150 Artikel + 300 IG / bulan</span>
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                    <span>20 Artikel / hari</span>
+                                    <span>80 Video Light / bulan</span>
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                    <span>20 Gambar AI / hari</span>
+                                    <span>30 Gambar + 12 Video Heavy / bulan</span>
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
@@ -256,18 +257,18 @@ export default function BillingPage() {
                         </CardContent>
                     </Card>
 
-                    {/* Enterprise Plan */}
-                    <Card className={`relative overflow-hidden border-2 transition-all duration-300 ${subscription?.plan === 'ENTERPRISE' ? 'border-blue-500 shadow-lg' : 'border-slate-200 dark:border-slate-800'}`}>
-                        {subscription?.plan === 'ENTERPRISE' && (
+                    {/* Business Plan */}
+                    <Card className={`relative overflow-hidden border-2 transition-all duration-300 ${subscription?.plan === 'BUSINESS' ? 'border-blue-500 shadow-lg' : 'border-slate-200 dark:border-slate-800'}`}>
+                        {subscription?.plan === 'BUSINESS' && (
                             <div className="absolute top-0 right-0 bg-blue-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-tighter">
                                 Aktif
                             </div>
                         )}
                         <CardHeader>
-                            <CardTitle>Enterprise</CardTitle>
-                            <CardDescription>Untuk skala bisnis besar</CardDescription>
+                            <CardTitle>Business</CardTitle>
+                            <CardDescription>Untuk tim dan agency aktif</CardDescription>
                             <div className="pt-4">
-                                <span className="text-3xl font-bold">Rp 1,5jt</span>
+                                <span className="text-3xl font-bold">Rp 999rb</span>
                                 <span className="text-slate-500 text-sm"> / bulan</span>
                             </div>
                         </CardHeader>
@@ -275,15 +276,15 @@ export default function BillingPage() {
                             <ul className="space-y-2 text-sm">
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                    <span className="font-bold">2.000 Token Kredit</span>
+                                    <span className="font-bold">400 Artikel + 800 IG / bulan</span>
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                    <span>70 Artikel / hari</span>
+                                    <span>200 Video Light / bulan</span>
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                    <span>70 Gambar AI / hari</span>
+                                    <span>100 Gambar + 40 Video Heavy / bulan</span>
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
@@ -295,10 +296,10 @@ export default function BillingPage() {
                                 </li>
                             </ul>
                             <WhatsAppActionModal
-                                plan="ENTERPRISE"
+                                plan="BUSINESS"
                                 trigger={
-                                    <Button variant="outline" className="w-full border-blue-500 text-blue-600 hover:bg-blue-50" disabled={subscription?.plan === 'ENTERPRISE'}>
-                                        {subscription?.plan === 'ENTERPRISE' ? 'Paket Saat Ini' : 'Hubungi Sales'}
+                                    <Button variant="outline" className="w-full border-blue-500 text-blue-600 hover:bg-blue-50" disabled={subscription?.plan === 'BUSINESS'}>
+                                        {subscription?.plan === 'BUSINESS' ? 'Paket Saat Ini' : 'Hubungi Sales'}
                                     </Button>
                                 }
                             />

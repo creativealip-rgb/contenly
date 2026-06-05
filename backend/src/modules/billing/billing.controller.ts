@@ -51,8 +51,10 @@ export class BillingController {
             categories: {
                 artikel: { used: categoryUsage.ARTICLE_GENERATION || 0, limit: tierConfig.monthlyLimits.ARTICLE_GENERATION, label: 'Artikel' },
                 instagram: { used: categoryUsage.INSTAGRAM_GENERATION || 0, limit: tierConfig.monthlyLimits.INSTAGRAM_GENERATION, label: 'IG Carousel' },
-                video: { used: categoryUsage.VIDEO_GENERATION || 0, limit: tierConfig.monthlyLimits.VIDEO_GENERATION, label: 'Video' },
+                videoLight: { used: categoryUsage.VIDEO_LIGHT || 0, limit: tierConfig.monthlyLimits.VIDEO_LIGHT, label: 'Video Light' },
                 gambar: { used: categoryUsage.IMAGE_GENERATION || 0, limit: tierConfig.monthlyLimits.IMAGE_GENERATION, label: 'Gambar' },
+                videoHeavy: { used: categoryUsage.VIDEO_HEAVY || 0, limit: tierConfig.monthlyLimits.VIDEO_HEAVY, label: 'Video Heavy' },
+                motion: { used: categoryUsage.MOTION_RENDER || 0, limit: tierConfig.monthlyLimits.MOTION_RENDER, label: 'Motion Render' },
             },
         };
     }
