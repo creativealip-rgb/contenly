@@ -171,6 +171,8 @@ const navGroups: NavGroup[] = [
             { href: '/content-lab', label: 'Content Lab', icon: icons.contentLab, tourId: 'content-lab' },
             { href: '/instagram-studio', label: 'Instagram Studio', icon: icons.instagram, tourId: 'instagram-studio' },
             { href: '/video-scripts', label: 'Video Scripts', icon: icons.video, tourId: 'video-scripts' },
+            { href: '/video-clips', label: 'Video Clips', icon: icons.video },
+            { href: '/motion-graphics', label: 'Motion Graphics', icon: icons.video },
             { href: '/articles', label: 'Artikel', icon: icons.articles },
             { href: '/calendar', label: 'Kalender', icon: icons.calendar, tourId: 'calendar' },
         ],
@@ -199,8 +201,10 @@ const navGroups: NavGroup[] = [
         icon: icons.admin,
         items: [
             { href: '/integrations', label: 'Integrasi', icon: icons.integrations, tourId: 'integrations' },
+            { href: '/notifications', label: 'Notifikasi', icon: icons.billing },
             { href: '/billing', label: 'Tagihan', icon: icons.billing },
             { href: '/settings', label: 'Pengaturan', icon: icons.settings },
+            { href: '/admin/api-keys', label: 'Provider & Model', icon: icons.settings, role: 'super_admin' },
             { href: '/super-admin/users', label: 'Pengguna', icon: icons.userManagement, role: 'super_admin' },
         ],
     },
@@ -251,6 +255,7 @@ export function Sidebar() {
                     href={item.href}
                     onClick={handleMobileLinkClick}
                     data-tour={item.tourId}
+                    aria-current={isActive ? "page" : undefined}
                     className={cn(
                         "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition-all duration-300",
                         isActive
@@ -303,7 +308,7 @@ export function Sidebar() {
                 )}
             >
                 <div className="flex h-full flex-col">
-                    <nav className="flex-1 space-y-1.5 p-4 overflow-y-auto">
+                    <nav role="navigation" aria-label="Menu utama" className="flex-1 space-y-1.5 p-4 overflow-y-auto">
                         {navGroups.map((group) => {
                             const filteredItems = group.items.filter(item => {
                                 if (item.role === 'super_admin' && user?.role !== 'super_admin') {
@@ -334,6 +339,7 @@ export function Sidebar() {
                                 <div key={group.id}>
                                     <button
                                         onClick={() => toggleGroup(group.id)}
+                                        aria-label={`${isGroupOpen ? 'Tutup' : 'Buka'} grup ${group.label}`}
                                         className={cn(
                                             "group flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition-all duration-300",
                                             "text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-slate-800/80"
@@ -386,6 +392,7 @@ export function Sidebar() {
                             variant="ghost"
                             size="sm"
                             onClick={() => setCollapsed(!isCollapsed)}
+                            aria-label={isCollapsed ? 'Perluas sidebar' : 'Kecilkan sidebar'}
                             className={cn(
                                 "hidden md:flex w-full rounded-xl transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-accent/50",
                                 isCollapsed ? "justify-center px-2" : "justify-start"

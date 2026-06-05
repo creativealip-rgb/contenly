@@ -33,6 +33,7 @@ import { TelegramBotModule } from './modules/telegram-bot/telegram-bot.module';
 import { SocialModule } from './modules/social/social.module';
 import { BrandKitModule } from './modules/brand-kit/brand-kit.module';
 import { CalendarModule } from './modules/calendar/calendar.module';
+import { AdminSettingsModule } from './modules/admin-settings/admin-settings.module';
 
 @Module({
   imports: [
@@ -90,6 +91,7 @@ import { CalendarModule } from './modules/calendar/calendar.module';
     SocialModule,
     BrandKitModule,
     CalendarModule,
+    AdminSettingsModule,
   ],
   controllers: [AppController],
   providers: [

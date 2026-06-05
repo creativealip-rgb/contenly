@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { sql } from 'drizzle-orm';
+import { DrizzleService } from '../../../db/drizzle.service';
 
 @Injectable()
 export class OpenAiService {
@@ -8,7 +11,7 @@ export class OpenAiService {
   private nativeOpenai: OpenAI | null = null; // Used for native OpenAI (e.g., DALL-E)
   private model: string;
 
-  constructor(private configService: ConfigService) {
+  constructor(private configService: ConfigService, private drizzle: DrizzleService) {
     console.log('🔍 OpenAiService: Initializing...');
 
     // Get model preference from env (default to GPT-4o-mini)
@@ -68,7 +71,13 @@ export class OpenAiService {
       };
       console.log(`🔑 OpenRouter headers:`, defaultHeaders);
     } else if (useCustomEndpoint) {
-      console.log(`🔑 Custom endpoint mode — no provider-specific headers injected`);
+      // Some custom OpenAI-compatible gateways (e.g. behind Cloudflare) block
+      // requests with the official `OpenAI/JS` user-agent. Override it with a
+      // generic one so the gateway doesn't reject our calls with 403.
+      defaultHeaders = {
+        'User-Agent': 'Mozilla/5.0 (compatible; Contenly/1.0)',
+      };
+      console.log(`🔑 Custom endpoint mode — overriding User-Agent to bypass gateway WAF`);
     }
 
     // Initialize OpenAI client
@@ -113,6 +122,36 @@ export class OpenAiService {
 
   getModel(): string {
     return this.model;
+  }
+
+  private async getSystemSetting(key: string, fallback: string): Promise<string> {
+    try {
+      await this.drizzle.db.execute(sql`
+        CREATE TABLE IF NOT EXISTS system_settings (
+          key text PRIMARY KEY,
+          value text NOT NULL,
+          created_at timestamp NOT NULL DEFAULT now(),
+          updated_at timestamp NOT NULL DEFAULT now()
+        )
+      `);
+      const result = await this.drizzle.db.execute(sql`SELECT value FROM system_settings WHERE key = ${key} LIMIT 1`);
+      const rows = Array.isArray(result) ? result : ((result as any).rows || []);
+      return (rows[0]?.value || fallback || '').toString().trim();
+    } catch (error: any) {
+      console.warn(`[OpenAiService] Failed to read system setting ${key}:`, error?.message || error);
+      return fallback;
+    }
+  }
+
+  async getTextModel(override?: string): Promise<string> {
+    // Admin-configured model must win over plan/env defaults so the Provider & Model UI
+    // actually controls live AI calls. Per-call overrides are only fallback defaults.
+    return this.getSystemSetting('model_text_generation', override?.trim() || this.model);
+  }
+
+  private async getImageModel(): Promise<string> {
+    const fallback = this.configService.get('IMAGE_MODEL') || this.configService.get('IMAGE_GENERATION_MODEL') || 'cx/gpt-5.4-image';
+    return this.getSystemSetting('model_image_generation', fallback);
   }
 
   async generateContent(
@@ -165,10 +204,11 @@ export class OpenAiService {
     }
 
     try {
-      console.log(`[OpenAiService] Generating content with model: ${options.model || this.model}`);
+      const selectedModel = await this.getTextModel(options.model);
+      console.log(`[OpenAiService] Generating content with model: ${selectedModel}`);
       
       const response = await this.openai.chat.completions.create({
-        model: options.model || this.model,
+        model: selectedModel,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
@@ -178,7 +218,10 @@ export class OpenAiService {
         response_format: { type: 'json_object' },
       });
 
-      const result = JSON.parse(response.choices[0]?.message?.content || '{}');
+      // Sanitize JSON - remove control characters that break parsing
+      let rawContent = response.choices[0]?.message?.content || '{}';
+      rawContent = rawContent.replace(/[ --]/g, ' ');
+      const result = JSON.parse(rawContent);
 
       if (isCustomMode) {
         return result;
@@ -239,7 +282,7 @@ Return JSON with:
 - slug: URL-friendly slug`;
 
     const response = await this.openai.chat.completions.create({
-      model: model || this.model,
+      model: await this.getTextModel(model),
       messages: [
         {
           role: 'system',
@@ -259,21 +302,238 @@ Return JSON with:
     };
   }
 
-  async generateImage(prompt: string): Promise<string> {
-    if (!this.nativeOpenai) {
-      throw new Error('OPENAI_API_KEY is missing. Image generation requires a direct OpenAI API Key (DALL-E 3 is not supported via OpenRouter). Please add OPENAI_API_KEY to your VPS .env file.');
+  private async getImageApiKey(): Promise<string> {
+    const key = await this.getSystemSetting(
+      'image_api_key',
+      this.configService.get('IMAGE_API_KEY') || this.configService.get('CODEX_API_KEY') || '',
+    );
+    if (!key) {
+      throw new Error('Image API key is not configured. Set system setting image_api_key or env IMAGE_API_KEY/CODEX_API_KEY.');
+    }
+    return key;
+  }
+
+  private async getImageBaseUrl(): Promise<string> {
+    return this.getSystemSetting(
+      'image_base_url',
+      this.configService.get('IMAGE_BASE_URL') || this.configService.get('CODEX_BASE_URL') || 'https://9router-168-144-37-19.sslip.io',
+    );
+  }
+
+  private buildImageRequestBody(model: string, prompt: string): Record<string, any> {
+    const normalizedModel = model.toLowerCase();
+
+    // chenzk gpt-image-2 rejects Codex/OpenAI-style auto/background/image_detail/output_format params.
+    if (normalizedModel === 'gpt-image-2' || normalizedModel.endsWith('/gpt-image-2')) {
+      return {
+        model,
+        prompt,
+        n: 1,
+        size: '1024x1024',
+      };
     }
 
-    const client = this.nativeOpenai;
-    const response = await client.images.generate({
-      model: 'dall-e-3',
-      prompt: `Create a professional, high-quality featured image for an article about: ${prompt}. The image should be clean, modern, and suitable for a blog post.`,
+    return {
+      model,
+      prompt,
       n: 1,
-      size: '1024x1024',
-      quality: 'standard',
-    });
+      size: 'auto',
+      quality: 'auto',
+      background: 'auto',
+      image_detail: 'low',
+      output_format: 'png',
+    };
+  }
 
-    return response.data[0]?.url || '';
+  private async getR2Config(): Promise<{
+    bucket: string;
+    endpoint: string;
+    accessKeyId: string;
+    secretAccessKey: string;
+    publicBaseUrl?: string;
+  } | null> {
+    const accountId = await this.getSystemSetting(
+      'r2_account_id',
+      this.configService.get('R2_ACCOUNT_ID') || '',
+    );
+    const bucket = await this.getSystemSetting(
+      'r2_bucket_name',
+      this.configService.get('R2_BUCKET_NAME') || '',
+    );
+    const endpoint = await this.getSystemSetting(
+      'r2_endpoint',
+      this.configService.get('R2_ENDPOINT') || (accountId ? `https://${accountId}.r2.cloudflarestorage.com` : ''),
+    );
+    const accessKeyId = await this.getSystemSetting(
+      'r2_access_key_id',
+      this.configService.get('R2_ACCESS_KEY_ID') || '',
+    );
+    const secretAccessKey = await this.getSystemSetting(
+      'r2_secret_access_key',
+      this.configService.get('R2_SECRET_ACCESS_KEY') || '',
+    );
+    const publicBaseUrl = await this.getSystemSetting(
+      'r2_public_base_url',
+      this.configService.get('R2_PUBLIC_BASE_URL') || '',
+    );
+
+    if (!bucket || !endpoint || !accessKeyId || !secretAccessKey) {
+      return null;
+    }
+
+    return { bucket, endpoint, accessKeyId, secretAccessKey, publicBaseUrl: publicBaseUrl || undefined };
+  }
+
+  private getR2Client(config: NonNullable<Awaited<ReturnType<OpenAiService['getR2Config']>>>): S3Client {
+    return new S3Client({
+      region: 'auto',
+      endpoint: config.endpoint,
+      credentials: {
+        accessKeyId: config.accessKeyId,
+        secretAccessKey: config.secretAccessKey,
+      },
+    });
+  }
+
+  private imageBufferFromDataUrl(dataUrl: string): Buffer | null {
+    const match = dataUrl.match(/^data:image\/([a-zA-Z0-9.+-]+);base64,(.+)$/);
+    if (!match) return null;
+    return Buffer.from(match[2], 'base64');
+  }
+
+  private async uploadGeneratedImageToR2(imageBuffer: Buffer): Promise<string | null> {
+    const config = await this.getR2Config();
+    if (!config) return null;
+
+    const key = `instagram-studio/${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}.png`;
+    const client = this.getR2Client(config);
+    await client.send(new PutObjectCommand({
+      Bucket: config.bucket,
+      Key: key,
+      Body: imageBuffer,
+      ContentType: 'image/png',
+      CacheControl: 'public, max-age=31536000, immutable',
+    }));
+
+    if (config.publicBaseUrl) {
+      return `${config.publicBaseUrl.replace(/\/$/, '')}/${key}`;
+    }
+
+    return `/api/v1/ai/assets/${encodeURIComponent(key)}`;
+  }
+
+  async getGeneratedImageAsset(key: string): Promise<{ body: Buffer; contentType: string }> {
+    if (!key.startsWith('instagram-studio/')) {
+      throw new Error('Invalid asset key');
+    }
+
+    const config = await this.getR2Config();
+    if (!config) {
+      throw new Error('R2 is not configured');
+    }
+
+    const client = this.getR2Client(config);
+    const object = await client.send(new GetObjectCommand({
+      Bucket: config.bucket,
+      Key: key,
+    }));
+
+    const bytes = await object.Body?.transformToByteArray();
+    if (!bytes) {
+      throw new Error('R2 object body is empty');
+    }
+
+    return {
+      body: Buffer.from(bytes),
+      contentType: object.ContentType || 'image/png',
+    };
+  }
+
+  async generateImage(prompt: string): Promise<string> {
+    const codexApiKey = await this.getImageApiKey();
+    const codexBaseUrl = await this.getImageBaseUrl();
+    const imageModel = await this.getImageModel();
+
+    // Enhance short prompts - Codex requires descriptive prompts (min ~40 chars)
+    let enhancedPrompt = prompt;
+    if (prompt.length < 40) {
+      enhancedPrompt = `${prompt}, high quality, detailed, professional photography, cinematic lighting, 4k resolution`;
+      console.log(`[generateImage] Enhanced short prompt: ${enhancedPrompt.substring(0, 80)}...`);
+    }
+    
+    console.log(`🎨 Generating image via Codex ${imageModel} for: ${enhancedPrompt.substring(0, 60)}...`);
+
+    try {
+      const response = await fetch(`${codexBaseUrl}/v1/images/generations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${codexApiKey}`,
+          'Accept': 'text/event-stream',
+          'User-Agent': 'curl/8.5.0',
+        },
+        body: JSON.stringify(this.buildImageRequestBody(imageModel, enhancedPrompt)),
+        signal: AbortSignal.timeout(180000),
+      });
+
+      if (!response.ok) throw new Error(`Codex API ${response.status}: ${response.statusText}`);
+
+      // Parse SSE stream to extract image data
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let imageData: string | null = null;
+      let imageUrl: string | null = null;
+
+      const applyParsedImage = (parsed: any) => {
+        if (parsed.data?.[0]?.b64_json) imageData = parsed.data[0].b64_json;
+        if (parsed.data?.[0]?.url) imageUrl = parsed.data[0].url;
+        if (parsed.b64_json && !imageData) imageData = parsed.b64_json;
+        if (parsed.url && !imageUrl) imageUrl = parsed.url;
+      };
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          try {
+            const payload = trimmed.startsWith('data: ') ? trimmed.substring(6) : trimmed;
+            applyParsedImage(JSON.parse(payload));
+          } catch {}
+        }
+      }
+
+      if (buffer.trim()) {
+        try {
+          const payload = buffer.trim().startsWith('data: ') ? buffer.trim().substring(6) : buffer.trim();
+          applyParsedImage(JSON.parse(payload));
+        } catch {}
+      }
+
+      if (imageUrl) {
+        const imageBuffer = this.imageBufferFromDataUrl(imageUrl);
+        if (imageBuffer) {
+          const r2Url = await this.uploadGeneratedImageToR2(imageBuffer);
+          if (r2Url) return r2Url;
+        }
+        return imageUrl;
+      }
+      if (imageData) {
+        const imageBuffer = Buffer.from(imageData, 'base64');
+        const r2Url = await this.uploadGeneratedImageToR2(imageBuffer);
+        if (r2Url) return r2Url;
+        return `data:image/png;base64,${imageData}`;
+      }
+      throw new Error('No image returned from Codex');
+    } catch (error: any) {
+      console.error(`[generateImage] Codex failed: ${error.message}`);
+      throw error;
+    }
   }
 
   async analyzeTrend(content: string, title: string, model?: string): Promise<any> {
@@ -364,7 +624,10 @@ Return JSON with:
         response_format: { type: 'json_object' },
       });
 
-      const result = JSON.parse(response.choices[0]?.message?.content || '{}');
+      // Sanitize JSON - remove control characters that break parsing
+      let rawContent = response.choices[0]?.message?.content || '{}';
+      rawContent = rawContent.replace(/[ --]/g, ' ');
+      const result = JSON.parse(rawContent);
       console.log(`[OpenAiService] Vision layout analysis complete: ${JSON.stringify(result)}`);
 
       return {
@@ -393,12 +656,116 @@ Return JSON with:
       .substring(0, 60);
   }
 
+  async transcribeAudio(
+    buffer: Buffer,
+    language?: string,
+  ): Promise<{ text: string; segments: Array<{ start: number; end: number; text: string }> }> {
+    if (!this.nativeOpenai) {
+      throw new Error('OPENAI_API_KEY is missing. Transcription requires a direct OpenAI API Key.');
+    }
+
+    const file = new File([new Uint8Array(buffer)], 'audio.mp3', { type: 'audio/mpeg' });
+    const response = await this.nativeOpenai.audio.transcriptions.create({
+      model: 'whisper-1',
+      file,
+      response_format: 'verbose_json',
+      timestamp_granularities: ['segment'],
+      ...(language && language !== 'auto' ? { language } : {}),
+    });
+
+    const segments = ((response as any).segments || []).map((s: any) => ({
+      start: s.start,
+      end: s.end,
+      text: s.text?.trim() || '',
+    }));
+
+    return { text: response.text, segments };
+  }
+
+  async generateThumbnail(
+    title: string,
+    style: string = 'cinematic',
+  ): Promise<string> {
+    // Build thumbnail prompt directly (avoid broken OpenRouter for enhancement)
+    const enhancedPrompt = `Vertical 9:16 portrait thumbnail for Instagram Reels/TikTok. ${style} style. Subject: ${title}. Professional lighting, vibrant colors, eye-catching composition, high contrast text area at top or bottom, modern social media aesthetic. Ultra quality, detailed, 4K resolution.`;
+
+    // Use Codex endpoint (same as generateImage)
+    const imageBaseUrl = (this.configService.get('CODEX_BASE_URL') || 'https://9router-168-144-37-19.sslip.io').replace(/\/+$/, '');
+    const imageApiKey = (this.configService.get('CODEX_API_KEY') || 'sk-752b90456c373287-7ndp1b-1930998e').trim();
+    const imageModel = await this.getImageModel();
+
+    const response = await fetch(`${imageBaseUrl}/v1/images/generations`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${imageApiKey}`,
+        'Accept': 'text/event-stream',
+      },
+      body: JSON.stringify({
+        model: imageModel,
+        prompt: enhancedPrompt,
+        n: 1,
+        size: 'auto',
+        quality: 'auto',
+        background: 'auto',
+        image_detail: 'high',
+        output_format: 'png',
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`Image generation failed: ${err}`);
+    }
+
+    // Handle SSE streaming response from Codex
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('text/event-stream')) {
+      const text = await response.text();
+      const lines = text.split('\n');
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const jsonStr = line.slice(6).trim();
+        if (!jsonStr || jsonStr === '[DONE]') continue;
+        try {
+          const parsed = JSON.parse(jsonStr);
+          // Codex format: {b64_json: "...", index: 0}
+          if (parsed.b64_json) {
+            return `data:image/png;base64,${parsed.b64_json}`;
+          }
+          // OpenAI format: {data: [{b64_json: "..."}]}
+          if (parsed.data?.[0]?.b64_json) {
+            return `data:image/png;base64,${parsed.data[0].b64_json}`;
+          }
+          if (parsed.data?.[0]?.url) {
+            return parsed.data[0].url;
+          }
+        } catch {}
+      }
+      throw new Error('No image found in SSE stream');
+    }
+
+    // Standard JSON response
+    const data = await response.json() as any;
+    const imageData = data?.data?.[0];
+    if (imageData?.url) return imageData.url;
+    if (imageData?.b64_json) return `data:image/png;base64,${imageData.b64_json}`;
+    throw new Error('No image returned from generation API');
+  }
+
   async generateSpeech(
     text: string,
     voice: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer' = 'alloy',
   ): Promise<Buffer> {
+    const elevenLabsKey = (this.configService.get('ELEVENLABS_API_KEY') || '').trim();
+
+    if (elevenLabsKey) {
+      return this.generateSpeechElevenLabs(text, voice, elevenLabsKey);
+    }
+
+    // Fallback to native OpenAI TTS
     if (!this.nativeOpenai) {
-      throw new Error('OPENAI_API_KEY is missing. Text-to-Speech requires a direct OpenAI API Key. Please add OPENAI_API_KEY to your environment variables.');
+      throw new Error('No TTS provider configured. Set ELEVENLABS_API_KEY or OPENAI_API_KEY.');
     }
 
     try {
@@ -412,11 +779,50 @@ Return JSON with:
       const buffer = Buffer.from(await response.arrayBuffer());
       return buffer;
     } catch (error: any) {
-      console.error('[OpenAiService] TTS generation failed:', {
-        message: error.message,
-        status: error.status,
-      });
+      console.error('[OpenAiService] TTS generation failed:', error.message);
       throw error;
     }
+  }
+
+  private async generateSpeechElevenLabs(
+    text: string,
+    voice: string,
+    apiKey: string,
+  ): Promise<Buffer> {
+    // Map OpenAI voice names to ElevenLabs voice IDs
+    const voiceMap: Record<string, string> = {
+      alloy: 'pNInz6obpgDQGcFmaJgB',    // Adam
+      echo: '21m00Tcm4TlvDq8ikWAM',      // Rachel
+      fable: 'AZnzlk1XvdvUeBnXmlld',     // Domi
+      onyx: 'VR6AewLTigWG4xSOukaG',      // Arnold
+      nova: 'EXAVITQu4vr4xnSDxMaL',      // Bella
+      shimmer: 'MF3mGyEYCl7XYWbV9V6O',   // Elli
+    };
+
+    const voiceId = voiceMap[voice] || voiceMap.nova;
+
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'xi-api-key': apiKey,
+      },
+      body: JSON.stringify({
+        text,
+        model_id: 'eleven_multilingual_v2',
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.75,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`ElevenLabs TTS failed: ${err}`);
+    }
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+    return buffer;
   }
 }
