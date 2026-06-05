@@ -282,6 +282,10 @@ Keep each field concise but descriptive. Use English.`;
     return { prompt };
   }
 
+  async getGeneratedImageAsset(key: string) {
+    return this.openAiService.getGeneratedImageAsset(key);
+  }
+
   async chat(message: string, history: Array<{ role: string; content: string }>) {
     const client = this.openAiService.getClient();
     const messages = [

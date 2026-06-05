@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { sql } from 'drizzle-orm';
 import { DrizzleService } from '../../../db/drizzle.service';
 
@@ -344,6 +345,110 @@ Return JSON with:
     };
   }
 
+  private async getR2Config(): Promise<{
+    bucket: string;
+    endpoint: string;
+    accessKeyId: string;
+    secretAccessKey: string;
+    publicBaseUrl?: string;
+  } | null> {
+    const accountId = await this.getSystemSetting(
+      'r2_account_id',
+      this.configService.get('R2_ACCOUNT_ID') || '',
+    );
+    const bucket = await this.getSystemSetting(
+      'r2_bucket_name',
+      this.configService.get('R2_BUCKET_NAME') || '',
+    );
+    const endpoint = await this.getSystemSetting(
+      'r2_endpoint',
+      this.configService.get('R2_ENDPOINT') || (accountId ? `https://${accountId}.r2.cloudflarestorage.com` : ''),
+    );
+    const accessKeyId = await this.getSystemSetting(
+      'r2_access_key_id',
+      this.configService.get('R2_ACCESS_KEY_ID') || '',
+    );
+    const secretAccessKey = await this.getSystemSetting(
+      'r2_secret_access_key',
+      this.configService.get('R2_SECRET_ACCESS_KEY') || '',
+    );
+    const publicBaseUrl = await this.getSystemSetting(
+      'r2_public_base_url',
+      this.configService.get('R2_PUBLIC_BASE_URL') || '',
+    );
+
+    if (!bucket || !endpoint || !accessKeyId || !secretAccessKey) {
+      return null;
+    }
+
+    return { bucket, endpoint, accessKeyId, secretAccessKey, publicBaseUrl: publicBaseUrl || undefined };
+  }
+
+  private getR2Client(config: NonNullable<Awaited<ReturnType<OpenAiService['getR2Config']>>>): S3Client {
+    return new S3Client({
+      region: 'auto',
+      endpoint: config.endpoint,
+      credentials: {
+        accessKeyId: config.accessKeyId,
+        secretAccessKey: config.secretAccessKey,
+      },
+    });
+  }
+
+  private imageBufferFromDataUrl(dataUrl: string): Buffer | null {
+    const match = dataUrl.match(/^data:image\/([a-zA-Z0-9.+-]+);base64,(.+)$/);
+    if (!match) return null;
+    return Buffer.from(match[2], 'base64');
+  }
+
+  private async uploadGeneratedImageToR2(imageBuffer: Buffer): Promise<string | null> {
+    const config = await this.getR2Config();
+    if (!config) return null;
+
+    const key = `instagram-studio/${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}.png`;
+    const client = this.getR2Client(config);
+    await client.send(new PutObjectCommand({
+      Bucket: config.bucket,
+      Key: key,
+      Body: imageBuffer,
+      ContentType: 'image/png',
+      CacheControl: 'public, max-age=31536000, immutable',
+    }));
+
+    if (config.publicBaseUrl) {
+      return `${config.publicBaseUrl.replace(/\/$/, '')}/${key}`;
+    }
+
+    return `/api/v1/ai/assets/${encodeURIComponent(key)}`;
+  }
+
+  async getGeneratedImageAsset(key: string): Promise<{ body: Buffer; contentType: string }> {
+    if (!key.startsWith('instagram-studio/')) {
+      throw new Error('Invalid asset key');
+    }
+
+    const config = await this.getR2Config();
+    if (!config) {
+      throw new Error('R2 is not configured');
+    }
+
+    const client = this.getR2Client(config);
+    const object = await client.send(new GetObjectCommand({
+      Bucket: config.bucket,
+      Key: key,
+    }));
+
+    const bytes = await object.Body?.transformToByteArray();
+    if (!bytes) {
+      throw new Error('R2 object body is empty');
+    }
+
+    return {
+      body: Buffer.from(bytes),
+      contentType: object.ContentType || 'image/png',
+    };
+  }
+
   async generateImage(prompt: string): Promise<string> {
     const codexApiKey = await this.getImageApiKey();
     const codexBaseUrl = await this.getImageBaseUrl();
@@ -410,8 +515,20 @@ Return JSON with:
         } catch {}
       }
 
-      if (imageUrl) return imageUrl;
-      if (imageData) return `data:image/png;base64,${imageData}`;
+      if (imageUrl) {
+        const imageBuffer = this.imageBufferFromDataUrl(imageUrl);
+        if (imageBuffer) {
+          const r2Url = await this.uploadGeneratedImageToR2(imageBuffer);
+          if (r2Url) return r2Url;
+        }
+        return imageUrl;
+      }
+      if (imageData) {
+        const imageBuffer = Buffer.from(imageData, 'base64');
+        const r2Url = await this.uploadGeneratedImageToR2(imageBuffer);
+        if (r2Url) return r2Url;
+        return `data:image/png;base64,${imageData}`;
+      }
       throw new Error('No image returned from Codex');
     } catch (error: any) {
       console.error(`[generateImage] Codex failed: ${error.message}`);

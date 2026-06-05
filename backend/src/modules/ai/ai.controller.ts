@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Res, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AiService } from './ai.service';
@@ -47,6 +47,16 @@ export class AiController {
     @Body() dto: AiGenerateImageDto,
   ) {
     return this.aiService.generateImage(user.id, dto);
+  }
+
+  @Get('assets/:key')
+  @Throttle({ default: { limit: 120, ttl: 60000 } })
+  @ApiOperation({ summary: 'Serve generated AI image asset from R2' })
+  async getGeneratedAsset(@Param('key') key: string, @Res() res: any) {
+    const asset = await this.aiService.getGeneratedImageAsset(decodeURIComponent(key));
+    res.setHeader('Content-Type', asset.contentType);
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    return res.send(asset.body);
   }
 
   @Post('prompt-generator')
