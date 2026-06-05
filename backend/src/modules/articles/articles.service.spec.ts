@@ -21,7 +21,18 @@ describe('ArticlesService', () => {
             insert: jest.fn().mockReturnThis(),
             update: jest.fn().mockReturnThis(),
             delete: jest.fn().mockReturnThis(),
-            select: jest.fn().mockReturnThis(),
+            __selectResults: [],
+            select: jest.fn(() => {
+                const next = mockDb.__selectResults.shift() || { result: [], terminal: 'offset' };
+                const builder: any = {
+                    from: jest.fn().mockReturnThis(),
+                    orderBy: jest.fn().mockReturnThis(),
+                    limit: jest.fn(() => next.terminal === 'limit' ? next.result : builder),
+                    offset: jest.fn(() => next.terminal === 'offset' ? next.result : builder),
+                    where: jest.fn(() => next.terminal === 'where' ? next.result : builder),
+                };
+                return builder;
+            }),
             from: jest.fn().mockReturnThis(),
             where: jest.fn().mockReturnThis(),
             values: jest.fn().mockReturnThis(),
@@ -53,28 +64,28 @@ describe('ArticlesService', () => {
                 { id: '2', title: 'Article 2', status: 'PUBLISHED' },
             ];
 
-            mockDb.query.article.findMany.mockResolvedValue(mockArticles);
-            mockDb.select.mockReturnThis();
-            mockDb.from.mockReturnThis();
-            mockDb.where.mockResolvedValue([{ count: 2 }]);
+            mockDb.__selectResults = [
+                { result: mockArticles, terminal: 'offset' },
+                { result: [{ count: 2 }], terminal: 'where' },
+            ];
 
             const result = await service.findAll(mockUserId, { page: 1, limit: 20 });
 
-            expect(result.data).toEqual(mockArticles);
+            expect(result.data).toEqual(mockArticles.map((item) => ({ ...item, wpSite: null })));
             expect(result.meta.total).toBe(2);
         });
 
         it('should filter by status', async () => {
             const mockArticles = [{ id: '1', title: 'Article 1', status: 'DRAFT' }];
 
-            mockDb.query.article.findMany.mockResolvedValue(mockArticles);
-            mockDb.select.mockReturnThis();
-            mockDb.from.mockReturnThis();
-            mockDb.where.mockResolvedValue([{ count: 1 }]);
+            mockDb.__selectResults = [
+                { result: mockArticles, terminal: 'offset' },
+                { result: [{ count: 1 }], terminal: 'where' },
+            ];
 
             const result = await service.findAll(mockUserId, { status: 'DRAFT' });
 
-            expect(result.data).toEqual(mockArticles);
+            expect(result.data).toEqual(mockArticles.map((item) => ({ ...item, wpSite: null })));
         });
     });
 
@@ -86,15 +97,15 @@ describe('ArticlesService', () => {
                 title: 'Test Article',
             };
 
-            mockDb.query.article.findFirst.mockResolvedValue(mockArticle);
+            mockDb.__selectResults = [{ result: [mockArticle], terminal: 'limit' }];
 
             const result = await service.findById(mockUserId, mockArticleId);
 
-            expect(result).toEqual(mockArticle);
+            expect(result).toEqual({ ...mockArticle, wpSite: null });
         });
 
         it('should throw NotFoundException when article not found', async () => {
-            mockDb.query.article.findFirst.mockResolvedValue(null);
+            mockDb.__selectResults = [{ result: [], terminal: 'limit' }];
 
             await expect(service.findById(mockUserId, mockArticleId)).rejects.toThrow(
                 NotFoundException,
@@ -148,7 +159,7 @@ describe('ArticlesService', () => {
                 ...updateDto,
             };
 
-            mockDb.query.article.findFirst.mockResolvedValue(mockExistingArticle);
+            mockDb.__selectResults = [{ result: [mockExistingArticle], terminal: 'limit' }];
             mockDb.update.mockReturnThis();
             mockDb.set.mockReturnThis();
             mockDb.where.mockReturnThis();
@@ -160,7 +171,7 @@ describe('ArticlesService', () => {
         });
 
         it('should throw NotFoundException when article not found', async () => {
-            mockDb.query.article.findFirst.mockResolvedValue(null);
+            mockDb.__selectResults = [{ result: [], terminal: 'limit' }];
 
             await expect(
                 service.update(mockUserId, mockArticleId, { title: 'Updated' }),
@@ -175,7 +186,7 @@ describe('ArticlesService', () => {
                 userId: mockUserId,
             };
 
-            mockDb.query.article.findFirst.mockResolvedValue(mockArticle);
+            mockDb.__selectResults = [{ result: [mockArticle], terminal: 'limit' }];
             mockDb.delete.mockReturnThis();
             mockDb.where.mockReturnThis();
 
@@ -185,7 +196,7 @@ describe('ArticlesService', () => {
         });
 
         it('should throw NotFoundException when article not found', async () => {
-            mockDb.query.article.findFirst.mockResolvedValue(null);
+            mockDb.__selectResults = [{ result: [], terminal: 'limit' }];
 
             await expect(service.delete(mockUserId, mockArticleId)).rejects.toThrow(
                 NotFoundException,

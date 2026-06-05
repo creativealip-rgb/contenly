@@ -3,8 +3,10 @@ import { eq, and, ilike, or, sql, desc, inArray } from 'drizzle-orm';
 import { DrizzleService } from '../../db/drizzle.service';
 import { article, wpSite } from '../../db/schema';
 import { CreateArticleDto, UpdateArticleDto } from './dto';
-import { validate as uuidValidate } from 'uuid';
 import { ArticleStatus, ArticleUpdateData } from '../../db/types';
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const uuidValidate = (value: string) => UUID_REGEX.test(value);
 
 @Injectable()
 export class ArticlesService {
