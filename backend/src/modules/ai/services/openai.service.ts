@@ -324,7 +324,7 @@ Return JSON with:
     const normalizedModel = model.toLowerCase();
 
     // chenzk gpt-image-2 rejects Codex/OpenAI-style auto/background/image_detail/output_format params.
-    if (normalizedModel === 'gpt-image-2') {
+    if (normalizedModel === 'gpt-image-2' || normalizedModel.endsWith('/gpt-image-2')) {
       return {
         model,
         prompt,
