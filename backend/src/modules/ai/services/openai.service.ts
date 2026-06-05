@@ -301,12 +301,52 @@ Return JSON with:
     };
   }
 
-  async generateImage(prompt: string): Promise<string> {
-    const codexApiKey = this.configService.get('CODEX_API_KEY') || this.configService.get('IMAGE_API_KEY') || '';
-    if (!codexApiKey) {
-      throw new Error('Image API key is not configured. Set CODEX_API_KEY or IMAGE_API_KEY.');
+  private async getImageApiKey(): Promise<string> {
+    const key = await this.getSystemSetting(
+      'image_api_key',
+      this.configService.get('IMAGE_API_KEY') || this.configService.get('CODEX_API_KEY') || '',
+    );
+    if (!key) {
+      throw new Error('Image API key is not configured. Set system setting image_api_key or env IMAGE_API_KEY/CODEX_API_KEY.');
     }
-    const codexBaseUrl = this.configService.get('CODEX_BASE_URL') || 'https://9router-168-144-37-19.sslip.io';
+    return key;
+  }
+
+  private async getImageBaseUrl(): Promise<string> {
+    return this.getSystemSetting(
+      'image_base_url',
+      this.configService.get('IMAGE_BASE_URL') || this.configService.get('CODEX_BASE_URL') || 'https://9router-168-144-37-19.sslip.io',
+    );
+  }
+
+  private buildImageRequestBody(model: string, prompt: string): Record<string, any> {
+    const normalizedModel = model.toLowerCase();
+
+    // chenzk gpt-image-2 rejects Codex/OpenAI-style auto/background/image_detail/output_format params.
+    if (normalizedModel === 'gpt-image-2') {
+      return {
+        model,
+        prompt,
+        n: 1,
+        size: '1024x1024',
+      };
+    }
+
+    return {
+      model,
+      prompt,
+      n: 1,
+      size: 'auto',
+      quality: 'auto',
+      background: 'auto',
+      image_detail: 'low',
+      output_format: 'png',
+    };
+  }
+
+  async generateImage(prompt: string): Promise<string> {
+    const codexApiKey = await this.getImageApiKey();
+    const codexBaseUrl = await this.getImageBaseUrl();
     const imageModel = await this.getImageModel();
 
     // Enhance short prompts - Codex requires descriptive prompts (min ~40 chars)
@@ -327,16 +367,7 @@ Return JSON with:
           'Accept': 'text/event-stream',
           'User-Agent': 'curl/8.5.0',
         },
-        body: JSON.stringify({
-          model: imageModel,
-          prompt: enhancedPrompt,
-          n: 1,
-          size: 'auto',
-          quality: 'auto',
-          background: 'auto',
-          image_detail: 'low',
-          output_format: 'png',
-        }),
+        body: JSON.stringify(this.buildImageRequestBody(imageModel, enhancedPrompt)),
         signal: AbortSignal.timeout(180000),
       });
 
@@ -349,6 +380,13 @@ Return JSON with:
       let imageData: string | null = null;
       let imageUrl: string | null = null;
 
+      const applyParsedImage = (parsed: any) => {
+        if (parsed.data?.[0]?.b64_json) imageData = parsed.data[0].b64_json;
+        if (parsed.data?.[0]?.url) imageUrl = parsed.data[0].url;
+        if (parsed.b64_json && !imageData) imageData = parsed.b64_json;
+        if (parsed.url && !imageUrl) imageUrl = parsed.url;
+      };
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -356,17 +394,20 @@ Return JSON with:
         const lines = buffer.split('\n');
         buffer = lines.pop() || '';
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const parsed = JSON.parse(line.substring(6));
-              
-              // Handle both formats: {data: [{b64_json: "..."}]} and {b64_json: "...", index: 0}
-              if (parsed.data?.[0]?.b64_json) imageData = parsed.data[0].b64_json;
-              if (parsed.data?.[0]?.url) imageUrl = parsed.data[0].url;
-              if (parsed.b64_json && !imageData) imageData = parsed.b64_json;
-            } catch {}
-          }
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          try {
+            const payload = trimmed.startsWith('data: ') ? trimmed.substring(6) : trimmed;
+            applyParsedImage(JSON.parse(payload));
+          } catch {}
         }
+      }
+
+      if (buffer.trim()) {
+        try {
+          const payload = buffer.trim().startsWith('data: ') ? buffer.trim().substring(6) : buffer.trim();
+          applyParsedImage(JSON.parse(payload));
+        } catch {}
       }
 
       if (imageUrl) return imageUrl;
