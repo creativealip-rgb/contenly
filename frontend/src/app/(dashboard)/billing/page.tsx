@@ -30,6 +30,8 @@ export default function BillingPage() {
 
     const loading = balanceLoading || subLoading
     const balance = balanceData?.balance ?? null
+    const usageCategories = Object.values(balanceData?.categories ?? {})
+    const totalUsed = usageCategories.reduce((sum, item) => sum + item.used, 0)
 
     const getPlanName = (plan: string) => {
         switch (plan?.toUpperCase()) {
@@ -105,7 +107,7 @@ export default function BillingPage() {
                                         <TrendingUp className="w-3 h-3" />
                                         <span className="text-xs uppercase tracking-wider">Penggunaan</span>
                                     </div>
-                                    <div className="text-2xl font-bold tabular-nums">--</div>
+                                    <div className="text-2xl font-bold tabular-nums">{loading ? '...' : totalUsed}</div>
                                 </div>
                                 <div className="text-center px-4">
                                     <div className="flex items-center justify-center gap-1 text-blue-100 mb-1">
@@ -119,6 +121,33 @@ export default function BillingPage() {
                     </CardContent>
                 </Card>
             </motion.div>
+
+            {usageCategories.length > 0 && (
+                <motion.div variants={itemVariants}>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Kuota Bulanan</CardTitle>
+                            <CardDescription>Pemakaian fitur AI per kategori paket. Jika limit habis, sistem otomatis pakai saldo kredit.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid gap-4 md:grid-cols-4">
+                            {usageCategories.map((item) => {
+                                const percentage = item.limit > 0 ? Math.min((item.used / item.limit) * 100, 100) : 0
+                                return (
+                                    <div key={item.label} className="rounded-2xl border border-slate-200 p-4 dark:border-slate-800">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{item.label}</span>
+                                            <span className="text-xs text-slate-500">{item.used}/{item.limit}</span>
+                                        </div>
+                                        <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                            <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-400" style={{ width: `${percentage}%` }} />
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </CardContent>
+                    </Card>
+                </motion.div>
+            )}
 
             {/* Pricing Tiers Section */}
             <motion.div variants={itemVariants} className="space-y-4">

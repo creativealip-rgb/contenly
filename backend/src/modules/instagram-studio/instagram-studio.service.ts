@@ -167,14 +167,9 @@ export class InstagramStudioService {
     ) {
         const project = await this.getProject(userId, projectId);
 
-        const hasBalance = await this.billingService.checkBalance(userId, 1);
-        if (!hasBalance) {
-            throw new BadRequestException('Insufficient token balance');
-        }
-
-        const withinDailyLimit = await this.billingService.checkDailyLimit(userId, 'INSTAGRAM_GENERATION');
-        if (!withinDailyLimit) {
-            throw new BadRequestException('Daily limit reached for Instagram Content Generation on your current plan. Please upgrade or try again tomorrow.');
+        const billing = await this.billingService.ensureBilling(userId, 'STORYBOARD_GENERATION');
+        if (!billing.allowed) {
+            throw new BadRequestException(billing.reason || 'Billing limit reached');
         }
 
         let content = dto.content || project.sourceContent;
@@ -238,8 +233,7 @@ export class InstagramStudioService {
             })
             .where(eq(instagramProject.id, projectId));
 
-        await this.billingService.deductTokens(userId, 1, 'Storyboard generation');
-        await this.billingService.incrementDailyUsage(userId, 'INSTAGRAM_GENERATION');
+        await this.billingService.recordUsage(userId, 'STORYBOARD_GENERATION', billing);
 
         return this.getProject(userId, projectId);
     }
@@ -258,19 +252,9 @@ export class InstagramStudioService {
             throw new NotFoundException('Slide not found');
         }
 
-        const hasBalance = await this.billingService.checkBalance(userId, 2);
-        if (!hasBalance) {
-            this.logger.error(
-                `[Image Generation] User ${userId} has insufficient tokens.`,
-            );
-            throw new BadRequestException(
-                'Insufficient token balance. You need at least 2 tokens.',
-            );
-        }
-
-        const withinDailyLimit = await this.billingService.checkDailyLimit(userId, 'INSTAGRAM_GENERATION');
-        if (!withinDailyLimit) {
-            throw new BadRequestException('Daily limit reached for Instagram Image Generation on your current plan.');
+        const billing = await this.billingService.ensureBilling(userId, 'SLIDE_IMAGE');
+        if (!billing.allowed) {
+            throw new BadRequestException(billing.reason || 'Billing limit reached');
         }
 
         const project = await this.getProject(userId, slide.projectId);
@@ -294,12 +278,7 @@ export class InstagramStudioService {
                 .where(eq(instagramSlide.id, slideId))
                 .returning();
 
-            await this.billingService.deductTokens(
-                userId,
-                2,
-                'Slide image generation',
-            );
-            await this.billingService.incrementDailyUsage(userId, 'INSTAGRAM_GENERATION');
+            await this.billingService.recordUsage(userId, 'SLIDE_IMAGE', billing);
 
             return updated;
         } catch (error: any) {
@@ -323,20 +302,13 @@ export class InstagramStudioService {
             throw new BadRequestException('No slides to generate images for');
         }
 
-        const totalTokens = project.slides.length * 2;
-        const hasBalance = await this.billingService.checkBalance(userId, totalTokens);
-        if (!hasBalance) {
-            throw new BadRequestException(`Insufficient token balance. You need ${totalTokens} tokens for ${project.slides.length} slides.`);
-        }
-
-        const withinDailyLimit = await this.billingService.checkDailyLimit(userId, 'INSTAGRAM_GENERATION');
-        if (!withinDailyLimit) {
-            throw new BadRequestException('Daily limit reached for Instagram Image Generation.');
-        }
-
         const results = [];
         for (const slide of project.slides) {
             try {
+                const billing = await this.billingService.ensureBilling(userId, 'SLIDE_IMAGE');
+                if (!billing.allowed) {
+                    throw new BadRequestException(billing.reason || 'Billing limit reached');
+                }
                 const textContent = slide.textContent || '';
                 const visualPrompt = slide.visualPrompt || '';
                 const style = project.globalStyle || 'Modern Minimalist';
@@ -352,8 +324,7 @@ export class InstagramStudioService {
                     .set({ imageUrl })
                     .where(eq(instagramSlide.id, slide.id));
 
-                await this.billingService.deductTokens(userId, 2, `Slide ${slide.slideNumber} image generation`);
-                await this.billingService.incrementDailyUsage(userId, 'INSTAGRAM_GENERATION');
+                await this.billingService.recordUsage(userId, 'SLIDE_IMAGE', billing);
 
                 results.push({ slideId: slide.id, slideNumber: slide.slideNumber, success: true });
             } catch (error: any) {
@@ -384,14 +355,9 @@ export class InstagramStudioService {
 
         const project = await this.getProject(userId, slide.projectId);
 
-        const hasBalance = await this.billingService.checkBalance(userId, 1);
-        if (!hasBalance) {
-            throw new BadRequestException('Insufficient token balance. You need 1 token to add text.');
-        }
-
-        const withinDailyLimit = await this.billingService.checkDailyLimit(userId, 'INSTAGRAM_GENERATION');
-        if (!withinDailyLimit) {
-            throw new BadRequestException('Daily limit reached for Instagram Text Generation on your current plan.');
+        const billing = await this.billingService.ensureBilling(userId, 'TEXT_OVERLAY');
+        if (!billing.allowed) {
+            throw new BadRequestException(billing.reason || 'Billing limit reached');
         }
 
         this.logger.log(`[Text Overlay] Analyzing image layout for slide ${slideId} using Vision AI.`);
@@ -434,12 +400,7 @@ export class InstagramStudioService {
                 .where(eq(instagramSlide.id, slideId))
                 .returning();
 
-            await this.billingService.deductTokens(
-                userId,
-                1,
-                'Slide text generation',
-            );
-            await this.billingService.incrementDailyUsage(userId, 'INSTAGRAM_GENERATION');
+            await this.billingService.recordUsage(userId, 'TEXT_OVERLAY', billing);
 
             return {
                 success: true,

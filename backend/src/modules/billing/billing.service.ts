@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { eq, sql, and } from 'drizzle-orm';
 import { DrizzleService } from '../../db/drizzle.service';
 import { tokenBalance, transaction, subscription, dailyUsage } from '../../db/schema';
-import { BILLING_TIERS } from './billing.constants';
+import { BILLING_TIERS, FEATURE_TO_CATEGORY, KREDIT_COSTS } from './billing.constants';
 import Stripe from 'stripe';
 
 @Injectable()
@@ -61,63 +61,93 @@ export class BillingService {
   }
 
   // ==========================================
-  // HYBRID TIER LIMITS & USAGE
+  // 2-LAYER BILLING LIMITS & USAGE
   // ==========================================
+
+  normalizeTier(plan?: string | null) {
+    if (!plan || plan === 'FREE_TRIAL') return 'FREE';
+    return plan === 'ENTERPRISE' ? 'BUSINESS' : plan;
+  }
 
   async getSubscriptionTier(userId: string) {
     const sub = await this.getSubscription(userId);
-    return sub?.plan || 'FREE';
+    return this.normalizeTier(sub?.plan);
   }
 
-  async checkDailyLimit(userId: string, featureType: 'ARTICLE_GENERATION' | 'INSTAGRAM_GENERATION' | 'VIDEO_GENERATION'): Promise<boolean> {
-    const tier = await this.getSubscriptionTier(userId);
-    const limit = BILLING_TIERS[tier]?.dailyLimits?.[featureType] || 0;
+  private getCategoryLabel(category: string) {
+    const labels: Record<string, string> = {
+      ARTICLE_GENERATION: 'Artikel',
+      INSTAGRAM_GENERATION: 'IG Carousel',
+      VIDEO_GENERATION: 'Video',
+      IMAGE_GENERATION: 'Gambar',
+    };
+    return labels[category] || category;
+  }
 
-    // Get today's start and end date objects
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const usageRow = await this.db.query.dailyUsage.findFirst({
-      where: and(
-        eq(dailyUsage.userId, userId),
-        eq(dailyUsage.featureType, featureType),
-        sql`DATE(${dailyUsage.date}) = DATE(${today.toISOString()})`
-      ),
+  async getMonthlyUsageByCategory(userId: string, monthStart: Date): Promise<Record<string, number>> {
+    const usageRows = await this.db.query.dailyUsage.findMany({
+      where: and(eq(dailyUsage.userId, userId), sql`${dailyUsage.date} >= ${monthStart.toISOString()}`),
     });
+    const result: Record<string, number> = {};
+    for (const row of usageRows) {
+      const key = row.featureType;
+      result[key] = (result[key] || 0) + (row.count || 0);
+    }
+    return result;
+  }
 
-    const currentUsage = usageRow?.count || 0;
+  async checkDailyLimit(userId: string, featureType: string): Promise<boolean> {
+    const tier = await this.getSubscriptionTier(userId);
+    const limit = BILLING_TIERS[tier]?.monthlyLimits?.[featureType] || 0;
+    if (limit <= 0) return false;
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const usageRows = await this.db.query.dailyUsage.findMany({
+      where: and(eq(dailyUsage.userId, userId), eq(dailyUsage.featureType, featureType as any), sql`${dailyUsage.date} >= ${monthStart.toISOString()}`),
+    });
+    const currentUsage = usageRows.reduce((sum, row) => sum + (row.count || 0), 0);
     return currentUsage < limit;
   }
 
-  async incrementDailyUsage(userId: string, featureType: 'ARTICLE_GENERATION' | 'INSTAGRAM_GENERATION' | 'VIDEO_GENERATION') {
+  async checkCategoryLimit(userId: string, featureType: string): Promise<boolean> {
+    const categoryFeature = FEATURE_TO_CATEGORY[featureType];
+    if (!categoryFeature) return true;
+    return this.checkDailyLimit(userId, categoryFeature);
+  }
+
+  async incrementDailyUsage(userId: string, featureType: string) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
-    try {
-      await this.db.transaction(async (tx) => {
-        const existing = await tx.query.dailyUsage.findFirst({
-          where: and(
-            eq(dailyUsage.userId, userId),
-            eq(dailyUsage.featureType, featureType),
-            sql`${dailyUsage.date}::date = ${today.toISOString().split('T')[0]}::date`
-          ),
-        });
-
-        if (existing) {
-          await tx.update(dailyUsage)
-            .set({ count: sql`${dailyUsage.count} + 1` })
-            .where(eq(dailyUsage.id, existing.id));
-        } else {
-          await tx.insert(dailyUsage).values({
-            userId,
-            featureType,
-            date: today,
-            count: 1,
-          });
+    await this.db.transaction(async (tx) => {
+      const existing = await tx.query.dailyUsage.findFirst({
+        where: and(eq(dailyUsage.userId, userId), eq(dailyUsage.featureType, featureType as any), sql`${dailyUsage.date}::date = ${today.toISOString().split('T')[0]}::date`),
+      });
+      if (existing) {
+        await tx.update(dailyUsage).set({ count: sql`${dailyUsage.count} + 1` }).where(eq(dailyUsage.id, existing.id));
+      } else {
+        await tx.insert(dailyUsage).values({ userId, featureType: featureType as any, date: today, count: 1 });
       }
     });
-    } catch (e) {
-      // Ignore duplicate key errors — race condition is harmless
+  }
+
+  async ensureBilling(userId: string, featureType: string) {
+    const withinCategory = await this.checkCategoryLimit(userId, featureType);
+    if (withinCategory) return { allowed: true, usingKredit: false, kreditCost: 0 };
+    const kreditCost = KREDIT_COSTS[featureType] || 0;
+    const category = FEATURE_TO_CATEGORY[featureType] || featureType;
+    if (kreditCost <= 0) {
+      return { allowed: false, reason: `Kuota ${this.getCategoryLabel(category)} sudah habis bulanan ini. Upgrade plan untuk menambah jatah.`, usingKredit: false, kreditCost: 0 };
+    }
+    const balance = await this.getBalance(userId);
+    if ((balance.balance || 0) >= kreditCost) return { allowed: true, usingKredit: true, kreditCost };
+    return { allowed: false, reason: `Kuota ${this.getCategoryLabel(category)} habis dan kredit tidak cukup (butuh ${kreditCost} kredit). Upgrade plan atau beli kredit tambahan.`, usingKredit: false, kreditCost };
+  }
+
+  async recordUsage(userId: string, featureType: string, billingResult?: { usingKredit?: boolean; kreditCost?: number }) {
+    const category = FEATURE_TO_CATEGORY[featureType];
+    if (category) await this.incrementDailyUsage(userId, category);
+    if (billingResult?.usingKredit && (billingResult.kreditCost || 0) > 0) {
+      await this.deductTokens(userId, billingResult.kreditCost || 0, `${featureType} (overflow kredit)`);
     }
   }
 
@@ -127,32 +157,13 @@ export class BillingService {
   }
 
   async deductTokens(userId: string, amount: number, description: string) {
-    const balance = await this.getBalance(userId);
-
-    if ((balance?.balance || 0) < amount) {
-      throw new BadRequestException('Insufficient token balance');
-    }
-
-    // Use transaction for atomic operation
-    await this.db.transaction(async (tx) => {
-      await tx
-        .update(tokenBalance)
-        .set({
-          balance: sql`${tokenBalance.balance} - ${amount}`,
-          totalUsed: sql`${tokenBalance.totalUsed} + ${amount}`,
-          updatedAt: new Date(),
-        })
-        .where(eq(tokenBalance.userId, userId));
-
-      await tx.insert(transaction).values({
-        userId,
-        type: 'USAGE',
-        amount: 0,
-        tokens: -amount,
-        status: 'COMPLETED',
-        metadata: { description },
-      });
-    });
+    const [updated] = await this.db.update(tokenBalance).set({
+      balance: sql`${tokenBalance.balance} - ${amount}`,
+      totalUsed: sql`${tokenBalance.totalUsed} + ${amount}`,
+      updatedAt: new Date(),
+    }).where(and(eq(tokenBalance.userId, userId), sql`${tokenBalance.balance} >= ${amount}`)).returning();
+    if (!updated) throw new BadRequestException('Kredit tidak mencukupi.');
+    await this.db.insert(transaction).values({ userId, type: 'USAGE', amount: 0, tokens: -amount, status: 'COMPLETED', metadata: { description, deductedFrom: 'kredit' } });
   }
 
   async addTokens(userId: string, amount: number, stripePaymentId?: string, isReset: boolean = false) {
@@ -413,3 +424,4 @@ export class BillingService {
     return { url: session.url };
   }
 }
+

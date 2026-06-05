@@ -215,14 +215,15 @@ export class VideoClipService {
   }
 
   async analyzeVideo(userId: string, projectId: string) {
-    await this.billingService.checkBalance(userId, 50);
+    const billing = await this.billingService.ensureBilling(userId, 'VIDEO_ANALYSIS');
+    if (!billing.allowed) throw new BadRequestException(billing.reason || 'Billing limit reached');
     const project = await this.getProject(userId, projectId);
     if (project.status === 'analyzing') throw new BadRequestException('Already analyzing');
 
     const db = this.drizzle.getDb();
     await db.update(videoClipProjects).set({ status: 'downloading' }).where(eq(videoClipProjects.id, projectId));
 
-    await this.clipQueue.add('analyze', { projectId, userId }, { attempts: 2, backoff: 5000 });
+    await this.clipQueue.add('analyze', { projectId, userId, billing }, { attempts: 2, backoff: 5000 });
     return { message: 'Analysis started', projectId };
   }
 
@@ -476,9 +477,9 @@ export class VideoClipService {
     );
     const transcriptSnippet = words.map((w) => w.word).join(' ').slice(0, 1500);
 
-    const hasBalance = await this.billingService.checkBalance(userId, 1);
-    if (!hasBalance) {
-      throw new BadRequestException('Saldo kredit tidak mencukupi');
+    const billing = await this.billingService.ensureBilling(userId, 'ALTERNATE_HOOKS');
+    if (!billing.allowed) {
+      throw new BadRequestException(billing.reason || 'Billing limit reached');
     }
 
     const prompt = `You are a viral short-form video copywriter.
@@ -507,7 +508,7 @@ Transcript snippet: ${transcriptSnippet}`;
       .filter((h) => h.length > 0)
       .slice(0, count);
 
-    await this.billingService.deductTokens(userId, 1, `Alternate hooks for clip ${segmentIndex}`);
+    await this.billingService.recordUsage(userId, 'ALTERNATE_HOOKS', billing);
     return hooks;
   }
 
@@ -634,7 +635,8 @@ Rules:
     titleStyle?: TitleStyleInput,
     options?: { aspectRatio?: AspectRatio; cropOffsetX?: number; includeBroll?: boolean },
   ) {
-    await this.billingService.checkBalance(userId, 30);
+    const billing = await this.billingService.ensureBilling(userId, 'VIDEO_EXPORT');
+    if (!billing.allowed) throw new BadRequestException(billing.reason || 'Billing limit reached');
     const project = await this.getProject(userId, projectId);
     if (!project.videoPath) throw new BadRequestException('Video not downloaded yet');
     if (!project.segments) throw new BadRequestException('No segments analyzed yet');
@@ -653,6 +655,7 @@ Rules:
       aspectRatio: options?.aspectRatio || '9:16',
       cropOffsetX: typeof options?.cropOffsetX === 'number' ? options.cropOffsetX : 0,
       includeBroll: options?.includeBroll !== false, // default true
+      billing,
     }, { attempts: 2, backoff: 5000 });
 
     return { message: 'Export started', jobId };
@@ -1246,8 +1249,8 @@ Rules:
     const inSeg = allWords.filter((w) => w.start >= seg.startTime && w.end <= seg.endTime);
     const text = inSeg.map((w) => w.word).join(' ').slice(0, 1500);
 
-    const hasBalance = await this.billingService.checkBalance(userId, 1);
-    if (!hasBalance) throw new BadRequestException('Saldo kredit tidak mencukupi');
+    const billing = await this.billingService.ensureBilling(userId, 'BROLL_KEYWORDS');
+    if (!billing.allowed) throw new BadRequestException(billing.reason || 'Billing limit reached');
 
     const prompt = `You are a stock footage curator. Suggest ${Math.max(3, Math.min(12, count))} concrete English keywords or 2-3 word phrases that match the visual context of this short-form video clip.
 
@@ -1274,7 +1277,7 @@ Transcript snippet: ${text}`;
       .filter((k) => k.length > 0)
       .slice(0, count);
 
-    await this.billingService.deductTokens(userId, 1, `B-roll keywords for clip ${segmentIndex}`);
+    await this.billingService.recordUsage(userId, 'BROLL_KEYWORDS', billing);
     return keywords;
   }
 
@@ -1304,8 +1307,8 @@ Transcript snippet: ${text}`;
       throw new BadRequestException('Transcript untuk segment ini terlalu sedikit untuk auto-cutaway');
     }
 
-    const hasBalance = await this.billingService.checkBalance(userId, 2);
-    if (!hasBalance) throw new BadRequestException('Saldo kredit tidak mencukupi');
+    const billing = await this.billingService.ensureBilling(userId, 'AUTO_CUTAWAY');
+    if (!billing.allowed) throw new BadRequestException(billing.reason || 'Billing limit reached');
 
     const maxOverlays = Math.max(2, Math.min(10, options.maxOverlays ?? 5));
 
@@ -1375,12 +1378,12 @@ Clip duration: ${segDuration}s`;
       : [];
 
     if (rawCutaways.length === 0) {
-      await this.billingService.deductTokens(userId, 1, `Auto-cutaway analysis (no matches) clip ${segmentIndex}`);
+      await this.billingService.recordUsage(userId, 'AUTO_CUTAWAY', billing);
       return { added: [], skipped: 0 };
     }
 
     // Deduct base token for AI analysis
-    await this.billingService.deductTokens(userId, 2, `Auto-cutaway AI for clip ${segmentIndex}`);
+    await this.billingService.recordUsage(userId, 'AUTO_CUTAWAY', billing);
 
     // For each cutaway, fetch footage and add to plan
     const plan = ((project.brollPlan as BrollItem[]) || []).slice();

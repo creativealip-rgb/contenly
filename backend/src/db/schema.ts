@@ -67,7 +67,9 @@ export const transactionStatusEnum = pgEnum('transaction_status', [
 export const subscriptionPlanEnum = pgEnum('subscription_plan', [
   'FREE',
   'FREE_TRIAL',
+  'STARTER',
   'PRO',
+  'BUSINESS',
   'ENTERPRISE',
 ]);
 export const subscriptionStatusEnum = pgEnum('subscription_status', [
@@ -98,6 +100,26 @@ export const featureTypeEnum = pgEnum('feature_type', [
   'ARTICLE_GENERATION',
   'INSTAGRAM_GENERATION',
   'VIDEO_GENERATION',
+  'IMAGE_GENERATION',
+  'SLIDE_IMAGE',
+  'THUMBNAIL_GENERATION',
+  'STORYBOARD_GENERATION',
+  'HASHTAG_GENERATION',
+  'VIDEO_SCRIPT',
+  'ALTERNATE_HOOKS',
+  'BROLL_KEYWORDS',
+  'SUGGEST_FOOTAGE_KEYWORDS',
+  'AUTO_CUTAWAY',
+  'TTS_PREVIEW',
+  'TTS_VOICEOVER',
+  'REGENERATE_FIELD',
+  'REGENERATE_VOICEOVER',
+  'IMPROVE_VISUAL',
+  'VIDEO_ANALYSIS',
+  'VIDEO_EXPORT',
+  'MOTION_GRAPHICS_RENDER',
+  'TEXT_OVERLAY',
+  'AI_CHAT',
 ]);
 
 // ==========================================

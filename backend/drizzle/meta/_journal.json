@@ -43,6 +43,13 @@
       "when": 1779422337947,
       "tag": "0005_parched_tenebrous",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1780617444663,
+      "tag": "0006_long_silver_sable",
+      "breakpoints": true
     }
   ]
 }

@@ -20,8 +20,8 @@ export class VideoClipProcessor {
   ) {}
 
   @Process({ name: 'analyze', concurrency: 2 })
-  async handleAnalyze(job: Job<{ projectId: string; userId: string }>) {
-    const { projectId, userId } = job.data;
+  async handleAnalyze(job: Job<{ projectId: string; userId: string; billing?: { usingKredit?: boolean; kreditCost?: number } }>) {
+    const { projectId, userId, billing } = job.data;
     const db = this.drizzle.getDb();
 
     try {
@@ -68,8 +68,7 @@ export class VideoClipProcessor {
         status: 'ready',
       }).where(eq(videoClipProjects.id, projectId));
 
-      // Deduct tokens
-      await this.billingService.deductTokens(userId, 50, `Analyzed video: ${project.title}`);
+      await this.billingService.recordUsage(userId, 'VIDEO_ANALYSIS', billing);
 
       await this.notificationsService.create(userId, 'JOB_SUCCESS',
         'Video Analysis Complete',
@@ -102,8 +101,9 @@ export class VideoClipProcessor {
     aspectRatio?: string;
     cropOffsetX?: number;
     includeBroll?: boolean;
+    billing?: { usingKredit?: boolean; kreditCost?: number };
   }>) {
-    const { jobId, userId, projectId, segmentIndex, subtitleStyle, titleStyle, aspectRatio, cropOffsetX, includeBroll } = job.data;
+    const { jobId, userId, projectId, segmentIndex, subtitleStyle, titleStyle, aspectRatio, cropOffsetX, includeBroll, billing } = job.data;
     const db = this.drizzle.getDb();
 
     try {
@@ -154,8 +154,7 @@ export class VideoClipProcessor {
       });
       await db.update(videoClipProjects).set({ exports }).where(eq(videoClipProjects.id, projectId));
 
-      // Deduct tokens
-      await this.billingService.deductTokens(userId, 30, `Exported clip from "${project.title}"`);
+      await this.billingService.recordUsage(userId, 'VIDEO_EXPORT', billing);
 
       await this.notificationsService.create(userId, 'JOB_SUCCESS',
         'Clip Export Complete',

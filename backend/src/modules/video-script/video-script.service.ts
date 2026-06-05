@@ -225,21 +225,9 @@ export class VideoScriptService {
   ) {
     const project = await this.getProject(userId, projectId);
 
-    const hasBalance = await this.billingService.checkBalance(userId, 1);
-    if (!hasBalance) {
-      throw new BadRequestException(
-        'Saldo kredit Anda tidak mencukupi untuk request ini.',
-      );
-    }
-
-    const withinDailyLimit = await this.billingService.checkDailyLimit(
-      userId,
-      'VIDEO_GENERATION',
-    );
-    if (!withinDailyLimit) {
-      throw new BadRequestException(
-        'Daily limit reached for Video Script Generation on your current plan. Please upgrade or try again tomorrow.',
-      );
+    const billing = await this.billingService.ensureBilling(userId, 'VIDEO_SCRIPT');
+    if (!billing.allowed) {
+      throw new BadRequestException(billing.reason || 'Billing limit reached');
     }
 
     await this.drizzle.db
@@ -305,12 +293,7 @@ export class VideoScriptService {
         })
         .where(eq(schema.scriptProject.id, projectId));
 
-      await this.billingService.deductTokens(
-        userId,
-        1,
-        'Video script generation',
-      );
-      await this.billingService.incrementDailyUsage(userId, 'VIDEO_GENERATION');
+      await this.billingService.recordUsage(userId, 'VIDEO_SCRIPT', billing);
 
       return this.getProject(userId, projectId);
     } catch (error: any) {
@@ -335,11 +318,9 @@ export class VideoScriptService {
       throw new BadRequestException('Project source content is empty');
     }
 
-    const hasBalance = await this.billingService.checkBalance(userId, 1);
-    if (!hasBalance) {
-      throw new BadRequestException(
-        'Saldo kredit Anda tidak mencukupi untuk request ini.',
-      );
+    const billing = await this.billingService.ensureBilling(userId, 'REGENERATE_FIELD');
+    if (!billing.allowed) {
+      throw new BadRequestException(billing.reason || 'Billing limit reached');
     }
 
     const fieldPrompt = this.buildFieldRegenerationPrompt(field, project);
@@ -376,11 +357,7 @@ export class VideoScriptService {
       .where(eq(schema.scriptProject.id, projectId))
       .returning();
 
-    await this.billingService.deductTokens(
-      userId,
-      1,
-      `Video script regenerate field: ${field}`,
-    );
+    await this.billingService.recordUsage(userId, 'REGENERATE_FIELD', billing);
 
     return {
       ...updatedProject,
@@ -445,11 +422,9 @@ export class VideoScriptService {
       throw new BadRequestException('Project source content is empty');
     }
 
-    const hasBalance = await this.billingService.checkBalance(userId, 1);
-    if (!hasBalance) {
-      throw new BadRequestException(
-        'Saldo kredit Anda tidak mencukupi untuk request ini.',
-      );
+    const billing = await this.billingService.ensureBilling(userId, 'REGENERATE_VOICEOVER');
+    if (!billing.allowed) {
+      throw new BadRequestException(billing.reason || 'Billing limit reached');
     }
 
     const tier = await this.billingService.getSubscriptionTier(userId);
@@ -503,11 +478,7 @@ ${project.sourceContent}`;
       .where(eq(schema.scriptScene.id, sceneId))
       .returning();
 
-    await this.billingService.deductTokens(
-      userId,
-      1,
-      `Video script regenerate voiceover (scene ${scene.sceneNumber})`,
-    );
+    await this.billingService.recordUsage(userId, 'REGENERATE_VOICEOVER', billing);
 
     return {
       ...updatedScene,
@@ -605,11 +576,9 @@ Project hook: ${project.hook || ''}`;
     if (!scene) throw new NotFoundException('Scene not found');
     const project = await this.getProject(userId, scene.projectId);
 
-    const hasBalance = await this.billingService.checkBalance(userId, 1);
-    if (!hasBalance) {
-      throw new BadRequestException(
-        'Saldo kredit Anda tidak mencukupi untuk request ini.',
-      );
+    const billing = await this.billingService.ensureBilling(userId, 'IMPROVE_VISUAL');
+    if (!billing.allowed) {
+      throw new BadRequestException(billing.reason || 'Billing limit reached');
     }
 
     const tier = await this.billingService.getSubscriptionTier(userId);
@@ -656,11 +625,7 @@ Project headline: ${project.headline || ''}`;
       .where(eq(schema.scriptScene.id, sceneId))
       .returning();
 
-    await this.billingService.deductTokens(
-      userId,
-      1,
-      `Video script improve visual (scene ${scene.sceneNumber})`,
-    );
+    await this.billingService.recordUsage(userId, 'IMPROVE_VISUAL', billing);
 
     return {
       ...updatedScene,
@@ -921,19 +886,13 @@ Project headline: ${project.headline || ''}`;
       throw new BadRequestException('Scene voiceover text is empty');
     }
 
-    const hasBalance = await this.billingService.checkBalance(userId, 1);
-    if (!hasBalance) {
-      throw new BadRequestException(
-        'Saldo kredit Anda tidak mencukupi untuk request ini.',
-      );
+    const billing = await this.billingService.ensureBilling(userId, 'TTS_PREVIEW');
+    if (!billing.allowed) {
+      throw new BadRequestException(billing.reason || 'Billing limit reached');
     }
 
     const buffer = await this.openAiService.generateSpeech(text, voice);
-    await this.billingService.deductTokens(
-      userId,
-      1,
-      `Video script TTS preview (scene ${scene.sceneNumber}, voice ${voice})`,
-    );
+    await this.billingService.recordUsage(userId, 'TTS_PREVIEW', billing);
     return {
       buffer,
       filename: `scene-${scene.sceneNumber}-${voice}.mp3`,
@@ -1356,11 +1315,9 @@ ${project.sourceContent}`;
       throw new BadRequestException('No scenes to generate audio from');
     }
 
-    const hasBalance = await this.billingService.checkBalance(userId, 1);
-    if (!hasBalance) {
-      throw new BadRequestException(
-        'Saldo kredit Anda tidak mencukupi untuk request ini.',
-      );
+    const billing = await this.billingService.ensureBilling(userId, 'TTS_VOICEOVER');
+    if (!billing.allowed) {
+      throw new BadRequestException(billing.reason || 'Billing limit reached');
     }
 
     const fullScript = project.scenes
@@ -1377,11 +1334,7 @@ ${project.sourceContent}`;
         fullScript,
         voice,
       );
-      await this.billingService.deductTokens(
-        userId,
-        1,
-        'TTS Voiceover Generation',
-      );
+      await this.billingService.recordUsage(userId, 'TTS_VOICEOVER', billing);
 
       return {
         buffer: mp3Buffer,
@@ -1410,9 +1363,9 @@ ${project.sourceContent}`;
   ) {
     await this.getProject(userId, projectId);
 
-    const hasBalance = await this.billingService.checkBalance(userId, 1);
-    if (!hasBalance) {
-      throw new BadRequestException('Saldo kredit Anda tidak mencukupi.');
+    const billing = await this.billingService.ensureBilling(userId, 'AUDIO_TRANSCRIPTION');
+    if (!billing.allowed) {
+      throw new BadRequestException(billing.reason || 'Billing limit reached');
     }
 
     const result = await this.openAiService.transcribeAudio(fileBuffer, language);
@@ -1437,7 +1390,7 @@ ${project.sourceContent}`;
         })
         .join('\n');
 
-    await this.billingService.deductTokens(userId, 1, 'Audio Transcription');
+    await this.billingService.recordUsage(userId, 'AUDIO_TRANSCRIPTION', billing);
 
     return {
       text: result.text,
@@ -1458,9 +1411,9 @@ ${project.sourceContent}`;
   ) {
     const project = await this.getProject(userId, projectId);
 
-    const hasBalance = await this.billingService.checkBalance(userId, 1);
-    if (!hasBalance) {
-      throw new BadRequestException('Saldo kredit Anda tidak mencukupi.');
+    const billing = await this.billingService.ensureBilling(userId, 'THUMBNAIL_GENERATION');
+    if (!billing.allowed) {
+      throw new BadRequestException(billing.reason || 'Billing limit reached');
     }
 
     const title = project.headline || project.title;
@@ -1469,7 +1422,7 @@ ${project.sourceContent}`;
       style || 'cinematic',
     );
 
-    await this.billingService.deductTokens(userId, 1, 'Thumbnail Generation');
+    await this.billingService.recordUsage(userId, 'THUMBNAIL_GENERATION', billing);
 
     // Persist generated thumbnail URL to project
     await this.drizzle.db

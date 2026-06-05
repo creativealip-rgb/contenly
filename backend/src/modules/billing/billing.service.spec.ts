@@ -113,24 +113,70 @@ describe('BillingService', () => {
 
     describe('deductTokens', () => {
         it('should deduct tokens successfully', async () => {
-            mockDb.query.tokenBalance.findFirst.mockResolvedValue({ balance: 100 });
-            mockDb.update.mockReturnThis();
-            mockDb.set.mockReturnThis();
-            mockDb.where.mockReturnThis();
-            mockDb.insert.mockReturnThis();
-            mockDb.values.mockReturnThis();
+            mockDb.returning.mockResolvedValue([{ balance: 70 }]);
 
             await service.deductTokens(mockUserId, 30, 'Test deduction');
 
-            expect(mockDb.transaction).toHaveBeenCalled();
+            expect(mockDb.update).toHaveBeenCalled();
+            expect(mockDb.insert).toHaveBeenCalled();
         });
 
         it('should throw error when balance is insufficient', async () => {
-            mockDb.query.tokenBalance.findFirst.mockResolvedValue({ balance: 20 });
+            mockDb.returning.mockResolvedValue([]);
 
             await expect(service.deductTokens(mockUserId, 30, 'Test deduction')).rejects.toThrow(
                 BadRequestException,
             );
+        });
+    });
+
+    describe('ensureBilling', () => {
+        it('allows usage when category quota is still available', async () => {
+            jest.spyOn(service, 'checkCategoryLimit').mockResolvedValue(true);
+
+            const result = await service.ensureBilling(mockUserId, 'VIDEO_SCRIPT');
+
+            expect(result).toEqual({ allowed: true, usingKredit: false, kreditCost: 0 });
+        });
+
+        it('falls back to kredit when category quota is exhausted', async () => {
+            jest.spyOn(service, 'checkCategoryLimit').mockResolvedValue(false);
+            jest.spyOn(service, 'getBalance').mockResolvedValue({ balance: 10 } as any);
+
+            const result = await service.ensureBilling(mockUserId, 'VIDEO_SCRIPT');
+
+            expect(result).toEqual({ allowed: true, usingKredit: true, kreditCost: 3 });
+        });
+
+        it('blocks usage when category quota is exhausted and kredit is insufficient', async () => {
+            jest.spyOn(service, 'checkCategoryLimit').mockResolvedValue(false);
+            jest.spyOn(service, 'getBalance').mockResolvedValue({ balance: 1 } as any);
+
+            const result = await service.ensureBilling(mockUserId, 'VIDEO_SCRIPT');
+
+            expect(result.allowed).toBe(false);
+            expect(result.reason).toContain('kredit tidak cukup');
+        });
+    });
+
+    describe('recordUsage', () => {
+        it('increments category usage without deducting kredit for included quota', async () => {
+            const incrementSpy = jest.spyOn(service, 'incrementDailyUsage').mockResolvedValue(undefined);
+            const deductSpy = jest.spyOn(service, 'deductTokens').mockResolvedValue(undefined as any);
+
+            await service.recordUsage(mockUserId, 'VIDEO_SCRIPT', { usingKredit: false, kreditCost: 0 });
+
+            expect(incrementSpy).toHaveBeenCalledWith(mockUserId, 'VIDEO_GENERATION');
+            expect(deductSpy).not.toHaveBeenCalled();
+        });
+
+        it('increments category usage and deducts kredit for overflow usage', async () => {
+            jest.spyOn(service, 'incrementDailyUsage').mockResolvedValue(undefined);
+            const deductSpy = jest.spyOn(service, 'deductTokens').mockResolvedValue(undefined as any);
+
+            await service.recordUsage(mockUserId, 'VIDEO_SCRIPT', { usingKredit: true, kreditCost: 3 });
+
+            expect(deductSpy).toHaveBeenCalledWith(mockUserId, 3, 'VIDEO_SCRIPT (overflow kredit)');
         });
     });
 

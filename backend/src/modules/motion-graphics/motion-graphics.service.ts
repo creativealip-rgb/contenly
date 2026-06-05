@@ -249,11 +249,12 @@ export class MotionGraphicsService {
     if (!template) throw new BadRequestException(`Template '${templateId}' not found`);
     if (!this.bundlePath) throw new BadRequestException('Remotion bundle not available.');
 
+    const featureType = (options.format || 'mp4') === 'png' ? 'MOTION_GRAPHICS_PNG_RENDER' : 'MOTION_GRAPHICS_RENDER';
     const cost = (options.format || 'mp4') === 'png' ? 1 : 3;
-    const hasBalance = await this.billingService.checkBalance(userId, cost);
-    if (!hasBalance) throw new BadRequestException('Saldo kredit Anda tidak mencukupi untuk request ini.');
+    const billing = await this.billingService.ensureBilling(userId, featureType);
+    if (!billing.allowed) throw new BadRequestException(billing.reason || 'Billing limit reached');
 
-    await this.billingService.deductTokens(userId, cost, `Motion graphics render: ${templateId} (${options.format || 'mp4'})`);
+    await this.billingService.recordUsage(userId, featureType, billing);
 
     const db = this.drizzle.getDb();
     const [job] = await db.insert(renderJobs).values({
@@ -401,10 +402,10 @@ Resolution: ${width}x${height}`;
     if (!words.length) throw new BadRequestException('No words provided for caption rendering.');
 
     const CAPTION_COST = 3;
-    const hasBalance = await this.billingService.checkBalance(userId, CAPTION_COST);
-    if (!hasBalance) throw new BadRequestException('Saldo kredit Anda tidak mencukupi untuk request ini.');
+    const billing = await this.billingService.ensureBilling(userId, 'MOTION_GRAPHICS_RENDER');
+    if (!billing.allowed) throw new BadRequestException(billing.reason || 'Billing limit reached');
 
-    await this.billingService.deductTokens(userId, CAPTION_COST, `Motion graphics render: AutoCaption (${words.length} words)`);
+    await this.billingService.recordUsage(userId, 'MOTION_GRAPHICS_RENDER', billing);
 
     const db = this.drizzle.getDb();
     const [job] = await db.insert(renderJobs).values({
@@ -476,10 +477,10 @@ Resolution: ${width}x${height}`;
 
     const includeAudio = options.includeAudio !== false;
     const COMPOSE_COST = includeAudio ? 10 : 5;
-    const hasBalance = await this.billingService.checkBalance(userId, COMPOSE_COST);
-    if (!hasBalance) throw new BadRequestException('Saldo kredit Anda tidak mencukupi untuk request ini.');
+    const billing = await this.billingService.ensureBilling(userId, 'MOTION_GRAPHICS_RENDER');
+    if (!billing.allowed) throw new BadRequestException(billing.reason || 'Billing limit reached');
 
-    await this.billingService.deductTokens(userId, COMPOSE_COST, `Motion graphics compose: ${project.scenes.length} scenes`);
+    await this.billingService.recordUsage(userId, 'MOTION_GRAPHICS_RENDER', billing);
 
     const db = this.drizzle.getDb();
     const [job] = await db.insert(renderJobs).values({
@@ -776,10 +777,10 @@ Resolution: ${width}x${height}`;
     if (items.length > 10) throw new BadRequestException('Maximum 10 items per batch.');
 
     const totalCost = items.reduce((sum, item) => sum + ((item.format || 'mp4') === 'png' ? 1 : 3), 0);
-    const hasBalance = await this.billingService.checkBalance(userId, totalCost);
-    if (!hasBalance) throw new BadRequestException('Saldo kredit Anda tidak mencukupi.');
+    const billing = await this.billingService.ensureBilling(userId, 'MOTION_GRAPHICS_RENDER');
+    if (!billing.allowed) throw new BadRequestException(billing.reason || 'Billing limit reached');
 
-    await this.billingService.deductTokens(userId, totalCost, `Batch render: ${items.length} items`);
+    await this.billingService.recordUsage(userId, 'MOTION_GRAPHICS_RENDER', billing);
 
     const db = this.drizzle.getDb();
     const jobIds: string[] = [];

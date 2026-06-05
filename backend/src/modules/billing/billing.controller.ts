@@ -29,9 +29,53 @@ export class BillingController {
     }
 
     @Get('balance')
-    @ApiOperation({ summary: 'Get token balance' })
+    @ApiOperation({ summary: 'Get billing balance with per-category limits' })
     async getBalance(@CurrentUser() user: User) {
-        return this.billingService.getBalance(user.id);
+        const balance = await this.billingService.getBalance(user.id);
+        const tier = await this.billingService.getSubscriptionTier(user.id);
+        const { BILLING_TIERS, FEATURE_TO_CATEGORY } = await import('./billing.constants');
+        const tierConfig = BILLING_TIERS[tier] || BILLING_TIERS.FREE;
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const usage = await this.billingService.getMonthlyUsageByCategory(user.id, monthStart);
+        const categoryUsage: Record<string, number> = {};
+        for (const [feature, count] of Object.entries(usage)) {
+            const category = FEATURE_TO_CATEGORY[feature] || feature;
+            categoryUsage[category] = (categoryUsage[category] || 0) + count;
+        }
+        const credits = balance.balance || 0;
+        return {
+            balance: credits,
+            credits,
+            tier,
+            categories: {
+                artikel: { used: categoryUsage.ARTICLE_GENERATION || 0, limit: tierConfig.monthlyLimits.ARTICLE_GENERATION, label: 'Artikel' },
+                instagram: { used: categoryUsage.INSTAGRAM_GENERATION || 0, limit: tierConfig.monthlyLimits.INSTAGRAM_GENERATION, label: 'IG Carousel' },
+                video: { used: categoryUsage.VIDEO_GENERATION || 0, limit: tierConfig.monthlyLimits.VIDEO_GENERATION, label: 'Video' },
+                gambar: { used: categoryUsage.IMAGE_GENERATION || 0, limit: tierConfig.monthlyLimits.IMAGE_GENERATION, label: 'Gambar' },
+            },
+        };
+    }
+
+    @Get('usage-breakdown')
+    @ApiOperation({ summary: 'Get per-feature usage breakdown for current month' })
+    async getUsageBreakdown(@CurrentUser() user: User) {
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const usage = await this.billingService.getMonthlyUsageByCategory(user.id, monthStart);
+        const labels: Record<string, string> = {
+            ARTICLE_GENERATION: 'Artikel',
+            INSTAGRAM_GENERATION: 'IG Carousel',
+            VIDEO_GENERATION: 'Video',
+            IMAGE_GENERATION: 'Generate Gambar',
+            AI_CHAT: 'AI Chat',
+        };
+        return {
+            breakdown: Object.entries(usage)
+                .filter(([, count]) => count > 0)
+                .map(([feature, count]) => ({ feature, label: labels[feature] || feature, count }))
+                .sort((a, b) => b.count - a.count),
+        };
     }
 
     @Get('transactions')
@@ -137,3 +181,4 @@ export class BillingController {
         }
     }
 }
+
