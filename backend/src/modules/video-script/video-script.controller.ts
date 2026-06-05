@@ -271,7 +271,7 @@ export class VideoScriptController {
   async transcribeAudio(
     @CurrentUser() user: User,
     @Param('id') id: string,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: any,
     @Body() dto: TranscribeDto,
   ) {
     if (!file) {

@@ -81,7 +81,7 @@ export class VideoClipController {
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 1024 * 1024 * 1024 } })) // 1GB
   async uploadVideo(
     @CurrentUser() user: { id: string },
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: any,
     @Body('title') title?: string,
   ) {
     return this.videoClipService.createProjectFromFile(user.id, file, title);
