@@ -1,13 +1,10 @@
-import { TOKEN_COSTS } from "../billing/billing.constants";
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { OpenAiService } from './services/openai.service';
-import { BillingService, BillingResult } from '../billing/billing.service';
+import { BillingService } from '../billing/billing.service';
 import { GenerateContentDto, GenerateSeoDto, AiGenerateImageDto, GeneratePromptDto } from './dto';
 import { ArticlesService } from '../articles/articles.service';
 import { WordpressService } from '../wordpress/wordpress.service';
 import { BILLING_TIERS } from '../billing/billing.constants';
-import { SystemSettingsService } from '../system-settings/system-settings.service';
-import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class AiService {
@@ -18,21 +15,16 @@ export class AiService {
     private billingService: BillingService,
     private articlesService: ArticlesService,
     private wordpressService: WordpressService,
-    private settingsService: SystemSettingsService,
-  
-    private notificationsService: NotificationsService,) { }
+  ) { }
 
   async generateContent(userId: string, dto: GenerateContentDto) {
-    // Billing gate: category limit (primary) + kredit (fallback)
-    const billingArticle = await this.billingService.ensureBilling(userId, 'ARTICLE_GENERATION');
-    if (!billingArticle.allowed) {
-      throw new BadRequestException(billingArticle.reason);
+    const billing = await this.billingService.ensureBilling(userId, 'ARTICLE_GENERATION');
+    if (!billing.allowed) {
+      throw new BadRequestException(billing.reason || 'Billing limit reached');
     }
 
     const tier = await this.billingService.getSubscriptionTier(userId);
-    // Get model from settings first, fall back to tier default
-    const settingsModel = await this.settingsService.getByKey('model_text_generation');
-    const model = settingsModel?.value || BILLING_TIERS[tier]?.aiModel;
+    const model = BILLING_TIERS[tier]?.aiModel;
 
     // Generate content
     this.logger.log(`Generating content for user tier: ${tier}, mode: ${dto.mode}`);
@@ -54,11 +46,6 @@ export class AiService {
     this.logger.log(`Raw content generated, length: ${content?.length}`);
     content = this.convertMarkdownToHtml(content);
     this.logger.log(`Content converted to HTML, length: ${content?.length}`);
-    // Fix malformed HTML structure (headings inside lists)
-    content = this.sanitizeListStructure(content);
-    this.logger.log(`Content sanitized, length: ${content?.length}`);
-    
-    
 
     // Fetch and inject "Baca Juga" links if we have a site and category
     try {
@@ -81,19 +68,7 @@ export class AiService {
       this.logger.error('Failed to inject internal links', linkError);
     }
 
-    // Record usage (category count + kredit if overflow)
-    await this.billingService.recordUsage(userId, 'ARTICLE_GENERATION', billingArticle);
-    
-    // Send notification
-    try {
-      await this.notificationsService.create(
-        userId,
-        'JOB_SUCCESS',
-        'Artikel Berhasil Dibuat',
-        `Artikel "${generatedTitle || 'Artikel Baru'}" berhasil di-generate.`,
-        { articleTitle: generatedTitle, slug },
-      );
-    } catch (e) { /* notification failure should not block */ }
+    await this.billingService.recordUsage(userId, 'ARTICLE_GENERATION', billing);
 
     // Save generated content as a draft article
     let articleId = null;
@@ -239,37 +214,19 @@ export class AiService {
   }
 
   async generateImage(userId: string, dto: AiGenerateImageDto) {
-    // Billing gate: category limit (primary) + kredit (fallback)
-    const billingImage = await this.billingService.ensureBilling(userId, 'IMAGE_GENERATION');
-    if (!billingImage.allowed) {
-      throw new BadRequestException(billingImage.reason);
+    const billing = await this.billingService.ensureBilling(userId, 'IMAGE_GENERATION');
+    if (!billing.allowed) {
+      throw new BadRequestException(billing.reason || 'Billing limit reached');
     }
 
-    // Generate image with configured model
-    const imageModelSetting = await this.settingsService.getByKey('model_image_generation');
-    const imageModel = imageModelSetting?.value || undefined;
-    const imageUrl = await this.openAiService.generateImage(dto.prompt, imageModel);
+    // Generate image
+    const imageUrl = await this.openAiService.generateImage(dto.prompt);
 
-    // Record usage
-    await this.billingService.recordUsage(userId, 'IMAGE_GENERATION', billingImage);
-
-    // Send notification
-    try {
-      await this.notificationsService.create(
-        userId,
-        'JOB_SUCCESS',
-        'Gambar Berhasil Di-generate',
-        'Gambar AI berhasil di-generate.',
-        { imageUrl },
-      );
-    } catch (e) { /* notification failure should not block */ }
+    await this.billingService.recordUsage(userId, 'IMAGE_GENERATION', billing);
 
     return {
       imageUrl,
-      billing: {
-        usingKredit: billingImage.usingKredit,
-        kreditCost: billingImage.kreditCost,
-      },
+      tokensUsed: 2,
     };
   }
 
@@ -308,7 +265,7 @@ Respond ONLY with valid JSON in this exact format:
 Keep each field concise but descriptive. Use English.`;
 
     const response = await this.openAiService.getClient().chat.completions.create({
-      model: this.openAiService.getModel() || 'gpt-4o-mini',
+      model: await this.openAiService.getTextModel(),
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: dto.text },
@@ -325,20 +282,15 @@ Keep each field concise but descriptive. Use English.`;
     return { prompt };
   }
 
-  async chat(userId: string, message: string, history: Array<{ role: string; content: string }>) {
-    // Check plan — FREE users cannot use AI Chat
-    const chatLimit = await this.billingService.checkDailyChatLimit(userId, 30);
-    if (!chatLimit.allowed) {
-      const tier = await this.billingService.getSubscriptionTier(userId);
-      if (tier === 'FREE') {
-        throw new BadRequestException('AI Chat tidak tersedia di paket Free. Silakan upgrade ke paket Starter atau lebih tinggi.');
-      }
-      throw new BadRequestException(`Batas harian AI Chat (${chatLimit.limit} pesan/hari) sudah tercapai. Coba lagi besok.`);
-    }
+  async getGeneratedImageAsset(key: string) {
+    return this.openAiService.getGeneratedImageAsset(key);
+  }
 
-    // Track usage
-    await this.billingService.incrementDailyUsage(userId, 'AI_CHAT');
+  async uploadOverlayImage(imageBuffer: Buffer): Promise<string | null> {
+    return this.openAiService.uploadGeneratedImageToR2(imageBuffer);
+  }
 
+  async chat(message: string, history: Array<{ role: string; content: string }>) {
     const client = this.openAiService.getClient();
     const messages = [
       { role: 'system' as const, content: 'Kamu adalah AI assistant untuk platform Contenly — platform otomasi konten. Bantu user dengan pertanyaan tentang content creation, SEO, social media strategy, copywriting, dan penggunaan platform. Jawab dalam Bahasa Indonesia, singkat dan actionable.' },
@@ -347,71 +299,12 @@ Keep each field concise but descriptive. Use English.`;
     ];
 
     const response = await client.chat.completions.create({
-      model: this.openAiService.getModel(),
+      model: await this.openAiService.getTextModel(),
       messages,
       max_tokens: 500,
       temperature: 0.7,
     });
 
     return { reply: response.choices[0]?.message?.content || 'Maaf, saya tidak bisa menjawab saat ini.' };
-  }
-
-  /**
-   * Fix malformed HTML where headings/paragraphs are incorrectly nested inside lists.
-   * AI sometimes generates: <ul><li>...</li><h2>...</h2><li>...</li></ul>
-   * This method fixes it to: <ul><li>...</li></ul><h2>...</h2><ul><li>...</li></ul>
-   */
-  private sanitizeListStructure(html: string): string {
-    if (!html) return html;
-
-    // Fix block elements (headings, paragraphs, divs) incorrectly nested inside ul/ol
-    // AI sometimes generates: <ul><li>...</li><h2>...</h2><p>...</p><li>...</li></ul>
-    // This fixes it to: <ul><li>...</li></ul><h2>...</h2><p>...</p><ul><li>...</li></ul>
-    return html.replace(/(<(?:ul|ol)[^>]*>)([\s\S]*?)(<\/(?:ul|ol)>)/gi, (match, openTag, listContent, closeTag) => {
-      const listType = openTag.match(/<(ul|ol)/i)[1].toLowerCase();
-      const closeAll = '</' + listType + '>';
-
-      // Split content into segments: li items vs non-li items
-      const segments: Array<{ type: 'li' | 'block'; html: string }> = [];
-      const regex = /(<li[\s>][\s\S]*?<\/li>)/gi;
-      let lastIndex = 0;
-      let match2: RegExpExecArray | null;
-
-      while ((match2 = regex.exec(listContent)) !== null) {
-        if (match2.index > lastIndex) {
-          const before = listContent.substring(lastIndex, match2.index).trim();
-          if (before) segments.push({ type: 'block', html: before });
-        }
-        segments.push({ type: 'li', html: match2[0] });
-        lastIndex = regex.lastIndex;
-      }
-      if (lastIndex < listContent.length) {
-        const after = listContent.substring(lastIndex).trim();
-        if (after) segments.push({ type: 'block', html: after });
-      }
-
-      const hasNonLi = segments.some(s => s.type === 'block');
-      if (!hasNonLi) return match;
-
-      let result = '';
-      let currentLis: string[] = [];
-
-      for (const seg of segments) {
-        if (seg.type === 'li') {
-          currentLis.push(seg.html);
-        } else {
-          if (currentLis.length > 0) {
-            result += openTag + currentLis.join('') + closeAll;
-            currentLis = [];
-          }
-          result += seg.html;
-        }
-      }
-      if (currentLis.length > 0) {
-        result += openTag + currentLis.join('') + closeAll;
-      }
-
-      return result;
-    });
   }
 }

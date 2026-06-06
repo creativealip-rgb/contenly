@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { AiService } from '../../ai/ai.service';
+import { ConfigService } from '@nestjs/config';
 import sharp from 'sharp';
 import axios from 'axios';
 import * as fs from 'fs';
@@ -10,7 +12,7 @@ export class ImageTextService {
     private readonly logger = new Logger(ImageTextService.name);
     private readonly uploadsDir: string;
 
-    constructor(private configService: ConfigService) {
+    constructor(private configService: ConfigService, private aiService: AiService) {
         // Local uploads directory
         this.uploadsDir = path.resolve(process.cwd(), 'uploads', 'instagram-studio');
         if (!fs.existsSync(this.uploadsDir)) {
@@ -23,6 +25,14 @@ export class ImageTextService {
      * Downloads an image from a URL and returns it as a Buffer
      */
     private async downloadImage(url: string): Promise<Buffer> {
+        // Handle R2 asset URLs (/api/v1/ai/assets/...) by fetching directly from R2
+        if (url.startsWith('/api/v1/ai/assets/')) {
+            const key = decodeURIComponent(url.replace('/api/v1/ai/assets/', ''));
+            this.logger.log(`Fetching from R2 directly: ${key}`);
+            const asset = await this.aiService.getGeneratedImageAsset(key);
+            return asset.body;
+        }
+        // For other URLs (http/https), download via axios
         this.logger.log(`Downloading base image from: ${url}`);
         const response = await axios.get(url, { responseType: 'arraybuffer' });
         return Buffer.from(response.data as ArrayBuffer);
@@ -208,14 +218,18 @@ export class ImageTextService {
 
             this.logger.log(`Successfully generated overlayed image buffer.`);
 
-            // Save to local storage
+            // Upload to R2 storage
+            const r2Url = await this.aiService.uploadOverlayImage(resultBuffer);
+            if (r2Url) {
+                this.logger.log(`Uploaded overlay to R2: ${r2Url}`);
+                return r2Url;
+            }
+
+            // Fallback: save to local storage
             const fileName = `overlay-${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
             const filePath = path.join(this.uploadsDir, fileName);
-            
             fs.writeFileSync(filePath, resultBuffer);
-            this.logger.log(`Saved image to: ${filePath}`);
-
-            // Return public URL path
+            this.logger.log(`Saved image to local: ${filePath}`);
             return `/uploads/instagram-studio/${fileName}`;
 
         } catch (error) {

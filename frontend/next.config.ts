@@ -36,6 +36,10 @@ const nextConfig: NextConfig = {
         source: '/api/:path*',
         destination: `${(process.env.NEXT_PUBLIC_API_URL || '').replace(/\/api\/?$/, '')}/api/:path*`,
       },
+      {
+        source: '/uploads/:path*',
+        destination: `${(process.env.NEXT_PUBLIC_API_URL || '').replace(/\/api\/?$/, '')}/uploads/:path*`,
+      },
     ]
   },
 };

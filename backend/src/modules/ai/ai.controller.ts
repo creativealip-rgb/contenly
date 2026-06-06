@@ -1,4 +1,5 @@
-import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Res, UseGuards, SetMetadata } from '@nestjs/common';
+import { Public } from '../../common/decorators/public.decorator';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AiService } from './ai.service';
@@ -49,6 +50,17 @@ export class AiController {
     return this.aiService.generateImage(user.id, dto);
   }
 
+  @Public()
+  @Get('assets/:key')
+  @Throttle({ default: { limit: 120, ttl: 60000 } })
+  @ApiOperation({ summary: 'Serve generated AI image asset from R2' })
+  async getGeneratedAsset(@Param('key') key: string, @Res() res: any) {
+    const asset = await this.aiService.getGeneratedImageAsset(decodeURIComponent(key));
+    res.setHeader('Content-Type', asset.contentType);
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    return res.send(asset.body);
+  }
+
   @Post('prompt-generator')
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @ApiOperation({ summary: 'Generate prompt from everyday language' })
@@ -59,10 +71,7 @@ export class AiController {
   @Post('chat')
   @Throttle({ default: { limit: 20, ttl: 60000 } })
   @ApiOperation({ summary: 'AI chat assistant' })
-  async chat(
-    @CurrentUser() user: User,
-    @Body() dto: { message: string; history?: Array<{ role: string; content: string }> },
-  ) {
-    return this.aiService.chat(user.id, dto.message, dto.history || []);
+  async chat(@Body() dto: { message: string; history?: Array<{ role: string; content: string }> }) {
+    return this.aiService.chat(dto.message, dto.history || []);
   }
 }

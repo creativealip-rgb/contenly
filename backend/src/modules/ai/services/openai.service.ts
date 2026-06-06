@@ -1,6 +1,9 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { sql } from 'drizzle-orm';
+import { DrizzleService } from '../../../db/drizzle.service';
 
 @Injectable()
 export class OpenAiService {
@@ -8,7 +11,7 @@ export class OpenAiService {
   private nativeOpenai: OpenAI | null = null; // Used for native OpenAI (e.g., DALL-E)
   private model: string;
 
-  constructor(private configService: ConfigService) {
+  constructor(private configService: ConfigService, private drizzle: DrizzleService) {
     console.log('🔍 OpenAiService: Initializing...');
 
     // Get model preference from env (default to GPT-4o-mini)
@@ -121,6 +124,36 @@ export class OpenAiService {
     return this.model;
   }
 
+  private async getSystemSetting(key: string, fallback: string): Promise<string> {
+    try {
+      await this.drizzle.db.execute(sql`
+        CREATE TABLE IF NOT EXISTS system_settings (
+          key text PRIMARY KEY,
+          value text NOT NULL,
+          created_at timestamp NOT NULL DEFAULT now(),
+          updated_at timestamp NOT NULL DEFAULT now()
+        )
+      `);
+      const result = await this.drizzle.db.execute(sql`SELECT value FROM system_settings WHERE key = ${key} LIMIT 1`);
+      const rows = Array.isArray(result) ? result : ((result as any).rows || []);
+      return (rows[0]?.value || fallback || '').toString().trim();
+    } catch (error: any) {
+      console.warn(`[OpenAiService] Failed to read system setting ${key}:`, error?.message || error);
+      return fallback;
+    }
+  }
+
+  async getTextModel(override?: string): Promise<string> {
+    // Admin-configured model must win over plan/env defaults so the Provider & Model UI
+    // actually controls live AI calls. Per-call overrides are only fallback defaults.
+    return this.getSystemSetting('model_text_generation', override?.trim() || this.model);
+  }
+
+  private async getImageModel(): Promise<string> {
+    const fallback = this.configService.get('IMAGE_MODEL') || this.configService.get('IMAGE_GENERATION_MODEL') || 'cx/gpt-5.4-image';
+    return this.getSystemSetting('model_image_generation', fallback);
+  }
+
   async generateContent(
     originalContent: string,
     options: {
@@ -157,7 +190,7 @@ export class OpenAiService {
 5. LANGUAGE: Indonesian (Bahasa Indonesia).
 6. Return a VALID JSON object containing:
    - "title": An engaging, unique, and SEO-friendly title. It MUST be different and more catchy than any source title provided.
-   - "content": The rewrite/generated article body in HTML format. Use ONLY <h2>, <p>, <ul>, <li>, <strong>, and <a> tags. DO NOT use <h1>. Start directly with an introductory paragraph. IMPORTANT: Use <ul><li>item1</li><li>item2</li></ul> format. DO NOT nest <ul> inside <li> or use multiple nested <ul> tags. CRITICAL: ALWAYS close </ul> BEFORE starting a new <h2> heading. NEVER put <h2> or <p> tags inside <ul>. Each list must be self-contained: <ul><li>...</li></ul> then <h2>...
+   - "content": The rewrite/generated article body in HTML format. Use ONLY <h2>, <p>, <ul>, <li>, <strong>, and <a> tags. DO NOT use <h1>. Start directly with an introductory paragraph. IMPORTANT: Use <ul><li>item1</li><li>item2</li></ul> format. DO NOT nest <ul> inside <li> or use multiple nested <ul> tags.
    - "metaDescription": A compelling SEO meta description (150-160 characters).
    - "slug": A URL-friendly slug based on the new title.
 7. CRITICAL: DO NOT use Markdown formatting.
@@ -171,10 +204,11 @@ export class OpenAiService {
     }
 
     try {
-      console.log(`[OpenAiService] Generating content with model: ${options.model || this.model}`);
+      const selectedModel = await this.getTextModel(options.model);
+      console.log(`[OpenAiService] Generating content with model: ${selectedModel}`);
       
       const response = await this.openai.chat.completions.create({
-        model: options.model || this.model,
+        model: selectedModel,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
@@ -185,8 +219,9 @@ export class OpenAiService {
       });
 
       // Sanitize JSON - remove control characters that break parsing
-      // Robustly parse JSON (handles markdown fences from ag/ models)
-      const result = this.parseJsonResponse(response.choices[0]?.message?.content);
+      let rawContent = response.choices[0]?.message?.content || '{}';
+      rawContent = rawContent.replace(/[ --]/g, ' ');
+      const result = JSON.parse(rawContent);
 
       if (isCustomMode) {
         return result;
@@ -247,7 +282,7 @@ Return JSON with:
 - slug: URL-friendly slug`;
 
     const response = await this.openai.chat.completions.create({
-      model: model || this.model,
+      model: await this.getTextModel(model),
       messages: [
         {
           role: 'system',
@@ -259,7 +294,7 @@ Return JSON with:
       response_format: { type: 'json_object' },
     });
 
-    const result = this.parseJsonResponse(response.choices[0]?.message?.content);
+    const result = JSON.parse(response.choices[0]?.message?.content || '{}');
     return {
       metaTitle: result.metaTitle || title,
       metaDescription: result.metaDescription || content.substring(0, 160),
@@ -267,10 +302,170 @@ Return JSON with:
     };
   }
 
-  async generateImage(prompt: string, overrideModel?: string): Promise<string> {
-    const codexApiKey = this.configService.get('CODEX_API_KEY') || 'sk-752...998e';
-    const codexBaseUrl = this.configService.get('CODEX_BASE_URL') || 'https://9router-168-144-37-19.sslip.io';
-    const imageModel = overrideModel || this.configService.get('IMAGE_GENERATION_MODEL') || 'cx/gpt-5.5';
+  private async getImageApiKey(): Promise<string> {
+    const key = await this.getSystemSetting(
+      'image_api_key',
+      this.configService.get('IMAGE_API_KEY') || this.configService.get('CODEX_API_KEY') || '',
+    );
+    if (!key) {
+      throw new Error('Image API key is not configured. Set system setting image_api_key or env IMAGE_API_KEY/CODEX_API_KEY.');
+    }
+    return key;
+  }
+
+  private async getImageBaseUrl(): Promise<string> {
+    return this.getSystemSetting(
+      'image_base_url',
+      this.configService.get('IMAGE_BASE_URL') || this.configService.get('CODEX_BASE_URL') || 'https://9router-168-144-37-19.sslip.io',
+    );
+  }
+
+  private buildImageRequestBody(model: string, prompt: string): Record<string, any> {
+    const normalizedModel = model.toLowerCase();
+
+    if (normalizedModel.includes("gpt-5.5-image") || normalizedModel.includes("image")) {
+      return {
+        model,
+        prompt,
+        n: 1,
+        size: "auto",
+        quality: "auto",
+        background: "auto",
+        image_detail: "high",
+        output_format: "png"
+      };
+    }
+
+    // chenzk gpt-image-2 rejects Codex/OpenAI-style auto/background/image_detail/output_format params.
+    if (normalizedModel === 'gpt-image-2' || normalizedModel.endsWith('/gpt-image-2')) {
+      return {
+        model,
+        prompt,
+        n: 1,
+        size: '1080x1350', // IG portrait 4:5
+      };
+    }
+
+    return {
+      model,
+      prompt,
+      n: 1,
+      size: 'auto',
+      quality: 'auto',
+      background: 'auto',
+      image_detail: 'low',
+      output_format: 'png',
+    };
+  }
+
+  private async getR2Config(): Promise<{
+    bucket: string;
+    endpoint: string;
+    accessKeyId: string;
+    secretAccessKey: string;
+    publicBaseUrl?: string;
+  } | null> {
+    const accountId = await this.getSystemSetting(
+      'r2_account_id',
+      this.configService.get('R2_ACCOUNT_ID') || '',
+    );
+    const bucket = await this.getSystemSetting(
+      'r2_bucket_name',
+      this.configService.get('R2_BUCKET_NAME') || '',
+    );
+    const endpoint = await this.getSystemSetting(
+      'r2_endpoint',
+      this.configService.get('R2_ENDPOINT') || (accountId ? `https://${accountId}.r2.cloudflarestorage.com` : ''),
+    );
+    const accessKeyId = await this.getSystemSetting(
+      'r2_access_key_id',
+      this.configService.get('R2_ACCESS_KEY_ID') || '',
+    );
+    const secretAccessKey = await this.getSystemSetting(
+      'r2_secret_access_key',
+      this.configService.get('R2_SECRET_ACCESS_KEY') || '',
+    );
+    const publicBaseUrl = await this.getSystemSetting(
+      'r2_public_base_url',
+      this.configService.get('R2_PUBLIC_BASE_URL') || '',
+    );
+
+    if (!bucket || !endpoint || !accessKeyId || !secretAccessKey) {
+      return null;
+    }
+
+    return { bucket, endpoint, accessKeyId, secretAccessKey, publicBaseUrl: publicBaseUrl || undefined };
+  }
+
+  private getR2Client(config: NonNullable<Awaited<ReturnType<OpenAiService['getR2Config']>>>): S3Client {
+    return new S3Client({
+      region: 'auto',
+      endpoint: config.endpoint,
+      credentials: {
+        accessKeyId: config.accessKeyId,
+        secretAccessKey: config.secretAccessKey,
+      },
+    });
+  }
+
+  private imageBufferFromDataUrl(dataUrl: string): Buffer | null {
+    const match = dataUrl.match(/^data:image\/([a-zA-Z0-9.+-]+);base64,(.+)$/);
+    if (!match) return null;
+    return Buffer.from(match[2], 'base64');
+  }
+
+  async uploadGeneratedImageToR2(imageBuffer: Buffer): Promise<string | null> {
+    const config = await this.getR2Config();
+    if (!config) return null;
+
+    const key = `instagram-studio/${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}.png`;
+    const client = this.getR2Client(config);
+    await client.send(new PutObjectCommand({
+      Bucket: config.bucket,
+      Key: key,
+      Body: imageBuffer,
+      ContentType: 'image/png',
+      CacheControl: 'public, max-age=31536000, immutable',
+    }));
+
+    if (config.publicBaseUrl) {
+      return `${config.publicBaseUrl.replace(/\/$/, '')}/${key}`;
+    }
+
+    return `/api/v1/ai/assets/${encodeURIComponent(key)}`;
+  }
+
+  async getGeneratedImageAsset(key: string): Promise<{ body: Buffer; contentType: string }> {
+    if (!key.startsWith('instagram-studio/')) {
+      throw new Error('Invalid asset key');
+    }
+
+    const config = await this.getR2Config();
+    if (!config) {
+      throw new Error('R2 is not configured');
+    }
+
+    const client = this.getR2Client(config);
+    const object = await client.send(new GetObjectCommand({
+      Bucket: config.bucket,
+      Key: key,
+    }));
+
+    const bytes = await object.Body?.transformToByteArray();
+    if (!bytes) {
+      throw new Error('R2 object body is empty');
+    }
+
+    return {
+      body: Buffer.from(bytes),
+      contentType: object.ContentType || 'image/png',
+    };
+  }
+
+  async generateImage(prompt: string): Promise<string> {
+    const codexApiKey = await this.getImageApiKey();
+    const codexBaseUrl = await this.getImageBaseUrl();
+    const imageModel = await this.getImageModel();
 
     // Enhance short prompts - Codex requires descriptive prompts (min ~40 chars)
     let enhancedPrompt = prompt;
@@ -290,39 +485,11 @@ Return JSON with:
           'Accept': 'text/event-stream',
           'User-Agent': 'curl/8.5.0',
         },
-        body: JSON.stringify({
-          model: imageModel,
-          prompt: enhancedPrompt,
-          n: 1,
-          size: 'auto',
-          quality: 'auto',
-          background: 'auto',
-          image_detail: 'low',
-          output_format: 'png',
-        }),
+        body: JSON.stringify(this.buildImageRequestBody(imageModel, enhancedPrompt)),
         signal: AbortSignal.timeout(180000),
       });
 
-      if (!response.ok) {
-        const errBody = await response.text().catch(() => '');
-        throw new HttpException(
-          {
-            statusCode:
-              response.status === 429
-                ? HttpStatus.TOO_MANY_REQUESTS
-                : HttpStatus.BAD_GATEWAY,
-            message:
-              response.status === 429
-                ? 'Image generation provider is rate-limited or out of quota. Please try again later.'
-                : `Image generation failed (provider responded ${response.status}).`,
-            providerStatus: response.status,
-            providerDetail: errBody.slice(0, 300),
-          },
-          response.status === 429
-            ? HttpStatus.TOO_MANY_REQUESTS
-            : HttpStatus.BAD_GATEWAY,
-        );
-      }
+      if (!response.ok) throw new Error(`Codex API ${response.status}: ${response.statusText}`);
 
       // Parse SSE stream to extract image data
       const reader = response.body.getReader();
@@ -331,6 +498,13 @@ Return JSON with:
       let imageData: string | null = null;
       let imageUrl: string | null = null;
 
+      const applyParsedImage = (parsed: any) => {
+        if (parsed.data?.[0]?.b64_json) imageData = parsed.data[0].b64_json;
+        if (parsed.data?.[0]?.url) imageUrl = parsed.data[0].url;
+        if (parsed.b64_json && !imageData) imageData = parsed.b64_json;
+        if (parsed.url && !imageUrl) imageUrl = parsed.url;
+      };
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -338,34 +512,40 @@ Return JSON with:
         const lines = buffer.split('\n');
         buffer = lines.pop() || '';
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const parsed = JSON.parse(line.substring(6));
-              
-              // Handle both formats: {data: [{b64_json: "..."}]} and {b64_json: "...", index: 0}
-              if (parsed.data?.[0]?.b64_json) imageData = parsed.data[0].b64_json;
-              if (parsed.data?.[0]?.url) imageUrl = parsed.data[0].url;
-              if (parsed.b64_json && !imageData) imageData = parsed.b64_json;
-            } catch {}
-          }
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          try {
+            const payload = trimmed.startsWith('data: ') ? trimmed.substring(6) : trimmed;
+            applyParsedImage(JSON.parse(payload));
+          } catch {}
         }
       }
 
-      if (imageUrl) return imageUrl;
-      if (imageData) return `data:image/png;base64,${imageData}`;
+      if (buffer.trim()) {
+        try {
+          const payload = buffer.trim().startsWith('data: ') ? buffer.trim().substring(6) : buffer.trim();
+          applyParsedImage(JSON.parse(payload));
+        } catch {}
+      }
+
+      if (imageUrl) {
+        const imageBuffer = this.imageBufferFromDataUrl(imageUrl);
+        if (imageBuffer) {
+          const r2Url = await this.uploadGeneratedImageToR2(imageBuffer);
+          if (r2Url) return r2Url;
+        }
+        return imageUrl;
+      }
+      if (imageData) {
+        const imageBuffer = Buffer.from(imageData, 'base64');
+        const r2Url = await this.uploadGeneratedImageToR2(imageBuffer);
+        if (r2Url) return r2Url;
+        return `data:image/png;base64,${imageData}`;
+      }
       throw new Error('No image returned from Codex');
     } catch (error: any) {
-      console.error(`[generateImage] Image generation failed: ${error.message}`);
-      // Already-typed HTTP errors (e.g. 429/502 from the provider) pass through
-      // unchanged so the client gets the right status + message, not a generic 500.
-      if (error instanceof HttpException) throw error;
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.BAD_GATEWAY,
-          message: `Image generation failed: ${error.message}`,
-        },
-        HttpStatus.BAD_GATEWAY,
-      );
+      console.error(`[generateImage] Codex failed: ${error.message}`);
+      throw error;
     }
   }
 
@@ -397,7 +577,7 @@ Return JSON with:
         response_format: { type: 'json_object' },
       });
 
-      return this.parseJsonResponse(response.choices[0]?.message?.content);
+      return JSON.parse(response.choices[0]?.message?.content || '{}');
     } catch (error) {
       console.error('[OpenAiService] Trend analysis failed:', error);
       return {
@@ -458,7 +638,9 @@ Return JSON with:
       });
 
       // Sanitize JSON - remove control characters that break parsing
-      const result = this.parseJsonResponse(response.choices[0]?.message?.content);
+      let rawContent = response.choices[0]?.message?.content || '{}';
+      rawContent = rawContent.replace(/[ --]/g, ' ');
+      const result = JSON.parse(rawContent);
       console.log(`[OpenAiService] Vision layout analysis complete: ${JSON.stringify(result)}`);
 
       return {
@@ -476,45 +658,6 @@ Return JSON with:
         headerText: text, // Fallback to entire text as header
         bodyText: '',
       };
-    }
-  }
-
-  /**
-   * Robustly extract a JSON object from an LLM response.
-   * Handles models (e.g. ag/claude, ag/gemini) that wrap JSON in markdown
-   * code fences (```json ... ```), add prose around it, or emit control chars.
-   */
-  private parseJsonResponse(raw: string | null | undefined): any {
-    if (!raw) return {};
-    let text = String(raw).trim();
-
-    // 1. Strip markdown code fences
-    const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-    if (fenceMatch) {
-      text = fenceMatch[1].trim();
-    }
-
-    // 2. If wrapped in prose, grab the outermost { ... } block
-    if (!text.startsWith('{')) {
-      const first = text.indexOf('{');
-      const last = text.lastIndexOf('}');
-      if (first !== -1 && last !== -1 && last > first) {
-        text = text.slice(first, last + 1);
-      }
-    }
-
-    // 3. Remove control characters that break JSON.parse
-    text = text.replace(/[\u0000-\u001f]/g, ' ');
-
-    try {
-      return JSON.parse(text);
-    } catch {
-      try {
-        return JSON.parse(String(raw).replace(/[\u0000-\u001f]/g, ' '));
-      } catch {
-        console.error('[OpenAiService] parseJsonResponse failed, returning {}. Raw head:', String(raw).slice(0, 120));
-        return {};
-      }
     }
   }
 
@@ -562,7 +705,7 @@ Return JSON with:
     // Use Codex endpoint (same as generateImage)
     const imageBaseUrl = (this.configService.get('CODEX_BASE_URL') || 'https://9router-168-144-37-19.sslip.io').replace(/\/+$/, '');
     const imageApiKey = (this.configService.get('CODEX_API_KEY') || 'sk-752b90456c373287-7ndp1b-1930998e').trim();
-    const imageModel = this.configService.get('IMAGE_GENERATION_MODEL') || 'cx/gpt-5.5';
+    const imageModel = await this.getImageModel();
 
     const response = await fetch(`${imageBaseUrl}/v1/images/generations`, {
       method: 'POST',
@@ -584,24 +727,8 @@ Return JSON with:
     });
 
     if (!response.ok) {
-      const err = await response.text().catch(() => '');
-      throw new HttpException(
-        {
-          statusCode:
-            response.status === 429
-              ? HttpStatus.TOO_MANY_REQUESTS
-              : HttpStatus.BAD_GATEWAY,
-          message:
-            response.status === 429
-              ? 'Thumbnail generation provider is rate-limited or out of quota. Please try again later.'
-              : `Thumbnail generation failed (provider responded ${response.status}).`,
-          providerStatus: response.status,
-          providerDetail: err.slice(0, 300),
-        },
-        response.status === 429
-          ? HttpStatus.TOO_MANY_REQUESTS
-          : HttpStatus.BAD_GATEWAY,
-      );
+      const err = await response.text();
+      throw new Error(`Image generation failed: ${err}`);
     }
 
     // Handle SSE streaming response from Codex

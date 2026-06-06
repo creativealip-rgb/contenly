@@ -88,12 +88,20 @@ export class InstagramStudioController {
   }
 
   @Post('projects/:id/generate-all')
-  @ApiOperation({ summary: 'Generate all slides - images + text overlay' })
+  @ApiOperation({ summary: 'Generate all slides - images + text overlay (async)' })
   async generateAll(
     @CurrentUser() user: User,
     @Param('id') id: string,
   ) {
     return this.service.generateAll(user.id, id);
+  }
+
+  @Get('projects/:id/generate-all/status')
+  @ApiOperation({ summary: 'Poll batch generate status' })
+  async getGenerateAllStatus(
+    @Query('jobId') jobId: string,
+  ) {
+    return this.service.getBatchStatus(jobId);
   }
 
   @Post('slides/:id/generate-image')

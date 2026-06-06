@@ -37,6 +37,17 @@ import {
 export class InstagramStudioService {
     private readonly logger = new Logger(InstagramStudioService.name);
 
+    // In-memory batch job tracker
+    private batchJobs = new Map<string, {
+        status: 'processing' | 'completed' | 'failed';
+        totalSlides: number;
+        completedSlides: number;
+        results: any[];
+        startedAt: number;
+        completedAt?: number;
+        project?: any;
+    }>();
+
     constructor(
         private drizzle: DrizzleService,
         private billingService: BillingService,
@@ -643,52 +654,75 @@ export class InstagramStudioService {
             throw new BadRequestException('No slides to generate');
         }
 
-        // Check balance: 2 tokens per image (text integrated into AI prompt, no separate overlay)
+        const jobId = `batch-${projectId}-${Date.now()}`;
+        const job = {
+            status: 'processing' as const,
+            totalSlides: project.slides.length,
+            completedSlides: 0,
+            results: [] as any[],
+            startedAt: Date.now(),
+        };
+        this.batchJobs.set(jobId, job);
 
-        const results: any[] = [];
+        // Fire-and-forget: process in background
+        this.processGenerateAll(jobId, userId, projectId, project).catch(err => {
+            this.logger.error(`[GenerateAll] Background job ${jobId} failed: ${err.message}`);
+            const j = this.batchJobs.get(jobId);
+            if (j) { j.status = 'failed'; j.completedAt = Date.now(); }
+        });
+
+        return {
+            success: true,
+            jobId,
+            message: `Processing ${project.slides.length} slides in background`,
+            totalSlides: project.slides.length,
+        };
+    }
+
+    private async processGenerateAll(jobId: string, userId: string, projectId: string, project: any) {
+        const job = this.batchJobs.get(jobId)!;
         let tokensUsed = 0;
 
         for (const slide of project.slides) {
             try {
-                // Check billing PER SLIDE to enforce limits correctly
                 const billingCheck = await this.billingService.ensureBilling(userId, 'SLIDE_IMAGE');
                 if (!billingCheck.allowed) {
-                    results.push({ slideId: slide.id, slideNumber: slide.slideNumber, success: false, error: billingCheck.reason });
+                    job.results.push({ slideId: slide.id, slideNumber: slide.slideNumber, success: false, error: billingCheck.reason });
+                    job.completedSlides++;
                     continue;
                 }
-                let currentSlide: any = { ...slide };
 
-                // Build prompt with text content integrated into the image design
-                const textContent = currentSlide.textContent || '';
-                const visualPrompt = currentSlide.visualPrompt || '';
+                const textContent = slide.textContent || '';
+                const visualPrompt = slide.visualPrompt || '';
                 const style = project.globalStyle || 'Modern Minimalist';
 
                 const finalPrompt = textContent
                     ? `${visualPrompt}. Style: ${style}. The image must prominently feature the following text as an integral part of the design layout: \"${textContent}\". The text should be large, readable, and elegantly integrated into the visual composition with proper typography hierarchy.`
                     : `${visualPrompt}. Style: ${style}`;
 
-                // Generate image with text baked into the AI-generated design
                 const rawImageUrl = await this.openAiService.generateImage(finalPrompt);
                 const imageUrl = this.saveBase64ToFile(rawImageUrl);
 
                 await this.drizzle.db
                     .update(instagramSlide)
                     .set({ imageUrl })
-                    .where(eq(instagramSlide.id, currentSlide.id));
+                    .where(eq(instagramSlide.id, slide.id));
 
                 tokensUsed += 2;
                 await this.billingService.recordUsage(userId, 'SLIDE_IMAGE', billingCheck);
 
-                results.push({ slideNumber: slide.slideNumber, status: 'success' });
+                job.results.push({ slideNumber: slide.slideNumber, status: 'success' });
             } catch (error: any) {
-                this.logger.error(`[GenerateAll] Failed for slide ${slide.slideNumber}: ${error.message}`);
-                results.push({ slideNumber: slide.slideNumber, status: 'failed', error: error.message });
+                this.logger.error(`[GenerateAll] Slide ${slide.slideNumber} failed: ${error.message}`);
+                job.results.push({ slideNumber: slide.slideNumber, status: 'failed', error: error.message });
             }
+            job.completedSlides++;
         }
 
-        const successCount = results.filter(r => r.status === 'success').length;
-        
-        // Send notification
+        job.status = 'completed';
+        job.completedAt = Date.now();
+
+        const successCount = job.results.filter(r => r.status === 'success').length;
         try {
             await this.notificationsService.create(
                 userId,
@@ -699,13 +733,14 @@ export class InstagramStudioService {
             );
         } catch (e) { /* notification failure should not block */ }
 
-        return {
-            success: true,
-            message: `Generated ${successCount} of ${project.slides.length} slides`,
-            tokensUsed,
-            results,
-            project: await this.getProject(userId, projectId),
-        };
+        // Auto-cleanup after 30 minutes
+        setTimeout(() => this.batchJobs.delete(jobId), 30 * 60 * 1000);
+    }
+
+    getBatchStatus(jobId: string) {
+        const job = this.batchJobs.get(jobId);
+        if (!job) throw new NotFoundException('Batch job not found');
+        return job;
     }
 
     async applyStyleToAll(

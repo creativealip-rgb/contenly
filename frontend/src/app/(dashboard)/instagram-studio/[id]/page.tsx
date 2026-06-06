@@ -89,19 +89,47 @@ export default function InstagramStudioEditorPage() {
   const handleGenerateAll = async () => {
     if (!project?.slides?.length) return
     setIsGeneratingAll(true)
-    toast.info(`Membuat ${project.slides.length} gambar... Ini mungkin butuh beberapa menit.`)
+    const totalSlides = project.slides.length
+    toast.info(`Membuat ${totalSlides} gambar di background...`)
     try {
       const response = await fetch(`${API_BASE_URL}/instagram-studio/projects/${projectId}/generate-all`, { method: 'POST', credentials: 'include' })
       const data = await response.json()
-      if (response.ok) {
-        const successCount = data.results?.filter((r: any) => r.status === 'success').length || 0
-        toast.success(data.message || `${successCount} gambar berhasil dibuat!`)
-        await fetchProject()
-      } else {
-        toast.error(data.message || 'Gagal generate semua slide')
+      if (!response.ok) {
+        toast.error(data.message || 'Gagal memulai generate')
+        setIsGeneratingAll(false)
+        return
       }
-    } catch (error) { console.error('Failed to generate all:', error); toast.error('Terjadi kesalahan — cek koneksi Anda') }
-    finally { setIsGeneratingAll(false) }
+      const { jobId } = data
+      toast.success(`Proses dimulai! ${totalSlides} slide sedang diproses.`)
+
+      // Poll for status every 5 seconds
+      const pollInterval = setInterval(async () => {
+        try {
+          const statusRes = await fetch(`${API_BASE_URL}/instagram-studio/projects/${projectId}/generate-all/status?jobId=${jobId}`, { credentials: 'include' })
+          const statusData = await statusRes.json()
+          if (statusData.status === 'completed') {
+            clearInterval(pollInterval)
+            const successCount = statusData.results?.filter((r: any) => r.status === 'success').length || 0
+            toast.success(`Selesai! ${successCount} dari ${totalSlides} gambar berhasil.`)
+            await fetchProject()
+            setIsGeneratingAll(false)
+          } else if (statusData.status === 'failed') {
+            clearInterval(pollInterval)
+            toast.error('Proses generate gagal')
+            setIsGeneratingAll(false)
+          } else {
+            // Update progress
+            const pct = Math.round((statusData.completedSlides / statusData.totalSlides) * 100)
+            toast.info(`Progress: ${statusData.completedSlides}/${statusData.totalSlides} slide (${pct}%)`, { duration: 3000 })
+          }
+        } catch (pollError) {
+          console.error('Poll error:', pollError)
+        }
+      }, 5000)
+
+      // Safety timeout: stop polling after 15 minutes
+      setTimeout(() => { clearInterval(pollInterval); setIsGeneratingAll(false) }, 15 * 60 * 1000)
+    } catch (error) { console.error('Failed to generate all:', error); toast.error('Terjadi kesalahan — cek koneksi Anda'); setIsGeneratingAll(false) }
   }
 
   const handleAddSlide = async () => {
