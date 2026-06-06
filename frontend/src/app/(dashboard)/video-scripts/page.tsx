@@ -18,6 +18,7 @@ import {
   Wand2,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { useAuthStore } from '@/stores'
 import {
   Dialog,
   DialogContent,
@@ -51,6 +52,22 @@ const formatDuration = (sec?: number) => {
 }
 
 export default function VideoScriptsPage() {
+  const { user } = useAuthStore()
+  const isSuperAdmin = user?.role === 'super_admin'
+
+  if (!isSuperAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+        <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center mb-6">
+          <span className="text-4xl">{'\u{1F6A7}'}</span>
+        </div>
+        <h1 className="text-2xl font-bold mb-2">Coming Soon</h1>
+        <p className="text-muted-foreground max-w-md">
+          Fitur ini sedang dalam pengembangan dan akan segera hadir. Stay tuned!
+        </p>
+      </div>
+    )
+  }
   const router = useRouter()
   const confirm = useConfirm()
   const { data: projects = [], isLoading, refetch } = useVideoProjects()

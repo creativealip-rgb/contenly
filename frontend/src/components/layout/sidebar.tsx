@@ -151,6 +151,7 @@ interface NavItem {
     icon: React.ReactNode
     role?: string
     tourId?: string
+    badge?: string
 }
 
 interface NavGroup {
@@ -175,8 +176,8 @@ const navGroups: NavGroup[] = [
         items: [
             { href: '/content-lab', label: 'Content Lab', icon: icons.contentLab, tourId: 'content-lab' },
             { href: '/instagram-studio', label: 'Instagram Studio', icon: icons.instagram, tourId: 'instagram-studio' },
-            { href: '/video-scripts', label: 'Video Scripts', icon: icons.video, tourId: 'video-scripts' },
-            { href: '/video-clips', label: 'Video Clips', icon: icons.video },
+            { href: '/video-scripts', label: 'Video Scripts', icon: icons.video, role: 'super_admin', badge: 'Soon' },
+            { href: '/video-clips', label: 'Video Clips', icon: icons.video, role: 'super_admin', badge: 'Soon' },
             { href: '/motion-graphics', label: 'Motion Graphics', icon: icons.video },
             { href: '/articles', label: 'Artikel', icon: icons.articles },
             { href: '/calendar', label: 'Kalender', icon: icons.calendar, tourId: 'calendar' },
@@ -239,15 +240,15 @@ export function Sidebar() {
     const isAdmin = _role === 'admin' || _role === 'super_admin'
 
     const renderNavItem = (item: NavItem, isSubItem: boolean = false) => {
-        if (item.role === 'super_admin' && _role !== 'super_admin') {
+        if (item.role === 'super_admin' && _role !== 'super_admin' && !item.badge) {
             return null
         }
 
         const isViewBoost = item.href === '/view-boost'
-        const isDisabled = isViewBoost && !isAdmin
+        const isDisabled = (isViewBoost && !isAdmin) || (item.role === 'super_admin' && _role !== 'super_admin')
         const isActive = !isDisabled && (pathname === item.href || pathname.startsWith(item.href + '/'))
 
-        if (isDisabled) {
+        if (isDisabled && !item.badge) {
             return null
         }
 
@@ -258,15 +259,18 @@ export function Sidebar() {
                 whileTap={isSubItem ? {} : { scale: 0.98 }}
             >
                 <Link
-                    href={item.href}
-                    onClick={handleMobileLinkClick}
+                    href={isDisabled ? '#' : item.href}
+                    onClick={isDisabled ? (e) => e.preventDefault() : handleMobileLinkClick}
                     data-tour={item.tourId}
                     aria-current={isActive ? "page" : undefined}
+                    aria-disabled={isDisabled}
                     className={cn(
-                        "group flex items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-bold transition-all duration-300 active:scale-[0.98]",
-                        isActive
-                            ? "bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none"
-                            : "text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-slate-800/80",
+                        "group flex items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-bold transition-all duration-300",
+                        isDisabled
+                            ? "text-slate-300 dark:text-slate-600 cursor-not-allowed opacity-60"
+                            : isActive
+                            ? "bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none active:scale-[0.98]"
+                            : "text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-slate-800/80 active:scale-[0.98]",
                         isSubItem && "ml-4 py-2.5"
                     )}
                 >
@@ -278,12 +282,19 @@ export function Sidebar() {
                     </div>
                     <span className={cn(
                         "truncate transition-all duration-500",
-                        isCollapsed ? "md:w-0 md:opacity-0" : "md:w-auto md:opacity-100"
+                        isCollapsed ? "md:w-0 md:opacity-0" : "md:w-auto md:opacity-100",
+                        isDisabled && "opacity-50"
                     )}>
                         {item.label}
                     </span>
 
-                    {isActive && !isCollapsed && (
+                    {item.badge && !isCollapsed && (
+                        <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
+                            {item.badge}
+                        </span>
+                    )}
+
+                    {isActive && !isCollapsed && !item.badge && (
                         <motion.div
                             layoutId="active-pill"
                             className="ml-auto h-1.5 w-1.5 rounded-full bg-white"
