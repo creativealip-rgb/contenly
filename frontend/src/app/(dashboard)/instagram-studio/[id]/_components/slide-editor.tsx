@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
 import {
   ChevronLeft,
   ChevronRight,
@@ -14,6 +15,7 @@ import {
   MoveRight,
   RefreshCw,
   Trash2,
+  Type,
 } from 'lucide-react'
 import type { Slide } from './types'
 
@@ -26,8 +28,10 @@ interface SlideEditorProps {
   hasUnsavedChanges: boolean
   setHasUnsavedChanges: (v: boolean) => void
   isGeneratingImage: string | null
+  isGeneratingText: string | null
   onUpdateSlide: (slideId: string, updates: Partial<Slide>) => void
   onGenerateImage: (slideId: string) => void
+  onGenerateText: (slideId: string) => void
   onReorderSlide: (slideId: string, direction: 'left' | 'right') => void
   onDeleteSlide: (slideId: string) => void
   onNavigate: (index: number) => void
@@ -42,8 +46,10 @@ export function SlideEditor({
   hasUnsavedChanges,
   setHasUnsavedChanges,
   isGeneratingImage,
+  isGeneratingText,
   onUpdateSlide,
   onGenerateImage,
+  onGenerateText,
   onReorderSlide,
   onDeleteSlide,
   onNavigate,
@@ -96,9 +102,12 @@ export function SlideEditor({
                 <p className="text-xs text-muted-foreground flex-1">Pilih warna untuk menggunakan latar belakang solid daripada gambar AI.</p>
               </div>
             </div>
-            <div className="pt-4 border-t border-border mt-4">
+            <div className="flex flex-col gap-3 pt-4 border-t border-border mt-4">
               <Button onClick={() => onGenerateImage(currentSlide.id)} className="w-full" variant="outline">
                 {isGeneratingImage === currentSlide.id ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" />Membuat Gambar...</>) : currentSlide.imageUrl ? (<><RefreshCw className="h-4 w-4 mr-2" />Buat Ulang Gambar (2 Token)</>) : (<><ImageIcon className="h-4 w-4 mr-2" />Buat Gambar Dasar (2 Token)</>)}
+              </Button>
+              <Button onClick={() => onGenerateText(currentSlide.id)} disabled={!currentSlide.imageUrl || isGeneratingText === currentSlide.id} className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700">
+                {isGeneratingText === currentSlide.id ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" />Menambahkan Teks...</>) : (<><Type className="h-4 w-4 mr-2" />Bakar Teks ke Gambar (1 Token) <Badge className="ml-2 bg-yellow-500 hover:bg-yellow-600 text-white border-0 text-[10px] px-1 py-0 h-4 rounded-full">BARU</Badge></>)}
               </Button>
             </div>
           </>
@@ -107,4 +116,3 @@ export function SlideEditor({
     </Card>
   )
 }
-// force rebuild Thu May 28 15:27:45 UTC 2026

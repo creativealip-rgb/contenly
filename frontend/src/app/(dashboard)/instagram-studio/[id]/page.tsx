@@ -24,6 +24,7 @@ export default function InstagramStudioEditorPage() {
   const [isGeneratingImage, setIsGeneratingImage] = useState<string | null>(null)
   const [isExporting, setIsExporting] = useState(false)
   const [isGeneratingAll, setIsGeneratingAll] = useState(false)
+  const [isGeneratingText, setIsGeneratingText] = useState<string | null>(null)
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
   const [editedContent, setEditedContent] = useState('')
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
@@ -132,6 +133,17 @@ export default function InstagramStudioEditorPage() {
     } catch (error) { console.error('Failed to generate all:', error); toast.error('Terjadi kesalahan — cek koneksi Anda'); setIsGeneratingAll(false) }
   }
 
+  const handleGenerateText = async (slideId: string) => {
+    setIsGeneratingText(slideId)
+    try {
+      const response = await fetch(`${API_BASE_URL}/instagram-studio/slides/${slideId}/generate-text`, { method: 'POST', credentials: 'include' })
+      const data = await response.json()
+      if (response.ok && data.success) { toast.success('Text overlay berhasil!'); await fetchProject() }
+      else { toast.error(data.message || 'Gagal generate text overlay') }
+    } catch (error) { console.error('Failed to generate text:', error); toast.error('Terjadi kesalahan') }
+    finally { setIsGeneratingText(null) }
+  }
+
   const handleAddSlide = async () => {
     try {
       const newSlideNumber = (project?.slides?.length || 0) + 1
@@ -216,6 +228,7 @@ export default function InstagramStudioEditorPage() {
               hasUnsavedChanges={hasUnsavedChanges} setHasUnsavedChanges={setHasUnsavedChanges}
               isGeneratingImage={isGeneratingImage}
               onUpdateSlide={handleUpdateSlide} onGenerateImage={handleGenerateImage}
+              isGeneratingText={isGeneratingText} onGenerateText={handleGenerateText}
               onReorderSlide={handleReorderSlide} onDeleteSlide={handleDeleteSlide} onNavigate={setCurrentSlideIndex}
             />
             <div className="flex flex-col sm:flex-row gap-2">
