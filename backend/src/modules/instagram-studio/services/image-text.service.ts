@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AiService } from '../../ai/ai.service';
-import { ConfigService } from '@nestjs/config';
 import sharp from 'sharp';
 import axios from 'axios';
 import * as fs from 'fs';
