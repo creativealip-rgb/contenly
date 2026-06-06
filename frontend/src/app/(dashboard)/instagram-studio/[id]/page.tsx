@@ -230,11 +230,9 @@ export default function InstagramStudioEditorPage() {
               onUpdateSlide={handleUpdateSlide} onGenerateImage={handleGenerateImage}
               isGeneratingText={isGeneratingText} onGenerateText={handleGenerateText}
               onReorderSlide={handleReorderSlide} onDeleteSlide={handleDeleteSlide} onNavigate={setCurrentSlideIndex}
+              onGenerateAll={handleGenerateAll} isGeneratingAll={isGeneratingAll}
             />
             <div className="flex flex-col sm:flex-row gap-2">
-              <Button variant="outline" onClick={handleGenerateAll} disabled={isGeneratingAll || !project?.slides?.length} className="flex-1 bg-gradient-to-r from-violet-500 to-pink-500 hover:from-violet-600 hover:to-pink-600 text-white border-0">
-                {isGeneratingAll ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generate Semua...</>) : (<><Sparkles className="h-4 w-4 mr-2" />Generate Semua</>)}
-              </Button>
               <Button onClick={handleExport} disabled={isExporting || !project.slides?.some(s => s.imageUrl)} className="flex-1 bg-gradient-to-r from-pink-500 to-purple-600">
                 {isExporting ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" />Mengekspor...</>) : (<><Download className="h-4 w-4 mr-2" />Ekspor Korsel</>)}
               </Button>

@@ -11,11 +11,11 @@ import {
   ChevronRight,
   Image as ImageIcon,
   Loader2,
+  Sparkles,
   MoveLeft,
   MoveRight,
   RefreshCw,
   Trash2,
-  Type,
 } from 'lucide-react'
 import type { Slide } from './types'
 
@@ -35,6 +35,8 @@ interface SlideEditorProps {
   onReorderSlide: (slideId: string, direction: 'left' | 'right') => void
   onDeleteSlide: (slideId: string) => void
   onNavigate: (index: number) => void
+  onGenerateAll?: () => void
+  isGeneratingAll?: boolean
 }
 
 export function SlideEditor({
@@ -53,6 +55,8 @@ export function SlideEditor({
   onReorderSlide,
   onDeleteSlide,
   onNavigate,
+  onGenerateAll,
+  isGeneratingAll,
 }: SlideEditorProps) {
   return (
     <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
@@ -103,12 +107,16 @@ export function SlideEditor({
               </div>
             </div>
             <div className="flex flex-col gap-3 pt-4 border-t border-border mt-4">
-              <Button onClick={() => onGenerateImage(currentSlide.id)} className="w-full" variant="outline">
-                {isGeneratingImage === currentSlide.id ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" />Membuat Gambar...</>) : currentSlide.imageUrl ? (<><RefreshCw className="h-4 w-4 mr-2" />Buat Ulang Gambar (2 Token)</>) : (<><ImageIcon className="h-4 w-4 mr-2" />Buat Gambar Dasar (2 Token)</>)}
-              </Button>
-              <Button onClick={() => onGenerateText(currentSlide.id)} disabled={!currentSlide.imageUrl || isGeneratingText === currentSlide.id} className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700">
-                {isGeneratingText === currentSlide.id ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" />Menambahkan Teks...</>) : (<><Type className="h-4 w-4 mr-2" />Bakar Teks ke Gambar (1 Token) <Badge className="ml-2 bg-yellow-500 hover:bg-yellow-600 text-white border-0 text-[10px] px-1 py-0 h-4 rounded-full">BARU</Badge></>)}
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={() => onGenerateImage(currentSlide.id)} className="flex-1" variant="outline">
+                  {isGeneratingImage === currentSlide.id ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" />Membuat Gambar...</>) : currentSlide.imageUrl ? (<><RefreshCw className="h-4 w-4 mr-2" />Buat Ulang Gambar (2 Token)</>) : (<><ImageIcon className="h-4 w-4 mr-2" />Buat Gambar Dasar (2 Token)</>)}
+                </Button>
+                {onGenerateAll && (
+                  <Button onClick={onGenerateAll} disabled={isGeneratingAll} className="flex-1 bg-gradient-to-r from-violet-500 to-pink-500 hover:from-violet-600 hover:to-pink-600 text-white border-0">
+                    {isGeneratingAll ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generate Semua...</>) : (<><Sparkles className="h-4 w-4 mr-2" />Generate Semua</>)}
+                  </Button>
+                )}
+              </div>
             </div>
           </>
         )}
