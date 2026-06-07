@@ -102,11 +102,11 @@ export default function BillingPage() {
                                 <div className="bg-white/10 rounded-xl p-4">
                                     <div className="text-xs text-blue-100 uppercase tracking-wider mb-2">Video</div>
                                     <div className="text-2xl font-bold tabular-nums">
-                                        {loading ? '...' : (balanceData?.categories?.video?.used || 0)}
-                                        <span className="text-sm font-normal text-blue-200"> / {balanceData?.categories?.video?.limit || 0}</span>
+                                        {loading ? '...' : (balanceData?.categories?.videoLight?.used || 0)}
+                                        <span className="text-sm font-normal text-blue-200"> / {balanceData?.categories?.videoLight?.limit || 0}</span>
                                     </div>
                                     <div className="mt-2 h-1.5 bg-white/20 rounded-full overflow-hidden">
-                                        <div className="h-full bg-white rounded-full transition-all" style={{ width: `${Math.min(100, ((balanceData?.categories?.video?.used || 0) / (balanceData?.categories?.video?.limit || 1)) * 100)}%` }} />
+                                        <div className="h-full bg-white rounded-full transition-all" style={{ width: `${Math.min(100, ((balanceData?.categories?.videoLight?.used || 0) / (balanceData?.categories?.videoLight?.limit || 1)) * 100)}%` }} />
                                     </div>
                                 </div>
                                 {/* Gambar */}
@@ -210,6 +210,56 @@ export default function BillingPage() {
                         </CardContent>
                     </Card>
 
+
+                    {/* Starter Plan */}
+                    <Card className={`relative overflow-hidden border-2 transition-all duration-300 ${subscription?.plan === 'STARTER' ? 'border-blue-500 shadow-lg' : 'border-slate-200 dark:border-slate-800'}`}>
+                        {subscription?.plan === 'STARTER' && (
+                            <div className="absolute top-0 right-0 bg-blue-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-tighter">
+                                Aktif
+                            </div>
+                        )}
+                        <CardHeader>
+                            <CardTitle>Starter</CardTitle>
+                            <CardDescription>Untuk kreator yang serius</CardDescription>
+                            <div className="pt-4">
+                                <span className="text-3xl font-bold">Rp 99K</span>
+                                <span className="text-slate-500 text-sm"> / bulan</span>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <ul className="space-y-2 text-sm">
+                                <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                    <span className="font-bold">40 Artikel / bulan</span>
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                    <span className="font-bold">100 IG Carousel / bulan</span>
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                    <span className="font-bold">20 Video / bulan</span>
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                    <span className="font-bold">8 Gambar / bulan</span>
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                    <span>2 Situs WordPress</span>
+                                </li>
+                            </ul>
+                            <WhatsAppActionModal
+                                plan="STARTER"
+                                trigger={
+                                    <Button variant="outline" className="w-full border-blue-500 text-blue-600 hover:bg-blue-50" disabled={subscription?.plan === 'STARTER'}>
+                                        {subscription?.plan === 'STARTER' ? 'Paket Saat Ini' : 'Pilih Starter'}
+                                    </Button>
+                                }
+                            />
+                        </CardContent>
+                    </Card>
+
                     {/* Pro Plan */}
                     <Card className={`relative overflow-hidden border-2 transition-all duration-300 ${subscription?.plan === 'PRO' ? 'border-blue-500 shadow-lg' : 'border-slate-200 dark:border-slate-800'}`}>
                         {subscription?.plan === 'PRO' && (
@@ -235,19 +285,19 @@ export default function BillingPage() {
                             <ul className="space-y-2 text-sm">
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                    <span className="font-bold">40 Artikel / bulan</span>
+                                    <span className="font-bold">150 Artikel / bulan</span>
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                    <span className="font-bold">100 IG Carousel / bulan</span>
+                                    <span className="font-bold">300 IG Carousel / bulan</span>
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                    <span className="font-bold">20 Video / bulan</span>
+                                    <span className="font-bold">80 Video / bulan</span>
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                    <span className="font-bold">8 Gambar / bulan</span>
+                                    <span className="font-bold">30 Gambar / bulan</span>
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
@@ -300,7 +350,7 @@ export default function BillingPage() {
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                    <span className="font-bold">35 Gambar / bulan</span>
+                                    <span className="font-bold">100 Gambar / bulan</span>
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
@@ -506,9 +556,13 @@ function TransactionHistory() {
                                         <p className="text-sm font-medium">{(tx.metadata as any)?.description || typeLabels[tx.type] || tx.type}</p>
                                         <p className="text-xs text-muted-foreground">{new Date(tx.createdAt).toLocaleString('id-ID')}</p>
                                     </div>
-                                    <span className={`text-sm font-bold ${tx.tokens >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                        {tx.tokens >= 0 ? '+' : ''}{tx.tokens} kredit
-                                    </span>
+                                    {(tx.metadata as any)?.deductedFrom === 'monthly' ? (
+                                        <span className="text-sm font-bold text-blue-600">✓ Kuota bulanan</span>
+                                    ) : (
+                                        <span className={`text-sm font-bold ${tx.tokens >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                            {tx.tokens >= 0 ? '+' : ''}{tx.tokens} kredit
+                                        </span>
+                                    )}
                                 </div>
                             ))}
                         </div>

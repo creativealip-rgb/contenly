@@ -2,14 +2,11 @@ import { Controller, Get, Post, Body, Query, UseGuards, UseInterceptors, Headers
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { BillingService } from './billing.service';
-import { MidtransService } from './midtrans.service';
 import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
-import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuditInterceptor } from '../../common/interceptors/audit.interceptor';
 import type { User } from '../../db/types';
 import Stripe from 'stripe';
-import { SkipThrottle } from '@nestjs/throttler';
 import { Request } from 'express';
 
 @ApiTags('billing')
@@ -24,7 +21,6 @@ export class BillingController {
     constructor(
         private billingService: BillingService,
         private configService: ConfigService,
-        private midtransService: MidtransService,
     ) {
         const stripeSecretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
         if (stripeSecretKey) {
@@ -37,90 +33,51 @@ export class BillingController {
     async getBalance(@CurrentUser() user: User) {
         const balance = await this.billingService.getBalance(user.id);
         const tier = await this.billingService.getSubscriptionTier(user.id);
-        const { BILLING_TIERS } = await import('./billing.constants');
+        const { BILLING_TIERS, FEATURE_TO_CATEGORY } = await import('./billing.constants');
         const tierConfig = BILLING_TIERS[tier] || BILLING_TIERS.FREE;
-        
-        // Get current month usage per category
         const now = new Date();
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
         const usage = await this.billingService.getMonthlyUsageByCategory(user.id, monthStart);
-        
-        // Aggregate by category
-        const { FEATURE_TO_CATEGORY } = await import('./billing.constants');
         const categoryUsage: Record<string, number> = {};
         for (const [feature, count] of Object.entries(usage)) {
-            const cat = FEATURE_TO_CATEGORY[feature] || feature;
-            categoryUsage[cat] = (categoryUsage[cat] || 0) + count;
+            const category = FEATURE_TO_CATEGORY[feature] || feature;
+            categoryUsage[category] = (categoryUsage[category] || 0) + count;
         }
-        
+        const credits = balance.balance || 0;
         return {
-            credits: balance.credits || 0,
+            balance: credits,
+            credits,
             tier,
             categories: {
-                artikel: {
-                    used: categoryUsage.ARTICLE_GENERATION || 0,
-                    limit: tierConfig.monthlyLimits.ARTICLE_GENERATION,
-                    label: 'Artikel',
-                },
-                instagram: {
-                    used: categoryUsage.INSTAGRAM_GENERATION || 0,
-                    limit: tierConfig.monthlyLimits.INSTAGRAM_GENERATION,
-                    label: 'IG Carousel',
-                },
-                video: {
-                    used: categoryUsage.VIDEO_GENERATION || 0,
-                    limit: tierConfig.monthlyLimits.VIDEO_GENERATION,
-                    label: 'Video',
-                },
-                gambar: {
-                    used: categoryUsage.IMAGE_GENERATION || 0,
-                    limit: tierConfig.monthlyLimits.IMAGE_GENERATION,
-                    label: 'Gambar',
-                },
+                artikel: { used: categoryUsage.ARTICLE_GENERATION || 0, limit: tierConfig.monthlyLimits.ARTICLE_GENERATION, label: 'Artikel' },
+                instagram: { used: categoryUsage.INSTAGRAM_GENERATION || 0, limit: tierConfig.monthlyLimits.INSTAGRAM_GENERATION, label: 'IG Carousel' },
+                videoLight: { used: categoryUsage.VIDEO_LIGHT || 0, limit: tierConfig.monthlyLimits.VIDEO_LIGHT, label: 'Video Light' },
+                gambar: { used: categoryUsage.IMAGE_GENERATION || 0, limit: tierConfig.monthlyLimits.IMAGE_GENERATION, label: 'Gambar' },
+                videoHeavy: { used: categoryUsage.VIDEO_HEAVY || 0, limit: tierConfig.monthlyLimits.VIDEO_HEAVY, label: 'Video Heavy' },
+                motion: { used: categoryUsage.MOTION_RENDER || 0, limit: tierConfig.monthlyLimits.MOTION_RENDER, label: 'Motion Render' },
             },
         };
     }
+
     @Get('usage-breakdown')
     @ApiOperation({ summary: 'Get per-feature usage breakdown for current month' })
     async getUsageBreakdown(@CurrentUser() user: User) {
         const now = new Date();
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
         const usage = await this.billingService.getMonthlyUsageByCategory(user.id, monthStart);
-        
-        const FEATURE_LABELS: Record<string, string> = {
+        const labels: Record<string, string> = {
             ARTICLE_GENERATION: 'Artikel',
             INSTAGRAM_GENERATION: 'IG Carousel',
-            STORYBOARD_GENERATION: 'Storyboard',
-            HASHTAG_GENERATION: 'Hashtag',
-            VIDEO_GENERATION: 'Video Clips',
-            VIDEO_SCRIPT: 'Video Script',
-            ALTERNATE_HOOKS: 'Alternate Hooks',
-            BROLL_KEYWORDS: 'B-Roll Keywords',
-            AUTO_CUTAWAY: 'Auto Cutaway',
-            TTS_PREVIEW: 'TTS Preview',
-            TTS_VOICEOVER: 'TTS Voiceover',
-            REGENERATE_FIELD: 'Regenerate Field',
-            REGENERATE_VOICEOVER: 'Regenerate Voiceover',
-            IMPROVE_VISUAL: 'Improve Visual',
+            VIDEO_GENERATION: 'Video',
             IMAGE_GENERATION: 'Generate Gambar',
-            SLIDE_IMAGE: 'IG Slide Image',
-            THUMBNAIL_GENERATION: 'Thumbnail',
-            MOTION_GRAPHICS_RENDER: 'Motion Graphics',
-            TEXT_OVERLAY: 'Text Overlay',
             AI_CHAT: 'AI Chat',
-            SUGGEST_FOOTAGE_KEYWORDS: 'Suggest Keywords',
         };
-        
-        const breakdown = Object.entries(usage)
-            .filter(([_, count]) => count > 0)
-            .map(([feature, count]) => ({
-                feature,
-                label: FEATURE_LABELS[feature] || feature,
-                count,
-            }))
-            .sort((a, b) => b.count - a.count);
-        
-        return { breakdown };
+        return {
+            breakdown: Object.entries(usage)
+                .filter(([, count]) => count > 0)
+                .map(([feature, count]) => ({ feature, label: labels[feature] || feature, count }))
+                .sort((a, b) => b.count - a.count),
+        };
     }
 
     @Get('transactions')
@@ -130,7 +87,9 @@ export class BillingController {
         @Query('page') page = 1,
         @Query('limit') limit = 20,
     ) {
-        return this.billingService.getTransactions(user.id, +page, +limit);
+        const safePage = Math.max(1, +page || 1);
+        const safeLimit = Math.min(100, Math.max(1, +limit || 20));
+        return this.billingService.getTransactions(user.id, safePage, safeLimit);
     }
 
     @Get('subscriptions')
@@ -156,8 +115,7 @@ export class BillingController {
 
     // Stripe webhook - NO AUTH GUARD (Stripe needs to call this)
     @Post('webhooks/stripe')
-    @Public() // Stripe webhooks have no user session; verified via signature instead
-    @SkipThrottle() // Stripe can burst events; don't rate-limit the webhook
+    @UseGuards() // Override class-level guard
     @ApiOperation({ summary: 'Stripe webhook handler' })
     async handleStripeWebhook(
         @Req() req: RawBodyRequest<Request>,
@@ -226,29 +184,5 @@ export class BillingController {
             throw new InternalServerErrorException('Webhook processing failed');
         }
     }
-    // ==========================================
-    // MIDTRANS ENDPOINTS
-    // ==========================================
-
-    @Post('midtrans/checkout')
-    @ApiOperation({ summary: 'Create Midtrans Snap checkout session' })
-    async createMidtransCheckout(
-        @CurrentUser() user: User,
-        @Body() body: { plan: 'STARTER' | 'PRO' | 'BUSINESS' },
-    ) {
-        return this.midtransService.createSnapToken(
-            user.id,
-            user.email,
-            user.name || 'User',
-            body.plan,
-        );
-    }
-
-    @Post('webhooks/midtrans')
-    @Public()
-    @SkipThrottle()
-    @ApiOperation({ summary: 'Midtrans notification webhook' })
-    async handleMidtransWebhook(@Body() notification: any) {
-        return this.midtransService.handleNotification(notification);
-    }
 }
+

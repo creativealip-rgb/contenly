@@ -15,8 +15,10 @@ export function useBillingBalance() {
     categories: {
       artikel: BillingCategory
       instagram: BillingCategory
-      video: BillingCategory
+      videoLight: BillingCategory
+      videoHeavy: BillingCategory
       gambar: BillingCategory
+      motion: BillingCategory
     }
   }>({
     queryKey: ['billing-balance'],

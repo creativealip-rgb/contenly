@@ -316,12 +316,12 @@ export const tokenBalance = pgTable('token_balance', {
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' })
     .unique(),
-  balance: real('balance').default(0),
-  monthlyQuota: real('monthly_quota').default(0),
-  monthlyUsed: real('monthly_used').default(0),
-  credits: real('credits').default(0),
-  totalPurchased: real('total_purchased').default(0),
-  totalUsed: real('total_used').default(0),
+  balance: integer('balance').default(0),
+  monthlyQuota: integer('monthly_quota').default(0),
+  monthlyUsed: integer('monthly_used').default(0),
+  credits: integer('credits').default(0),
+  totalPurchased: integer('total_purchased').default(0),
+  totalUsed: integer('total_used').default(0),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
