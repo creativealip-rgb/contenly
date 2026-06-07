@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowLeft, ChevronDown, ChevronUp, Settings, Send, Image as ImageIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -57,7 +57,18 @@ function SidebarPanel({ title, icon: Icon, children, defaultOpen = false }: {
 }
 
 function ThumbnailPanel({ isGeneratingImage, handleGenerateImage }: { isGeneratingImage: boolean; handleGenerateImage: () => void }) {
-    const { featuredImage, setFeaturedImage, generatedTitle } = useContentLabStore()
+    const { featuredImage, setFeaturedImage, generatedTitle, generatedArticleId } = useContentLabStore()
+
+    // Save featuredImage to API when it changes
+    useEffect(() => {
+        if (!generatedArticleId || !featuredImage) return
+        const timer = setTimeout(() => {
+            fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api/v1'}/articles/${generatedArticleId}`,
+                { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+                  body: JSON.stringify({ featuredImageUrl: featuredImage }) })
+        }, 800)
+        return () => clearTimeout(timer)
+    }, [featuredImage, generatedArticleId])
 
     return (
         <div className="space-y-3">
@@ -173,8 +184,6 @@ export function Step4EditPublish({
                     <SEOSection
                         isRefreshingSEO={isRefreshingSEO}
                         onRefreshSEO={handleRefreshSEO}
-                        isGeneratingImage={isGeneratingImage}
-                        onGenerateImage={handleGenerateImage}
                     />
                 </SidebarPanel>
 

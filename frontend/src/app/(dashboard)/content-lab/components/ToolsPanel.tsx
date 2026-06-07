@@ -60,8 +60,6 @@ export function ToolsPanel({
             <SEOSection
                 isRefreshingSEO={isRefreshingSEO}
                 onRefreshSEO={handleRefreshSEO}
-                isGeneratingImage={isGeneratingImage}
-                onGenerateImage={handleGenerateImage}
             />
 
             <PublishingSection
