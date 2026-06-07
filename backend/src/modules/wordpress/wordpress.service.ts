@@ -407,13 +407,20 @@ export class WordpressService implements OnModuleInit {
 
       // Handle featured image if provided as URL (from AI generation or external source)
       let featuredMediaId: number | undefined;
-      if (dto.featuredImageUrl && (dto.featuredImageUrl.startsWith('http') || dto.featuredImageUrl.startsWith('data:'))) {
+      if (dto.featuredImageUrl) {
+        // Convert relative URLs to absolute for fetching
+        let imageUrl = dto.featuredImageUrl;
+        if (imageUrl.startsWith('/api/')) {
+          imageUrl = `https://contenly.app${imageUrl}`;
+        }
+        if (imageUrl.startsWith('http') || imageUrl.startsWith('data:')) {
         try {
           this.logger.log('Uploading featured image...');
-          featuredMediaId = await this.uploadMediaFromUrl(site.id, dto.featuredImageUrl);
+          featuredMediaId = await this.uploadMediaFromUrl(site.id, imageUrl);
           this.logger.log(`Featured image uploaded, ID: ${featuredMediaId}`);
         } catch (imgError) {
           this.logger.error('Failed to upload featured image, continuing without it', imgError);
+        }
         }
       }
 
