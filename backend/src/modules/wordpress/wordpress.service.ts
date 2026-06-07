@@ -287,26 +287,36 @@ export class WordpressService implements OnModuleInit {
         filename = `ai-gen-${Date.now()}.png`;
       }
 
-      // Automatic Cropping to 1200x628
-      this.logger.log('Cropping image to 1200x628...');
-      const croppedBuffer = await sharp(buffer)
+      // Compress + Convert to WebP + Crop to 1200x628
+      this.logger.log('Compressing image to WebP and cropping to 1200x628...');
+      const processedBuffer = await sharp(buffer)
         .resize({
           width: 1200,
           height: 628,
           fit: 'cover',
           position: 'center'
         })
+        .webp({ quality: 80, effort: 4 })
         .toBuffer();
+
+      // Update filename and mime type for WebP
+      const webpFilename = filename.replace(/\.[^.]+$/, '.webp');
+      const webpMimeType = 'image/webp';
+      
+      const originalSize = buffer.length;
+      const processedSize = processedBuffer.length;
+      const compressionRatio = Math.round((1 - processedSize / originalSize) * 100);
+      this.logger.log(`Image compressed: ${(originalSize / 1024).toFixed(0)}KB -> ${(processedSize / 1024).toFixed(0)}KB (${compressionRatio}% smaller)`);
 
       // Upload to WP Media
       const uploadResponse = await axios.post(
         `${site.url}/wp-json/wp/v2/media`,
-        croppedBuffer,
+        processedBuffer,
         {
           headers: {
             Authorization: `Basic ${auth}`,
-            'Content-Type': mimeType,
-            'Content-Disposition': `attachment; filename="${filename}"`,
+            'Content-Type': webpMimeType,
+            'Content-Disposition': `attachment; filename="${webpFilename}"`,
           },
         }
       );
