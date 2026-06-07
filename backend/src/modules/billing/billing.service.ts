@@ -357,7 +357,7 @@ export class BillingService {
 
     if (sub) {
       // Add monthly tokens (reset for new cycle)
-      await this.addTokens(userId, sub.tokensPerMonth, invoice.id, true, sub.pricePerMonth || 0);
+      await this.addTokens(userId, sub.tokensPerMonth, invoice.id, true, BILLING_TIERS[sub.plan]?.price || 0);
 
       // Update subscription period
       await this.db
