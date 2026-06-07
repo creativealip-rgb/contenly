@@ -162,7 +162,7 @@ export function ContentEditor({ state, handlers, copied, handleCopy }: ContentEd
                         <div className="py-4">
                             {generatedTitle && <h1 className="text-2xl font-black mb-6 text-slate-900">{generatedTitle}</h1>}
                             <div
-                                className="[&>h2]:text-xl [&>h2]:font-bold [&>h2]:mt-8 [&>h2]:mb-3 [&>h2]:text-slate-900 [&>h3]:text-lg [&>h3]:font-semibold [&>h3]:mt-6 [&>h3]:mb-2 [&>p]:mb-4 [&>p]:text-[15px] [&>p]:leading-relaxed [&>a]:text-blue-600 [&>a]:underline [&>strong]:font-bold [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:mb-4 [&>ol]:list-decimal [&>ol]:pl-6 [&>ol]:mb-4 [&>li]:mb-1 [&>li]:text-[15px] [&>li]:leading-relaxed"
+                                className="[&_h2]:text-xl [&_h2]:font-bold [&_h2]:mt-8 [&_h2]:mb-3 [&_h2]:text-slate-900 [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mt-6 [&_h3]:mb-2 [&_p]:mb-4 [&_p]:text-[15px] [&_p]:leading-relaxed [&_a]:text-blue-600 [&_a]:underline [&_strong]:font-bold [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-4 [&_li]:mb-1 [&_li]:text-[15px] [&_li]:leading-relaxed"
                                 dangerouslySetInnerHTML={{ __html: generatedContent }}
                             />
                         </div>
