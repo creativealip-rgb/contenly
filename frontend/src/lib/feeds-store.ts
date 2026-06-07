@@ -29,7 +29,8 @@ export const getFeeds = async (): Promise<RssFeed[]> => {
             return []
         }
 
-        const feeds = await response.json()
+        const result = await response.json()
+        const feeds = Array.isArray(result) ? result : (result.data || [])
 
         // Transform backend format to match frontend interface
         return feeds.map((feed: any) => ({
