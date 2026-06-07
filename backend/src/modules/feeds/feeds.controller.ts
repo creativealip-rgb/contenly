@@ -8,7 +8,8 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiProperty } from '@nestjs/swagger';
+import { IsUrl, IsNotEmpty } from 'class-validator';
 import { FeedsService } from './feeds.service';
 import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -16,6 +17,13 @@ import type { User } from '../../db/types';
 
 import { CreateFeedDto } from './dto/create-feed.dto';
 import { UpdateFeedDto } from './dto/update-feed.dto';
+
+class ParseFeedDto {
+  @ApiProperty({ example: 'https://example.com/feed' })
+  @IsUrl()
+  @IsNotEmpty()
+  url: string;
+}
 
 @ApiTags('feeds')
 @ApiBearerAuth()
@@ -41,6 +49,12 @@ export class FeedsController {
     @Body() dto: CreateFeedDto,
   ) {
     return this.feedsService.create(user.id, dto);
+  }
+
+  @Post('fetch-items')
+  @ApiOperation({ summary: 'Parse RSS feed from URL and return items' })
+  async parseFeedUrl(@Body() dto: ParseFeedDto) {
+    return this.feedsService.parseFeedUrl(dto.url);
   }
 
   @Delete(':id')

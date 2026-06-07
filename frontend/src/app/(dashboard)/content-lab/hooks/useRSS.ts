@@ -26,9 +26,11 @@ export function useRSS() {
         setIsFetchingRSS(true)
         setArticles([])
         try {
-            const response = await fetch('/api/rss', {
+            const API = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
+            const response = await fetch(`${API}/feeds/fetch-items`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ url: feedUrl }),
             })
             const data = await response.json()

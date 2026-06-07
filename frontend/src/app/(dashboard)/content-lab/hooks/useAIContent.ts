@@ -63,7 +63,8 @@ export function useAIContent() {
         setSourceContent('')
         try {
             // Use frontend /api/scraper proxy (forwards cookies properly)
-            const response = await fetch('/api/scraper', {
+            const API = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
+            const response = await fetch(`${API}/scraper/scrape`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
