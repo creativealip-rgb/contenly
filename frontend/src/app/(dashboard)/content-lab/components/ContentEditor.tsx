@@ -142,6 +142,7 @@ export function ContentEditor({ state, handlers, copied, handleCopy }: ContentEd
                 <Tabs defaultValue="editor" className="flex-1 flex flex-col">
                     <TabsList className="w-fit bg-slate-100/50 dark:bg-slate-800/50 p-1 rounded-xl mb-4">
                         <TabsTrigger value="editor" className="text-sm px-6 py-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold">Editor</TabsTrigger>
+                        <TabsTrigger value="preview" className="text-sm px-6 py-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold">Preview</TabsTrigger>
                         <TabsTrigger value="source" className="text-sm px-6 py-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold">Referensi</TabsTrigger>
                     </TabsList>
 
@@ -157,9 +158,11 @@ export function ContentEditor({ state, handlers, copied, handleCopy }: ContentEd
                         </div>
 
                         <div className="flex-1 relative">
-                            <div 
-                                className="w-full min-h-[400px] border-none p-6 text-lg leading-relaxed custom-scrollbar text-slate-800 dark:text-slate-200 [&_h2]:text-xl [&_h2]:font-black [&_h2]:mt-6 [&_h2]:mb-3 [&_h3]:text-lg [&_h3]:font-bold [&_h3]:mt-4 [&_h3]:mb-2 [&_p]:mb-4 [&_a]:text-blue-600 [&_a]:underline [&_strong]:font-bold [&_ul]:list-disc [&_ul]:ml-6 [&_ul]:mb-4 [&_ol]:list-decimal [&_ol]:ml-6 [&_ol]:mb-4 [&_li]:mb-1"
-                                dangerouslySetInnerHTML={{ __html: generatedContent || '<p style="color:#94a3b8;font-style:italic">Konten yang dibuat AI akan muncul di sini...</p>' }}
+                            <Textarea
+                                value={generatedContent}
+                                onChange={(e) => setGeneratedContent(e.target.value)}
+                                placeholder="Konten yang dibuat AI akan muncul di sini..."
+                                className="w-full h-full min-h-[400px] resize-none border-none bg-transparent p-6 text-lg leading-relaxed custom-scrollbar focus-visible:ring-0"
                             />
                             {state.isRewriting && (
                                 <motion.div
@@ -177,6 +180,19 @@ export function ContentEditor({ state, handlers, copied, handleCopy }: ContentEd
                                         <p className="text-sm text-slate-400 font-medium max-w-[200px]">Menulis artikel yang dioptimasi SEO Anda</p>
                                     </div>
                                 </motion.div>
+                            )}
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="preview" className="flex-1 mt-0">
+                        <div className="w-full min-h-[400px] p-6 text-lg leading-relaxed text-slate-800 dark:text-slate-200">
+                            {generatedContent ? (
+                                <div 
+                                    className="[&>h2]:text-xl [&>h2]:font-black [&>h2]:mt-8 [&>h2]:mb-4 [&>h2]:text-slate-900 [&>h3]:text-lg [&>h3]:font-bold [&>h3]:mt-6 [&>h3]:mb-3 [&>p]:mb-4 [&>p]:leading-relaxed [&>a]:text-blue-600 [&>a]:underline [&>strong]:font-bold [&>ul]:list-disc [&>ul]:ml-6 [&>ul]:mb-4 [&>ol]:list-decimal [&>ol]:ml-6 [&>ol]:mb-4 [&>li]:mb-1 [&>li]:leading-relaxed"
+                                    dangerouslySetInnerHTML={{ __html: generatedContent }}
+                                />
+                            ) : (
+                                <p className="text-slate-400 italic">Belum ada konten. Generate dulu di langkah sebelumnya.</p>
                             )}
                         </div>
                     </TabsContent>
