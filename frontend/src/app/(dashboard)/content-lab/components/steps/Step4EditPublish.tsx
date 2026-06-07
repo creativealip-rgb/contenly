@@ -164,7 +164,7 @@ export function Step4EditPublish({
             </div>
 
             {/* Right Sidebar */}
-            <div className="w-72 xl:w-80 flex-shrink-0 flex flex-col gap-3 overflow-y-auto custom-scrollbar min-h-0">
+            <div className="w-72 xl:w-80 flex-shrink-0 flex flex-col gap-2 overflow-y-auto overflow-x-hidden pb-4">
                 <SidebarPanel title="Thumbnail" icon={ImageIcon} defaultOpen={true}>
                     <ThumbnailPanel isGeneratingImage={isGeneratingImage} handleGenerateImage={handleGenerateImage} />
                 </SidebarPanel>
