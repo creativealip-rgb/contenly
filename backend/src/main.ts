@@ -1,6 +1,5 @@
 import 'dotenv/config'; // Load .env before everything else
 import { NestFactory } from '@nestjs/core';
-import { NestExpressApplication } from '@nestjs/platform-express';
 // Restart trigger: 9
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -9,19 +8,15 @@ import { AppModule } from './app.module';
 import * as path from 'path';
 import * as expressStatic from 'express';
 
+import { json, urlencoded } from 'express';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    // Capture the raw request body so Stripe webhook signature verification works.
-    // Without this, req.rawBody is undefined and constructEvent() always fails in prod.
-    rawBody: true,
-  });
+  const app = await NestFactory.create(AppModule);
 
-  // Increase body size limits for featured images.
-  // Use Nest's built-in body parsers (NOT app.use(json())) so rawBody capture is preserved.
-  app.useBodyParser('json', { limit: '5mb' });
-  app.useBodyParser('urlencoded', { limit: '5mb', extended: true });
+  // Increase body size limits for featured images
+  app.use(json({ limit: '5mb' }));
+  app.use(urlencoded({ limit: '5mb', extended: true }));
 
   // Security
   app.use(helmet());
@@ -49,7 +44,7 @@ async function bootstrap() {
   app.enableCors({
     origin: (origin, callback) => {
       // If no origin (like direct curl or same-origin), allow it
-      if (!origin || origin === 'null') {
+      if (!origin) {
         return callback(null, true);
       }
 

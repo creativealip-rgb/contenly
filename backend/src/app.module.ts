@@ -1,9 +1,9 @@
 import { Module, Global, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { BullModule } from '@nestjs/bull';
 import { ScheduleModule } from '@nestjs/schedule';
-import { Reflector, APP_GUARD } from '@nestjs/core';
+import { Reflector } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -39,7 +39,7 @@ import { BrandKitModule } from './modules/brand-kit/brand-kit.module';
 import { CalendarModule } from './modules/calendar/calendar.module';
 import { MotionGraphicsModule } from './modules/motion-graphics/motion-graphics.module';
 import { VideoClipModule } from './modules/video-clip/video-clip.module';
-import { SystemSettingsModule } from './modules/system-settings/system-settings.module';
+import { AdminSettingsModule } from './modules/admin-settings/admin-settings.module';
 
 @Module({
   imports: [
@@ -99,7 +99,7 @@ import { SystemSettingsModule } from './modules/system-settings/system-settings.
     CalendarModule,
     MotionGraphicsModule,
     VideoClipModule,
-    SystemSettingsModule,
+    AdminSettingsModule,
   ],
   controllers: [AppController],
   providers: [
@@ -108,12 +108,6 @@ import { SystemSettingsModule } from './modules/system-settings/system-settings.
     {
       provide: Reflector,
       useValue: new Reflector(),
-    },
-    {
-      // Register the configured ThrottlerModule limits globally.
-      // Was previously configured but never enforced (no APP_GUARD).
-      provide: APP_GUARD,
-      useClass: ThrottlerGuard,
     },
   ],
   exports: [AuditService],

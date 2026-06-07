@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,6 +15,8 @@ import { api } from '@/lib/api'
 import { containerVariants, itemVariants } from '@/lib/animations'
 
 export default function ApiKeysPage() {
+    const searchParams = useSearchParams()
+    const initialTab = searchParams.get('tab') || 'status'
     const [customProviders, setCustomProviders] = useState<any[]>([])
     const [keys, setKeys] = useState<Record<string, string>>({})
     const [showKeys, setShowKeys] = useState<Record<string, boolean>>({})
@@ -33,7 +36,7 @@ export default function ApiKeysPage() {
     const [connectionResults, setConnectionResults] = useState<Record<string, any>>({})
     const [availableModels, setAvailableModels] = useState<Record<string, string[]>>({})
     const [loadingModels, setLoadingModels] = useState<Record<string, boolean>>({})
-    const [modelTestResults, setModelTestResults] = useState<Record<string, { status: string; latency?: number; error?: string }>>({})
+    const [modelTestResults, setModelTestResults] = useState<Record<string, { ok?: boolean; status: string; latency?: number; latencyMs?: number; error?: string }>>({})
     const [testingModel, setTestingModel] = useState<string | null>(null)
     const [modelSearch, setModelSearch] = useState('')
 
@@ -123,10 +126,9 @@ export default function ApiKeysPage() {
     async function loadModels(provider: string) {
         setLoadingModels(prev => ({ ...prev, [provider]: true }))
         try {
-            const result: any = await api.post('/admin/settings/providers/test-connection', { provider })
-            if (result.availableModels?.length) {
-                setAvailableModels(prev => ({ ...prev, [provider]: result.availableModels }))
-                setConnectionResults(prev => ({ ...prev, [provider]: result }))
+            const result: any = await api.get(`/admin/settings/providers/${provider}/models`)
+            if (result.models?.length) {
+                setAvailableModels(prev => ({ ...prev, [provider]: result.models.map((m: any) => m.id || m) }))
             }
         } catch (e) { /* ignore */ }
         finally { setLoadingModels(prev => ({ ...prev, [provider]: false })) }
@@ -135,15 +137,13 @@ export default function ApiKeysPage() {
     async function testConnection(provider: string) {
         setTestingProvider(provider)
         try {
-            const result: any = await api.post('/admin/settings/providers/test-connection', { provider })
+            const result: any = await api.post(`/admin/settings/providers/${provider}/test`)
             setConnectionResults(prev => ({ ...prev, [provider]: result }))
-            if (result.status === 'ok') {
-                toast.success(`${provider}: OK (${result.latency}ms, ${result.modelCount} models)`)
-                if (result.availableModels?.length) {
-                    setAvailableModels(prev => ({ ...prev, [provider]: result.availableModels }))
-                }
+            if (result.ok) {
+                toast.success(`${provider}: OK (${result.latencyMs}ms, ${result.model})`)
+                loadModels(provider)
             } else {
-                toast.error(`${provider}: ${result.error}`)
+                toast.error(`${provider}: ${result.message || result.error || 'Failed'}`)
             }
         } catch (e: any) {
             toast.error(`${provider}: ${e.message}`)
@@ -163,12 +163,12 @@ export default function ApiKeysPage() {
         const key = `${provider}:${model}`
         setTestingModel(key)
         try {
-            const result: any = await api.post('/admin/settings/providers/test-connection', { provider, model })
+            const result: any = await api.post(`/admin/settings/providers/${provider}/test`, { model })
             setModelTestResults(prev => ({ ...prev, [key]: result }))
-            if (result.status === 'ok') {
-                toast.success(`${model}: OK (${result.latency}ms)`)
+            if (result.ok) {
+                toast.success(`${model}: OK (${result.latencyMs}ms)`)
             } else {
-                toast.error(`${model}: ${result.error}`)
+                toast.error(`${model}: ${result.message || 'Failed'}`)
             }
         } catch (e: any) {
             setModelTestResults(prev => ({ ...prev, [key]: { status: 'error', error: e.message } }))
@@ -185,7 +185,7 @@ export default function ApiKeysPage() {
             const key = `${provider}:${model}`
             setTestingModel(key)
             try {
-                const result: any = await api.post('/admin/settings/providers/test-connection', { provider, model })
+                const result: any = await api.post(`/admin/settings/providers/${provider}/test`, { model })
                 setModelTestResults(prev => ({ ...prev, [key]: result }))
                 if (result.status === 'ok') ok++; else fail++
             } catch (e: any) {
@@ -306,7 +306,7 @@ export default function ApiKeysPage() {
         const result = modelTestResults[key]
         if (testingModel === key) return <Badge variant="outline" className="text-xs gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Testing</Badge>
         if (!result) return null
-        if (result.status === 'ok') return <Badge className="bg-green-600 text-xs gap-1"><CheckCircle2 className="w-3 h-3" /> {result.latency}ms</Badge>
+        if (result.ok) return <Badge className="bg-green-600 text-xs gap-1"><CheckCircle2 className="w-3 h-3" /> {result.latencyMs || result.latency}ms</Badge>
         return <Badge variant="destructive" className="text-xs gap-1"><XCircle className="w-3 h-3" /> Error</Badge>
     }
 
@@ -326,7 +326,7 @@ export default function ApiKeysPage() {
                 <p className="text-muted-foreground">Kelola provider AI dan YouTube cookies</p>
             </div>
 
-            <Tabs defaultValue="status">
+            <Tabs value={initialTab} onValueChange={(v) => { const url = new URL(window.location.href); url.searchParams.set("tab", v); window.history.replaceState({}, "", url); }}>
                 <TabsList>
                     <TabsTrigger value="status">Status &amp; Models</TabsTrigger>
                     <TabsTrigger value="keys">Provider</TabsTrigger>
@@ -503,6 +503,54 @@ export default function ApiKeysPage() {
 
                 {/* ===== PROVIDER TAB ===== */}
                 <TabsContent value="keys" className="space-y-4">
+                    {/* Built-in providers */}
+                    {providerStatuses.filter(p => p.provider !== 'youtube').map((p) => (
+                        <Card key={p.provider}>
+                            <CardHeader className="pb-3">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <CardTitle className="text-base flex items-center gap-2">
+                                            {p.label}
+                                            <Badge variant="outline" className="text-xs gap-1"><Zap className="w-3 h-3" /> Built-in</Badge>
+                                        </CardTitle>
+                                        <CardDescription className="font-mono text-xs flex items-center gap-1">
+                                            <Globe className="w-3 h-3" /> {p.baseUrl}
+                                        </CardDescription>
+                                    </div>
+                                    <Badge className={p.status === 'configured' ? 'bg-green-600 gap-1' : 'bg-yellow-500 gap-1'}>
+                                        {p.status === 'configured' ? <><ShieldCheck className="w-3 h-3" /> Terhubung</> : <><WifiOff className="w-3 h-3" /> Belum diatur</>}
+                                    </Badge>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="flex gap-2">
+                                    <div className="flex-1 relative">
+                                        <Input
+                                            type={showKeys[p.provider] ? 'text' : 'password'}
+                                            placeholder="sk-..."
+                                            value={keys[p.provider] || ''}
+                                            onChange={(e) => setKeys({ ...keys, [p.provider]: e.target.value })}
+                                        />
+                                        <Button variant="ghost" size="sm" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                                            onClick={() => setShowKeys({ ...showKeys, [p.provider]: !showKeys[p.provider] })}>
+                                            {showKeys[p.provider] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                        </Button>
+                                    </div>
+                                    <Button onClick={() => saveKey(p.provider, keys[p.provider])}
+                                        disabled={saving === p.provider || !keys[p.provider] || keys[p.provider] === '••••••••'}>
+                                        {saving === p.provider ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                    </Button>
+                                    <Button variant="outline" onClick={() => validateKey(p.provider, keys[p.provider])}
+                                        disabled={validating === p.provider || !keys[p.provider] || keys[p.provider] === '••••••••'}>
+                                        {validating === p.provider ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                                    </Button>
+                                </div>
+                                {p.textModel && <p className="text-xs text-muted-foreground mt-2">Text: <code>{p.textModel}</code> · Image: <code>{p.imageModel}</code></p>}
+                            </CardContent>
+                        </Card>
+                    ))}
+
+                    {/* Custom providers */}
                     {customProviders.map((cp: any) => {
                         let cfg: any = {}
                         try { cfg = JSON.parse(cp.value || '{}') } catch {}
