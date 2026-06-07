@@ -79,7 +79,7 @@ export function useWordPress() {
                     sourceUrl: selectedArticle?.url || scrapeUrl || undefined,
                     originalContent: selectedArticle?.content || sourceContent || '',
                     feedItemId: selectedArticle?.id,
-                    featuredImageUrl: featuredImage,
+                    featuredImageUrl: featuredImage && !featuredImage.startsWith('data:') ? featuredImage : undefined,
                     articleId: generatedArticleId,
                 }),
             })
@@ -144,7 +144,7 @@ export function useWordPress() {
                     sourceUrl: selectedArticle?.url || scrapeUrl || undefined,
                     originalContent: selectedArticle?.content || sourceContent || '',
                     feedItemId: selectedArticle?.id,
-                    featuredImageUrl: featuredImage,
+                    featuredImageUrl: featuredImage && !featuredImage.startsWith('data:') ? featuredImage : undefined,
                     articleId: generatedArticleId,
                     date: scheduledDateTime,
                 }),
