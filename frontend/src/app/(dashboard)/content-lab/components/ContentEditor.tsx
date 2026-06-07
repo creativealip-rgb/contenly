@@ -162,7 +162,7 @@ export function ContentEditor({ state, handlers, copied, handleCopy }: ContentEd
                         <div className="py-4">
                             {generatedTitle && <h1 className="text-2xl font-black mb-6 text-slate-900">{generatedTitle}</h1>}
                             <div
-                                className="[&_h2]:text-xl [&_h2]:font-bold [&_h2]:mt-8 [&_h2]:mb-3 [&_h2]:text-slate-900 [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mt-6 [&_h3]:mb-2 [&_p]:mb-4 [&_p]:text-[15px] [&_p]:leading-relaxed [&_a]:text-blue-600 [&_a]:underline [&_strong]:font-bold [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-4 [&_li]:mb-1 [&_li]:text-[15px] [&_li]:leading-relaxed"
+                                className="[&_h2]:text-xl [&_h2]:font-bold [&_h2]:mt-8 [&_h2]:mb-3 [&_h2]:text-slate-900 [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mt-6 [&_h3]:mb-2 [&_ul_h2]:ml-[-1.5rem] [&_ul_h3]:ml-[-1.5rem] [&_ol_h2]:ml-[-1.5rem] [&_ol_h3]:ml-[-1.5rem] [&_p]:mb-4 [&_p]:text-[15px] [&_p]:leading-relaxed [&_a]:text-blue-600 [&_a]:underline [&_strong]:font-bold [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-4 [&_li]:mb-1 [&_li]:text-[15px] [&_li]:leading-relaxed"
                                 dangerouslySetInnerHTML={{ __html: generatedContent }}
                             />
                         </div>
