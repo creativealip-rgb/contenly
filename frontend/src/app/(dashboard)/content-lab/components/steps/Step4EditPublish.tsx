@@ -65,10 +65,8 @@ export function Step4EditPublish({
             className="flex flex-col h-full max-h-full"
         >
             <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pb-4">
-                {/* Full-width editor */}
-                <div className="glass border-2 border-white/60 dark:border-white/20 rounded-3xl p-6 lg:p-8 mb-4 shadow-xl">
-                    <ContentEditor state={state} handlers={handlers} copied={copied} handleCopy={handleCopy} />
-                </div>
+                {/* Full-width editor - no card wrapper */}
+                <ContentEditor state={state} handlers={handlers} copied={copied} handleCopy={handleCopy} />
 
                 {/* SEO Collapsible */}
                 <div className="glass border-2 border-white/60 dark:border-white/20 rounded-2xl mb-4 overflow-hidden">

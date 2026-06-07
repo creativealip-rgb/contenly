@@ -157,11 +157,9 @@ export function ContentEditor({ state, handlers, copied, handleCopy }: ContentEd
                         </div>
 
                         <div className="flex-1 relative">
-                            <Textarea
-                                value={generatedContent}
-                                onChange={(e) => setGeneratedContent(e.target.value)}
-                                placeholder="Konten yang dibuat AI akan muncul di sini..."
-                                className="absolute inset-0 w-full h-full min-h-[500px] resize-none border-none bg-white shadow-2xl shadow-slate-200/50 dark:shadow-none p-8 rounded-[32px] text-lg leading-relaxed custom-scrollbar focus-visible:ring-0"
+                            <div 
+                                className="w-full min-h-[400px] border-none bg-white shadow-2xl shadow-slate-200/50 dark:shadow-none p-8 rounded-[32px] text-lg leading-relaxed custom-scrollbar text-slate-800 dark:text-slate-200 [&_h2]:text-xl [&_h2]:font-black [&_h2]:mt-6 [&_h2]:mb-3 [&_h3]:text-lg [&_h3]:font-bold [&_h3]:mt-4 [&_h3]:mb-2 [&_p]:mb-4 [&_a]:text-blue-600 [&_a]:underline [&_strong]:font-bold [&_ul]:list-disc [&_ul]:ml-6 [&_ul]:mb-4 [&_ol]:list-decimal [&_ol]:ml-6 [&_ol]:mb-4 [&_li]:mb-1"
+                                dangerouslySetInnerHTML={{ __html: generatedContent || '<p style="color:#94a3b8;font-style:italic">Konten yang dibuat AI akan muncul di sini...</p>' }}
                             />
                             {state.isRewriting && (
                                 <motion.div
