@@ -62,9 +62,9 @@ export function Step4EditPublish({
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            className="flex flex-col h-full"
+            className="flex flex-col h-full max-h-full"
         >
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
+            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pb-4">
                 {/* Full-width editor */}
                 <div className="glass border-2 border-white/60 dark:border-white/20 rounded-3xl p-6 lg:p-8 mb-4 shadow-xl">
                     <ContentEditor state={state} handlers={handlers} copied={copied} handleCopy={handleCopy} />

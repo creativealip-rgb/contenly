@@ -173,7 +173,7 @@ export default function ContentLabPage() {
             />
 
             {/* Step Content */}
-            <div className="flex-1 min-h-0">
+            <div className="flex-1 min-h-0 overflow-hidden">
                 {currentStep === 1 && <Step1Source />}
                 {currentStep === 2 && <Step2Article state={state} handlers={handlers} />}
                 {currentStep === 3 && <Step3Generate state={state} handlers={handlers} />}
