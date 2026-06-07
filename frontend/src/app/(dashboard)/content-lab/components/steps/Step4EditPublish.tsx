@@ -38,7 +38,7 @@ function SidebarPanel({ title, icon: Icon, children, defaultOpen = false }: {
 }) {
     const [open, setOpen] = useState(defaultOpen)
     return (
-        <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+        <div className="border border-slate-200 dark:border-slate-700 rounded-xl">
             <button
                 onClick={() => setOpen(!open)}
                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors text-left"
