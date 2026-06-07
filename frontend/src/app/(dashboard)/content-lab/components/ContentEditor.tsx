@@ -152,13 +152,13 @@ export function ContentEditor({ state, handlers, copied, handleCopy }: ContentEd
                                 value={generatedTitle}
                                 onChange={(e) => setGeneratedTitle(e.target.value)}
                                 placeholder="Klik buat untuk mendapatkan judul..."
-                                className="text-2xl font-black tracking-tight h-16 border-none bg-white hover:bg-blue-50/10 focus-visible:bg-white transition-all shadow-xl shadow-slate-200/40 dark:shadow-none px-6 rounded-lg"
+                                className="text-2xl font-black tracking-tight h-16 border-none bg-transparent hover:bg-blue-50/10 focus-visible:bg-transparent transition-all px-2 rounded-lg"
                             />
                         </div>
 
                         <div className="flex-1 relative">
                             <div 
-                                className="w-full min-h-[400px] border-none bg-white shadow-2xl shadow-slate-200/50 dark:shadow-none p-8 rounded-[32px] text-lg leading-relaxed custom-scrollbar text-slate-800 dark:text-slate-200 [&_h2]:text-xl [&_h2]:font-black [&_h2]:mt-6 [&_h2]:mb-3 [&_h3]:text-lg [&_h3]:font-bold [&_h3]:mt-4 [&_h3]:mb-2 [&_p]:mb-4 [&_a]:text-blue-600 [&_a]:underline [&_strong]:font-bold [&_ul]:list-disc [&_ul]:ml-6 [&_ul]:mb-4 [&_ol]:list-decimal [&_ol]:ml-6 [&_ol]:mb-4 [&_li]:mb-1"
+                                className="w-full min-h-[400px] border-none p-6 text-lg leading-relaxed custom-scrollbar text-slate-800 dark:text-slate-200 [&_h2]:text-xl [&_h2]:font-black [&_h2]:mt-6 [&_h2]:mb-3 [&_h3]:text-lg [&_h3]:font-bold [&_h3]:mt-4 [&_h3]:mb-2 [&_p]:mb-4 [&_a]:text-blue-600 [&_a]:underline [&_strong]:font-bold [&_ul]:list-disc [&_ul]:ml-6 [&_ul]:mb-4 [&_ol]:list-decimal [&_ol]:ml-6 [&_ol]:mb-4 [&_li]:mb-1"
                                 dangerouslySetInnerHTML={{ __html: generatedContent || '<p style="color:#94a3b8;font-style:italic">Konten yang dibuat AI akan muncul di sini...</p>' }}
                             />
                             {state.isRewriting && (
