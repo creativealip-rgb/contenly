@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { motion } from 'framer-motion'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
 import { getActiveSite } from '@/lib/sites-store'
 import { migrateLocalStorageFeeds } from '@/lib/migrate-feeds'
@@ -11,10 +9,14 @@ import { useContentLabStore } from '@/stores/content-lab-store'
 import { Badge } from '@/components/ui/badge'
 import { Loader2 } from 'lucide-react'
 
-// New Components & Hooks
-import { SourceSidebar } from './components/SourceSidebar'
-import { ContentEditor } from './components/ContentEditor'
-import { ToolsPanel } from './components/ToolsPanel'
+// New Wizard Components
+import { WizardStepper } from './components/WizardStepper'
+import { Step1Source } from './components/steps/Step1Source'
+import { Step2Article } from './components/steps/Step2Article'
+import { Step3Generate } from './components/steps/Step3Generate'
+import { Step4EditPublish } from './components/steps/Step4EditPublish'
+
+// Hooks
 import { ContentLabState, ContentLabHandlers } from './components/types'
 import { useRSS } from './hooks/useRSS'
 import { useWordPress } from './hooks/useWordPress'
@@ -23,8 +25,8 @@ import { useAutoSaveDraft } from './hooks/useAutoSaveDraft'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 
 export default function ContentLabPage() {
-    // Global Store State
-    const { generatedContent } = useContentLabStore()
+    // Global Store
+    const { generatedContent, currentStep, setCurrentStep, maxReachedStep, setMaxReachedStep } = useContentLabStore()
     const searchParams = useSearchParams()
     const loadArticleId = searchParams.get('id')
 
@@ -34,11 +36,10 @@ export default function ContentLabPage() {
     const ai = useAIContent()
     const { isSaving } = useAutoSaveDraft()
 
-    // Local UI State (Remaining)
+    // Local UI State
     const [copied, setCopied] = useState(false)
-    const [rightPanelTab, setRightPanelTab] = useState<'sources' | 'tools'>('sources')
 
-    // Load existing article from ?id= param
+    // Load existing article from ?id= param → skip to step 4
     useEffect(() => {
         if (!loadArticleId) return
         const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
@@ -57,19 +58,20 @@ export default function ContentLabPage() {
                 store.setGeneratedArticleId(article.id)
                 if (article.featuredImageUrl) store.setFeaturedImage(article.featuredImageUrl)
                 if (article.sourceUrl) store.setSelectedArticle({ id: article.id, title: article.title, url: article.sourceUrl })
-                setRightPanelTab('tools')
+                // Skip to step 4
+                setCurrentStep(4)
+                setMaxReachedStep(4)
             } catch { /* ignore */ }
         }
         load()
     }, [loadArticleId])
 
-    // Initial Load & Orchestration
+    // Initial Load
     useEffect(() => {
         const init = async () => {
             await wp.loadSites()
             await migrateLocalStorageFeeds()
             await rss.loadFeeds()
-
             const activeSite = await getActiveSite()
             if (activeSite) {
                 await wp.fetchCategories(activeSite.id)
@@ -78,15 +80,7 @@ export default function ContentLabPage() {
         init()
     }, [wp.loadSites, rss.loadFeeds, wp.fetchCategories])
 
-    // UI Handlers
-    const handleCopy = () => {
-        navigator.clipboard.writeText(generatedContent)
-        setCopied(true)
-        toast.success('Disalin ke papan klip!')
-        setTimeout(() => setCopied(false), 2000)
-    }
-
-    // Prepare state and handlers for sub-components (Backward Compatibility)
+    // Prepare state and handlers
     const state: ContentLabState = {
         wpCategories: wp.wpCategories,
         selectedCategory: wp.selectedCategory,
@@ -106,11 +100,12 @@ export default function ContentLabPage() {
         isRefreshingSEO: ai.isRefreshingSEO,
         isPublishing: wp.isPublishing,
         isGeneratingImage: ai.isGeneratingImage,
-        selectedArticle: useContentLabStore.getState().selectedArticle
+        selectedArticle: useContentLabStore.getState().selectedArticle,
+        sourceType: useContentLabStore.getState().sourceType
     }
 
     const handlers: ContentLabHandlers = {
-        setFeeds: () => { }, // No longer needed as handled by hook
+        setFeeds: () => { },
         setArticles: () => { },
         setSelectedFeed: rss.setSelectedFeed,
         setIsFetchingRSS: rss.setIsFetchingRSS,
@@ -127,11 +122,9 @@ export default function ContentLabPage() {
         handleRemoveFeed: async (e, id) => { e.stopPropagation(); await rss.handleRemoveFeed(id); },
         handleSelectArticle: async (article: any) => {
             await ai.handleSelectArticle(article)
-            setRightPanelTab('tools')
         },
         handleScrape: async () => {
             await ai.handleScrape()
-            setRightPanelTab('tools')
         },
         handleAIRewrite: () => ai.handleAIRewrite(wp.selectedCategory),
         handleGenerateImage: ai.handleGenerateImage
@@ -140,13 +133,16 @@ export default function ContentLabPage() {
     // Keyboard shortcuts
     useKeyboardShortcuts({
         onRegenerate: () => handlers.handleAIRewrite(),
-        onCopy: handleCopy,
+        onCopy: () => {
+            navigator.clipboard.writeText(generatedContent)
+            toast.success('Disalin ke papan klip!')
+        },
     })
 
     return (
         <div className="h-[calc(100vh-180px)] min-h-[600px] px-4 md:px-0 flex flex-col">
-            {/* Header with Status */}
-            <div className="mb-6 flex items-center justify-between flex-wrap gap-3 flex-shrink-0">
+            {/* Header */}
+            <div className="mb-4 flex items-center justify-between flex-wrap gap-3 flex-shrink-0">
                 <div className="space-y-1">
                     <h1 className="text-2xl md:text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
                         Content Lab
@@ -161,7 +157,7 @@ export default function ContentLabPage() {
                         </Badge>
                     )}
                     {(state.isRewriting || state.isScraping || state.isPublishing || state.isGeneratingImage || state.isRefreshingSEO) && (
-                        <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200 gap-1" role="status" aria-label="Memuat...">
+                        <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200 gap-1" role="status">
                             <Loader2 className="h-3 w-3 animate-spin" />
                             Memproses...
                         </Badge>
@@ -169,58 +165,37 @@ export default function ContentLabPage() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4 flex-1 min-h-0">
-                {/* Left Panel: Editor (Wider) */}
-                <div className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden rounded-[40px] p-6 lg:p-10 overflow-y-auto shadow-2xl shadow-slate-200/50 dark:shadow-none flex-1 min-h-0" aria-live="polite">
-                    <ContentEditor state={state} handlers={handlers} copied={copied} handleCopy={handleCopy} />
-                </div>
+            {/* Wizard Stepper */}
+            <WizardStepper
+                currentStep={currentStep}
+                maxReachedStep={maxReachedStep}
+                onStepClick={setCurrentStep}
+            />
 
-                {/* Right Panel: Tabbed Sidebar (Sources & Tools) */}
-                <div className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden rounded-3xl overflow-hidden flex flex-col shadow-xl order-1 lg:order-2">
-                    <Tabs value={rightPanelTab} onValueChange={(v) => setRightPanelTab(v as 'sources' | 'tools')} className="flex flex-col h-full">
-                        <div className="px-4 pt-4 pb-2">
-                            <TabsList className="grid w-full grid-cols-2 rounded-xl bg-white/50 dark:bg-slate-800/50 p-1 h-10">
-                                <TabsTrigger
-                                    value="sources"
-                                    className="rounded-lg font-bold text-xs data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all"
-                                >
-                                    Sumber Daya
-                                </TabsTrigger>
-                                <TabsTrigger
-                                    value="tools"
-                                    className="rounded-lg font-bold text-xs data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all"
-                                >
-                                    Alat AI
-                                </TabsTrigger>
-                            </TabsList>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto px-4 pb-4 custom-scrollbar">
-                            <TabsContent value="sources" className="mt-0 h-full">
-                                <SourceSidebar state={state} handlers={handlers} />
-                            </TabsContent>
-                            <TabsContent value="tools" className="mt-0 space-y-4">
-                                <ToolsPanel
-                                    state={state}
-                                    handlers={handlers}
-                                    isRefreshingSEO={ai.isRefreshingSEO}
-                                    handleRefreshSEO={ai.handleRefreshSEO}
-                                    handlePublishNow={wp.handlePublishNow}
-                                    isPublishing={wp.isPublishing}
-                                    isScheduleOpen={wp.isScheduleOpen}
-                                    setIsScheduleOpen={wp.setIsScheduleOpen}
-                                    scheduleDate={wp.scheduleDate}
-                                    setScheduleDate={wp.setScheduleDate}
-                                    scheduleTime={wp.scheduleTime}
-                                    setScheduleTime={wp.setScheduleTime}
-                                    handleSchedulePublish={wp.handleSchedulePublish}
-                                    isGeneratingImage={ai.isGeneratingImage}
-                                    handleGenerateImage={ai.handleGenerateImage}
-                                />
-                            </TabsContent>
-                        </div>
-                    </Tabs>
-                </div>
+            {/* Step Content */}
+            <div className="flex-1 min-h-0">
+                {currentStep === 1 && <Step1Source />}
+                {currentStep === 2 && <Step2Article state={state} handlers={handlers} />}
+                {currentStep === 3 && <Step3Generate state={state} handlers={handlers} />}
+                {currentStep === 4 && (
+                    <Step4EditPublish
+                        state={state}
+                        handlers={handlers}
+                        isRefreshingSEO={ai.isRefreshingSEO}
+                        handleRefreshSEO={ai.handleRefreshSEO}
+                        handlePublishNow={wp.handlePublishNow}
+                        isPublishing={wp.isPublishing}
+                        isScheduleOpen={wp.isScheduleOpen}
+                        setIsScheduleOpen={wp.setIsScheduleOpen}
+                        scheduleDate={wp.scheduleDate}
+                        setScheduleDate={wp.setScheduleDate}
+                        scheduleTime={wp.scheduleTime}
+                        setScheduleTime={wp.setScheduleTime}
+                        handleSchedulePublish={wp.handleSchedulePublish}
+                        isGeneratingImage={ai.isGeneratingImage}
+                        handleGenerateImage={ai.handleGenerateImage}
+                    />
+                )}
             </div>
         </div>
     )

@@ -61,6 +61,14 @@ interface ContentLabState {
     setAiLength: (length: 'shorter' | 'same' | 'longer') => void
     setPublishResult: (result: { success: boolean; message: string; link?: string } | null) => void
 
+    // Wizard State
+    currentStep: number
+    sourceType: 'feed' | 'url' | 'idea' | null
+    maxReachedStep: number
+    setCurrentStep: (step: number) => void
+    setSourceType: (type: 'feed' | 'url' | 'idea') => void
+    setMaxReachedStep: (step: number) => void
+
     // Reset
     reset: () => void
 }
@@ -87,6 +95,11 @@ export const useContentLabStore = create<ContentLabState>((set) => ({
 
     publishResult: null,
 
+    // Wizard State
+    currentStep: 1,
+    sourceType: null,
+    maxReachedStep: 1,
+
     // Setters
     setGeneratedContent: (generatedContent) => set({ generatedContent }),
     setGeneratedTitle: (generatedTitle) => set({ generatedTitle }),
@@ -105,6 +118,10 @@ export const useContentLabStore = create<ContentLabState>((set) => ({
     setAiLength: (aiLength) => set({ aiLength }),
     setPublishResult: (publishResult) => set({ publishResult }),
 
+    setCurrentStep: (currentStep) => set({ currentStep }),
+    setSourceType: (sourceType) => set({ sourceType, activeTab: sourceType === 'feed' ? 'rss' : sourceType === 'url' ? 'url' : 'idea' }),
+    setMaxReachedStep: (maxReachedStep) => set({ maxReachedStep }),
+
     // Reset Action (Optional, if we needed manual reset)
     reset: () => set({
         generatedContent: '',
@@ -122,6 +139,9 @@ export const useContentLabStore = create<ContentLabState>((set) => ({
         aiTone: 'professional',
         aiStyle: 'blog',
         aiLength: 'same',
-        publishResult: null
+        publishResult: null,
+        currentStep: 1,
+        sourceType: null,
+        maxReachedStep: 1
     })
 }))

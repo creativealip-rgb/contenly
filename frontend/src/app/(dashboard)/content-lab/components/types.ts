@@ -12,6 +12,7 @@ export interface ContentLabState {
     feeds: RssFeed[];
     articles: any[];
     selectedArticle: any | null;
+    sourceType: 'feed' | 'url' | 'idea' | null;
     selectedFeed: string;
     isFetchingRSS: boolean;
     isAddFeedOpen: boolean;
