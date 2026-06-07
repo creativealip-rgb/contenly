@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronUp, Settings, Send, Image, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ContentLabState, ContentLabHandlers } from '../types'
 import { ContentEditor } from '../ContentEditor'
@@ -28,6 +28,32 @@ interface Step4EditPublishProps {
     handleGenerateImage: () => void
 }
 
+function SidebarPanel({ title, icon: Icon, children, defaultOpen = false }: {
+    title: string
+    icon: React.ElementType
+    children: React.ReactNode
+    defaultOpen?: boolean
+}) {
+    const [open, setOpen] = useState(defaultOpen)
+    return (
+        <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+            <button
+                onClick={() => setOpen(!open)}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors text-left"
+            >
+                <Icon className="w-4 h-4 text-slate-400" />
+                <span className="text-sm font-semibold flex-1">{title}</span>
+                {open ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+            </button>
+            {open && (
+                <div className="px-4 pb-4 border-t border-slate-100 dark:border-slate-800 pt-3">
+                    {children}
+                </div>
+            )}
+        </div>
+    )
+}
+
 export function Step4EditPublish({
     state,
     handlers,
@@ -47,8 +73,6 @@ export function Step4EditPublish({
 }: Step4EditPublishProps) {
     const { setCurrentStep } = useContentLabStore()
     const [copied, setCopied] = useState(false)
-    const [seoOpen, setSeoOpen] = useState(false)
-    const [publishOpen, setPublishOpen] = useState(false)
 
     const handleCopy = () => {
         const { generatedContent } = useContentLabStore.getState()
@@ -62,71 +86,47 @@ export function Step4EditPublish({
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            className="flex flex-col h-full max-h-full"
+            className="flex gap-6 h-full max-h-full"
         >
-            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pb-4">
-                {/* Full-width editor - no card wrapper */}
-                <ContentEditor state={state} handlers={handlers} copied={copied} handleCopy={handleCopy} />
-
-                {/* SEO Collapsible */}
-                <div className="glass border-2 border-white/60 dark:border-white/20 rounded-2xl mb-4 overflow-hidden">
-                    <button
-                        onClick={() => setSeoOpen(!seoOpen)}
-                        className="w-full flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-                    >
-                        <span className="font-bold text-sm">🔧 SEO Settings</span>
-                        {seoOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                    </button>
-                    {seoOpen && (
-                        <div className="px-4 pb-4 border-t border-slate-100 dark:border-slate-800">
-                            <SEOSection
-                                isRefreshingSEO={isRefreshingSEO}
-                                onRefreshSEO={handleRefreshSEO}
-                                isGeneratingImage={isGeneratingImage}
-                                onGenerateImage={handleGenerateImage}
-                            />
-                        </div>
-                    )}
+            {/* Main Editor - Left Side */}
+            <div className="flex-1 min-w-0 flex flex-col min-h-0">
+                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+                    <ContentEditor state={state} handlers={handlers} copied={copied} handleCopy={handleCopy} />
                 </div>
 
-                {/* Publish Collapsible */}
-                <div className="glass border-2 border-white/60 dark:border-white/20 rounded-2xl overflow-hidden">
-                    <button
-                        onClick={() => setPublishOpen(!publishOpen)}
-                        className="w-full flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-                    >
-                        <span className="font-bold text-sm">🚀 Publish</span>
-                        {publishOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                    </button>
-                    {publishOpen && (
-                        <div className="px-4 pb-4 border-t border-slate-100 dark:border-slate-800">
-                            <PublishingSection
-                                handlePublishNow={handlePublishNow}
-                                isPublishing={isPublishing}
-                                isScheduleOpen={isScheduleOpen}
-                                setIsScheduleOpen={setIsScheduleOpen}
-                                scheduleDate={scheduleDate}
-                                setScheduleDate={setScheduleDate}
-                                scheduleTime={scheduleTime}
-                                setScheduleTime={setScheduleTime}
-                                handleSchedulePublish={handleSchedulePublish}
-                            />
-                        </div>
-                    )}
+                {/* Bottom Nav */}
+                <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800 mt-3 flex-shrink-0">
+                    <Button variant="ghost" onClick={() => setCurrentStep(3)} className="gap-2 text-slate-500">
+                        <ArrowLeft className="w-4 h-4" />
+                        Kembali
+                    </Button>
                 </div>
             </div>
 
-            {/* Navigation */}
-            <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800 mt-4 flex-shrink-0">
-                <Button
-                    variant="ghost"
-                    onClick={() => setCurrentStep(3)}
-                    className="gap-2 text-slate-500"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    Kembali
-                </Button>
-                <div />
+            {/* Right Sidebar */}
+            <div className="w-72 xl:w-80 flex-shrink-0 flex flex-col gap-3 overflow-y-auto custom-scrollbar min-h-0">
+                <SidebarPanel title="SEO Settings" icon={Settings} defaultOpen={false}>
+                    <SEOSection
+                        isRefreshingSEO={isRefreshingSEO}
+                        onRefreshSEO={handleRefreshSEO}
+                        isGeneratingImage={isGeneratingImage}
+                        onGenerateImage={handleGenerateImage}
+                    />
+                </SidebarPanel>
+
+                <SidebarPanel title="Publish" icon={Send} defaultOpen={true}>
+                    <PublishingSection
+                        handlePublishNow={handlePublishNow}
+                        isPublishing={isPublishing}
+                        isScheduleOpen={isScheduleOpen}
+                        setIsScheduleOpen={setIsScheduleOpen}
+                        scheduleDate={scheduleDate}
+                        setScheduleDate={setScheduleDate}
+                        scheduleTime={scheduleTime}
+                        setScheduleTime={setScheduleTime}
+                        handleSchedulePublish={handleSchedulePublish}
+                    />
+                </SidebarPanel>
             </div>
         </motion.div>
     )
