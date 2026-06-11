@@ -406,11 +406,13 @@ Tasks:
 - [x] Map each route to backend API endpoints.
 - [x] Verify endpoint guard coverage.
 - [x] Add missing frontend UX guard on `/admin/api-keys`.
-- [ ] Add integration tests for blocked non-admin access.
+- [x] Add guard coverage tests for known admin endpoints.
+- [ ] Add HTTP-level integration tests for blocked non-admin access.
 
-Current audit doc:
+Current audit doc/tests:
 
 - `docs/ROLE_ADMIN_PERMISSION_AUDIT.md`
+- `backend/src/common/guards/admin-permission-coverage.spec.ts`
 
 Checkpoints:
 

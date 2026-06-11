@@ -78,7 +78,8 @@ Status:
 
 - Backend guard coverage for known admin/super-admin endpoints: PASS.
 - Frontend guard coverage for known admin/super-admin pages: PASS.
-- Integration tests for unauthorized admin access: PENDING.
+- Guard coverage tests added for known admin/super-admin endpoints: PASS.
+- Full HTTP-level 403 integration tests: PENDING.
 
 ## Recommended follow-up
 
