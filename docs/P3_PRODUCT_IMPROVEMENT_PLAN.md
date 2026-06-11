@@ -394,7 +394,7 @@ Candidate areas:
 
 ### 17. Role/admin permission audit
 
-Status: **PARTIAL**
+Status: **DONE**
 
 Goal:
 
@@ -407,12 +407,13 @@ Tasks:
 - [x] Verify endpoint guard coverage.
 - [x] Add missing frontend UX guard on `/admin/api-keys`.
 - [x] Add guard coverage tests for known admin endpoints.
-- [ ] Add HTTP-level integration tests for blocked non-admin access.
+- [x] Add HTTP-level integration tests for blocked non-admin access.
 
 Current audit doc/tests:
 
 - `docs/ROLE_ADMIN_PERMISSION_AUDIT.md`
 - `backend/src/common/guards/admin-permission-coverage.spec.ts`
+- `backend/src/common/guards/admin-permission-http.spec.ts`
 
 Checkpoints:
 
@@ -605,7 +606,7 @@ P2:
 
 P3:
 
-- Partial:
+- Done:
   - role/admin permission audit
 - Pending:
   - dashboard loading/error states
@@ -615,14 +616,13 @@ P3:
 
 ## Next recommended order
 
-1. Role/admin permission audit integration tests.
-2. E2E smoke test with mocked AI.
-3. API contract + typed frontend client.
-4. AI cost control guardrails.
-5. WordPress robustness.
-6. Queue retry/dead-letter/idempotency/stuck cleanup.
-7. Observability + rate limit refinement.
-8. Dashboard loading/error UX pass.
+1. E2E smoke test with mocked AI.
+2. API contract + typed frontend client.
+3. AI cost control guardrails.
+4. WordPress robustness.
+5. Queue retry/dead-letter/idempotency/stuck cleanup.
+6. Observability + rate limit refinement.
+7. Dashboard loading/error UX pass.
 
 Reason:
 

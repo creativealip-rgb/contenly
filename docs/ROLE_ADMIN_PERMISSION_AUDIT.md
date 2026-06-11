@@ -79,7 +79,12 @@ Status:
 - Backend guard coverage for known admin/super-admin endpoints: PASS.
 - Frontend guard coverage for known admin/super-admin pages: PASS.
 - Guard coverage tests added for known admin/super-admin endpoints: PASS.
-- Full HTTP-level 403 integration tests: PENDING.
+- Focused HTTP-level 403 tests for high-risk admin endpoints: PASS.
+
+Verified endpoints:
+
+- `GET /users/admin/list` rejects regular admin with 403.
+- `GET /admin/settings/providers/status` rejects regular admin with 403.
 
 ## Recommended follow-up
 
