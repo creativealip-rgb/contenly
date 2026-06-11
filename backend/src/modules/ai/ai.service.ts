@@ -1,10 +1,16 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { OpenAiService } from './services/openai.service';
 import { BillingService } from '../billing/billing.service';
-import { GenerateContentDto, GenerateSeoDto, AiGenerateImageDto, GeneratePromptDto } from './dto';
+import {
+  GenerateContentDto,
+  GenerateSeoDto,
+  AiGenerateImageDto,
+  GeneratePromptDto,
+} from './dto';
 import { ArticlesService } from '../articles/articles.service';
 import { WordpressService } from '../wordpress/wordpress.service';
 import { BILLING_TIERS } from '../billing/billing.constants';
+import { AiCostControlService } from './services/ai-cost-control.service';
 
 @Injectable()
 export class AiService {
@@ -15,10 +21,14 @@ export class AiService {
     private billingService: BillingService,
     private articlesService: ArticlesService,
     private wordpressService: WordpressService,
-  ) { }
+    private aiCostControlService: AiCostControlService,
+  ) {}
 
   async generateContent(userId: string, dto: GenerateContentDto) {
-    const billing = await this.billingService.ensureBilling(userId, 'ARTICLE_GENERATION');
+    const billing = await this.billingService.ensureBilling(
+      userId,
+      'ARTICLE_GENERATION',
+    );
     if (!billing.allowed) {
       throw new BadRequestException(billing.reason || 'Billing limit reached');
     }
@@ -27,7 +37,9 @@ export class AiService {
     const model = BILLING_TIERS[tier]?.aiModel;
 
     // Generate content
-    this.logger.log(`Generating content for user tier: ${tier}, mode: ${dto.mode}`);
+    this.logger.log(
+      `Generating content for user tier: ${tier}, mode: ${dto.mode}`,
+    );
     const aiResponse = await this.openAiService.generateContent(
       dto.originalContent,
       {
@@ -49,26 +61,39 @@ export class AiService {
 
     // Fetch and inject "Baca Juga" links if we have a site and category
     try {
-      this.logger.log(`Attempting to inject links for user: ${userId}, category: ${dto.categoryId}`);
+      this.logger.log(
+        `Attempting to inject links for user: ${userId}, category: ${dto.categoryId}`,
+      );
       const sites = await this.wordpressService.getSites(userId);
 
       this.logger.log(`Found ${sites?.length || 0} sites`);
       if (sites && sites.length > 0) {
-        const recentPosts = await this.wordpressService.getRecentPosts(sites[0].id, dto.categoryId);
-        this.logger.log(`Fetched ${recentPosts?.length || 0} recent posts for category ${dto.categoryId}`);
+        const recentPosts = await this.wordpressService.getRecentPosts(
+          sites[0].id,
+          dto.categoryId,
+        );
+        this.logger.log(
+          `Fetched ${recentPosts?.length || 0} recent posts for category ${dto.categoryId}`,
+        );
 
         if (recentPosts && recentPosts.length > 0) {
           content = this.injectInternalLinks(content, recentPosts);
           this.logger.log(`Successfully injected ${recentPosts.length} links`);
         } else {
-          this.logger.warn(`No recent posts found for category ${dto.categoryId}`);
+          this.logger.warn(
+            `No recent posts found for category ${dto.categoryId}`,
+          );
         }
       }
     } catch (linkError) {
       this.logger.error('Failed to inject internal links', linkError);
     }
 
-    await this.billingService.recordUsage(userId, 'ARTICLE_GENERATION', billing);
+    await this.billingService.recordUsage(
+      userId,
+      'ARTICLE_GENERATION',
+      billing,
+    );
 
     // Save generated content as a draft article
     let articleId = null;
@@ -80,9 +105,13 @@ export class AiService {
         sourceUrl: dto.sourceUrl || '',
         status: 'DRAFT',
         // Only pass feedItemId if it's a valid UUID
-        feedItemId: (dto.feedItemId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(dto.feedItemId))
-          ? dto.feedItemId
-          : undefined,
+        feedItemId:
+          dto.feedItemId &&
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+            dto.feedItemId,
+          )
+            ? dto.feedItemId
+            : undefined,
         tokensUsed: 1,
       } as any);
       articleId = savedArticle.id;
@@ -149,7 +178,10 @@ export class AiService {
     return html;
   }
 
-  private injectInternalLinks(content: string, links: { title: string; link: string }[]): string {
+  private injectInternalLinks(
+    content: string,
+    links: { title: string; link: string }[],
+  ): string {
     if (!links || links.length === 0) return content;
 
     // Detect content format (HTML or Markdown/Text)
@@ -158,9 +190,11 @@ export class AiService {
 
     // Split content into paragraphs
     const chunks = content.split(delimiter);
-    const actualChunks = chunks.filter(c => c.trim().length > 0);
+    const actualChunks = chunks.filter((c) => c.trim().length > 0);
 
-    this.logger.log(`Injecting links into ${isHtml ? 'HTML' : 'Markdown'} (${actualChunks.length} paragraphs)`);
+    this.logger.log(
+      `Injecting links into ${isHtml ? 'HTML' : 'Markdown'} (${actualChunks.length} paragraphs)`,
+    );
 
     const createLink = (item: { title: string; link: string }) =>
       isHtml
@@ -214,7 +248,10 @@ export class AiService {
   }
 
   async generateImage(userId: string, dto: AiGenerateImageDto) {
-    const billing = await this.billingService.ensureBilling(userId, 'IMAGE_GENERATION');
+    const billing = await this.billingService.ensureBilling(
+      userId,
+      'IMAGE_GENERATION',
+    );
     if (!billing.allowed) {
       throw new BadRequestException(billing.reason || 'Billing limit reached');
     }
@@ -233,8 +270,9 @@ export class AiService {
   async generatePrompt(dto: GeneratePromptDto) {
     this.logger.log(`Generating ${dto.mode} prompt from: ${dto.text}`);
 
-    const systemPrompt = dto.mode === 'image'
-      ? `You are an AI image prompt generator. Convert the user's everyday language description into a structured JSON prompt for AI image generation (like Midjourney, DALL-E, or Stable Diffusion).
+    const systemPrompt =
+      dto.mode === 'image'
+        ? `You are an AI image prompt generator. Convert the user's everyday language description into a structured JSON prompt for AI image generation (like Midjourney, DALL-E, or Stable Diffusion).
 
 Respond ONLY with valid JSON in this exact format:
 {
@@ -248,7 +286,7 @@ Respond ONLY with valid JSON in this exact format:
 }
 
 Keep each field concise but descriptive. Use English.`
-      : `You are an AI video prompt generator. Convert the user's everyday language description into a structured JSON prompt for AI video generation (like Runway, Pika, or Sora).
+        : `You are an AI video prompt generator. Convert the user's everyday language description into a structured JSON prompt for AI video generation (like Runway, Pika, or Sora).
 
 Respond ONLY with valid JSON in this exact format:
 {
@@ -264,17 +302,31 @@ Respond ONLY with valid JSON in this exact format:
 
 Keep each field concise but descriptive. Use English.`;
 
-    const response = await this.openAiService.getClient().chat.completions.create({
-      model: await this.openAiService.getTextModel(),
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: dto.text },
-      ],
-      temperature: 0.7,
-    });
+    const selectedModel = this.aiCostControlService.resolveModel(
+      await this.openAiService.getTextModel(),
+    );
+    const guardInput = {
+      feature: 'prompt_generation' as const,
+      model: selectedModel,
+      prompt: `${systemPrompt}\n\n${dto.text}`,
+      maxOutputTokens: 800,
+    };
+    const costEstimate = this.aiCostControlService.guardPrompt(guardInput);
+    this.aiCostControlService.logUsage(guardInput, costEstimate);
+
+    const response = await this.openAiService
+      .getClient()
+      .chat.completions.create({
+        model: selectedModel,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: dto.text },
+        ],
+        temperature: 0.7,
+      });
 
     const prompt = response.choices[0]?.message?.content?.trim();
-    
+
     if (!prompt) {
       throw new BadRequestException('Failed to generate prompt');
     }
@@ -286,11 +338,21 @@ Keep each field concise but descriptive. Use English.`;
     return this.openAiService.getGeneratedImageAsset(key);
   }
 
-  async chat(message: string, history: Array<{ role: string; content: string }>) {
+  async chat(
+    message: string,
+    history: Array<{ role: string; content: string }>,
+  ) {
     const client = this.openAiService.getClient();
     const messages = [
-      { role: 'system' as const, content: 'Kamu adalah AI assistant untuk platform Contenly — platform otomasi konten. Bantu user dengan pertanyaan tentang content creation, SEO, social media strategy, copywriting, dan penggunaan platform. Jawab dalam Bahasa Indonesia, singkat dan actionable.' },
-      ...history.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+      {
+        role: 'system' as const,
+        content:
+          'Kamu adalah AI assistant untuk platform Contenly — platform otomasi konten. Bantu user dengan pertanyaan tentang content creation, SEO, social media strategy, copywriting, dan penggunaan platform. Jawab dalam Bahasa Indonesia, singkat dan actionable.',
+      },
+      ...history.map((m) => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.content,
+      })),
       { role: 'user' as const, content: message },
     ];
 
@@ -301,6 +363,10 @@ Keep each field concise but descriptive. Use English.`;
       temperature: 0.7,
     });
 
-    return { reply: response.choices[0]?.message?.content || 'Maaf, saya tidak bisa menjawab saat ini.' };
+    return {
+      reply:
+        response.choices[0]?.message?.content ||
+        'Maaf, saya tidak bisa menjawab saat ini.',
+    };
   }
 }

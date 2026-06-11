@@ -1,9 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
-import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { sql } from 'drizzle-orm';
 import { DrizzleService } from '../../../db/drizzle.service';
+import { AiCostControlService } from './ai-cost-control.service';
 
 @Injectable()
 export class OpenAiService {
@@ -11,15 +16,23 @@ export class OpenAiService {
   private nativeOpenai: OpenAI | null = null; // Used for native OpenAI (e.g., DALL-E)
   private model: string;
 
-  constructor(private configService: ConfigService, private drizzle: DrizzleService) {
+  constructor(
+    private configService: ConfigService,
+    private drizzle: DrizzleService,
+    private aiCostControlService: AiCostControlService,
+  ) {
     console.log('🔍 OpenAiService: Initializing...');
 
     // Get model preference from env (default to GPT-4o-mini)
-    const preferredModel = (this.configService.get('OPENAI_MODEL') || 'gpt-4o-mini').trim();
+    const preferredModel = (
+      this.configService.get('OPENAI_MODEL') || 'gpt-4o-mini'
+    ).trim();
 
     // Try OpenAI API first
     let apiKey = (this.configService.get('OPENAI_API_KEY') || '').trim();
-    const customBaseURL = (this.configService.get('OPENAI_BASE_URL') || '').trim();
+    const customBaseURL = (
+      this.configService.get('OPENAI_BASE_URL') || ''
+    ).trim();
     let baseURL = 'https://api.openai.com/v1';
     let model = preferredModel;
 
@@ -40,9 +53,16 @@ export class OpenAiService {
       useOpenRouter = model.includes('/') || !apiKey;
 
       if (useOpenRouter) {
-        console.log('📝 Switching to OpenRouter (model contains slash or OpenAI key missing)');
-        apiKey = (this.configService.get('OPENROUTER_API_KEY') || apiKey).trim();
-        baseURL = (this.configService.get('OPENROUTER_BASE_URL') || 'https://openrouter.ai/api/v1').trim();
+        console.log(
+          '📝 Switching to OpenRouter (model contains slash or OpenAI key missing)',
+        );
+        apiKey = (
+          this.configService.get('OPENROUTER_API_KEY') || apiKey
+        ).trim();
+        baseURL = (
+          this.configService.get('OPENROUTER_BASE_URL') ||
+          'https://openrouter.ai/api/v1'
+        ).trim();
 
         // If we are using OpenRouter, check if there's a specific OpenRouter model set
         if (this.configService.get('OPENROUTER_MODEL')) {
@@ -52,8 +72,12 @@ export class OpenAiService {
     }
 
     if (!apiKey) {
-      console.error('❌ No API key found! Set either OPENAI_API_KEY or OPENROUTER_API_KEY');
-      throw new Error('No AI API key configured. Set OPENAI_API_KEY or OPENROUTER_API_KEY in environment variables');
+      console.error(
+        '❌ No API key found! Set either OPENAI_API_KEY or OPENROUTER_API_KEY',
+      );
+      throw new Error(
+        'No AI API key configured. Set OPENAI_API_KEY or OPENROUTER_API_KEY in environment variables',
+      );
     }
 
     // Debug: Show API key info (safe to log)
@@ -66,7 +90,8 @@ export class OpenAiService {
     let defaultHeaders: Record<string, string> | undefined;
     if (useOpenRouter) {
       defaultHeaders = {
-        'HTTP-Referer': this.configService.get('APP_URL') || 'https://contenly.web.id',
+        'HTTP-Referer':
+          this.configService.get('APP_URL') || 'https://contenly.web.id',
         'X-Title': 'Contently AI Platform',
       };
       console.log(`🔑 OpenRouter headers:`, defaultHeaders);
@@ -77,7 +102,9 @@ export class OpenAiService {
       defaultHeaders = {
         'User-Agent': 'Mozilla/5.0 (compatible; Contenly/1.0)',
       };
-      console.log(`🔑 Custom endpoint mode — overriding User-Agent to bypass gateway WAF`);
+      console.log(
+        `🔑 Custom endpoint mode — overriding User-Agent to bypass gateway WAF`,
+      );
     }
 
     // Initialize OpenAI client
@@ -94,7 +121,9 @@ export class OpenAiService {
     }
     this.model = model;
 
-    console.log(`✅ Model set to: ${this.model} via ${useCustomEndpoint ? 'Custom Endpoint' : useOpenRouter ? 'OpenRouter' : 'OpenAI'}`);
+    console.log(
+      `✅ Model set to: ${this.model} via ${useCustomEndpoint ? 'Custom Endpoint' : useOpenRouter ? 'OpenRouter' : 'OpenAI'}`,
+    );
 
     // Native OpenAI client is only used for DALL-E / TTS which require the real
     // api.openai.com endpoint. Skip native init when custom endpoint mode is active
@@ -102,7 +131,9 @@ export class OpenAiService {
     if (!this.nativeOpenai) {
       const nativeApiKey = (
         this.configService.get('OPENAI_NATIVE_API_KEY') ||
-        (useCustomEndpoint ? '' : this.configService.get('OPENAI_API_KEY') || '')
+        (useCustomEndpoint
+          ? ''
+          : this.configService.get('OPENAI_API_KEY') || '')
       ).trim();
       if (nativeApiKey) {
         this.nativeOpenai = new OpenAI({ apiKey: nativeApiKey });
@@ -124,7 +155,10 @@ export class OpenAiService {
     return this.model;
   }
 
-  private async getSystemSetting(key: string, fallback: string): Promise<string> {
+  private async getSystemSetting(
+    key: string,
+    fallback: string,
+  ): Promise<string> {
     try {
       await this.drizzle.db.execute(sql`
         CREATE TABLE IF NOT EXISTS system_settings (
@@ -134,11 +168,16 @@ export class OpenAiService {
           updated_at timestamp NOT NULL DEFAULT now()
         )
       `);
-      const result = await this.drizzle.db.execute(sql`SELECT value FROM system_settings WHERE key = ${key} LIMIT 1`);
-      const rows = Array.isArray(result) ? result : ((result as any).rows || []);
+      const result = await this.drizzle.db.execute(
+        sql`SELECT value FROM system_settings WHERE key = ${key} LIMIT 1`,
+      );
+      const rows = Array.isArray(result) ? result : (result as any).rows || [];
       return (rows[0]?.value || fallback || '').toString().trim();
     } catch (error: any) {
-      console.warn(`[OpenAiService] Failed to read system setting ${key}:`, error?.message || error);
+      console.warn(
+        `[OpenAiService] Failed to read system setting ${key}:`,
+        error?.message || error,
+      );
       return fallback;
     }
   }
@@ -146,11 +185,17 @@ export class OpenAiService {
   async getTextModel(override?: string): Promise<string> {
     // Admin-configured model must win over plan/env defaults so the Provider & Model UI
     // actually controls live AI calls. Per-call overrides are only fallback defaults.
-    return this.getSystemSetting('model_text_generation', override?.trim() || this.model);
+    return this.getSystemSetting(
+      'model_text_generation',
+      override?.trim() || this.model,
+    );
   }
 
   private async getImageModel(): Promise<string> {
-    const fallback = this.configService.get('IMAGE_MODEL') || this.configService.get('IMAGE_GENERATION_MODEL') || 'cx/gpt-5.4-image';
+    const fallback =
+      this.configService.get('IMAGE_MODEL') ||
+      this.configService.get('IMAGE_GENERATION_MODEL') ||
+      'cx/gpt-5.4-image';
     return this.getSystemSetting('model_image_generation', fallback);
   }
 
@@ -204,9 +249,28 @@ export class OpenAiService {
     }
 
     try {
-      const selectedModel = await this.getTextModel(options.model);
-      console.log(`[OpenAiService] Generating content with model: ${selectedModel}`);
-      
+      const selectedModel = this.aiCostControlService.resolveModel(
+        await this.getTextModel(options.model),
+      );
+      const costEstimate = this.aiCostControlService.guardPrompt({
+        feature: 'article_generation',
+        model: selectedModel,
+        prompt: `${systemPrompt}\n\n${userPrompt}`,
+        maxOutputTokens: 4000,
+      });
+      this.aiCostControlService.logUsage(
+        {
+          feature: 'article_generation',
+          model: selectedModel,
+          prompt: `${systemPrompt}\n\n${userPrompt}`,
+          maxOutputTokens: 4000,
+        },
+        costEstimate,
+      );
+      console.log(
+        `[OpenAiService] Generating content with model: ${selectedModel}`,
+      );
+
       const response = await this.openai.chat.completions.create({
         model: selectedModel,
         messages: [
@@ -249,13 +313,15 @@ export class OpenAiService {
         type: error.type,
         code: error.code,
       });
-      
+
       // If it's an API error, provide more context
       if (error.status === 401) {
-        console.error('[OpenAiService] 401 Error - Check API key and headers configuration');
+        console.error(
+          '[OpenAiService] 401 Error - Check API key and headers configuration',
+        );
         console.error('[OpenAiService] Current baseURL:', this.openai.baseURL);
       }
-      
+
       throw error;
     }
   }
@@ -281,8 +347,27 @@ Return JSON with:
 - metaDescription: Compelling description (150-160 characters)
 - slug: URL-friendly slug`;
 
+    const selectedModel = this.aiCostControlService.resolveModel(
+      await this.getTextModel(model),
+    );
+    const costEstimate = this.aiCostControlService.guardPrompt({
+      feature: 'seo_generation',
+      model: selectedModel,
+      prompt,
+      maxOutputTokens: 800,
+    });
+    this.aiCostControlService.logUsage(
+      {
+        feature: 'seo_generation',
+        model: selectedModel,
+        prompt,
+        maxOutputTokens: 800,
+      },
+      costEstimate,
+    );
+
     const response = await this.openai.chat.completions.create({
-      model: await this.getTextModel(model),
+      model: selectedModel,
       messages: [
         {
           role: 'system',
@@ -305,10 +390,14 @@ Return JSON with:
   private async getImageApiKey(): Promise<string> {
     const key = await this.getSystemSetting(
       'image_api_key',
-      this.configService.get('IMAGE_API_KEY') || this.configService.get('CODEX_API_KEY') || '',
+      this.configService.get('IMAGE_API_KEY') ||
+        this.configService.get('CODEX_API_KEY') ||
+        '',
     );
     if (!key) {
-      throw new Error('Image API key is not configured. Set system setting image_api_key or env IMAGE_API_KEY/CODEX_API_KEY.');
+      throw new Error(
+        'Image API key is not configured. Set system setting image_api_key or env IMAGE_API_KEY/CODEX_API_KEY.',
+      );
     }
     return key;
   }
@@ -316,28 +405,39 @@ Return JSON with:
   private async getImageBaseUrl(): Promise<string> {
     return this.getSystemSetting(
       'image_base_url',
-      this.configService.get('IMAGE_BASE_URL') || this.configService.get('CODEX_BASE_URL') || 'https://9router-168-144-37-19.sslip.io',
+      this.configService.get('IMAGE_BASE_URL') ||
+        this.configService.get('CODEX_BASE_URL') ||
+        'https://9router-168-144-37-19.sslip.io',
     );
   }
 
-  private buildImageRequestBody(model: string, prompt: string): Record<string, any> {
+  private buildImageRequestBody(
+    model: string,
+    prompt: string,
+  ): Record<string, any> {
     const normalizedModel = model.toLowerCase();
 
-    if (normalizedModel.includes("gpt-5.5-image") || normalizedModel.includes("image")) {
+    if (
+      normalizedModel.includes('gpt-5.5-image') ||
+      normalizedModel.includes('image')
+    ) {
       return {
         model,
         prompt,
         n: 1,
-        size: "auto",
-        quality: "auto",
-        background: "auto",
-        image_detail: "high",
-        output_format: "png"
+        size: 'auto',
+        quality: 'auto',
+        background: 'auto',
+        image_detail: 'high',
+        output_format: 'png',
       };
     }
 
     // chenzk gpt-image-2 rejects Codex/OpenAI-style auto/background/image_detail/output_format params.
-    if (normalizedModel === 'gpt-image-2' || normalizedModel.endsWith('/gpt-image-2')) {
+    if (
+      normalizedModel === 'gpt-image-2' ||
+      normalizedModel.endsWith('/gpt-image-2')
+    ) {
       return {
         model,
         prompt,
@@ -375,7 +475,8 @@ Return JSON with:
     );
     const endpoint = await this.getSystemSetting(
       'r2_endpoint',
-      this.configService.get('R2_ENDPOINT') || (accountId ? `https://${accountId}.r2.cloudflarestorage.com` : ''),
+      this.configService.get('R2_ENDPOINT') ||
+        (accountId ? `https://${accountId}.r2.cloudflarestorage.com` : ''),
     );
     const accessKeyId = await this.getSystemSetting(
       'r2_access_key_id',
@@ -394,10 +495,18 @@ Return JSON with:
       return null;
     }
 
-    return { bucket, endpoint, accessKeyId, secretAccessKey, publicBaseUrl: publicBaseUrl || undefined };
+    return {
+      bucket,
+      endpoint,
+      accessKeyId,
+      secretAccessKey,
+      publicBaseUrl: publicBaseUrl || undefined,
+    };
   }
 
-  private getR2Client(config: NonNullable<Awaited<ReturnType<OpenAiService['getR2Config']>>>): S3Client {
+  private getR2Client(
+    config: NonNullable<Awaited<ReturnType<OpenAiService['getR2Config']>>>,
+  ): S3Client {
     return new S3Client({
       region: 'auto',
       endpoint: config.endpoint,
@@ -414,19 +523,23 @@ Return JSON with:
     return Buffer.from(match[2], 'base64');
   }
 
-  private async uploadGeneratedImageToR2(imageBuffer: Buffer): Promise<string | null> {
+  private async uploadGeneratedImageToR2(
+    imageBuffer: Buffer,
+  ): Promise<string | null> {
     const config = await this.getR2Config();
     if (!config) return null;
 
     const key = `instagram-studio/${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}.png`;
     const client = this.getR2Client(config);
-    await client.send(new PutObjectCommand({
-      Bucket: config.bucket,
-      Key: key,
-      Body: imageBuffer,
-      ContentType: 'image/png',
-      CacheControl: 'public, max-age=31536000, immutable',
-    }));
+    await client.send(
+      new PutObjectCommand({
+        Bucket: config.bucket,
+        Key: key,
+        Body: imageBuffer,
+        ContentType: 'image/png',
+        CacheControl: 'public, max-age=31536000, immutable',
+      }),
+    );
 
     if (config.publicBaseUrl) {
       return `${config.publicBaseUrl.replace(/\/$/, '')}/${key}`;
@@ -435,7 +548,9 @@ Return JSON with:
     return `/api/v1/ai/assets/${encodeURIComponent(key)}`;
   }
 
-  async getGeneratedImageAsset(key: string): Promise<{ body: Buffer; contentType: string }> {
+  async getGeneratedImageAsset(
+    key: string,
+  ): Promise<{ body: Buffer; contentType: string }> {
     if (!key.startsWith('instagram-studio/')) {
       throw new Error('Invalid asset key');
     }
@@ -446,10 +561,12 @@ Return JSON with:
     }
 
     const client = this.getR2Client(config);
-    const object = await client.send(new GetObjectCommand({
-      Bucket: config.bucket,
-      Key: key,
-    }));
+    const object = await client.send(
+      new GetObjectCommand({
+        Bucket: config.bucket,
+        Key: key,
+      }),
+    );
 
     const bytes = await object.Body?.transformToByteArray();
     if (!bytes) {
@@ -471,25 +588,48 @@ Return JSON with:
     let enhancedPrompt = prompt;
     if (prompt.length < 40) {
       enhancedPrompt = `${prompt}, high quality, detailed, professional photography, cinematic lighting, 4k resolution`;
-      console.log(`[generateImage] Enhanced short prompt: ${enhancedPrompt.substring(0, 80)}...`);
+      console.log(
+        `[generateImage] Enhanced short prompt: ${enhancedPrompt.substring(0, 80)}...`,
+      );
     }
-    
-    console.log(`🎨 Generating image via Codex ${imageModel} for: ${enhancedPrompt.substring(0, 60)}...`);
+
+    const costEstimate = this.aiCostControlService.guardPrompt({
+      feature: 'image_generation',
+      model: imageModel,
+      prompt: enhancedPrompt,
+      maxOutputTokens: 0,
+    });
+    this.aiCostControlService.logUsage(
+      {
+        feature: 'image_generation',
+        model: imageModel,
+        prompt: enhancedPrompt,
+        maxOutputTokens: 0,
+      },
+      costEstimate,
+    );
+
+    console.log(
+      `🎨 Generating image via Codex ${imageModel} for: ${enhancedPrompt.substring(0, 60)}...`,
+    );
 
     try {
       const response = await fetch(`${codexBaseUrl}/v1/images/generations`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${codexApiKey}`,
-          'Accept': 'text/event-stream',
+          Authorization: `Bearer ${codexApiKey}`,
+          Accept: 'text/event-stream',
           'User-Agent': 'curl/8.5.0',
         },
-        body: JSON.stringify(this.buildImageRequestBody(imageModel, enhancedPrompt)),
+        body: JSON.stringify(
+          this.buildImageRequestBody(imageModel, enhancedPrompt),
+        ),
         signal: AbortSignal.timeout(180000),
       });
 
-      if (!response.ok) throw new Error(`Codex API ${response.status}: ${response.statusText}`);
+      if (!response.ok)
+        throw new Error(`Codex API ${response.status}: ${response.statusText}`);
 
       // Parse SSE stream to extract image data
       const reader = response.body.getReader();
@@ -515,7 +655,9 @@ Return JSON with:
           const trimmed = line.trim();
           if (!trimmed) continue;
           try {
-            const payload = trimmed.startsWith('data: ') ? trimmed.substring(6) : trimmed;
+            const payload = trimmed.startsWith('data: ')
+              ? trimmed.substring(6)
+              : trimmed;
             applyParsedImage(JSON.parse(payload));
           } catch {}
         }
@@ -523,7 +665,9 @@ Return JSON with:
 
       if (buffer.trim()) {
         try {
-          const payload = buffer.trim().startsWith('data: ') ? buffer.trim().substring(6) : buffer.trim();
+          const payload = buffer.trim().startsWith('data: ')
+            ? buffer.trim().substring(6)
+            : buffer.trim();
           applyParsedImage(JSON.parse(payload));
         } catch {}
       }
@@ -549,7 +693,11 @@ Return JSON with:
     }
   }
 
-  async analyzeTrend(content: string, title: string, model?: string): Promise<any> {
+  async analyzeTrend(
+    content: string,
+    title: string,
+    model?: string,
+  ): Promise<any> {
     const prompt = `Analyze this trending content and provide viral insights:
     
     TITLE: ${title}
@@ -570,7 +718,11 @@ Return JSON with:
       const response = await this.openai.chat.completions.create({
         model: model || this.model,
         messages: [
-          { role: 'system', content: 'You are a viral content strategist. Return only valid JSON.' },
+          {
+            role: 'system',
+            content:
+              'You are a viral content strategist. Return only valid JSON.',
+          },
           { role: 'user', content: prompt },
         ],
         temperature: 0.7,
@@ -586,12 +738,21 @@ Return JSON with:
         hooks: ['Gagal memuat hook'],
         strategy: 'Kembangkan konten berdasarkan topik ini.',
         keywords: [],
-        sentiment: 'neutral'
+        sentiment: 'neutral',
       };
     }
   }
 
-  async analyzeImageLayout(imageUrl: string, text: string, model?: string): Promise<{ layoutPosition: string; fontColor: string; headerText: string; bodyText: string }> {
+  async analyzeImageLayout(
+    imageUrl: string,
+    text: string,
+    model?: string,
+  ): Promise<{
+    layoutPosition: string;
+    fontColor: string;
+    headerText: string;
+    bodyText: string;
+  }> {
     const prompt = `Analyze this image and the text that will be overlaid on it: "${text}".
     
     1. Determine the best position for the text so it is readable and does not cover important subjects (like faces or main objects). Look for "negative space" or uncluttered areas.
@@ -610,14 +771,17 @@ Return JSON with:
       // Use the native client if available for guaranteed vision support, otherwise fallback to standard
       const client = this.nativeOpenai || this.openai;
       // Force a vision-capable model if using native, else trust the configured or passed model
-      const targetModel = this.nativeOpenai ? 'gpt-4o-mini' : (model || this.model);
+      const targetModel = this.nativeOpenai
+        ? 'gpt-4o-mini'
+        : model || this.model;
 
       const response = await client.chat.completions.create({
         model: targetModel,
         messages: [
           {
             role: 'system',
-            content: 'You are an expert graphic designer and layout AI. Return only valid JSON.',
+            content:
+              'You are an expert graphic designer and layout AI. Return only valid JSON.',
           },
           {
             role: 'user',
@@ -641,7 +805,9 @@ Return JSON with:
       let rawContent = response.choices[0]?.message?.content || '{}';
       rawContent = rawContent.replace(/[\x00-\x1f\x7f-\x9f]/g, ' ');
       const result = JSON.parse(rawContent);
-      console.log(`[OpenAiService] Vision layout analysis complete: ${JSON.stringify(result)}`);
+      console.log(
+        `[OpenAiService] Vision layout analysis complete: ${JSON.stringify(result)}`,
+      );
 
       return {
         layoutPosition: result.layoutPosition || 'center',
@@ -650,7 +816,10 @@ Return JSON with:
         bodyText: result.bodyText || '',
       };
     } catch (error) {
-      console.error('[OpenAiService] Vision layout analysis failed:', error.message);
+      console.error(
+        '[OpenAiService] Vision layout analysis failed:',
+        error.message,
+      );
       // Fallback defaults if vision fails (e.g., URL unaccessible or API error)
       return {
         layoutPosition: 'center',
@@ -672,12 +841,19 @@ Return JSON with:
   async transcribeAudio(
     buffer: Buffer,
     language?: string,
-  ): Promise<{ text: string; segments: Array<{ start: number; end: number; text: string }> }> {
+  ): Promise<{
+    text: string;
+    segments: Array<{ start: number; end: number; text: string }>;
+  }> {
     if (!this.nativeOpenai) {
-      throw new Error('OPENAI_API_KEY is missing. Transcription requires a direct OpenAI API Key.');
+      throw new Error(
+        'OPENAI_API_KEY is missing. Transcription requires a direct OpenAI API Key.',
+      );
     }
 
-    const file = new File([new Uint8Array(buffer)], 'audio.mp3', { type: 'audio/mpeg' });
+    const file = new File([new Uint8Array(buffer)], 'audio.mp3', {
+      type: 'audio/mpeg',
+    });
     const response = await this.nativeOpenai.audio.transcriptions.create({
       model: 'whisper-1',
       file,
@@ -703,16 +879,22 @@ Return JSON with:
     const enhancedPrompt = `Vertical 9:16 portrait thumbnail for Instagram Reels/TikTok. ${style} style. Subject: ${title}. Professional lighting, vibrant colors, eye-catching composition, high contrast text area at top or bottom, modern social media aesthetic. Ultra quality, detailed, 4K resolution.`;
 
     // Use Codex endpoint (same as generateImage)
-    const imageBaseUrl = (this.configService.get('CODEX_BASE_URL') || 'https://9router-168-144-37-19.sslip.io').replace(/\/+$/, '');
-    const imageApiKey = (this.configService.get('CODEX_API_KEY') || 'sk-752b90456c373287-7ndp1b-1930998e').trim();
+    const imageBaseUrl = (
+      this.configService.get('CODEX_BASE_URL') ||
+      'https://9router-168-144-37-19.sslip.io'
+    ).replace(/\/+$/, '');
+    const imageApiKey = (
+      this.configService.get('CODEX_API_KEY') ||
+      'sk-752b90456c373287-7ndp1b-1930998e'
+    ).trim();
     const imageModel = await this.getImageModel();
 
     const response = await fetch(`${imageBaseUrl}/v1/images/generations`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${imageApiKey}`,
-        'Accept': 'text/event-stream',
+        Authorization: `Bearer ${imageApiKey}`,
+        Accept: 'text/event-stream',
       },
       body: JSON.stringify({
         model: imageModel,
@@ -759,10 +941,11 @@ Return JSON with:
     }
 
     // Standard JSON response
-    const data = await response.json() as any;
+    const data = (await response.json()) as any;
     const imageData = data?.data?.[0];
     if (imageData?.url) return imageData.url;
-    if (imageData?.b64_json) return `data:image/png;base64,${imageData.b64_json}`;
+    if (imageData?.b64_json)
+      return `data:image/png;base64,${imageData.b64_json}`;
     throw new Error('No image returned from generation API');
   }
 
@@ -770,7 +953,9 @@ Return JSON with:
     text: string,
     voice: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer' = 'alloy',
   ): Promise<Buffer> {
-    const elevenLabsKey = (this.configService.get('ELEVENLABS_API_KEY') || '').trim();
+    const elevenLabsKey = (
+      this.configService.get('ELEVENLABS_API_KEY') || ''
+    ).trim();
 
     if (elevenLabsKey) {
       return this.generateSpeechElevenLabs(text, voice, elevenLabsKey);
@@ -778,7 +963,9 @@ Return JSON with:
 
     // Fallback to native OpenAI TTS
     if (!this.nativeOpenai) {
-      throw new Error('No TTS provider configured. Set ELEVENLABS_API_KEY or OPENAI_API_KEY.');
+      throw new Error(
+        'No TTS provider configured. Set ELEVENLABS_API_KEY or OPENAI_API_KEY.',
+      );
     }
 
     try {
@@ -804,31 +991,34 @@ Return JSON with:
   ): Promise<Buffer> {
     // Map OpenAI voice names to ElevenLabs voice IDs
     const voiceMap: Record<string, string> = {
-      alloy: 'pNInz6obpgDQGcFmaJgB',    // Adam
-      echo: '21m00Tcm4TlvDq8ikWAM',      // Rachel
-      fable: 'AZnzlk1XvdvUeBnXmlld',     // Domi
-      onyx: 'VR6AewLTigWG4xSOukaG',      // Arnold
-      nova: 'EXAVITQu4vr4xnSDxMaL',      // Bella
-      shimmer: 'MF3mGyEYCl7XYWbV9V6O',   // Elli
+      alloy: 'pNInz6obpgDQGcFmaJgB', // Adam
+      echo: '21m00Tcm4TlvDq8ikWAM', // Rachel
+      fable: 'AZnzlk1XvdvUeBnXmlld', // Domi
+      onyx: 'VR6AewLTigWG4xSOukaG', // Arnold
+      nova: 'EXAVITQu4vr4xnSDxMaL', // Bella
+      shimmer: 'MF3mGyEYCl7XYWbV9V6O', // Elli
     };
 
     const voiceId = voiceMap[voice] || voiceMap.nova;
 
-    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'xi-api-key': apiKey,
-      },
-      body: JSON.stringify({
-        text,
-        model_id: 'eleven_multilingual_v2',
-        voice_settings: {
-          stability: 0.5,
-          similarity_boost: 0.75,
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'xi-api-key': apiKey,
         },
-      }),
-    });
+        body: JSON.stringify({
+          text,
+          model_id: 'eleven_multilingual_v2',
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.75,
+          },
+        }),
+      },
+    );
 
     if (!response.ok) {
       const err = await response.text();

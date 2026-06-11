@@ -502,7 +502,7 @@ Failure modes to handle:
 
 ### 19. AI cost control
 
-Status: **PENDING**
+Status: **DONE (baseline)**
 
 Goal:
 
@@ -510,12 +510,19 @@ Goal:
 
 Tasks:
 
-- [ ] Add max prompt length per feature.
-- [ ] Add model fallback configuration.
-- [ ] Add per-feature token estimate.
+- [x] Add max prompt length per feature.
+- [x] Add model fallback configuration.
+- [x] Add per-feature token estimate.
 - [ ] Add spending cap per user.
-- [ ] Log AI usage by feature/user/model.
-- [ ] Return clear error when cap reached.
+- [x] Log AI usage by feature/user/model.
+- [x] Return clear error when cap reached.
+
+Implementation notes:
+
+- Baseline guardrails live in `backend/src/modules/ai/services/ai-cost-control.service.ts`.
+- Protected features: article generation, SEO metadata generation, image generation, prompt generation.
+- Default caps can be overridden by env keys like `AI_ARTICLE_GENERATION_MAX_PROMPT_CHARS`, `AI_ARTICLE_GENERATION_MAX_ESTIMATED_TOKENS`, and `AI_FALLBACK_MODEL`.
+- Existing billing quota remains user spend cap for article/image actions; true currency spend cap by user remains future work.
 
 Candidate caps:
 
