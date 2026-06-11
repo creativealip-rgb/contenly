@@ -76,9 +76,11 @@ services:
       - traefik.enable=true
       - traefik.docker.network=dokploy-network
       - traefik.http.routers.contenly.rule=Host(`contenly.app`) || Host(`www.contenly.app`)
+      - traefik.http.routers.contenly.priority=200
       - traefik.http.routers.contenly.entrypoints=websecure
       - traefik.http.routers.contenly.tls.certresolver=letsencrypt
       - traefik.http.routers.contenly-http.rule=Host(`contenly.app`) || Host(`www.contenly.app`)
+      - traefik.http.routers.contenly-http.priority=200
       - traefik.http.routers.contenly-http.entrypoints=web
       - traefik.http.routers.contenly-http.middlewares=redirect-to-https@file
       - traefik.http.services.contenly.loadbalancer.server.port=3000
