@@ -23,6 +23,7 @@ const protectedRoutes = [
 ]
 
 const authRoutes = ['/login', '/register', '/forgot-password', '/reset-password']
+const htmlCacheControl = 'no-store, max-age=0, must-revalidate'
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -47,6 +48,9 @@ export async function proxy(request: NextRequest) {
   }
 
   const response = NextResponse.next()
+  response.headers.set('Cache-Control', htmlCacheControl)
+  response.headers.set('CDN-Cache-Control', htmlCacheControl)
+  response.headers.set('Vercel-CDN-Cache-Control', htmlCacheControl)
   response.headers.set('X-Frame-Options', 'DENY')
   response.headers.set('X-Content-Type-Options', 'nosniff')
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
