@@ -6,6 +6,7 @@ import { renderJobs } from '../../db/schema';
 import { eq } from 'drizzle-orm';
 import { MotionGraphicsService } from './motion-graphics.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { DeadLetterQueueService } from '../../common/queues/dead-letter-queue.service';
 
 export interface RenderJobData {
   jobId: string;
@@ -24,6 +25,7 @@ export class RenderProcessor {
     private drizzle: DrizzleService,
     private motionGraphicsService: MotionGraphicsService,
     private notificationsService: NotificationsService,
+    private deadLetterQueueService: DeadLetterQueueService,
   ) {}
 
   @Process({ concurrency: 2 })
@@ -76,6 +78,7 @@ export class RenderProcessor {
       }).where(eq(renderJobs.id, jobId));
 
       this.logger.error(`Render job ${jobId} failed: ${err.message}`);
+      await this.deadLetterQueueService.captureFailedJob(job, err);
 
       // Notify user of failure
       await this.notificationsService.create(

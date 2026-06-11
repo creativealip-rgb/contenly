@@ -410,9 +410,13 @@ Current implementation:
 - Manual feed poll now uses minute-bucket job ID to reduce duplicate queue spam.
 - Existing Redis-down fallback still performs direct poll.
 
+Ops hardening update:
+
+- True dead-letter queue storage added via shared `dead-letter` Bull queue.
+- Failed jobs from `feed-polling`, `render`, and `video-clip` now write payloads to dead-letter storage with source queue, job id, attempts, failure reason, stacktrace, and original data.
+
 Moved to later hardening:
 
-- True dead-letter queue storage.
 - Dedicated stuck-job cleanup command for every queue.
 
 ## P3 — Product improvement
@@ -697,10 +701,11 @@ P2:
 - Pending:
   - none for P2 baseline
 - Moved to later ops hardening:
-  - true dead-letter queue and stuck-job cleanup command
+  - stuck-job cleanup command
 - Ops hardening done:
   - generated OpenAPI client automation baseline (`backend npm run openapi:generate`, `frontend npm run api:generate`)
   - Sentry/Logtail-style observability provider wiring baseline (`OBSERVABILITY_WEBHOOK_URL`, `OBSERVABILITY_PROVIDER`)
+  - true dead-letter queue storage baseline (`dead-letter` Bull queue)
 
 P3:
 

@@ -2,12 +2,16 @@ import { Process, Processor } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
 import { FeedPollerService } from './feed-poller.service';
+import { DeadLetterQueueService } from '../../common/queues/dead-letter-queue.service';
 
 @Processor('feed-polling')
 export class FeedPollProcessor {
   private readonly logger = new Logger(FeedPollProcessor.name);
 
-  constructor(private feedPollerService: FeedPollerService) {}
+  constructor(
+    private feedPollerService: FeedPollerService,
+    private deadLetterQueueService: DeadLetterQueueService,
+  ) {}
 
   @Process('poll-feed')
   async handlePollFeed(job: Job<{ feedId: string }>) {
@@ -24,6 +28,7 @@ export class FeedPollProcessor {
       this.logger.error(
         `Failed to poll feed ${feedId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
+      await this.deadLetterQueueService.captureFailedJob(job, error);
       throw error;
     }
   }
@@ -39,6 +44,7 @@ export class FeedPollProcessor {
       this.logger.error(
         `Failed to poll all feeds: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
+      await this.deadLetterQueueService.captureFailedJob(job, error);
       throw error;
     }
   }

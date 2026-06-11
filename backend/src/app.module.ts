@@ -14,6 +14,7 @@ import { DrizzleModule } from './db/drizzle.module';
 import { CsrfMiddleware } from './common/middleware/csrf.middleware';
 import { AuditService } from './common/services/audit.service';
 import { ObservabilityService } from './common/observability/observability.service';
+import { DeadLetterQueueModule } from './common/queues/dead-letter-queue.module';
 
 // Feature Modules
 import { SecurityModule } from './modules/security/security.module';
@@ -69,6 +70,9 @@ import { AdminSettingsModule } from './modules/admin-settings/admin-settings.mod
         password: process.env.REDIS_PASSWORD || undefined,
       },
     }),
+
+    // Shared queues
+    DeadLetterQueueModule,
 
     // Database (Drizzle)
     DrizzleModule,

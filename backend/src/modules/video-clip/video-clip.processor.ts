@@ -7,6 +7,7 @@ import { eq } from 'drizzle-orm';
 import { VideoClipService } from './video-clip.service';
 import { BillingService } from '../billing/billing.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { DeadLetterQueueService } from '../../common/queues/dead-letter-queue.service';
 
 @Processor('video-clip')
 export class VideoClipProcessor {
@@ -17,6 +18,7 @@ export class VideoClipProcessor {
     private videoClipService: VideoClipService,
     private billingService: BillingService,
     private notificationsService: NotificationsService,
+    private deadLetterQueueService: DeadLetterQueueService,
   ) {}
 
   @Process({ name: 'analyze', concurrency: 2 })
@@ -78,6 +80,7 @@ export class VideoClipProcessor {
       this.logger.log(`Analysis complete for project ${projectId}: ${segments.length} segments found`);
     } catch (error) {
       this.logger.error(`Analysis failed for project ${projectId}: ${error.message}`);
+      await this.deadLetterQueueService.captureFailedJob(job, error);
       await db.update(videoClipProjects).set({
         status: 'failed',
         error: error.message,
@@ -164,6 +167,7 @@ export class VideoClipProcessor {
       this.logger.log(`Export complete: ${outputPath}`);
     } catch (error) {
       this.logger.error(`Export failed for job ${jobId}: ${error.message}`);
+      await this.deadLetterQueueService.captureFailedJob(job, error);
       await this.notificationsService.create(userId, 'JOB_FAILED',
         'Clip Export Failed',
         error.message,
