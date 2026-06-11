@@ -21,8 +21,19 @@ operations.sort((a, b) => `${a.method} ${a.path}`.localeCompare(`${b.method} ${b
 
 const endpointUnion = operations.map((op) => `  | '${op.path}'`).join('\n') || '  | never'
 const operationUnion = operations.map((op) => `  | '${op.method} ${op.path}'`).join('\n') || '  | never'
+const seenOperationIds = new Map()
+const uniqueOperationId = (operationId, method, path) => {
+  const count = seenOperationIds.get(operationId) || 0
+  seenOperationIds.set(operationId, count + 1)
+  if (count === 0) return operationId
+  return `${operationId}_${method.toLowerCase()}_${path.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '')}`
+}
+
 const mapEntries = operations
-  .map((op) => `  '${op.operationId}': { method: '${op.method}', path: '${op.path}' },`)
+  .map((op) => {
+    const id = uniqueOperationId(op.operationId, op.method, op.path)
+    return `  '${id}': { method: '${op.method}', path: '${op.path}' },`
+  })
   .join('\n')
 
 const content = `// Auto-generated from docs/openapi.json. Do not edit manually.\n\nexport type ApiEndpoint =\n${endpointUnion}\n\nexport type ApiOperation =\n${operationUnion}\n\nexport const apiOperations = {\n${mapEntries}\n} as const\n\nexport type ApiOperationId = keyof typeof apiOperations\n`
