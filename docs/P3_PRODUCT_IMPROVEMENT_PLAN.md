@@ -476,25 +476,32 @@ Candidate caps:
 
 ### 20. E2E smoke test
 
-Status: **PENDING**
+Status: **PARTIAL**
 
 Goal:
 
-- Add minimal Playwright smoke test for critical flows.
+- Add minimal smoke coverage for critical flows.
 
-Required smoke flow:
+Current backend HTTP smoke:
 
-- [ ] login
-- [ ] create article
-- [ ] generate content mock
-- [ ] save draft
-- [ ] billing page load
-- [ ] settings load
+- [x] mocked authenticated user
+- [x] create article
+- [x] generate content mock
+- [x] save draft
+- [x] billing balance load
+- [x] list articles
+
+Pending browser smoke:
+
+- [ ] Playwright login
+- [ ] dashboard/settings page load
+- [ ] browser-level create/generate/save flow
 
 Implementation notes:
 
+- Backend smoke exists at `backend/src/smoke/app-smoke.spec.ts`.
 - Prefer mocked AI response for deterministic CI.
-- Use seeded test user.
+- Use seeded or mocked test user.
 - Avoid real external OpenAI/WordPress calls in smoke test.
 - Run in CI or pre-deploy manually.
 
@@ -576,7 +583,7 @@ Current status:
 - [ ] observability basic added
 - [ ] rate limit refined
 - [ ] background job resilience added
-- [ ] E2E smoke test added
+- [~] backend HTTP smoke test added; browser E2E pending
 
 ## Remaining work summary
 
@@ -608,15 +615,16 @@ P3:
 
 - Done:
   - role/admin permission audit
+- Partial:
+  - E2E smoke test (backend HTTP smoke done; browser smoke pending)
 - Pending:
   - dashboard loading/error states
   - WordPress robustness
   - AI cost control
-  - E2E smoke test
 
 ## Next recommended order
 
-1. E2E smoke test with mocked AI.
+1. Browser E2E smoke test with mocked AI.
 2. API contract + typed frontend client.
 3. AI cost control guardrails.
 4. WordPress robustness.
