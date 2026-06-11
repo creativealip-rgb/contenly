@@ -661,7 +661,7 @@ Current status:
 - [x] auth protected file validates real session
 - [x] no obvious public upload risk after hardening
 - [x] Dokploy Raw deploy works
-- [ ] fresh clone deploy verified without cache end-to-end
+- [x] fresh clone build verified without cache from `origin/main` (`5a575f8`)
 - [x] backend Jest uuid ESM issue fixed
 - [x] env validation added
 - [x] API contract/error response baseline added
@@ -669,6 +669,24 @@ Current status:
 - [x] rate limit baseline refined
 - [x] background job resilience baseline added
 - [x] E2E smoke test added
+
+## Fresh clone verification
+
+Latest verification:
+
+- Fresh clone path: `/tmp/contenly-fresh-verify`.
+- Commit verified: `5a575f8`.
+- Commands passed:
+  - `npm ci --prefix backend`
+  - `npm ci --prefix frontend`
+  - `npm run build`
+- Live smoke checked:
+  - `https://contenly.app` -> 200
+  - `https://contenly.app/login` -> 200
+  - `https://contenly.app/health` -> 200
+  - `https://contenly.app/api/v1/docs` -> 200
+- Note: `https://contenly.app/api/v1/health` returns 404 because health endpoint is mounted at `/health`.
+- `npm ci` reported dependency audit warnings; security audit follow-up recommended separately.
 
 ## Remaining work summary
 
