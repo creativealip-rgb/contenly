@@ -18,7 +18,7 @@ export const QuoteCard: React.FC<Props> = ({ quote, author, bgColor, textColor, 
   return (
     <AbsoluteFill style={{ backgroundColor: bgColor, justifyContent: 'center', alignItems: 'center', padding: 80 }}>
       <div style={{ textAlign: 'center', maxWidth: '80%', opacity: quoteProgress, transform: `scale(${interpolate(quoteProgress, [0, 1], [0.9, 1])})` }}>
-        <div style={{ fontSize: 72, color: accentColor, fontFamily: 'Georgia, serif', lineHeight: 0.5, marginBottom: 20 }}>"</div>
+        <div style={{ fontSize: 72, color: accentColor, fontFamily: 'Georgia, serif', lineHeight: 0.5, marginBottom: 20 }}>&quot;</div>
         <p style={{ fontSize: 36, fontWeight: 500, color: textColor, fontFamily: 'Georgia, serif', lineHeight: 1.5, fontStyle: 'italic' }}>
           {quote}
         </p>

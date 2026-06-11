@@ -20,9 +20,18 @@ export function useInstagramProjects() {
   })
 }
 
+export type CreateProjectInput = {
+  title: string
+  sourceUrl?: string
+  sourceContent?: string
+  globalStyle?: string
+  fontFamily?: string
+  templateId?: string
+}
+
 export function useCreateProject() {
-  return useMutation<Project, Error, { title: string; sourceUrl: string; sourceContent: string; globalStyle: string; fontFamily: string; templateId: string }>({
-    mutationFn: (body: Record<string, unknown>) => api.post('/instagram-studio/projects', body),
+  return useMutation<Project, Error, CreateProjectInput>({
+    mutationFn: (body) => api.post('/instagram-studio/projects', body),
   })
 }
 

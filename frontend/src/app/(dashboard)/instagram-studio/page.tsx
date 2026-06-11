@@ -31,50 +31,12 @@ import {
     Plus,
     Loader2,
     Sparkles,
-    Image as ImageIcon,
     Trash2,
-    Download,
     RefreshCw,
-    Palette,
-    Type,
-    Layout,
-    ChevronLeft,
-    ChevronRight,
-    Eye,
     Calendar,
 } from 'lucide-react'
 import { useInstagramProjects, useCreateProject, useDeleteProject } from '@/hooks/use-instagram-studio'
-
-interface Project {
-    id: string
-    title: string
-    sourceUrl: string
-    sourceContent: string
-    globalStyle: string
-    fontFamily: string
-    totalSlides: number
-    status: string
-    createdAt: string
-    slides?: Slide[]
-}
-
-interface Slide {
-    id: string
-    slideNumber: number
-    textContent: string
-    visualPrompt: string
-    imageUrl: string
-    layoutPosition: string
-    fontSize: number
-    fontColor: string
-}
-
-interface StylePreset {
-    id: string
-    name: string
-    description: string
-    promptTemplate: string
-}
+import type { CreateProjectInput } from '@/hooks/use-instagram-studio'
 
 interface CarouselTemplate {
     id: string
@@ -93,12 +55,9 @@ interface CarouselTemplate {
     }
     forAudience: 'individual' | 'agency' | 'all'
     forPlatform: 'instagram' | 'linkedin' | 'twitter' | 'all'
-}
-
-interface Font {
-    family: string
-    category: string
-    variants: string[]
+    elements?: {
+        shapes?: unknown[]
+    }
 }
 
 export default function InstagramStudioPage() {
@@ -147,13 +106,13 @@ export default function InstagramStudioPage() {
     const handleCreateProject = async () => {
         if (!newProject.title) return
         // Strip empty optional fields to avoid @IsUrl() validation failure
-        const payload: Record<string, unknown> = { title: newProject.title }
+        const payload: CreateProjectInput = { title: newProject.title }
         if (newProject.sourceUrl) payload.sourceUrl = newProject.sourceUrl
         if (newProject.sourceContent) payload.sourceContent = newProject.sourceContent
         if (newProject.globalStyle) payload.globalStyle = newProject.globalStyle
         if (newProject.fontFamily) payload.fontFamily = newProject.fontFamily
         if (newProject.templateId) payload.templateId = newProject.templateId
-        createProject.mutate(payload as any, {
+        createProject.mutate(payload, {
             onSuccess: (project) => router.push(`/instagram-studio/${project.id}`),
         })
     }
@@ -190,7 +149,7 @@ export default function InstagramStudioPage() {
     }
 
     const handleDeleteProject = async (id: string) => {
-        const confirmed = await confirm({
+        await confirm({
             title: 'Hapus Proyek',
             description: 'Apakah Anda yakin ingin menghapus proyek ini?',
             confirmText: 'Hapus',
@@ -397,7 +356,7 @@ export default function InstagramStudioPage() {
                                                                 <div className="w-12 h-0.5 rounded-full opacity-50" style={{ background: template.colors.text }} />
                                                             </div>
                                                             {/* Decorative elements */}
-                                                            {(template as any).elements?.shapes?.[0] && (
+                                                            {Boolean(template.elements?.shapes?.[0]) && (
                                                                 <div className="absolute top-1 right-1 w-4 h-4 rounded-full opacity-30" style={{ background: template.colors.accent }} />
                                                             )}
                                                         </div>

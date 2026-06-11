@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useMemo, useRef, useState } from 'react'
 import { Camera, Check, ExternalLink, Film, Loader2, Play, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -85,11 +86,14 @@ export function FootageGallery({
       {selectedFootage && selectedFootage.length > 0 && (
         <div className="flex items-center gap-2 mb-1 flex-wrap">
           {selectedFootage.map((item, i) => (
-            <div key={itemKey(item) + i} className="relative">
-              <img
+            <div key={itemKey(item) + i} className="relative h-10 w-16 overflow-hidden rounded border-2 border-emerald-400">
+              <Image
                 src={item.thumbnailUrl}
                 alt=""
-                className="h-10 w-16 rounded border-2 border-emerald-400 object-cover"
+                fill
+                sizes="64px"
+                className="object-cover"
+                unoptimized
               />
               {isVideo(item) && (
                 <span className="absolute bottom-0 right-0 rounded-tl bg-black/70 px-1 py-px text-[8px] font-bold text-white">
@@ -179,7 +183,7 @@ export function FootageGallery({
                 <button
                   type="button"
                   onClick={() => onSelectFootage(item)}
-                  className={`block w-full overflow-hidden rounded-md border-2 transition-all ${
+                  className={`relative block h-16 w-full overflow-hidden rounded-md border-2 transition-all ${
                     selected
                       ? 'border-emerald-400 ring-2 ring-emerald-300'
                       : 'border-transparent hover:border-blue-400'
@@ -199,11 +203,13 @@ export function FootageGallery({
                       playsInline
                     />
                   ) : (
-                    <img
+                    <Image
                       src={item.thumbnailUrl}
                       alt={item.title || ''}
-                      className="h-16 w-full object-cover"
-                      loading="lazy"
+                      fill
+                      sizes="25vw"
+                      className="object-cover"
+                      unoptimized
                     />
                   )}
                 </button>

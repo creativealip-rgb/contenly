@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
-import { useAuthStore } from '@/stores'
 
 // Icons using Lucide for consistency
 import {
@@ -45,7 +44,6 @@ const navItems = [
 
 export function BottomNav() {
   const pathname = usePathname()
-  const { user } = useAuthStore()
 
   // Hide bottom nav on login/register pages and landing page
   const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/'

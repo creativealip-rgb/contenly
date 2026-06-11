@@ -6,7 +6,7 @@ Ikuti langkah-langkah berikut untuk mengonfigurasi Contently di lingkungan penge
 -   **Node.js**: v18.x atau lebih baru
 -   **Package Manager**: npm atau pnpm
 -   **Database**: PostgreSQL (direkomendasikan via Supabase)
--   **Redis**: Diperlukan untuk sistem antrian BullMQ
+-   **Redis**: Diperlukan untuk sistem antrian Bull (`@nestjs/bull`)
 
 ## 🛠 Instalasi Lokal
 

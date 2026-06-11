@@ -57,7 +57,10 @@ backend/server_out.txt
 backend/tmp/
 backend/tmp_*.txt
 backend/models/
+build_output*.txt
+frontend/build_output*.txt
 push_result*.txt
+git_status*.txt
 
 
 # Dokploy env

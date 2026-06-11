@@ -55,7 +55,11 @@ export const VideoPreview = forwardRef<VideoPreviewHandle, VideoPreviewProps>(fu
     } else {
       video.addEventListener('loadedmetadata', onLoaded, { once: true })
     }
-    setIsPlaying(false)
+    const timer = window.setTimeout(() => setIsPlaying(false), 0)
+    return () => {
+      window.clearTimeout(timer)
+      video.removeEventListener('loadedmetadata', onLoaded)
+    }
   }, [segment.startTime, segment.endTime, streamUrl])
 
   // Time update + loop logic

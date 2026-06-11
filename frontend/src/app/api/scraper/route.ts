@@ -1,5 +1,17 @@
 import { NextResponse } from 'next/server'
 
+function normalizeScrapeUrl(rawUrl: string) {
+    try {
+        const parsed = new URL(rawUrl)
+        if (parsed.hostname === 'www.selular.id') {
+            parsed.hostname = 'selular.id'
+        }
+        return parsed.toString()
+    } catch {
+        return rawUrl
+    }
+}
+
 export async function POST(request: Request) {
     try {
         const { url } = await request.json()
@@ -11,8 +23,10 @@ export async function POST(request: Request) {
             )
         }
 
+        const normalizedUrl = normalizeScrapeUrl(url)
+
         // Call the backend NestJS advanced scraper service
-const backendUrl = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
+        const backendUrl = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 
         // Build headers object with proper typing
         const headers: HeadersInit = {
@@ -34,7 +48,7 @@ const backendUrl = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
         const response = await fetch(`${backendUrl}/scraper/scrape`, {
             method: 'POST',
             headers,
-            body: JSON.stringify({ url }),
+            body: JSON.stringify({ url: normalizedUrl }),
         })
 
         console.log('Backend scraper response:', {
@@ -66,7 +80,7 @@ const backendUrl = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
                 title: data.title || '',
                 excerpt: data.excerpt || '',
                 content: data.content || '',
-                url: url,
+                url: normalizedUrl,
                 siteName: '',
                 image: data.images?.[0] || '',
                 publishedAt: data.metadata?.publishedDate || new Date().toISOString(),
@@ -75,10 +89,10 @@ const backendUrl = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
             }
         })
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Scraper API Route Error:', error)
         return NextResponse.json(
-            { success: false, error: error.message || 'Failed to scrape URL' },
+            { success: false, error: error instanceof Error ? error.message : 'Failed to scrape URL' },
             { status: 500 }
         )
     }

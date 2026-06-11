@@ -5,7 +5,7 @@ Contently menggunakan arsitektur modern berbasis monorepo (split backend/fronten
 ## 🛠 Stack Teknologi
 
 ### Frontend
--   **Framework**: Next.js 15+ (App Router)
+-   **Framework**: Next.js 16 (App Router)
 -   **Bahasa**: TypeScript
 -   **Styling**: Tailwind CSS 4.0
 -   **Animasi**: Framer Motion
@@ -18,8 +18,8 @@ Contently menggunakan arsitektur modern berbasis monorepo (split backend/fronten
 -   **Bahasa**: TypeScript
 -   **Database**: PostgreSQL (via Supabase)
 -   **ORM**: Drizzle ORM
--   **Queue System**: BullMQ dengan Redis
--   **AI Integration**: OpenRouter (GPT-4o, o1, dsb) & OpenAI SDK
+-   **Queue System**: Bull (`@nestjs/bull`) dengan Redis
+-   **AI Integration**: OpenAI SDK + LangChain
 -   **Scraper**: Cheerio & Puppeteer (Advanced Scraper)
 
 ## 📁 Struktur Folder
@@ -37,7 +37,7 @@ Contently menggunakan arsitektur modern berbasis monorepo (split backend/fronten
 -   `src/stores`: Zustand state definitions.
 
 ## 🔄 Integrasi AI
-Contently bertindak sebagai "Headless Content Engine". Backend berkomunikasi dengan LLM melalui OpenRouter untuk fleksibilitas model. Data hasil AI kemudian diproses dan diformat sebelum dikirim ke frontend atau dipublikasikan ke WordPress.
+Contently bertindak sebagai "Headless Content Engine". Backend berkomunikasi dengan LLM melalui OpenAI SDK dan LangChain. Data hasil AI kemudian diproses dan diformat sebelum dikirim ke frontend atau dipublikasikan ke WordPress.
 
 ## 💾 Model Data (Database)
 Database dikelola menggunakan Drizzle ORM dengan tabel utama:

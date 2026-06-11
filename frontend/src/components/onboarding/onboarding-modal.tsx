@@ -1,17 +1,17 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState} from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useOnboardingStore, onboardingSteps } from '@/stores/onboarding-store'
-import { 
-    ChevronRight, 
-    ChevronLeft, 
-    X, 
-    Sparkles, 
-    Instagram, 
-    Video, 
+import {
+    ChevronRight,
+    ChevronLeft,
+    X,
+    Sparkles,
+    Instagram,
+    Video,
     Calendar,
     FileText,
     CheckCircle2,
@@ -27,30 +27,29 @@ const stepIcons: Record<string, React.ReactNode> = {
     'instagram-studio': <Instagram className="h-8 w-8 text-pink-500" />,
     'video-scripts': <Video className="h-8 w-8 text-red-500" />,
     calendar: <Calendar className="h-8 w-8 text-purple-500" />,
-    complete: <CheckCircle2 className="h-8 w-8 text-green-500" />,
-}
+    complete: <CheckCircle2 className="h-8 w-8 text-green-500" /> }
 
 export function OnboardingModal() {
-    const { 
-        isOnboarding, 
-        currentStep, 
-        nextStep, 
-        prevStep, 
+    const {
+        isOnboarding,
+        currentStep,
+        nextStep,
+        prevStep,
         skipOnboarding,
-        completeOnboarding,
-    } = useOnboardingStore()
+        completeOnboarding } = useOnboardingStore()
     const [showWelcome, setShowWelcome] = useState(false)
     const router = useRouter()
 
     useEffect(() => {
-        const { hasCompletedOnboarding, skipped, startOnboarding } = useOnboardingStore.getState()
-        
+        const { hasCompletedOnboarding, skipped } = useOnboardingStore.getState()
+
         // Check if user is new (no onboarding state in localStorage)
         const hasSeenWelcome = localStorage.getItem('contenly-welcome-shown')
-        
+
         if (!hasCompletedOnboarding && !skipped && !hasSeenWelcome) {
-            setShowWelcome(true)
+            const timer = window.setTimeout(() => setShowWelcome(true), 0)
             localStorage.setItem('contenly-welcome-shown', 'true')
+            return () => window.clearTimeout(timer)
         }
     }, [])
 
@@ -67,7 +66,7 @@ export function OnboardingModal() {
 
     const handleStepAction = () => {
         const step = onboardingSteps[currentStep]
-        
+
         // Navigate to specific pages based on step
         switch (step.id) {
             case 'connect-wordpress':
@@ -91,7 +90,7 @@ export function OnboardingModal() {
                 completeOnboarding()
                 return
         }
-        
+
         nextStep()
     }
 
@@ -174,9 +173,9 @@ export function OnboardingModal() {
                                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800">
                                     {stepIcons[step.id] || <Sparkles className="h-6 w-6 text-blue-500" />}
                                 </div>
-                                <Button 
-                                    variant="ghost" 
-                                    size="icon" 
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
                                     className="h-8 w-8"
                                     onClick={skipOnboarding}
                                 >
@@ -193,10 +192,10 @@ export function OnboardingModal() {
                                         key={index}
                                         className={cn(
                                             "h-2 w-2 rounded-full transition-colors",
-                                            index === currentStep 
-                                                ? "bg-blue-500" 
-                                                : index < currentStep 
-                                                    ? "bg-blue-300" 
+                                            index === currentStep
+                                                ? "bg-blue-500"
+                                                : index < currentStep
+                                                    ? "bg-blue-300"
                                                     : "bg-slate-200 dark:bg-slate-700"
                                         )}
                                     />
@@ -222,12 +221,11 @@ export function OnboardingModal() {
 }
 
 // Tooltip component for highlighting elements during onboarding
-export function OnboardingTooltip({ 
-    children, 
-    stepId,
-}: { 
+export function OnboardingTooltip({
+    children,
+    stepId }: {
     children: React.ReactNode
-    stepId: string 
+    stepId: string
 }) {
     const { isOnboarding, currentStep } = useOnboardingStore()
     const step = onboardingSteps[currentStep]

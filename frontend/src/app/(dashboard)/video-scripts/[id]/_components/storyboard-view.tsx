@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { Eye, Plus } from 'lucide-react'
 import type { Scene } from './types'
 
@@ -28,11 +29,13 @@ export function StoryboardView({ scenes, onSelectScene, onAddScene }: Storyboard
               >
                 <div className="relative h-24 w-full overflow-hidden rounded-md bg-slate-100">
                   {firstFootage ? (
-                    <img
+                    <Image
                       src={firstFootage.thumbnailUrl}
                       alt=""
-                      className="h-full w-full object-cover"
-                      loading="lazy"
+                      fill
+                      sizes="192px"
+                      className="object-cover"
+                      unoptimized
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">

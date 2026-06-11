@@ -140,10 +140,59 @@ export class AdminSettingsController {
   }
 
   @Post('providers/:provider/test')
-  async testProvider(@Param('provider') provider: string, @Body() dto: { model?: string; prompt?: string }) {
+  async testProvider(@Param('provider') provider: string, @Body() dto: { model?: string; prompt?: string; type?: 'text' | 'image' }) {
     if (provider !== '9router') return { ok: false, error: 'Unsupported provider' };
-    const model = (dto.model || (await this.getSetting('model_text_generation', this.defaultTextModel))).trim();
+    const type = dto.type || 'text';
     const started = Date.now();
+
+    if (type === 'image') {
+      const model = (dto.model || (await this.getSetting('model_image_generation', this.defaultImageModel))).trim();
+      const apiKey = await this.getSetting(
+        'image_api_key',
+        this.config.get('IMAGE_API_KEY') || this.config.get('CODEX_API_KEY') || this.apiKey,
+      );
+      const imageBaseUrl = await this.getSetting(
+        'image_base_url',
+        this.config.get('IMAGE_BASE_URL') || this.config.get('CODEX_BASE_URL') || this.baseUrl,
+      );
+      
+      const response = await fetch(`${imageBaseUrl}/images/generations`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model,
+          prompt: dto.prompt || 'A beautiful futuristic workspace with a computer screen showing "OK" in glowing cyan text',
+          n: 1,
+          size: model.includes('gpt-5.5-image') ? 'auto' : '1080x1350',
+          quality: 'auto',
+          background: 'auto',
+          image_detail: 'low',
+          output_format: 'png',
+        }),
+        signal: AbortSignal.timeout(60000),
+      });
+
+      const raw = await response.text();
+      let parsed: any;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        parsed = null;
+      }
+
+      return {
+        ok: response.ok,
+        status: response.status,
+        latencyMs: Date.now() - started,
+        model,
+        message: parsed?.data?.[0]?.url || parsed?.error?.message || raw.slice(0, 300),
+      };
+    }
+
+    const model = (dto.model || (await this.getSetting('model_text_generation', this.defaultTextModel))).trim();
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {

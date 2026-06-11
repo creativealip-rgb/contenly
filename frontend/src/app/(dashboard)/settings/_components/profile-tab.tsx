@@ -34,6 +34,14 @@ interface ProfileTabProps {
     setProfileData: React.Dispatch<React.SetStateAction<ProfileData>>
 }
 
+interface UserProfileResponse {
+    name: string
+    bio?: string
+    image?: string
+}
+
+const getErrorMessage = (error: unknown, fallback: string) => error instanceof Error ? error.message : fallback
+
 export function ProfileTab({ profileData, setProfileData }: ProfileTabProps) {
     const { user, setUser } = useAuthStore()
     const [isSavingProfile, setIsSavingProfile] = useState(false)
@@ -43,17 +51,17 @@ export function ProfileTab({ profileData, setProfileData }: ProfileTabProps) {
     const handleSaveProfile = async () => {
         setIsSavingProfile(true)
         try {
-            const updated = await api.patch<any>('/users/me', {
+            const updated = await api.patch<UserProfileResponse>('/users/me', {
                 name: profileData.name,
                 bio: profileData.bio,
                 image: profileData.image
             })
             if (user) {
-                setUser({ ...user, fullName: updated.name, avatarUrl: updated.image })
+                setUser({ ...user, fullName: updated.name, avatarUrl: updated.image || undefined })
             }
             toast.success('Profil berhasil diperbarui')
-        } catch (error: any) {
-            toast.error(error.message || 'Gagal memperbarui profil')
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error, 'Gagal memperbarui profil'))
         } finally {
             setIsSavingProfile(false)
         }
@@ -62,15 +70,15 @@ export function ProfileTab({ profileData, setProfileData }: ProfileTabProps) {
     const handleUpdateAvatar = async () => {
         setIsSavingProfile(true)
         try {
-            const updated = await api.patch<any>('/users/me', { image: avatarUrlInput })
+            const updated = await api.patch<UserProfileResponse>('/users/me', { image: avatarUrlInput })
             if (user) {
-                setUser({ ...user, avatarUrl: updated.image })
+                setUser({ ...user, avatarUrl: updated.image || undefined })
             }
-            setProfileData(prev => ({ ...prev, image: updated.image }))
+            setProfileData(prev => ({ ...prev, image: updated.image || '' }))
             setIsAvatarDialogOpen(false)
             toast.success('Foto profil berhasil diperbarui')
-        } catch (error: any) {
-            toast.error(error.message || 'Gagal memperbarui foto profil')
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error, 'Gagal memperbarui foto profil'))
         } finally {
             setIsSavingProfile(false)
         }

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
+import type { Activity } from '@/components/dashboard/recent-activity'
 
 interface DashboardStats {
   totalArticles: number
@@ -8,12 +9,17 @@ interface DashboardStats {
   connectedSites: number
   tokenBalance: number
   currentTier: string
-  recentActivity: any[]
+  recentActivity: Activity[]
 }
 
 interface TrendItem {
   title: string
   source: string
+}
+
+interface TrendsResponse {
+  results?: TrendItem[]
+  data?: TrendItem[]
 }
 
 export function useDashboardStats() {
@@ -29,8 +35,9 @@ export function useTrends() {
   return useQuery<TrendItem[]>({
     queryKey: ['dashboard-trends'],
     queryFn: async () => {
-      const data = await api.get<any>('/trend-radar/search?q=trending+indonesia')
-      return ((data.results || data || []) as TrendItem[]).slice(0, 4)
+      const data = await api.get<TrendsResponse | TrendItem[]>('/trend-radar/search?q=trending+indonesia')
+      const trends = Array.isArray(data) ? data : data.results || data.data || []
+      return trends.slice(0, 4)
     },
     refetchInterval: 60000,
     refetchIntervalInBackground: false,

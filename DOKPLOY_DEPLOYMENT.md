@@ -222,7 +222,7 @@ docker logs contenly-backend
 - [ ] VPS dengan Ubuntu 22.04+
 - [ ] Domain sudah pointing ke VPS
 - [ ] Semua API keys sudah disiapkan:
-  - [ ] OpenRouter API Key
+  - [ ] OpenAI API Key
   - [ ] Resend API Key
   - [ ] Stripe Keys
   - [ ] Google OAuth (opsional)

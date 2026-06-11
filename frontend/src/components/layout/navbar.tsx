@@ -67,8 +67,8 @@ export function Navbar() {
     useEffect(() => {
         // Only fetch balance if user is logged in
         if (!user) {
-            setTokenBalance(null)
-            return
+            const timer = window.setTimeout(() => setTokenBalance(null), 0)
+            return () => window.clearTimeout(timer)
         }
 
         const fetchBalance = async () => {
@@ -281,9 +281,12 @@ function NotificationBell() {
     }
 
     useEffect(() => {
-        fetchNotifications()
+        const initial = window.setTimeout(fetchNotifications, 0)
         const interval = setInterval(fetchNotifications, 30000)
-        return () => clearInterval(interval)
+        return () => {
+            window.clearTimeout(initial)
+            clearInterval(interval)
+        }
     }, [])
 
     const unreadCount = notifications.filter((n) => !n.isRead).length

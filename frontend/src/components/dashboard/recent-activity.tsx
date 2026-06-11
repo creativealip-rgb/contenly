@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatDistanceToNow } from 'date-fns'
 import { FileText, Rss, Plug, CreditCard, Clock } from 'lucide-react'
 
-interface Activity {
+export interface Activity {
     id: string
     type: 'article_published' | 'feed_added' | 'site_connected' | 'tokens_purchased'
     title: string
@@ -20,35 +20,29 @@ const activityIcons = {
     article_published: FileText,
     feed_added: Rss,
     site_connected: Plug,
-    tokens_purchased: CreditCard,
-}
+    tokens_purchased: CreditCard }
 
 const activityStyles = {
     article_published: {
         bg: 'bg-emerald-500/10',
         text: 'text-emerald-600',
         border: 'border-emerald-500/20',
-        icon: 'text-emerald-500',
-    },
+        icon: 'text-emerald-500' },
     feed_added: {
         bg: 'bg-blue-500/10',
         text: 'text-blue-600',
         border: 'border-blue-500/20',
-        icon: 'text-blue-500',
-    },
+        icon: 'text-blue-500' },
     site_connected: {
         bg: 'bg-cyan-500/10',
         text: 'text-cyan-600',
         border: 'border-cyan-500/20',
-        icon: 'text-cyan-500',
-    },
+        icon: 'text-cyan-500' },
     tokens_purchased: {
         bg: 'bg-amber-500/10',
         text: 'text-amber-600',
         border: 'border-amber-500/20',
-        icon: 'text-amber-500',
-    },
-}
+        icon: 'text-amber-500' } }
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -111,8 +105,7 @@ export function RecentActivity({ activities, isLoading }: RecentActivityProps) {
                         <motion.div
                             className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 mx-auto mb-4"
                             animate={{
-                                y: [0, -5, 0],
-                            }}
+                                y: [0, -5, 0] }}
                             transition={{
                                 duration: 3,
                                 repeat: Infinity,
@@ -139,7 +132,7 @@ export function RecentActivity({ activities, isLoading }: RecentActivityProps) {
                             initial="hidden"
                             animate="visible"
                         >
-                            {activities.map((activity, index) => {
+                            {activities.map((activity) => {
                                 const styles = activityStyles[activity.type] || activityStyles.article_published
                                 const Icon = activityIcons[activity.type] || activityIcons.article_published
 

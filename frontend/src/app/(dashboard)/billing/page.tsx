@@ -9,8 +9,7 @@ import {
     DialogDescription,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog"
+    DialogTrigger } from "@/components/ui/dialog"
 import {
     Sparkles,
     CreditCard,
@@ -18,7 +17,6 @@ import {
     MessageCircle,
     Zap,
     TrendingUp,
-    Check,
     CheckCircle2
 } from 'lucide-react'
 import { useBillingBalance, useBillingSubscription, useBillingTransactions } from '@/hooks/use-billing'
@@ -33,7 +31,7 @@ export default function BillingPage() {
     const usageCategories = Object.values(balanceData?.categories ?? {})
     const totalUsed = usageCategories.reduce((sum, item) => sum + item.used, 0)
 
-    const getPlanName = (plan: string) => {
+    const getPlanName = (plan?: string) => {
         switch (plan?.toUpperCase()) {
             case 'FREE': return 'Free'
             case 'FREE_TRIAL': return 'Free Trial'
@@ -409,7 +407,6 @@ function TransactionHistory() {
     const { data: transactions = [], isLoading } = useBillingTransactions()
 
     const typeLabels: Record<string, string> = { USAGE: 'Penggunaan', PURCHASE: 'Pembelian', REFUND: 'Refund', SUBSCRIPTION_CREDIT: 'Kredit' }
-    const typeColors: Record<string, string> = { USAGE: 'text-red-600', PURCHASE: 'text-green-600', REFUND: 'text-blue-600', SUBSCRIPTION_CREDIT: 'text-purple-600' }
 
     return (
         <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
@@ -428,10 +425,10 @@ function TransactionHistory() {
                         <p className="text-sm text-muted-foreground text-center py-8">Belum ada transaksi.</p>
                     ) : (
                         <div className="space-y-2">
-                            {transactions.map((tx: any) => (
+                            {transactions.map((tx) => (
                                 <div key={tx.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/50">
                                     <div>
-                                        <p className="text-sm font-medium">{(tx.metadata as any)?.description || typeLabels[tx.type] || tx.type}</p>
+                                        <p className="text-sm font-medium">{tx.metadata?.description || typeLabels[tx.type] || tx.type}</p>
                                         <p className="text-xs text-muted-foreground">{new Date(tx.createdAt).toLocaleString('id-ID')}</p>
                                     </div>
                                     <span className={`text-sm font-bold ${tx.tokens >= 0 ? 'text-green-600' : 'text-red-600'}`}>

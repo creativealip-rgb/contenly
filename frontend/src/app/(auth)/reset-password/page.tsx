@@ -50,9 +50,9 @@ function ResetPasswordForm() {
             setIsSuccess(true)
             // Redirect after 2 seconds
             setTimeout(() => router.push('/login'), 3000)
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Reset password error:', error)
-            setError(error.message || 'Gagal mengatur ulang kata sandi')
+            setError(error instanceof Error ? error.message : 'Gagal mengatur ulang kata sandi')
         } finally {
             setIsLoading(false)
         }

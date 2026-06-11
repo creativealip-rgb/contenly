@@ -24,7 +24,7 @@ Sebelum memulai, pastikan Anda memiliki:
 - [ ] Domain yang sudah pointing ke IP VPS
 - [ ] Repository GitHub/GitLab dengan project Contently
 - [ ] API Keys yang diperlukan:
-  - OpenRouter API Key
+  - OpenAI API Key
   - Resend API Key
   - Stripe Keys (opsional)
 

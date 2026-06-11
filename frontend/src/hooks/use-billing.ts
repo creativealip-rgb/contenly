@@ -13,18 +13,38 @@ export function useBillingBalance() {
   })
 }
 
+interface BillingSubscription {
+  plan?: string
+  status?: string
+  [key: string]: unknown
+}
+
+interface BillingTransaction {
+  id: string
+  type: string
+  tokens: number
+  status?: string
+  createdAt: string
+  metadata?: { description?: string }
+  [key: string]: unknown
+}
+
+interface BillingTransactionsResponse {
+  data?: BillingTransaction[]
+}
+
 export function useBillingSubscription() {
-  return useQuery<any>({
+  return useQuery<BillingSubscription>({
     queryKey: ['billing-subscription'],
     queryFn: () => api.get('/billing/subscriptions'),
   })
 }
 
 export function useBillingTransactions(limit = 10) {
-  return useQuery<any[]>({
+  return useQuery<BillingTransaction[]>({
     queryKey: ['billing-transactions', limit],
     queryFn: async () => {
-      const data = await api.get<any>(`/billing/transactions?limit=${limit}`)
+      const data = await api.get<BillingTransactionsResponse>(`/billing/transactions?limit=${limit}`)
       return data.data || []
     },
   })

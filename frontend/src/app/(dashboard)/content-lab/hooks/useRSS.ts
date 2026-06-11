@@ -2,11 +2,12 @@
 
 import { useState, useCallback } from 'react'
 import { RssFeed, getFeeds, addFeed, removeFeed } from '@/lib/feeds-store'
+import { Article } from '@/stores/content-lab-store'
 import { toast } from 'sonner'
 
 export function useRSS() {
     const [feeds, setFeeds] = useState<RssFeed[]>([])
-    const [articles, setArticles] = useState<any[]>([])
+    const [articles, setArticles] = useState<Article[]>([])
     const [selectedFeed, setSelectedFeed] = useState('')
     const [isFetchingRSS, setIsFetchingRSS] = useState(false)
     const [isAddFeedOpen, setIsAddFeedOpen] = useState(false)

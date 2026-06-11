@@ -1,6 +1,6 @@
 import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } from '@nestjs/common';
 import { Observable, tap } from 'rxjs';
-import { Request } from 'express';
+import { AuthenticatedRequest } from '../types/authenticated-request';
 
 /**
  * Interceptor that logs sensitive operations for audit trail.
@@ -10,11 +10,11 @@ import { Request } from 'express';
 export class AuditInterceptor implements NestInterceptor {
   private readonly logger = new Logger('AuditLog');
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const req = context.switchToHttp().getRequest<Request>();
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    const req = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const method = req.method;
     const url = req.url;
-    const userId = (req as any).user?.id || 'anonymous';
+    const userId = req.user?.id || 'anonymous';
     const ip = req.ip || req.headers['x-forwarded-for'] || '';
     const handler = context.getHandler().name;
     const controller = context.getClass().name;
@@ -35,7 +35,7 @@ export class AuditInterceptor implements NestInterceptor {
             }),
           );
         },
-        error: (err) => {
+        error: (err: Error) => {
           this.logger.warn(
             JSON.stringify({
               audit: true,

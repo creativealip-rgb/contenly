@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,8 +11,7 @@ import {
     TableCell,
     TableHead,
     TableHeader,
-    TableRow,
-} from '@/components/ui/table'
+    TableRow } from '@/components/ui/table'
 import {
     Dialog,
     DialogContent,
@@ -21,16 +19,14 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog'
+    DialogTrigger } from '@/components/ui/dialog'
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { motion, AnimatePresence } from 'framer-motion'
+    DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { motion} from 'framer-motion'
 import {
     Plus,
     Plug,
@@ -38,19 +34,14 @@ import {
     Settings,
     Trash2,
     RefreshCw,
-    CheckCircle2,
     XCircle,
     ExternalLink,
     ArrowRight,
-    Loader2,
-    Zap
-} from 'lucide-react'
+    Loader2} from 'lucide-react'
 import { WordPressSite } from '@/lib/sites-store'
 import { authClient } from '@/lib/auth-client'
 import { toast } from 'sonner'
 import { useConfirm } from '@/components/ui/confirm-dialog'
-
-import { containerVariants, itemVariants } from '@/lib/animations'
 
 interface CategoryMappingResponse {
     sourceCategory: string
@@ -158,19 +149,6 @@ export default function IntegrationsPage() {
         }
     }
 
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'connected':
-            case 'CONNECTED':
-                return <Badge className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/20"><CheckCircle2 className="h-3 w-3 mr-1" />Connected</Badge>
-            case 'error':
-            case 'ERROR':
-                return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Error</Badge>
-            default:
-                return <Badge variant="outline">{status}</Badge>
-        }
-    }
-
     const formatTimeAgo = (dateStr?: string) => {
         if (!dateStr) return 'Never'
         const date = new Date(dateStr)
@@ -268,7 +246,7 @@ export default function IntegrationsPage() {
     }
 
     const handleRemoveSite = async (id: string) => {
-        const confirmed = await confirm({
+        await confirm({
             title: 'Putuskan Situs',
             description: 'Are you sure you want to disconnect this site?',
             confirmText: 'Putuskan',
@@ -282,8 +260,7 @@ export default function IntegrationsPage() {
                 } catch (error: unknown) {
                     toast.error(`Failed to disconnect: ${error instanceof Error ? error.message : 'Unknown error'}`)
                 }
-            },
-        })
+            } })
     }
 
     return (

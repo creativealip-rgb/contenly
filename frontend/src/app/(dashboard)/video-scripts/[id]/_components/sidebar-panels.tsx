@@ -4,11 +4,11 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
+import NextImage from 'next/image'
 import {
   Download,
   Film,
-  Image,
+  Image as ImageIcon,
   Loader2,
   Mic,
   Package,
@@ -278,14 +278,14 @@ export function SidebarPanels({
                 {isGeneratingThumbnail ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
-                  <Image className="mr-2 h-4 w-4" />
+                  <ImageIcon className="mr-2 h-4 w-4" />
                 )}
                 Generate Thumbnail
               </Button>
               {thumbnailUrl && (
                 <div className="space-y-2">
                   <div className="relative mx-auto max-w-[200px] overflow-hidden rounded-lg" style={{ aspectRatio: '9/16' }}>
-                    <img src={thumbnailUrl} alt="Generated thumbnail" className="h-full w-full object-cover" />
+                    <NextImage src={thumbnailUrl} alt="Generated thumbnail" fill sizes="200px" className="object-cover" unoptimized />
                   </div>
                   <a
                     href={thumbnailUrl}

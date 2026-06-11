@@ -1,31 +1,26 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect} from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table'
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import {
   Search, Filter, MoreHorizontal, Eye, Edit, Trash2, RefreshCw, FileText,
-  CheckCircle2, Clock, Loader2, Pencil, Plus, Download, XCircle, Coins,
-} from 'lucide-react'
+  CheckCircle2, Clock, Loader2, Pencil, Plus, Download, Coins } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { toast } from 'sonner'
 import { useConfirm } from '@/components/ui/confirm-dialog'
 import {
   useArticles, useArticleStats, useDeleteArticle, useBulkDeleteArticles,
-  useBulkUpdateStatus, useSyncScheduled, type ArticleListItem,
-} from '@/hooks/use-articles'
+  useBulkUpdateStatus, useSyncScheduled } from '@/hooks/use-articles'
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'Semua' },
@@ -61,10 +56,7 @@ export default function ArticlesPage() {
     return () => clearTimeout(t)
   }, [search])
 
-  // Reset page when filters change
-  useEffect(() => { setPage(1) }, [debouncedSearch, statusFilter])
-
-  const { data, isLoading, refetch } = useArticles({ search: debouncedSearch, status: statusFilter, page, limit: 20 })
+  const { data, isLoading } = useArticles({ search: debouncedSearch, status: statusFilter, page, limit: 20 })
   const { data: stats } = useArticleStats()
   const deleteArticle = useDeleteArticle()
   const bulkDelete = useBulkDeleteArticles()
@@ -95,8 +87,7 @@ export default function ArticlesPage() {
       confirmText: 'Hapus',
       cancelText: 'Batal',
       variant: 'destructive',
-      onConfirm: async () => { await deleteArticle.mutateAsync(id); toast.success('Dihapus') },
-    })
+      onConfirm: async () => { await deleteArticle.mutateAsync(id); toast.success('Dihapus') } })
   }
 
   const handleBulkDelete = async () => {
@@ -111,8 +102,7 @@ export default function ArticlesPage() {
         await bulkDelete.mutateAsync(Array.from(selected))
         setSelected(new Set())
         toast.success(`${selected.size} artikel dihapus`)
-      },
-    })
+      } })
   }
 
   const handleBulkPublish = async () => {
@@ -168,9 +158,9 @@ export default function ArticlesPage() {
       <div className="flex flex-wrap items-center gap-3 glass p-4 rounded-2xl border-none">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input placeholder="Cari judul..." value={search} onChange={(e) => setSearch(e.target.value)} className="h-10 pl-9 rounded-xl border-none bg-white/60" />
+          <Input placeholder="Cari judul..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} className="h-10 pl-9 rounded-xl border-none bg-white/60" />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select value={statusFilter} onValueChange={(value) => { setStatusFilter(value); setPage(1) }}>
           <SelectTrigger className="h-10 w-[150px] rounded-xl border-none bg-white/60 text-xs font-bold">
             <Filter className="h-3.5 w-3.5 mr-1.5 text-slate-400" /><SelectValue />
           </SelectTrigger>

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { motion } from 'framer-motion'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
 import { getActiveSite } from '@/lib/sites-store'
@@ -16,6 +15,7 @@ import { SourceSidebar } from './components/SourceSidebar'
 import { ContentEditor } from './components/ContentEditor'
 import { ToolsPanel } from './components/ToolsPanel'
 import { ContentLabState, ContentLabHandlers } from './components/types'
+import type { Article } from '@/stores/content-lab-store'
 import { useRSS } from './hooks/useRSS'
 import { useWordPress } from './hooks/useWordPress'
 import { useAIContent } from './hooks/useAIContent'
@@ -76,6 +76,7 @@ export default function ContentLabPage() {
             }
         }
         init()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [wp.loadSites, rss.loadFeeds, wp.fetchCategories])
 
     // UI Handlers
@@ -125,7 +126,7 @@ export default function ContentLabPage() {
         handleFetchArticles: rss.handleFetchArticles,
         handleAddFeed: rss.handleAddFeed,
         handleRemoveFeed: async (e, id) => { e.stopPropagation(); await rss.handleRemoveFeed(id); },
-        handleSelectArticle: async (article: any) => {
+        handleSelectArticle: async (article: Article) => {
             await ai.handleSelectArticle(article)
             setRightPanelTab('tools')
         },

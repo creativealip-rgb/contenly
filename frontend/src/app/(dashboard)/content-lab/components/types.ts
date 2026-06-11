@@ -1,5 +1,6 @@
 import { WordPressSite } from '@/lib/sites-store'
 import { RssFeed } from '@/lib/feeds-store'
+import { Article } from '@/stores/content-lab-store'
 
 export interface ContentLabState {
     // WordPress
@@ -10,8 +11,8 @@ export interface ContentLabState {
 
     // RSS & Content
     feeds: RssFeed[];
-    articles: any[];
-    selectedArticle: any | null;
+    articles: Article[];
+    selectedArticle: Article | null;
     selectedFeed: string;
     isFetchingRSS: boolean;
     isAddFeedOpen: boolean;
@@ -28,7 +29,7 @@ export interface ContentLabState {
 
 export interface ContentLabHandlers {
     setFeeds: (feeds: RssFeed[]) => void;
-    setArticles: (articles: any[]) => void;
+    setArticles: (articles: Article[]) => void;
     setSelectedFeed: (id: string) => void;
     setIsFetchingRSS: (val: boolean) => void;
     setIsAddFeedOpen: (val: boolean) => void;
@@ -44,7 +45,7 @@ export interface ContentLabHandlers {
     handleFetchArticles: (feedId: string) => Promise<void>;
     handleAddFeed: () => Promise<void>;
     handleRemoveFeed: (e: React.MouseEvent, id: string) => Promise<void>;
-    handleSelectArticle: (article: any) => Promise<void>;
+    handleSelectArticle: (article: Article) => Promise<void>;
     handleScrape: () => Promise<void>;
     handleAIRewrite: () => Promise<void>;
     handleGenerateImage: () => Promise<void>;

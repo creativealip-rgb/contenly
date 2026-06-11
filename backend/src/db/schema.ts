@@ -453,6 +453,8 @@ export const instagramProject = pgTable('instagram_project', {
   templateId: varchar('template_id', { length: 100 }),
   totalSlides: integer('total_slides').default(0),
   status: varchar('status', { length: 50 }).default('draft'),
+  batchJobId: varchar('batch_job_id', { length: 100 }),
+  batchStatus: varchar('batch_status', { length: 50 }).default('idle'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({

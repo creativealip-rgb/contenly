@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { DropResult } from '@hello-pangea/dnd'
-import { ArrowLeft, Download, Eye, Image as ImageIcon, Loader2, Sparkles } from 'lucide-react'
+import { ArrowLeft, Download, Eye, Loader2, Sparkles } from 'lucide-react'
 import { SlideEditor, SlidePreview, PreviewModal, API_BASE_URL } from './_components'
 import type { Project, Slide } from './_components'
 
@@ -30,7 +30,10 @@ export default function InstagramStudioEditorPage() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [previewSlideIndex, setPreviewSlideIndex] = useState(0)
 
-  useEffect(() => { fetchProject() }, [projectId])
+  useEffect(() => {
+    fetchProject()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId])
   useEffect(() => { if (project?.slides?.length) setEditedContent(project.slides[currentSlideIndex]?.textContent || '') }, [project, currentSlideIndex])
 
   const fetchProject = async () => {

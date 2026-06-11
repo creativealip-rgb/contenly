@@ -7,8 +7,6 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { authClient } from '@/lib/auth-client'
 import { z } from 'zod'
@@ -63,14 +61,14 @@ export default function LoginPage() {
                     id: data.user.id,
                     email: data.user.email,
                     fullName: data.user.name || data.user.email.split('@')[0],
-                    role: (data.user as any).role,
+                    role: (data.user as { role?: string }).role,
                     avatarUrl: data.user.image || undefined,
                 })
                 router.push('/dashboard')
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Login error:', err)
-            setError(err.message || 'An error occurred during login')
+            setError(err instanceof Error ? err.message : 'An error occurred during login')
         } finally {
             setIsLoading(false)
         }
@@ -256,7 +254,7 @@ export default function LoginPage() {
                     </div>
 
                     <p className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                        Don't have an account?{' '}
+                        Don&apos;t have an account?{' '}
                         <Link href="/register" className="font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
                             Sign up here
                         </Link>

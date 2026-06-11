@@ -4,15 +4,10 @@ import {
   ExecutionContext,
   ForbiddenException,
 } from '@nestjs/common';
-import { AuthGuard } from './auth.guard';
 
 @Injectable()
-export class SuperAdminGuard extends AuthGuard {
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    // First run the base AuthGuard logic
-    const isAuthenticated = await super.canActivate(context);
-    if (!isAuthenticated) return false;
-
+export class SuperAdminGuard implements CanActivate {
+  canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 

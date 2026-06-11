@@ -11,13 +11,10 @@ import {
     TableCell,
     TableHead,
     TableHeader,
-    TableRow,
-} from '@/components/ui/table'
+    TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { SuperAdminGuard } from '@/components/guards'
-import {
-    Users,
-    Trash2,
+import {Trash2,
     ShieldAlert,
     ShieldCheck,
     User,
@@ -91,7 +88,7 @@ export default function UserManagementPage() {
     const fetchUsers = async () => {
         try {
             setLoading(true)
-            const response = await api.get<any>('/users/admin/list')
+            const response = await api.get<UserData[] | { data?: UserData[] }>('/users/admin/list')
             const userData = Array.isArray(response) ? response : (response?.data || [])
             setUsers(userData)
         } catch (error) {
@@ -116,9 +113,9 @@ export default function UserManagementPage() {
             setIsCreateDialogOpen(false)
             setNewUser({ name: '', email: '', password: '', role: 'user' })
             fetchUsers()
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to create user:', error)
-            toast.error(error.message || 'Gagal membuat user')
+            toast.error(error instanceof Error ? error.message : 'Gagal membuat user')
         } finally {
             setIsCreating(false)
         }
@@ -163,7 +160,7 @@ export default function UserManagementPage() {
     }
 
     const handleDeleteUser = async (userId: string) => {
-        const confirmed = await confirm({
+        await confirm({
             title: 'Hapus User',
             description: 'Apakah Anda yakin ingin menghapus user ini?',
             confirmText: 'Hapus',
@@ -178,8 +175,7 @@ export default function UserManagementPage() {
                     console.error('Failed to delete user:', error)
                     toast.error('Gagal menghapus user')
                 }
-            },
-        })
+            } })
     }
 
     const getRoleBadge = (role: string) => {

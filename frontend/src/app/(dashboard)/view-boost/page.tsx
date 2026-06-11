@@ -6,10 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Play, Pause, Trash2, Plus, Zap, ShieldCheck, Loader2, TrendingUp } from 'lucide-react';
+import { Play, Pause, Trash2, Plus, Zap, ShieldCheck, Loader2} from 'lucide-react';
 import { api } from '@/lib/api';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AdminGuard } from '@/components/guards';
@@ -40,8 +40,7 @@ export default function ViewBoostPage() {
     proxyList: '',
     serviceType: 'standard' as 'standard' | 'premium',
     delayMin: 5,
-    delayMax: 30,
-  });
+    delayMax: 30 });
 
   useEffect(() => {
     fetchJobs(true);
@@ -98,8 +97,7 @@ export default function ViewBoostPage() {
       running: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
       completed: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
       failed: 'bg-red-500/10 text-red-600 border-red-500/20',
-      paused: 'bg-gray-500/10 text-gray-600 border-gray-500/20',
-    };
+      paused: 'bg-gray-500/10 text-gray-600 border-gray-500/20' };
     return <Badge className={variants[status] || 'bg-gray-500/10 text-gray-600'}>{status}</Badge>;
   };
 

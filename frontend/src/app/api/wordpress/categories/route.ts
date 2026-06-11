@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+type WordPressCategory = {
+    id: number
+    name: string
+    slug: string
+    count: number
+}
+
 // Fetch WordPress categories
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
@@ -27,19 +34,19 @@ export async function GET(request: NextRequest) {
             throw new Error(`Failed to fetch categories: ${response.status}`)
         }
 
-        const categories = await response.json()
+        const categories = await response.json() as WordPressCategory[]
 
         return NextResponse.json({
             success: true,
-            categories: categories.map((cat: any) => ({
+            categories: categories.map((cat) => ({
                 id: cat.id,
                 name: cat.name,
                 slug: cat.slug,
                 count: cat.count
             }))
         })
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('WordPress categories error:', error)
-        return NextResponse.json({ error: error.message }, { status: 500 })
+        return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed to fetch categories' }, { status: 500 })
     }
 }

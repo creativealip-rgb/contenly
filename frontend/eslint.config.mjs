@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Soon features: keep out of lint gate until active development resumes.
+    "src/app/(dashboard)/motion-graphics/**",
+    "src/components/motion/**",
+    "src/app/(dashboard)/video-clips/**",
   ]),
 ]);
 

@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import Image from 'next/image'
 import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react'
 import type { Slide } from './types'
 
@@ -28,14 +29,14 @@ export function PreviewModal({ isOpen, onOpenChange, slides, previewSlideIndex, 
             </Button>
           )}
 
-          <div className="w-full max-w-[400px] aspect-[4/5] rounded-lg overflow-hidden bg-slate-900 border-4 border-slate-800 shadow-2xl">
+          <div className="relative w-full max-w-[400px] aspect-[4/5] rounded-lg overflow-hidden bg-slate-900 border-4 border-slate-800 shadow-2xl">
             {slides[previewSlideIndex] ? (
               <>
                 {slides[previewSlideIndex].imageUrl ? (
                   slides[previewSlideIndex].imageUrl.startsWith('#') || slides[previewSlideIndex].imageUrl.startsWith('rgb') ? (
                     <div className="absolute inset-0 w-full h-full" style={{ backgroundColor: slides[previewSlideIndex].imageUrl }} />
                   ) : (
-                    <img src={slides[previewSlideIndex].imageUrl} alt={`Slide ${previewSlideIndex + 1}`} className="w-full h-full object-cover" />
+                    <Image src={slides[previewSlideIndex].imageUrl} alt={`Slide ${previewSlideIndex + 1}`} fill sizes="400px" className="object-cover" unoptimized />
                   )
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">

@@ -2,7 +2,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { RssFeed } from '@/lib/feeds-store'
 
-function transformFeed(feed: any): RssFeed {
+type FeedResponse = RssFeed & { pollingIntervalMinutes?: number }
+
+type FeedsResponse = FeedResponse[] | { data?: FeedResponse[] }
+
+function transformFeed(feed: FeedResponse): RssFeed {
   return {
     ...feed,
     pollingInterval: feed.pollingIntervalMinutes,
@@ -14,8 +18,8 @@ export function useFeeds() {
   return useQuery<RssFeed[]>({
     queryKey: ['feeds'],
     queryFn: async () => {
-      const res = await api.get<any>('/feeds')
-      const feeds = Array.isArray(res) ? res : (res?.data || [])
+      const res = await api.get<FeedsResponse>('/feeds')
+      const feeds = Array.isArray(res) ? res : (res.data || [])
       return feeds.map(transformFeed)
     },
   })

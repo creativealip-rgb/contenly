@@ -3,11 +3,13 @@
 import { useEffect } from 'react'
 import { authClient } from '@/lib/auth-client'
 import { useAuthStore } from '@/stores'
-import { useRouter } from 'next/navigation'
+
+type SessionUserWithRole = {
+    role?: string
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { setUser, setLoading } = useAuthStore()
-    const router = useRouter()
 
     useEffect(() => {
         const checkSession = async () => {
@@ -23,7 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         id: session.data.user.id,
                         email: session.data.user.email,
                         fullName: session.data.user.name || session.data.user.email.split('@')[0],
-                        role: (session.data.user as any).role,
+                        role: (session.data.user as SessionUserWithRole).role,
                         avatarUrl: session.data.user.image || undefined,
                     }
                     console.log('✅ AuthProvider: Setting user:', userData)

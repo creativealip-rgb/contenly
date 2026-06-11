@@ -1,10 +1,14 @@
 import 'dotenv/config'; // Load .env before everything else
+import './config/validate-env';
 import { NestFactory } from '@nestjs/core';
 // Restart trigger: 9
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { auth } from './auth/auth.config';
+import { uploadSecurityMiddleware } from './config/upload-security';
+import { createTmpAuthMiddleware } from './config/tmp-auth.middleware';
 import * as path from 'path';
 import * as expressStatic from 'express';
 
@@ -35,9 +39,10 @@ async function bootstrap() {
 
   // CORS Setup
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000,http://localhost:3010';
-  const origins = frontendUrl.includes(',')
-    ? frontendUrl.split(',').map((url) => url.trim())
-    : [frontendUrl];
+  const origins = frontendUrl
+    .split(',')
+    .map((url) => url.trim())
+    .filter(Boolean);
 
   logger.log(`Setting up CORS with origins: ${JSON.stringify(origins)}`);
 
@@ -50,8 +55,7 @@ async function bootstrap() {
 
       const isAllowed = origins.some((allowedOrigin) => {
         if (allowedOrigin === '*') return true;
-        // Exact match or matches the start (for subdomains/paths)
-        return origin === allowedOrigin || origin.startsWith(allowedOrigin);
+        return origin === allowedOrigin;
       });
 
       if (isAllowed) {
@@ -74,17 +78,29 @@ async function bootstrap() {
     exclude: ['health', 'uploads'], // Exclude health check and uploads from versioning
   });
 
-  // Serve tmp files (for Remotion audio during compose) — require session cookie
-  app.use('/tmp', (req, res, next) => {
-    const cookies = req.headers.cookie || '';
-    if (!cookies.includes('better-auth.session_token')) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
-    next();
-  }, expressStatic.static(path.resolve(process.cwd(), 'tmp')));
+  // Serve tmp files (for Remotion audio during compose) — require valid session
+  app.use(
+    '/tmp',
+    createTmpAuthMiddleware(logger, ({ headers }) => auth.api.getSession({ headers })),
+    expressStatic.static(path.resolve(process.cwd(), 'tmp')),
+  );
 
-  // Serve uploads files (for Instagram Studio images) — public access
-  app.use('/uploads', expressStatic.static(path.resolve(process.cwd(), 'uploads')));
+  // Serve uploads files (for Instagram Studio images) — public access, image-only hardening
+  const uploadsDir = path.resolve(process.cwd(), 'uploads');
+  app.use('/uploads', uploadSecurityMiddleware);
+
+  app.use(
+    '/uploads',
+    expressStatic.static(uploadsDir, {
+      dotfiles: 'deny',
+      fallthrough: false,
+      immutable: true,
+      maxAge: '7d',
+      setHeaders: (res) => {
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+      },
+    }),
+  );
 
   // Validation
   app.useGlobalPipes(

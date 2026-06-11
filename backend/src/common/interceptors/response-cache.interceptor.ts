@@ -2,7 +2,7 @@ import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nes
 import { Observable, of } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { Reflector } from '@nestjs/core';
-import { Request } from 'express';
+import { AuthenticatedRequest } from '../types/authenticated-request';
 
 const CACHE_TTL_KEY = 'cache-ttl';
 
@@ -15,12 +15,12 @@ export const CacheTTL = (seconds: number) => Reflect.metadata(CACHE_TTL_KEY, sec
  */
 @Injectable()
 export class ResponseCacheInterceptor implements NestInterceptor {
-  private cache = new Map<string, { data: any; expiresAt: number }>();
+  private cache = new Map<string, { data: unknown; expiresAt: number }>();
 
   constructor(private reflector: Reflector) {}
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const req = context.switchToHttp().getRequest<Request>();
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    const req = context.switchToHttp().getRequest<AuthenticatedRequest>();
 
     // Only cache GET requests
     if (req.method !== 'GET') return next.handle();
@@ -32,7 +32,7 @@ export class ResponseCacheInterceptor implements NestInterceptor {
 
     if (!ttl) return next.handle();
 
-    const userId = (req as any).user?.id || 'anon';
+    const userId = req.user?.id || 'anon';
     const key = `${userId}:${req.originalUrl}`;
     const now = Date.now();
 

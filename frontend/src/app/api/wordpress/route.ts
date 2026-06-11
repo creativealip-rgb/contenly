@@ -1,5 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+type WordPressUser = { id: number; name: string }
+type WordPressPost = {
+    id: number
+    title: { rendered: string }
+    status: string
+    link: string
+    date: string
+}
+type WordPressPostData = {
+    title: string
+    content: string
+    status: string
+    categories?: number[]
+    date?: string
+}
+
 // WordPress API helper
 async function wpFetch(endpoint: string, options: {
     method?: string
@@ -44,13 +60,13 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        const user = await wpFetch('/users/me', { wpUrl, username, appPassword })
+        const user = await wpFetch('/users/me', { wpUrl, username, appPassword }) as WordPressUser
         return NextResponse.json({
             success: true,
             user: { id: user.id, name: user.name }
         })
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 })
+    } catch (error: unknown) {
+        return NextResponse.json({ error: error instanceof Error ? error.message : 'WordPress connection failed' }, { status: 500 })
     }
 }
 
@@ -68,7 +84,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Title and content required' }, { status: 400 })
         }
 
-        const postData: any = {
+        const postData: WordPressPostData = {
             title,
             content,
             status: status || 'draft', // draft, publish, private, future
@@ -87,7 +103,7 @@ export async function POST(request: NextRequest) {
             wpUrl,
             username,
             appPassword,
-        })
+        }) as WordPressPost
 
         return NextResponse.json({
             success: true,
@@ -99,7 +115,7 @@ export async function POST(request: NextRequest) {
                 date: post.date,
             }
         })
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 })
+    } catch (error: unknown) {
+        return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed to create WordPress post' }, { status: 500 })
     }
 }

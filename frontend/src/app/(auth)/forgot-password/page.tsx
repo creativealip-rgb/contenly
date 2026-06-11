@@ -26,9 +26,9 @@ export default function ForgotPasswordPage() {
         try {
             await api.auth.forgotPassword({ email })
             setIsSubmitted(true)
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Forgot password error:', error)
-            toast.error(error.message || 'Failed to process request')
+            toast.error(error instanceof Error ? error.message : 'Failed to process request')
         } finally {
             setIsLoading(false)
         }

@@ -407,8 +407,12 @@ function BrollItemEditor({ item, segDuration, onUpdate, onDelete, onSeek }: Brol
   const [draftEnd, setDraftEnd] = useState(item.end)
 
   useEffect(() => {
-    setDraftStart(item.start)
-    setDraftEnd(item.end)
+    const timer = window.setTimeout(() => {
+      setDraftStart(item.start)
+      setDraftEnd(item.end)
+    }, 0)
+
+    return () => window.clearTimeout(timer)
   }, [item.start, item.end])
 
   return (

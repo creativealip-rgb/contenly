@@ -4,6 +4,14 @@ import { DrizzleService } from '../../db/drizzle.service';
 import { apiKey } from '../../db/schema';
 import { eq } from 'drizzle-orm';
 import * as bcrypt from 'bcrypt';
+import { AuthenticatedRequest } from '../types/authenticated-request';
+
+type ApiKeyRecord = {
+    id: string;
+    userId: string;
+    keyHash: string;
+    expiresAt?: Date | string | null;
+};
 
 @Injectable()
 export class ApiKeyAuthGuard implements CanActivate {
@@ -14,7 +22,7 @@ export class ApiKeyAuthGuard implements CanActivate {
     }
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
-        const request = context.switchToHttp().getRequest<Request>();
+        const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
         
         // Extract API key from headers
         const apiKeyValue = this.extractApiKey(request);
@@ -42,8 +50,8 @@ export class ApiKeyAuthGuard implements CanActivate {
             .where(eq(apiKey.id, keyRecord.id));
 
         // Attach user to request
-        (request as any).user = { id: keyRecord.userId };
-        (request as any).apiKeyId = keyRecord.id;
+        request.user = { id: keyRecord.userId };
+        request.apiKeyId = keyRecord.id;
 
         return true;
     }
@@ -51,26 +59,26 @@ export class ApiKeyAuthGuard implements CanActivate {
     private extractApiKey(request: Request): string | null {
         // Check Authorization: Bearer <key>
         const authHeader = request.headers['authorization'];
-        if (authHeader && authHeader.startsWith('Bearer ')) {
+        if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
             return authHeader.substring(7);
         }
 
         // Check X-API-Key header
         const apiKeyHeader = request.headers['x-api-key'];
-        if (apiKeyHeader) {
-            return apiKeyHeader as string;
+        if (typeof apiKeyHeader === 'string') {
+            return apiKeyHeader;
         }
 
         // Check query param ?api_key=...
         const queryKey = request.query.api_key;
-        if (queryKey) {
-            return queryKey as string;
+        if (typeof queryKey === 'string') {
+            return queryKey;
         }
 
         return null;
     }
 
-    private async validateApiKey(keyValue: string): Promise<any> {
+    private async validateApiKey(keyValue: string): Promise<ApiKeyRecord | null> {
         // Get prefix from key (first 12 chars: cam_ + 8 chars)
         const keyPrefix = keyValue.substring(0, 12);
 

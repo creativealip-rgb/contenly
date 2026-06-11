@@ -18,6 +18,10 @@ const registerSchema = z.object({
     password: z.string().min(8, 'Password minimal 8 karakter'),
 })
 
+type AuthUserWithRole = {
+    role?: string
+}
+
 export default function RegisterPage() {
     const router = useRouter()
     const { setUser } = useAuthStore()
@@ -63,14 +67,14 @@ export default function RegisterPage() {
                     id: data.user.id,
                     email: data.user.email,
                     fullName: data.user.name || data.user.email.split('@')[0],
-                    role: (data.user as any).role || 'user',
+                    role: (data.user as AuthUserWithRole).role || 'user',
                     avatarUrl: data.user.image || undefined,
                 })
                 router.push('/dashboard')
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Registration error:', err)
-            setError(err.message || 'An error occurred during registration')
+            setError(err instanceof Error ? err.message : 'An error occurred during registration')
         } finally {
             setIsLoading(false)
         }

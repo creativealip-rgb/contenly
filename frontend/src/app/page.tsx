@@ -4,46 +4,39 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Footer } from '@/components/layout'
-import { Check, Zap, Rss, ArrowRight } from 'lucide-react'
+import { Check, Zap, ArrowRight } from 'lucide-react'
 import { MobileMenuToggle } from '@/components/landing/mobile-menu'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Contenly - Platform Otomasi Konten AI',
-  description: 'Ubah sumber mana pun menjadi artikel SEO, naskah Reels, hingga carousel Instagram — semuanya otomatis.',
-}
+  description: 'Ubah sumber mana pun menjadi artikel SEO, naskah Reels, hingga carousel Instagram — semuanya otomatis.' }
 
 const features = [
   {
     title: 'Content Lab Utama',
     description: 'Transformasi URL atau RSS ke artikel SEO-optimized dalam hitungan detik. Kloning fakta, tulis ulang dengan gaya bahasa baru yang segar.',
-    color: 'from-blue-600 to-cyan-500',
-  },
+    color: 'from-blue-600 to-cyan-500' },
   {
     title: 'Instagram Studio',
     description: 'Jangan cuma bikin teks. Ubah berita menjadi desain Carousel/Microblog lengkap dengan kustomisasi visual siap unduh.',
-    color: 'from-pink-500 to-orange-400',
-  },
+    color: 'from-pink-500 to-orange-400' },
   {
     title: 'Auto-Publish WordPress',
     description: 'Langsung kirim draft artikel ke puluhan web Anda dengan satu klik. Kategori tersetting otomatis.',
-    color: 'from-blue-500 to-indigo-500',
-  },
+    color: 'from-blue-500 to-indigo-500' },
   {
     title: 'Video Script Studio',
     description: 'Generasi naskah Reels/TikTok super cepat lengkap dengan visual prompt untuk adegan (B-Roll) yang tepat sasaran.',
-    color: 'from-purple-500 to-indigo-400',
-  },
+    color: 'from-purple-500 to-indigo-400' },
   {
     title: 'Trend Radar & RSS',
     description: 'Pantau apa yang sedang viral di seluruh dunia. Auto-draft artikel begitu berita baru masuk ke radar Anda.',
-    color: 'from-emerald-400 to-teal-500',
-  },
+    color: 'from-emerald-400 to-teal-500' },
   {
     title: 'Pay-As-You-Go System',
     description: 'Tidak ada biaya langganan bulanan yang mencekik. Beli token sesuai pemakaian aktual AI Anda.',
-    color: 'from-amber-400 to-orange-500',
-  },
+    color: 'from-amber-400 to-orange-500' },
 ]
 
 const testimonials = [
@@ -51,20 +44,17 @@ const testimonials = [
     name: 'Sarah J.',
     role: 'Pimred Media Berita',
     content: 'Tim kami nggak perlu lagi nulis berita dari nol. Semua berita trending luar di-rewrite dalam Bahasa Indonesia dengan sempurna. Menghemat berjam-jam kerja kami.',
-    image: '16',
-  },
+    image: '16' },
   {
     name: 'Budi Kurniawan',
     role: 'Agensi SEO',
     content: 'Auto-publish ke WordPress sangat mengubah hidup. Saya mengelola 15 blog PBN dan semuanya terisi penuh dengan artikel SEO berkualitas otomatis setiap harinya.',
-    image: '17',
-  },
+    image: '17' },
   {
     name: 'Dina Afriliani',
     role: 'Tiktok Creator',
     content: 'Biasa pusing bikin naskah Reels, sekarang tinggal masukin link berita yang lagi viral dan skripnya langsung jadi plus ide gambarnya.',
-    image: '18',
-  },
+    image: '18' },
 ]
 
 const jsonLd = {
@@ -78,9 +68,7 @@ const jsonLd = {
   offers: {
     '@type': 'Offer',
     price: '0',
-    priceCurrency: 'IDR',
-  },
-}
+    priceCurrency: 'IDR' } }
 
 export default function LandingPage() {
   return (

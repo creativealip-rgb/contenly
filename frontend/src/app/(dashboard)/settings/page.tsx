@@ -11,6 +11,14 @@ import { ApiKeysTab } from './_components/api-keys-tab'
 import { NotificationsTab } from './_components/notifications-tab'
 import { ConnectionsTab } from './_components/connections-tab'
 
+interface SettingsProfileResponse {
+    name: string
+    email: string
+    bio?: string
+    image?: string
+    preferences?: Record<string, boolean>
+}
+
 export default function SettingsPage() {
     const { user } = useAuthStore()
 
@@ -31,25 +39,25 @@ export default function SettingsPage() {
     })
 
     useEffect(() => {
+        const fetchUserProfile = async () => {
+            try {
+                const data = await api.get<SettingsProfileResponse>('/users/me')
+                setProfileData({
+                    name: data.name,
+                    email: data.email,
+                    bio: data.bio || '',
+                    image: data.image || ''
+                })
+                if (data.preferences) {
+                    setPreferences(data.preferences)
+                }
+            } catch (error) {
+                console.error('Failed to fetch profile:', error)
+            }
+        }
+
         fetchUserProfile()
     }, [])
-
-    const fetchUserProfile = async () => {
-        try {
-            const data = await api.get<any>('/users/me')
-            setProfileData({
-                name: data.name,
-                email: data.email,
-                bio: data.bio || '',
-                image: data.image || ''
-            })
-            if (data.preferences) {
-                setPreferences(data.preferences)
-            }
-        } catch (error) {
-            console.error('Failed to fetch profile:', error)
-        }
-    }
 
     return (
         <div className="space-y-6">

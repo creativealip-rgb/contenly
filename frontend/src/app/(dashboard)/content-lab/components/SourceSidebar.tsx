@@ -2,7 +2,6 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { motion, AnimatePresence } from 'framer-motion'
-import { Rss } from 'lucide-react'
 import { useContentLabStore } from '@/stores/content-lab-store'
 import { ContentLabState, ContentLabHandlers } from './types'
 import { RSSFeedSection } from './sections/RSSFeedSection'

@@ -1,6 +1,5 @@
 'use client'
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -67,8 +66,8 @@ export function ContentEditor({ state, handlers, copied, handleCopy }: ContentEd
             const project = await res.json()
             toast.success('Project video script dibuat! Redirecting...')
             router.push(`/video-scripts/${project.id}`)
-        } catch (e: any) {
-            toast.error(e.message || 'Gagal convert ke video script')
+        } catch (e: unknown) {
+            toast.error(e instanceof Error ? e.message : 'Gagal convert ke video script')
         } finally {
             setIsConverting(false)
         }

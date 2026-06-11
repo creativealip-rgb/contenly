@@ -35,8 +35,8 @@ export function SecurityTab() {
             if (error) throw error
             toast.success('Kata sandi berhasil diperbarui')
             setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
-        } catch (error: any) {
-            toast.error(error.message || 'Gagal memperbarui kata sandi')
+        } catch (error: unknown) {
+            toast.error(error instanceof Error ? error.message : 'Gagal memperbarui kata sandi')
         } finally {
             setIsUpdatingPassword(false)
         }

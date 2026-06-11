@@ -52,15 +52,12 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
     }, [])
 
     const handleCancel = useCallback(() => {
-        setState(prev => ({ ...prev, open: false }))
+        setState(prev => ({ ...prev, open: false, onConfirm: null }))
     }, [])
 
     const handleOpenChange = useCallback((open: boolean) => {
-        if (!open && state.onConfirm) {
-            state.onConfirm = null
-        }
-        setState(prev => ({ ...prev, open }))
-    }, [state.onConfirm])
+        setState(prev => ({ ...prev, open, onConfirm: open ? prev.onConfirm : null }))
+    }, [])
 
     return (
         <ConfirmDialogContext.Provider value={{ confirm }}>
@@ -75,9 +72,7 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
                         <Button
                             type="button"
                             variant="outline"
-                            onClick={() => {
-                                setState(prev => ({ ...prev, open: false }))
-                            }}
+                            onClick={handleCancel}
                         >
                             {state.cancelText || "Cancel"}
                         </Button>
@@ -88,7 +83,7 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
                                 if (state.onConfirm) {
                                     state.onConfirm()
                                 }
-                                setState(prev => ({ ...prev, open: false }))
+                                setState(prev => ({ ...prev, open: false, onConfirm: null }))
                             }}
                         >
                             {state.confirmText || "Confirm"}

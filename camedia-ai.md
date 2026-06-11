@@ -55,7 +55,7 @@ This is the finalized **Product Requirement Document (PRD)** for **Numedia AI Co
 | **Backend** | **Node.js (NestJS)** | Excellent for handling API requests and CMS integrations. |
 | **Database** | **PostgreSQL (Supabase)** | Robust relational data for user settings, logs, and token tracking. |
 | **Auth** | **Supabase Auth** | Built-in OAuth, JWT, and session management. |
-| **Queue/Worker** | **Redis + BullMQ** | Manages heavy AI and scraping tasks in the background. |
+| **Queue/Worker** | **Redis + Bull (`@nestjs/bull`)** | Manages heavy AI and scraping tasks in the background. |
 | **AI Processing** | **OpenAI API / LangChain** | Industry standard for text transformation and image generation. |
 
 ---

@@ -220,7 +220,7 @@ export class OpenAiService {
 
       // Sanitize JSON - remove control characters that break parsing
       let rawContent = response.choices[0]?.message?.content || '{}';
-      rawContent = rawContent.replace(/[ --]/g, ' ');
+      rawContent = rawContent.replace(/[\x00-\x1f\x7f-\x9f]/g, ' ');
       const result = JSON.parse(rawContent);
 
       if (isCustomMode) {
@@ -323,13 +323,26 @@ Return JSON with:
   private buildImageRequestBody(model: string, prompt: string): Record<string, any> {
     const normalizedModel = model.toLowerCase();
 
+    if (normalizedModel.includes("gpt-5.5-image") || normalizedModel.includes("image")) {
+      return {
+        model,
+        prompt,
+        n: 1,
+        size: "auto",
+        quality: "auto",
+        background: "auto",
+        image_detail: "high",
+        output_format: "png"
+      };
+    }
+
     // chenzk gpt-image-2 rejects Codex/OpenAI-style auto/background/image_detail/output_format params.
     if (normalizedModel === 'gpt-image-2' || normalizedModel.endsWith('/gpt-image-2')) {
       return {
         model,
         prompt,
         n: 1,
-        size: '1024x1024',
+        size: '1080x1350', // IG portrait 4:5
       };
     }
 
@@ -626,7 +639,7 @@ Return JSON with:
 
       // Sanitize JSON - remove control characters that break parsing
       let rawContent = response.choices[0]?.message?.content || '{}';
-      rawContent = rawContent.replace(/[ --]/g, ' ');
+      rawContent = rawContent.replace(/[\x00-\x1f\x7f-\x9f]/g, ' ');
       const result = JSON.parse(rawContent);
       console.log(`[OpenAiService] Vision layout analysis complete: ${JSON.stringify(result)}`);
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Filter, Instagram, Twitter, Linkedin, Globe, MoreHorizontal, Edit2, Trash2, CheckCircle2 } from 'lucide-react'
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, isToday, parseISO } from 'date-fns'
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek, isToday, parseISO } from 'date-fns'
 import { id } from 'date-fns/locale'
 import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '@/lib/api'
@@ -21,15 +21,13 @@ import {
     useDroppable,
     DragEndEvent,
     DragStartEvent,
-    defaultDropAnimationSideEffects,
-} from '@dnd-kit/core'
+    defaultDropAnimationSideEffects } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+    DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 
 interface ScheduledContent {
     id: string
@@ -39,7 +37,7 @@ interface ScheduledContent {
     scheduledAt: string
     status: 'pending' | 'published' | 'failed'
     contentId?: string
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
 }
 
 interface CalendarStats {
@@ -53,27 +51,23 @@ const platformIcons = {
     wordpress: Globe,
     instagram: Instagram,
     linkedin: Linkedin,
-    twitter: Twitter,
-}
+    twitter: Twitter }
 
 const platformColors = {
     wordpress: 'bg-blue-500/10 text-blue-600 border-blue-200',
     instagram: 'bg-pink-500/10 text-pink-600 border-pink-200',
     linkedin: 'bg-sky-500/10 text-sky-600 border-sky-200',
-    twitter: 'bg-slate-500/10 text-slate-600 border-slate-200',
-}
+    twitter: 'bg-slate-500/10 text-slate-600 border-slate-200' }
 
 const contentTypeLabels = {
     article: 'Artikel',
     carousel: 'Carousel',
-    video_script: 'Video Script',
-}
+    video_script: 'Video Script' }
 
 const statusColors = {
     pending: 'bg-amber-500',
     published: 'bg-green-500',
-    failed: 'bg-red-500',
-}
+    failed: 'bg-red-500' }
 
 function DraggableEvent({ event, onEdit, onDelete, onPublish }: { 
     event: ScheduledContent
@@ -83,12 +77,10 @@ function DraggableEvent({ event, onEdit, onDelete, onPublish }: {
 }) {
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: event.id,
-        data: event,
-    })
+        data: event })
 
     const style = transform ? {
-        transform: CSS.Translate.toString(transform),
-    } : undefined
+        transform: CSS.Translate.toString(transform) } : undefined
 
     const PlatformIcon = platformIcons[event.platform]
 
@@ -146,8 +138,7 @@ function DraggableEvent({ event, onEdit, onDelete, onPublish }: {
 function DroppableDay({ date, children, isOver }: { date: Date; children: React.ReactNode; isOver: boolean }) {
     const { setNodeRef } = useDroppable({
         id: format(date, 'yyyy-MM-dd'),
-        data: { date },
-    })
+        data: { date } })
 
     return (
         <div
@@ -165,7 +156,7 @@ export default function CalendarPage() {
     const [currentDate, setCurrentDate] = useState(new Date())
     const [events, setEvents] = useState<ScheduledContent[]>([])
     const [stats, setStats] = useState<CalendarStats | null>(null)
-    const [loading, setLoading] = useState(true)
+
     const [activeDragEvent, setActiveDragEvent] = useState<ScheduledContent | null>(null)
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [editingEvent, setEditingEvent] = useState<ScheduledContent | null>(null)
@@ -181,8 +172,7 @@ export default function CalendarPage() {
         title: '',
         contentType: 'article',
         platform: 'wordpress',
-        scheduledAt: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
-    })
+        scheduledAt: format(new Date(), "yyyy-MM-dd'T'HH:mm") })
 
     const monthStart = startOfMonth(currentDate)
     const monthEnd = endOfMonth(currentDate)
@@ -205,13 +195,8 @@ export default function CalendarPage() {
         return grouped
     }, [filteredEvents])
 
-    useEffect(() => {
-        fetchData()
-    }, [currentDate])
-
     const fetchData = async () => {
         try {
-            setLoading(true)
             const year = currentDate.getFullYear()
             const month = currentDate.getMonth() + 1
             
@@ -222,12 +207,15 @@ export default function CalendarPage() {
             
             setEvents(eventsData)
             setStats(statsData)
-        } catch (error) {
+        } catch {
             toast.error('Failed to fetch calendar data')
-        } finally {
-            setLoading(false)
         }
     }
+
+    useEffect(() => {
+        fetchData()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentDate])
 
     const handlePrevMonth = () => setCurrentDate(subMonths(currentDate, 1))
     const handleNextMonth = () => setCurrentDate(addMonths(currentDate, 1))
@@ -255,11 +243,10 @@ export default function CalendarPage() {
 
         try {
             await api.patch(`/calendar/${draggedEvent.id}`, {
-                scheduledAt: newScheduledAt.toISOString(),
-            })
+                scheduledAt: newScheduledAt.toISOString() })
             toast.success('Content rescheduled')
             fetchData()
-        } catch (error) {
+        } catch {
             toast.error('Failed to reschedule content')
         }
     }
@@ -268,13 +255,12 @@ export default function CalendarPage() {
         try {
             await api.post('/calendar', {
                 ...formData,
-                scheduledAt: new Date(formData.scheduledAt).toISOString(),
-            })
+                scheduledAt: new Date(formData.scheduledAt).toISOString() })
             toast.success('Content scheduled')
             setIsModalOpen(false)
             resetForm()
             fetchData()
-        } catch (error) {
+        } catch {
             toast.error('Failed to schedule content')
         }
     }
@@ -285,14 +271,13 @@ export default function CalendarPage() {
         try {
             await api.patch(`/calendar/${editingEvent.id}`, {
                 ...formData,
-                scheduledAt: new Date(formData.scheduledAt).toISOString(),
-            })
+                scheduledAt: new Date(formData.scheduledAt).toISOString() })
             toast.success('Content updated')
             setIsModalOpen(false)
             setEditingEvent(null)
             resetForm()
             fetchData()
-        } catch (error) {
+        } catch {
             toast.error('Failed to update content')
         }
     }
@@ -302,7 +287,7 @@ export default function CalendarPage() {
             await api.delete(`/calendar/${id}`)
             toast.success('Content deleted')
             fetchData()
-        } catch (error) {
+        } catch {
             toast.error('Failed to delete content')
         }
     }
@@ -312,7 +297,7 @@ export default function CalendarPage() {
             await api.post(`/calendar/${id}/publish`)
             toast.success('Content marked as published')
             fetchData()
-        } catch (error) {
+        } catch {
             toast.error('Failed to update status')
         }
     }
@@ -325,8 +310,7 @@ export default function CalendarPage() {
             platform: 'wordpress',
             scheduledAt: date 
                 ? format(date, "yyyy-MM-dd'T'HH:mm")
-                : format(new Date(), "yyyy-MM-dd'T'HH:mm"),
-        })
+                : format(new Date(), "yyyy-MM-dd'T'HH:mm") })
         setIsModalOpen(true)
     }
 
@@ -336,8 +320,7 @@ export default function CalendarPage() {
             title: event.title,
             contentType: event.contentType,
             platform: event.platform,
-            scheduledAt: format(parseISO(event.scheduledAt), "yyyy-MM-dd'T'HH:mm"),
-        })
+            scheduledAt: format(parseISO(event.scheduledAt), "yyyy-MM-dd'T'HH:mm") })
         setIsModalOpen(true)
     }
 
@@ -346,8 +329,7 @@ export default function CalendarPage() {
             title: '',
             contentType: 'article',
             platform: 'wordpress',
-            scheduledAt: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
-        })
+            scheduledAt: format(new Date(), "yyyy-MM-dd'T'HH:mm") })
     }
 
     const weekDays = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab']
@@ -471,7 +453,7 @@ export default function CalendarPage() {
 
                         {/* Calendar Grid */}
                         <div className="grid grid-cols-7">
-                            {days.map((day, index) => {
+                            {days.map((day) => {
                                 const dateKey = format(day, 'yyyy-MM-dd')
                                 const dayEvents = eventsByDate[dateKey] || []
                                 const isCurrentMonth = isSameMonth(day, currentDate)
@@ -560,7 +542,7 @@ export default function CalendarPage() {
                                     <Label htmlFor="contentType">Tipe Konten</Label>
                                     <Select
                                         value={formData.contentType}
-                                        onValueChange={(v) => setFormData({ ...formData, contentType: v as any })}
+                                        onValueChange={(v) => setFormData({ ...formData, contentType: v as ScheduledContent['contentType'] })}
                                     >
                                         <SelectTrigger>
                                             <SelectValue />
@@ -577,7 +559,7 @@ export default function CalendarPage() {
                                     <Label htmlFor="platform">Platform</Label>
                                     <Select
                                         value={formData.platform}
-                                        onValueChange={(v) => setFormData({ ...formData, platform: v as any })}
+                                        onValueChange={(v) => setFormData({ ...formData, platform: v as ScheduledContent['platform'] })}
                                     >
                                         <SelectTrigger>
                                             <SelectValue />
@@ -619,11 +601,7 @@ export default function CalendarPage() {
                     sideEffects: defaultDropAnimationSideEffects({
                         styles: {
                             active: {
-                                opacity: '0.5',
-                            },
-                        },
-                    }),
-                }}>
+                                opacity: '0.5' } } }) }}>
                     {activeDragEvent ? (
                         <div className={`p-2 rounded-lg border shadow-lg ${platformColors[activeDragEvent.platform]}`}>
                             <div className="flex items-center gap-1.5">

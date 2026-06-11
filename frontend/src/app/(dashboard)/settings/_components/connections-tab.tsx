@@ -19,9 +19,30 @@ import { toast } from 'sonner'
 import { authClient } from '@/lib/auth-client'
 import { useConfirm } from '@/components/ui/confirm-dialog'
 
+type OAuthProvider = 'google' | 'github'
+
+interface LinkedAccount {
+    id: string
+    providerId: OAuthProvider
+}
+
+interface InstagramStatusResponse {
+    connected: boolean
+    username?: string
+    message?: string
+}
+
+interface InstagramConnectResponse {
+    success: boolean
+    message?: string
+}
+
+const providers: OAuthProvider[] = ['google', 'github']
+const getErrorMessage = (error: unknown, fallback: string) => error instanceof Error ? error.message : fallback
+
 export function ConnectionsTab() {
     const confirm = useConfirm()
-    const [accounts, setAccounts] = useState<any[]>([])
+    const [accounts, setAccounts] = useState<LinkedAccount[]>([])
     const [isLoadingAccounts, setIsLoadingAccounts] = useState(false)
 
     // Instagram State
@@ -46,7 +67,9 @@ export function ConnectionsTab() {
         setIsLoadingAccounts(true)
         try {
             const { data } = await authClient.listAccounts()
-            setAccounts(data || [])
+            setAccounts((data || [])
+                .filter((account) => providers.includes(account.providerId as OAuthProvider))
+                .map((account) => ({ id: account.id, providerId: account.providerId as OAuthProvider })))
         } catch (error) {
             console.error('Failed to fetch accounts:', error)
         } finally {
@@ -57,11 +80,11 @@ export function ConnectionsTab() {
     const fetchInstagramStatus = async () => {
         setIsLoadingInstagram(true)
         try {
-            const response = await api.get<any>('/social/instagram/status')
+            const response = await api.get<InstagramStatusResponse>('/social/instagram/status')
             setInstagramData({
                 connected: response.connected,
                 username: response.username || '',
-                message: response.message
+                message: response.message || ''
             })
         } catch (error) {
             console.error('Failed to fetch Instagram status:', error)
@@ -77,7 +100,7 @@ export function ConnectionsTab() {
         }
         setIsLoadingInstagram(true)
         try {
-            const response = await api.post<any>('/social/instagram/connect', {
+            const response = await api.post<InstagramConnectResponse>('/social/instagram/connect', {
                 accessToken: instagramForm.accessToken,
                 accountId: instagramForm.accountId
             })
@@ -89,8 +112,8 @@ export function ConnectionsTab() {
             } else {
                 toast.error(response.message || 'Gagal menghubungkan Instagram')
             }
-        } catch (error: any) {
-            toast.error(error.message || 'Gagal menghubungkan Instagram')
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error, 'Gagal menghubungkan Instagram'))
         } finally {
             setIsLoadingInstagram(false)
         }
@@ -106,11 +129,11 @@ export function ConnectionsTab() {
             onConfirm: async () => {
                 setIsLoadingInstagram(true)
                 try {
-                    await api.delete<any>('/social/instagram/disconnect')
+                    await api.delete<void>('/social/instagram/disconnect')
                     toast.success('Instagram berhasil diputuskan')
                     fetchInstagramStatus()
-                } catch (error: any) {
-                    toast.error(error.message || 'Gagal memutuskan Instagram')
+                } catch (error: unknown) {
+                    toast.error(getErrorMessage(error, 'Gagal memutuskan Instagram'))
                 } finally {
                     setIsLoadingInstagram(false)
                 }
@@ -124,8 +147,8 @@ export function ConnectionsTab() {
                 provider,
                 callbackURL: window.location.href
             })
-        } catch (error: any) {
-            toast.error(`Gagal menghubungkan ${provider}: ${error.message}`)
+        } catch (error: unknown) {
+            toast.error(`Gagal menghubungkan ${provider}: ${getErrorMessage(error, 'Unknown error')}`)
         }
     }
 
@@ -145,8 +168,8 @@ export function ConnectionsTab() {
                     if (error) throw error
                     toast.success('Akun berhasil diputuskan')
                     fetchAccounts()
-                } catch (error: any) {
-                    toast.error(`Gagal memutuskan hubungan: ${error.message}`)
+                } catch (error: unknown) {
+                    toast.error(`Gagal memutuskan hubungan: ${getErrorMessage(error, 'Unknown error')}`)
                 }
             },
         })
@@ -167,7 +190,7 @@ export function ConnectionsTab() {
                             <Loader2 className="h-6 w-6 animate-spin opacity-40" />
                         </div>
                     ) : (
-                        ['google', 'github'].map((providerName) => {
+                        providers.map((providerName) => {
                             const providerAccount = accounts.find(a => a.providerId === providerName)
                             const isConnected = !!providerAccount
 
@@ -200,7 +223,7 @@ export function ConnectionsTab() {
                                             variant="outline"
                                             size="sm"
                                             className="rounded-xl border-blue-100 text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:border-blue-900/30"
-                                            onClick={() => handleLinkAccount(providerName as any)}
+                                            onClick={() => handleLinkAccount(providerName)}
                                         >
                                             Hubungkan
                                         </Button>

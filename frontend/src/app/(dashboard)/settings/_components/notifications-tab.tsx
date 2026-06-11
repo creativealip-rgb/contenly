@@ -16,7 +16,7 @@ export function NotificationsTab({ preferences, setPreferences }: NotificationsT
         try {
             await api.patch('/users/me/preferences', newPrefs)
             toast.success('Preferensi disimpan')
-        } catch (error) {
+        } catch {
             toast.error('Gagal menyimpan preferensi')
         }
     }

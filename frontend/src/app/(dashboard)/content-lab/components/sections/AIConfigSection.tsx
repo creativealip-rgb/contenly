@@ -53,7 +53,7 @@ export function AIConfigSection({
                 <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                         <Label className="text-[10px] uppercase font-black text-slate-400 tracking-[0.15em] ml-1">Gaya Bahasa</Label>
-                        <Select value={aiTone} onValueChange={(v: any) => setAiTone(v)}>
+                        <Select value={aiTone} onValueChange={(v) => setAiTone(v as 'professional' | 'casual' | 'creative' | 'technical')}>
                             <SelectTrigger className="h-10 text-xs bg-white border-slate-200 rounded-xl font-bold shadow-sm">
                                 <SelectValue />
                             </SelectTrigger>
@@ -67,7 +67,7 @@ export function AIConfigSection({
                     </div>
                     <div className="space-y-1.5">
                         <Label className="text-[10px] uppercase font-black text-slate-400 tracking-[0.15em] ml-1">Gaya Penulisan</Label>
-                        <Select value={aiStyle} onValueChange={(v: any) => setAiStyle(v)}>
+                        <Select value={aiStyle} onValueChange={(v) => setAiStyle(v as 'blog' | 'news' | 'tutorial' | 'review')}>
                             <SelectTrigger className="h-10 text-xs bg-white border-slate-200 rounded-xl font-bold shadow-sm">
                                 <SelectValue />
                             </SelectTrigger>
@@ -83,7 +83,7 @@ export function AIConfigSection({
 
                 <div className="space-y-1.5">
                     <Label className="text-[10px] uppercase font-black text-slate-400 tracking-[0.15em] ml-1">Panjang</Label>
-                    <Select value={aiLength} onValueChange={(v: any) => setAiLength(v)}>
+                    <Select value={aiLength} onValueChange={(v) => setAiLength(v as 'shorter' | 'same' | 'longer')}>
                         <SelectTrigger className="h-10 text-xs bg-white border-slate-200 rounded-xl font-bold shadow-sm">
                             <SelectValue />
                         </SelectTrigger>

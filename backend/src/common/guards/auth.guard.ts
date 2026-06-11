@@ -1,24 +1,24 @@
 import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import { Request } from 'express';
-import { UsersService } from '../../modules/users/users.service';
+import type { UsersService } from '../../modules/users/users.service';
 import { auth } from '../../auth/auth.config';
+import { AuthenticatedRequest, toWebHeaders } from '../types/authenticated-request';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(private readonly usersService?: UsersService) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<Request>();
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
 
     // 1. Check for Session (Better Auth)
     try {
       const session = await auth.api.getSession({
-        headers: request.headers as any,
+        headers: toWebHeaders(request.headers),
       });
 
       if (session && session.user) {
-        (request as any).user = session.user;
-        (request as any).session = session.session;
+        request.user = session.user;
+        request.session = session.session;
         return true;
       }
     } catch (error) {
@@ -39,7 +39,7 @@ export class AuthGuard implements CanActivate {
     if (rawKey && this.usersService) {
       const validatedUser = await this.usersService.validateApiKey(rawKey);
       if (validatedUser) {
-        (request as any).user = validatedUser;
+        request.user = validatedUser;
         return true;
       }
     }

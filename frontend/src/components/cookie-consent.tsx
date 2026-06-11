@@ -1,15 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
 export function CookieConsent() {
-  const [show, setShow] = useState(false)
-
-  useEffect(() => {
-    if (!localStorage.getItem('cookie-consent')) setShow(true)
-  }, [])
+  const [show, setShow] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return !localStorage.getItem('cookie-consent')
+  })
 
   const accept = () => {
     localStorage.setItem('cookie-consent', 'accepted')

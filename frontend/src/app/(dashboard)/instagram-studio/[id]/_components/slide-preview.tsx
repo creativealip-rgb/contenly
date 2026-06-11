@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { Image as ImageIcon, Plus } from 'lucide-react'
@@ -34,7 +35,7 @@ export function SlidePreview({
               currentSlide.imageUrl.startsWith('#') || currentSlide.imageUrl.startsWith('rgb') ? (
                 <div className="absolute inset-0 w-full h-full" style={{ backgroundColor: currentSlide.imageUrl }} />
               ) : (
-                <img src={currentSlide.imageUrl} alt={`Slide ${currentSlideIndex + 1}`} className="absolute inset-0 w-full h-full object-cover" />
+                <Image src={currentSlide.imageUrl} alt={`Slide ${currentSlideIndex + 1}`} fill sizes="400px" className="object-cover" unoptimized />
               )
             ) : (
               <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center p-6 text-slate-500">
@@ -79,7 +80,7 @@ export function SlidePreview({
                             slide.imageUrl.startsWith('#') || slide.imageUrl.startsWith('rgb') ? (
                               <div className="absolute inset-0 w-full h-full" style={{ backgroundColor: slide.imageUrl }} />
                             ) : (
-                              <img src={slide.imageUrl} alt={`Slide ${index + 1}`} className="absolute inset-0 w-full h-full object-cover" />
+                              <Image src={slide.imageUrl} alt={`Slide ${index + 1}`} fill sizes="120px" className="object-cover" unoptimized />
                             )
                           ) : (
                             <div className="absolute inset-0 w-full h-full bg-slate-800 flex items-center justify-center text-slate-500">

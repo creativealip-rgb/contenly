@@ -4,35 +4,14 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Loader2, Copy, Sparkles, Image, Video, Wand2, Check } from 'lucide-react'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Loader2, Copy, Sparkles, Image as ImageIcon, Video, Wand2, Check } from 'lucide-react'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 
 type PromptMode = 'image' | 'video'
-
-interface ImagePrompt {
-    subject: string
-    style: string
-    lighting: string
-    composition: string
-    colors: string
-    mood: string
-    additionalDetails: string
-}
-
-interface VideoPrompt {
-    subject: string
-    action: string
-    scene: string
-    cameraMovement: string
-    duration: string
-    style: string
-    mood: string
-    additionalDetails: string
-}
 
 export default function PromptGeneratorPage() {
     const [mode, setMode] = useState<PromptMode>('image')
@@ -52,14 +31,11 @@ export default function PromptGeneratorPage() {
             const response = await fetch(`${API_BASE_URL}/ai/prompt-generator`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                },
+                    'Content-Type': 'application/json' },
                 credentials: 'include',
                 body: JSON.stringify({
                     text: input,
-                    mode,
-                }),
-            })
+                    mode }) })
 
             if (!response.ok) {
                 throw new Error('Failed to generate prompt')
@@ -124,7 +100,7 @@ export default function PromptGeneratorPage() {
                             <Tabs value={mode} onValueChange={(v) => setMode(v as PromptMode)}>
                                 <TabsList className="grid w-full grid-cols-2">
                                     <TabsTrigger value="image" className="flex items-center gap-2">
-                                        <Image className="w-4 h-4" />
+                                        <ImageIcon className="w-4 h-4" />
                                         Image
                                     </TabsTrigger>
                                     <TabsTrigger value="video" className="flex items-center gap-2">
@@ -178,7 +154,7 @@ export default function PromptGeneratorPage() {
                                         <div>
                                             <CardTitle className="flex items-center gap-2">
                                                 {mode === 'image' ? (
-                                                    <Image className="w-5 h-5 text-purple-600" />
+                                                    <ImageIcon className="w-5 h-5 text-purple-600" />
                                                 ) : (
                                                     <Video className="w-5 h-5 text-purple-600" />
                                                 )}

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { MessageCircle, X, Send, Loader2, Sparkles } from 'lucide-react'
+import {X, Send, Loader2, Sparkles } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
@@ -36,8 +36,7 @@ export function AiAssistant() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ message: userMsg, history: messages.slice(-6) }),
-      })
+        body: JSON.stringify({ message: userMsg, history: messages.slice(-6) }) })
       if (!res.ok) throw new Error('Failed')
       const data = await res.json()
       setMessages((prev) => [...prev, { role: 'assistant', content: data.reply || data.content || 'Maaf, saya tidak bisa menjawab saat ini.' }])

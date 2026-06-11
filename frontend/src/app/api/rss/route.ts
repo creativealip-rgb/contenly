@@ -1,4 +1,13 @@
 import { NextResponse } from 'next/server'
+import * as cheerio from 'cheerio'
+
+type FeedItem = {
+    title: string
+    url: string
+    excerpt: string
+    publishedAt: string
+    id: string
+}
 
 export async function POST(request: Request) {
     try {
@@ -11,9 +20,8 @@ export async function POST(request: Request) {
             )
         }
 
-        let feedUrl = url
-        let items: any[] = []
-        let lastError = null
+        let items: FeedItem[] = []
+        let lastError: string | null = null
 
         // List of variations to try if the direct URL fails or returns HTML
         const variations = [
@@ -54,14 +62,14 @@ export async function POST(request: Request) {
                 if (text.includes('<rss') || text.includes('<feed') || text.includes('<rdf:RDF')) {
                     items = parseXML(text)
                     if (items.length > 0) {
-                        feedUrl = targetUrl // Found the working URL
                         break
                     }
                 }
 
-            } catch (err: any) {
-                console.error(`Attempt failed for ${targetUrl}:`, err.message)
-                lastError = err.message
+            } catch (err: unknown) {
+                const message = err instanceof Error ? err.message : 'Unknown RSS fetch error'
+                console.error(`Attempt failed for ${targetUrl}:`, message)
+                lastError = message
                 // Continue to next variation
             }
         }
@@ -79,20 +87,18 @@ export async function POST(request: Request) {
             items: items.slice(0, 20) // Limit to 20 items
         })
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('RSS Fetch Error:', error)
         return NextResponse.json(
-            { success: false, error: error.message || 'Failed to parse RSS feed' },
+            { success: false, error: error instanceof Error ? error.message : 'Failed to parse RSS feed' },
             { status: 500 }
         )
     }
 }
 
-import * as cheerio from 'cheerio'
-
-function parseXML(xmlText: string) {
+function parseXML(xmlText: string): FeedItem[] {
     const $ = cheerio.load(xmlText, { xmlMode: true })
-    const items: any[] = []
+    const items: FeedItem[] = []
 
     // Try finding items (RSS) or entries (Atom)
     const elements = $('item, entry')

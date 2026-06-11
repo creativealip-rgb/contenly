@@ -124,7 +124,7 @@ Comprehensive overhaul of the **Video Scripts** and **Video Clips** modules. Thi
 
 - Per-clip checkbox in the segment list.
 - "Export Selected" or "Export All" button with **token cost preview**.
-- Each export queued separately in BullMQ.
+- Each export queued separately in Bull (`@nestjs/bull`).
 
 ### Persistent export jobs
 

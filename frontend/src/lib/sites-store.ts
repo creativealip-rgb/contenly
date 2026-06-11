@@ -9,7 +9,7 @@ export interface WordPressSite {
     lastHealthCheck?: string
     articlesPublished?: number
     error?: string
-    categoriesCache?: any[]
+    categoriesCache?: unknown[]
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
@@ -136,7 +136,7 @@ export const testSiteConnection = async (id: string): Promise<{ success: boolean
 }
 
 // Refresh categories from WordPress
-export const refreshCategories = async (siteId: string): Promise<any> => {
+export const refreshCategories = async (siteId: string): Promise<unknown> => {
     try {
         const response = await fetch(`${API_BASE}/integrations/sites/${siteId}/categories/refresh`, {
             method: 'POST',
@@ -157,7 +157,7 @@ export const refreshCategories = async (siteId: string): Promise<any> => {
 }
 
 // Get category mappings
-export const getCategoryMappings = async (siteId: string): Promise<any[]> => {
+export const getCategoryMappings = async (siteId: string): Promise<unknown[]> => {
     try {
         const response = await fetch(`${API_BASE}/integrations/sites/${siteId}/categories`, {
             credentials: 'include',

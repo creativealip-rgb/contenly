@@ -120,7 +120,7 @@ export function RSSFeedSection({ state, handlers }: RSSFeedSectionProps) {
                                     {article.title}
                                 </p>
                                 <div className={`flex items-center gap-2 text-[10px] ${state.selectedArticle?.url === article.url ? 'text-blue-100' : 'text-slate-400'}`}>
-                                    <span>{new Date(article.pubDate || Date.now()).toLocaleDateString()}</span>
+                                    <span>{article.pubDate ? new Date(article.pubDate).toLocaleDateString() : '-'}</span>
                                 </div>
                             </motion.button>
                         ))

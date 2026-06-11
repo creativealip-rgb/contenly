@@ -9,8 +9,7 @@ import {
     SelectContent,
     SelectItem,
     SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select'
+    SelectValue } from '@/components/ui/select'
 import {
     TrendingUp,
     FileText,
@@ -26,8 +25,7 @@ import {
     Eye,
     MousePointerClick,
     ThumbsUp,
-    Calendar,
-} from 'lucide-react'
+    Calendar } from 'lucide-react'
 import {
     BarChart,
     Bar,
@@ -40,8 +38,7 @@ import {
     Pie,
     Cell,
     AreaChart,
-    Area,
-} from 'recharts'
+    Area } from 'recharts'
 import { api } from '@/lib/api'
 import { toast } from 'sonner'
 import { format, subDays, eachDayOfInterval } from 'date-fns'
@@ -90,8 +87,7 @@ const platformIcons: Record<string, React.ReactNode> = {
     instagram: <Instagram className="h-4 w-4" />,
     linkedin: <LinkedinIcon />,
     twitter: <TwitterIcon />,
-    unknown: <Globe className="h-4 w-4" />,
-}
+    unknown: <Globe className="h-4 w-4" /> }
 
 function LinkedinIcon() {
     return (
@@ -119,6 +115,7 @@ export default function AnalyticsContent() {
 
     useEffect(() => {
         fetchData()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [timeRange])
 
     const fetchData = async () => {
@@ -137,7 +134,7 @@ export default function AnalyticsContent() {
             setPerformance(perfRes)
             setPlatformData(platformRes)
             setTokenUsage(tokenRes || [])
-        } catch (error) {
+        } catch {
             toast.error('Failed to fetch analytics data')
         } finally {
             setLoading(false)
@@ -166,7 +163,7 @@ export default function AnalyticsContent() {
             window.URL.revokeObjectURL(url)
             
             toast.success(`Analytics exported as ${exportFormat.toUpperCase()}`)
-        } catch (error) {
+        } catch {
             toast.error('Failed to export analytics')
         }
     }
@@ -192,8 +189,7 @@ export default function AnalyticsContent() {
                 articlesPublished: articleData.published,
                 views: analyticsData.views,
                 clicks: analyticsData.clicks,
-                engagement: analyticsData.engagement,
-            }
+                engagement: analyticsData.engagement }
         })
     }
 
@@ -203,8 +199,7 @@ export default function AnalyticsContent() {
     const pieData = platformData.map(p => ({
         name: p.platform.charAt(0).toUpperCase() + p.platform.slice(1),
         value: p.views,
-        percentage: ((p.views / totalPlatformViews) * 100).toFixed(1),
-    }))
+        percentage: ((p.views / totalPlatformViews) * 100).toFixed(1) }))
 
     if (loading) {
         return (

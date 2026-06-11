@@ -11,20 +11,18 @@ import {
     Globe,
     Clock,
     Zap,
-    ChevronRight,
     SearchX
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
     Sheet,
     SheetContent,
     SheetHeader,
     SheetTitle,
-    SheetDescription,
-} from '@/components/ui/sheet'
+    SheetDescription } from '@/components/ui/sheet'
 import { toast } from 'sonner'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useContentLabStore } from '@/stores/content-lab-store'
@@ -39,16 +37,6 @@ interface TrendItem {
     source: string;
     time: string;
     type: string;
-}
-
-interface TrendAnalysis {
-    score: number;
-    reason: string;
-    hooks: string[];
-    strategy: string;
-    keywords: string[];
-    sentiment: string;
-    content: string;
 }
 
 export default function TrendRadarPage() {
@@ -87,8 +75,7 @@ export default function TrendRadarPage() {
         setSelectedTrend(trend)
         setIsSheetOpen(true)
         analysisMutation.mutate(trend.url, {
-            onError: () => toast.error('Analysis failed. Try another link.'),
-        })
+            onError: () => toast.error('Analysis failed. Try another link.') })
     }
 
     const handleDraftInLab = () => {
@@ -330,7 +317,7 @@ export default function TrendRadarPage() {
                                     <div className="space-y-4">
                                         <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-400">Strategi Konten</h4>
                                         <div className="p-6 bg-slate-950 text-slate-300 rounded-[2rem] border border-white/5 italic font-medium leading-relaxed">
-                                            "{analysis.strategy}"
+                                            &quot;{analysis.strategy}&quot;
                                         </div>
                                     </div>
 

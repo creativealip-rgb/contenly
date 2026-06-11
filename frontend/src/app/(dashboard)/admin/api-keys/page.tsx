@@ -20,6 +20,9 @@ type ProviderStatus = {
 
 type ModelItem = { id: string; name?: string; contextLength?: number | null }
 type ModelConfig = { textModel: string; imageModel: string; textProvider: string; imageProvider: string }
+type ModelTestResult = { ok: boolean; status: number; latencyMs: number; message?: string }
+
+const errorMessage = (error: unknown, fallback: string) => error instanceof Error ? error.message : fallback
 
 export default function AdminApiKeysPage() {
   const [status, setStatus] = useState<ProviderStatus[]>([])
@@ -48,8 +51,8 @@ export default function AdminApiKeysPage() {
       setStatus(providerStatus)
       setConfig(modelConfig)
       setModels(modelList.models || [])
-    } catch (error: any) {
-      toast.error(error.message || 'Gagal memuat admin config')
+    } catch (error: unknown) {
+      toast.error(errorMessage(error, 'Gagal memuat admin config'))
     } finally {
       setLoading(false)
     }
@@ -68,26 +71,27 @@ export default function AdminApiKeysPage() {
       setConfig(saved)
       toast.success('Model config tersimpan')
       loadAll()
-    } catch (error: any) {
-      toast.error(error.message || 'Gagal simpan model config')
+    } catch (error: unknown) {
+      toast.error(errorMessage(error, 'Gagal simpan model config'))
     } finally {
       setSaving(false)
     }
   }
 
-  async function testModel(modelId?: string) {
-    const model = modelId || config?.textModel
+  async function testModel(modelId?: string, type: 'text' | 'image' = 'text') {
+    const model = modelId || (type === 'image' ? config?.imageModel : config?.textModel)
     if (!model) return
     setTestingModel(model)
     setTestResult('')
     try {
-      const result = await api.post<any>('/admin/settings/providers/9router/test', { model })
+      const result = await api.post<ModelTestResult>('/admin/settings/providers/9router/test', { model, type })
       setTestResult(`${result.ok ? 'OK' : 'FAILED'} · HTTP ${result.status} · ${result.latencyMs}ms · ${result.message || ''}`)
       if (result.ok) toast.success(`Model ${model} OK`)
       else toast.error(result.message || `Model ${model} gagal`)
-    } catch (error: any) {
-      setTestResult(error.message || 'Test gagal')
-      toast.error(error.message || 'Test gagal')
+    } catch (error: unknown) {
+      const message = errorMessage(error, 'Test gagal')
+      setTestResult(message)
+      toast.error(message)
     } finally {
       setTestingModel(null)
     }
@@ -121,9 +125,14 @@ export default function AdminApiKeysPage() {
                     </div>
                     <p className="mt-1 text-xs text-slate-500">{provider.baseUrl}</p>
                   </div>
-                  <Button variant="outline" onClick={() => testModel(provider.textModel)} disabled={!!testingModel}>
-                    {testingModel === provider.textModel ? 'Testing...' : 'Test Active Model'}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => testModel(provider.textModel, 'text')} disabled={!!testingModel}>
+                      {testingModel === provider.textModel ? 'Testing...' : 'Test Text Model'}
+                    </Button>
+                    <Button variant="outline" onClick={() => testModel(provider.imageModel, 'image')} disabled={!!testingModel}>
+                      {testingModel === provider.imageModel ? 'Testing...' : 'Test Image Model'}
+                    </Button>
+                  </div>
                 </div>
                 <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
                   <div><span className="text-slate-500">Text:</span> <code>{provider.textModel}</code></div>
@@ -152,7 +161,8 @@ export default function AdminApiKeysPage() {
             </div>
             <div className="flex flex-wrap gap-2">
               <Button onClick={saveConfig} disabled={saving || !config}>{saving ? 'Menyimpan...' : 'Simpan Config'}</Button>
-              <Button variant="outline" onClick={() => testModel()} disabled={!!testingModel || !config?.textModel}>{testingModel ? 'Testing...' : 'Test Text Model'}</Button>
+              <Button variant="outline" onClick={() => testModel(undefined, 'text')} disabled={!!testingModel || !config?.textModel}>{testingModel ? 'Testing...' : 'Test Text'}</Button>
+              <Button variant="outline" onClick={() => testModel(undefined, 'image')} disabled={!!testingModel || !config?.imageModel}>{testingModel ? 'Testing...' : 'Test Image'}</Button>
             </div>
             {testResult && <p className="rounded-xl bg-slate-100 p-3 text-sm dark:bg-slate-900">{testResult}</p>}
           </CardContent>
@@ -166,18 +176,25 @@ export default function AdminApiKeysPage() {
           <CardContent className="space-y-4">
             <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cari model..." />
             <div className="max-h-[460px] space-y-2 overflow-y-auto pr-1">
-              {filteredModels.map((model) => (
-                <div key={model.id} className="flex items-center justify-between gap-3 rounded-xl border bg-white p-3 dark:bg-slate-900">
-                  <div className="min-w-0">
-                    <p className="truncate font-mono text-sm font-bold">{model.id}</p>
-                    {model.contextLength && <p className="text-xs text-slate-500">Context: {model.contextLength.toLocaleString()}</p>}
+              {filteredModels.map((model) => {
+                const isImage = model.id.toLowerCase().includes('image') || model.id.toLowerCase().includes('midjourney') || model.id.toLowerCase().includes('dall-e');
+                return (
+                  <div key={model.id} className="flex items-center justify-between gap-3 rounded-xl border bg-white p-3 dark:bg-slate-900">
+                    <div className="min-w-0">
+                      <p className="truncate font-mono text-sm font-bold">{model.id}</p>
+                      {model.contextLength && <p className="text-xs text-slate-500">Context: {model.contextLength.toLocaleString()}</p>}
+                    </div>
+                    <div className="flex shrink-0 gap-2">
+                      <Button size="sm" variant="outline" onClick={() => setConfig((prev) => prev ? { ...prev, [isImage ? 'imageModel' : 'textModel']: model.id } : prev)}>
+                        Use {isImage ? 'Image' : 'Text'}
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => testModel(model.id, isImage ? 'image' : 'text')} disabled={!!testingModel}>
+                        {testingModel === model.id ? 'Testing...' : 'Test'}
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex shrink-0 gap-2">
-                    <Button size="sm" variant="outline" onClick={() => setConfig((prev) => prev ? { ...prev, textModel: model.id } : prev)}>Use Text</Button>
-                    <Button size="sm" variant="outline" onClick={() => testModel(model.id)} disabled={!!testingModel}>{testingModel === model.id ? 'Testing...' : 'Test'}</Button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               {!loading && filteredModels.length === 0 && <p className="py-8 text-center text-sm text-slate-500">Model tidak ditemukan.</p>}
             </div>
           </CardContent>

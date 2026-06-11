@@ -1,7 +1,7 @@
 import { Injectable, CanActivate, ExecutionContext, HttpException, HttpStatus } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Request } from 'express';
 import Redis from 'ioredis';
+import { AuthenticatedRequest } from '../types/authenticated-request';
 
 const USER_RATE_LIMIT_KEY = 'user-rate-limit';
 
@@ -29,8 +29,8 @@ export class UserRateLimitGuard implements CanActivate {
 
     if (!options) return true;
 
-    const req = context.switchToHttp().getRequest<Request>();
-    const userId = (req as any).user?.id || req.ip || 'unknown';
+    const req = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    const userId = req.user?.id || req.ip || 'unknown';
     const key = `rl:${userId}:${context.getClass().name}:${context.getHandler().name}`;
     const windowSec = Math.ceil(options.windowMs / 1000);
 

@@ -78,10 +78,10 @@ export async function POST(request: Request) {
             },
         })
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('❌ AI Rewrite Error:', error)
         return NextResponse.json<AIRewriteResponse>(
-            { success: false, error: error.message || 'Failed to rewrite content' },
+            { success: false, error: error instanceof Error ? error.message : 'Failed to rewrite content' },
             { status: 500 }
         )
     }

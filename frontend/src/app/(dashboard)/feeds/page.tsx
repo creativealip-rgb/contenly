@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import {
     Table,
     TableBody,
@@ -33,7 +33,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -45,7 +45,6 @@ import {
     CheckCircle2,
     Pause,
     Play,
-    XCircle,
     MoreHorizontal,
     Edit,
     Trash2,
@@ -54,7 +53,7 @@ import {
 import { RssFeed } from '@/lib/feeds-store'
 import { useFeeds, useCreateFeed, useUpdateFeed, useDeleteFeed, usePollFeed } from '@/hooks/use-feeds'
 import { toast } from 'sonner'
-import { containerVariants, itemVariants } from '@/lib/animations'
+
 
 export default function FeedsPage() {
     const [isAddOpen, setIsAddOpen] = useState(false)
@@ -120,9 +119,9 @@ export default function FeedsPage() {
     const handlePollNow = async (id: string) => {
         setIsPolling(id)
         try {
-            const result = await pollFeed.mutateAsync(id)
-            if (result && (result as any).data) {
-                toast.success(`Polling completed: ${(result as any).data.newItems} new items found`)
+            const result = await pollFeed.mutateAsync(id) as { data?: { newItems?: number } } | undefined
+            if (result?.data) {
+                toast.success(`Polling completed: ${result.data.newItems ?? 0} new items found`)
             } else {
                 toast.success('Polling completed')
             }
@@ -139,7 +138,7 @@ export default function FeedsPage() {
         try {
             await updateFeed.mutateAsync({ id: feed.id, status: newStatus })
             toast.success(`Feed ${newStatus === 'ACTIVE' ? 'resumed' : 'paused'}`)
-        } catch (error) {
+        } catch {
             toast.error('Failed to update status')
         }
     }
@@ -151,20 +150,6 @@ export default function FeedsPage() {
         } catch (error) {
             console.error('Failed to remove feed:', error)
             toast.error('Failed to remove feed')
-        }
-    }
-
-    const getStatusBadge = (status: string) => {
-        const s = status.toUpperCase()
-        switch (s) {
-            case 'ACTIVE':
-                return <Badge className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/20"><CheckCircle2 className="h-3 w-3 mr-1" />Active</Badge>
-            case 'PAUSED':
-                return <Badge variant="secondary"><Pause className="h-3 w-3 mr-1" />Paused</Badge>
-            case 'ERROR':
-                return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Error</Badge>
-            default:
-                return <Badge variant="outline">{status}</Badge>
         }
     }
 

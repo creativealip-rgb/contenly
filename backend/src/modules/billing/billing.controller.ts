@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Body, Query, UseGuards, UseInterceptors, Headers, Req, Logger, RawBodyRequest, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 import { ConfigService } from '@nestjs/config';
 import { BillingService } from './billing.service';
 import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
@@ -113,6 +114,7 @@ export class BillingController {
 
     // Stripe webhook - NO AUTH GUARD (Stripe needs to call this)
     @Post('webhooks/stripe')
+    @SkipThrottle()
     @UseGuards() // Override class-level guard
     @ApiOperation({ summary: 'Stripe webhook handler' })
     async handleStripeWebhook(

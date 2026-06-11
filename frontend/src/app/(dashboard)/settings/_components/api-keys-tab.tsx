@@ -20,9 +20,24 @@ import { api } from '@/lib/api'
 import { toast } from 'sonner'
 import { useConfirm } from '@/components/ui/confirm-dialog'
 
+interface ApiKey {
+    id: string
+    name: string
+    keyPrefix?: string
+    prefix?: string
+    createdAt?: string
+    lastUsedAt?: string | null
+}
+
+interface CreateApiKeyResponse {
+    key: string
+}
+
+const getErrorMessage = (error: unknown, fallback: string) => error instanceof Error ? error.message : fallback
+
 export function ApiKeysTab() {
     const confirm = useConfirm()
-    const [apiKeys, setApiKeys] = useState<any[]>([])
+    const [apiKeys, setApiKeys] = useState<ApiKey[]>([])
     const [isLoadingKeys, setIsLoadingKeys] = useState(false)
     const [isGeneratingKey, setIsGeneratingKey] = useState(false)
     const [newKeyName, setNewKeyName] = useState('')
@@ -35,7 +50,7 @@ export function ApiKeysTab() {
     const fetchApiKeys = async () => {
         setIsLoadingKeys(true)
         try {
-            const data = await api.get<any[]>('/users/me/api-keys')
+            const data = await api.get<ApiKey[]>('/users/me/api-keys')
             setApiKeys(data)
         } catch (error) {
             console.error('Failed to fetch API keys:', error)
@@ -48,7 +63,7 @@ export function ApiKeysTab() {
         if (!newKeyName) return
         setIsGeneratingKey(true)
         try {
-            const result = await api.post<any>('/users/me/api-keys', { name: newKeyName })
+            const result = await api.post<CreateApiKeyResponse>('/users/me/api-keys', { name: newKeyName })
             toast.success('Kunci API baru berhasil dibuat', {
                 description: `Kunci: ${result.key}\nSimpan kunci ini sekarang, Anda tidak akan bisa melihatnya lagi.`,
                 duration: 10000,
@@ -56,8 +71,8 @@ export function ApiKeysTab() {
             setNewKeyName('')
             setIsAddKeyOpen(false)
             fetchApiKeys()
-        } catch (error: any) {
-            toast.error(error.message || 'Gagal membuat kunci API')
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error, 'Gagal membuat kunci API'))
         } finally {
             setIsGeneratingKey(false)
         }
@@ -75,8 +90,8 @@ export function ApiKeysTab() {
                     await api.delete(`/users/me/api-keys/${id}`)
                     toast.success('Kunci API berhasil dihapus')
                     fetchApiKeys()
-                } catch (error: any) {
-                    toast.error(error.message || 'Gagal menghapus kunci API')
+                } catch (error: unknown) {
+                    toast.error(getErrorMessage(error, 'Gagal menghapus kunci API'))
                 }
             },
         })
@@ -156,7 +171,7 @@ export function ApiKeysTab() {
                                         {key.keyPrefix}********************
                                     </code>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                        Dibuat: {new Date(key.createdAt).toLocaleDateString()} • Digunakan: {key.lastUsedAt ? new Date(key.lastUsedAt).toLocaleDateString() : 'Belum pernah'}
+                                        Dibuat: {key.createdAt ? new Date(key.createdAt).toLocaleDateString() : '-'} • Digunakan: {key.lastUsedAt ? new Date(key.lastUsedAt).toLocaleDateString() : 'Belum pernah'}
                                     </p>
                                 </div>
                                 <div className="flex gap-2">
@@ -164,7 +179,7 @@ export function ApiKeysTab() {
                                         variant="ghost"
                                         size="icon"
                                         className="h-9 w-9 rounded-xl hover:bg-blue-50 hover:text-blue-600"
-                                        onClick={() => handleCopy(key.keyPrefix)}
+                                        onClick={() => handleCopy(key.keyPrefix || key.prefix || '')}
                                     >
                                         <Copy className="h-4 w-4" />
                                     </Button>

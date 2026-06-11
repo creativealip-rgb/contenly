@@ -32,7 +32,7 @@ export const getFeeds = async (): Promise<RssFeed[]> => {
         const feeds = await response.json()
 
         // Transform backend format to match frontend interface
-        return feeds.map((feed: any) => ({
+        return (feeds as RssFeed[]).map((feed) => ({
             ...feed,
             pollingInterval: feed.pollingIntervalMinutes, // Map backend field
             status: feed.status || 'active',

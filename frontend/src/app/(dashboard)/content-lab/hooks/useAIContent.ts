@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { useContentLabStore } from '@/stores/content-lab-store'
+import { Article, useContentLabStore } from '@/stores/content-lab-store'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -19,7 +19,7 @@ export function useAIContent() {
         sourceContent, setSourceContent,
         articleIdea,
         selectedArticle, setSelectedArticle,
-        scrapeUrl, setScrapeUrl,
+        scrapeUrl,
         aiTone,
         aiLength,
         setGeneratedContent,
@@ -34,7 +34,7 @@ export function useAIContent() {
         activeTab
     } = useContentLabStore()
 
-    const handleSelectArticle = useCallback(async (article: any) => {
+    const handleSelectArticle = useCallback(async (article: Article) => {
         setSelectedArticle(article)
         setIsScanning(true)
         try {
@@ -50,12 +50,12 @@ export function useAIContent() {
             } else {
                 setSourceContent(`# ${article.title}\n\n${article.excerpt || article.description || ''}\n\nSource: ${article.url}`)
             }
-        } catch (error) {
+        } catch {
             setSourceContent(`# ${article.title}\n\n${article.excerpt || article.description || ''}\n\nSource: ${article.url}`)
         } finally {
             setIsScanning(false)
         }
-    }, [API_BASE_URL, setSelectedArticle, setSourceContent])
+    }, [setSelectedArticle, setSourceContent])
 
     const handleScrape = useCallback(async () => {
         if (!scrapeUrl) return
@@ -85,7 +85,7 @@ export function useAIContent() {
         } finally {
             setIsScraping(false)
         }
-    }, [scrapeUrl, API_BASE_URL, setSourceContent, setSelectedArticle, setGeneratedTitle])
+    }, [scrapeUrl, setSourceContent, setSelectedArticle, setGeneratedTitle])
 
     const handleAIRewrite = useCallback(async (selectedCategoryId: number | null) => {
         const hasSource = activeTab === 'idea' ? articleIdea.trim() : sourceContent.trim();
@@ -112,8 +112,7 @@ export function useAIContent() {
                         tone: aiTone,
                         length: aiLength === 'shorter' ? 'short' : aiLength === 'longer' ? 'long' : 'medium'
                     }
-                }),
-            })
+                }) })
             const result = await response.json()
             if (result.success && result.data) {
                 setGeneratedContent(result.data.content)
@@ -138,9 +137,7 @@ export function useAIContent() {
                             metaDescription: result.data.metaDescription || '',
                             slug: result.data.slug || '',
                             tokensUsed: result.data.tokensUsed || 0,
-                            status: 'DRAFT',
-                        }),
-                    })
+                            status: 'DRAFT' }) })
                     if (articleRes.ok) {
                         const saved = await articleRes.json()
                         setGeneratedArticleId(saved.id)
@@ -195,9 +192,7 @@ export function useAIContent() {
                 credentials: 'include',
                 body: JSON.stringify({
                     title: generatedTitle,
-                    content: generatedContent,
-                }),
-            })
+                    content: generatedContent }) })
 
             const result = await response.json()
             if (result.metaTitle) setMetaTitle(result.metaTitle)

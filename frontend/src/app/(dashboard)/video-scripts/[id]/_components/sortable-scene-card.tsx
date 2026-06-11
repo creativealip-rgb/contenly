@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -126,11 +127,9 @@ export function SortableSceneCard({
             ) : null}
             <Badge variant="secondary" className="bg-white/5 text-white/70 text-[10px]">{wordCount} kata</Badge>
             {firstFootage && (
-              <img
-                src={firstFootage.thumbnailUrl}
-                alt=""
-                className="ml-1 h-6 w-10 rounded border border-white/20 object-cover"
-              />
+              <span className="relative ml-1 block h-6 w-10 overflow-hidden rounded border border-white/20">
+                <Image src={firstFootage.thumbnailUrl} alt="" fill sizes="40px" className="object-cover" unoptimized />
+              </span>
             )}
           </div>
           <div className="flex flex-wrap gap-1.5">
@@ -161,7 +160,9 @@ export function SortableSceneCard({
         {collapsed ? (
           <div className="flex items-start gap-3 px-5 py-3 cursor-pointer hover:bg-slate-50/50" onClick={() => setCollapsed(false)}>
             {firstFootage ? (
-              <img src={firstFootage.thumbnailUrl} alt="" className="h-16 w-24 rounded-md border object-cover flex-shrink-0" />
+              <div className="relative h-16 w-24 flex-shrink-0 overflow-hidden rounded-md border">
+                <Image src={firstFootage.thumbnailUrl} alt="" fill sizes="96px" className="object-cover" unoptimized />
+              </div>
             ) : (
               <div className="h-16 w-24 rounded-md border border-dashed bg-slate-50 flex items-center justify-center flex-shrink-0">
                 <Eye className="h-5 w-5 text-slate-300" />

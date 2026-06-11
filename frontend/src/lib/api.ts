@@ -20,7 +20,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://contenly.app/api/v1'
 
 type RequestMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
-async function request<T>(endpoint: string, method: RequestMethod, body?: any): Promise<T> {
+type RequestBody = Record<string, unknown> | unknown[] | string | number | boolean | null;
+
+async function request<T>(endpoint: string, method: RequestMethod, body?: RequestBody): Promise<T> {
     const headers: HeadersInit = {
         'Content-Type': 'application/json',
     };
@@ -53,9 +55,9 @@ async function request<T>(endpoint: string, method: RequestMethod, body?: any): 
 export const api = {
     // Generic HTTP methods
     get: <T>(endpoint: string) => request<T>(endpoint, 'GET'),
-    post: <T>(endpoint: string, body?: any) => request<T>(endpoint, 'POST', body),
-    put: <T>(endpoint: string, body?: any) => request<T>(endpoint, 'PUT', body),
-    patch: <T>(endpoint: string, body?: any) => request<T>(endpoint, 'PATCH', body),
+    post: <T>(endpoint: string, body?: RequestBody) => request<T>(endpoint, 'POST', body),
+    put: <T>(endpoint: string, body?: RequestBody) => request<T>(endpoint, 'PUT', body),
+    patch: <T>(endpoint: string, body?: RequestBody) => request<T>(endpoint, 'PATCH', body),
     delete: <T>(endpoint: string) => request<T>(endpoint, 'DELETE'),
 
     // Auth specific methods

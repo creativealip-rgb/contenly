@@ -7,8 +7,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Plus, Trash2, GripVertical } from 'lucide-react'
 
 interface JsonArrayEditorProps {
-  value: any
-  onChange: (value: any) => void
+  value: unknown
+  onChange: (value: unknown) => void
   label?: string
   /** 'array-strings' for simple string arrays, 'json' for raw JSON editing */
   mode?: 'array-strings' | 'json'
@@ -71,8 +71,8 @@ function RawJsonEditor({ value, onChange, label }: Omit<JsonArrayEditorProps, 'm
       const parsed = JSON.parse(text)
       setError(null)
       onChange(parsed)
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Invalid JSON')
     }
   }, [text, onChange])
 
