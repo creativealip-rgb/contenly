@@ -75,15 +75,15 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=dokploy-network
-      - traefik.http.routers.contenly.rule=Host(`contenly.app`) || Host(`www.contenly.app`)
-      - traefik.http.routers.contenly.priority=200
-      - traefik.http.routers.contenly.entrypoints=websecure
-      - traefik.http.routers.contenly.tls.certresolver=letsencrypt
-      - traefik.http.routers.contenly-http.rule=Host(`contenly.app`) || Host(`www.contenly.app`)
-      - traefik.http.routers.contenly-http.priority=200
-      - traefik.http.routers.contenly-http.entrypoints=web
-      - traefik.http.routers.contenly-http.middlewares=redirect-to-https@file
-      - traefik.http.services.contenly.loadbalancer.server.port=3000
+      - traefik.http.routers.contenly-web.rule=Host(`contenly.app`) || Host(`www.contenly.app`)
+      - traefik.http.routers.contenly-web.priority=200
+      - traefik.http.routers.contenly-web.entrypoints=websecure
+      - traefik.http.routers.contenly-web.tls.certresolver=letsencrypt
+      - traefik.http.routers.contenly-web-http.rule=Host(`contenly.app`) || Host(`www.contenly.app`)
+      - traefik.http.routers.contenly-web-http.priority=200
+      - traefik.http.routers.contenly-web-http.entrypoints=web
+      - traefik.http.routers.contenly-web-http.middlewares=redirect-to-https@file
+      - traefik.http.services.contenly-web.loadbalancer.server.port=3000
     ports:
       - "3010:3000"
 
