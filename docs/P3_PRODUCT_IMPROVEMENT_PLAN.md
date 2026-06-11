@@ -686,7 +686,9 @@ Latest verification:
   - `https://contenly.app/health` -> 200
   - `https://contenly.app/api/v1/docs` -> 200
 - Note: `https://contenly.app/api/v1/health` returns 404 because health endpoint is mounted at `/health`.
-- `npm ci` reported dependency audit warnings; security audit follow-up recommended separately.
+- Dependency audit follow-up completed baseline:
+  - backend audit reduced to 9 moderate, 0 high, 0 critical after safe fixes; remaining items require dependency migration or upstream fixes (`bull`/`uuid`, `drizzle-kit`/`esbuild`, `better-auth` dev dependency chain).
+  - frontend audit reduced to 3 moderate, 0 high, 0 critical after safe fixes and Next.js 16.2.9 upgrade.
 
 ## Remaining work summary
 

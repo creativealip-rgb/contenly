@@ -457,7 +457,8 @@ export class WordpressService implements OnModuleInit {
           responseType: 'arraybuffer',
         });
         buffer = Buffer.from(imageResponse.data, 'binary');
-        mimeType = imageResponse.headers['content-type'] || 'image/png';
+        const responseContentType = imageResponse.headers['content-type'];
+        mimeType = typeof responseContentType === 'string' ? responseContentType : 'image/png';
         filename = `ai-gen-${Date.now()}.png`;
       }
 
