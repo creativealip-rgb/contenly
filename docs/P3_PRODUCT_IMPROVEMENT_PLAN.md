@@ -415,9 +415,11 @@ Ops hardening update:
 - True dead-letter queue storage added via shared `dead-letter` Bull queue.
 - Failed jobs from `feed-polling`, `render`, and `video-clip` now write payloads to dead-letter storage with source queue, job id, attempts, failure reason, stacktrace, and original data.
 
-Moved to later hardening:
+Ops hardening update:
 
-- Dedicated stuck-job cleanup command for every queue.
+- Dedicated stuck-job cleanup command added via `backend npm run jobs:cleanup-stuck`.
+- Defaults to dry-run; set `STUCK_JOB_CLEAN_DRY_RUN=false` to remove stale jobs.
+- Configurable envs: `STUCK_JOB_MAX_AGE_MS`, `STUCK_JOB_CLEAN_LIMIT`, `STUCK_JOB_QUEUES`, `STUCK_JOB_STATUSES`.
 
 ## P3 — Product improvement
 
@@ -701,11 +703,12 @@ P2:
 - Pending:
   - none for P2 baseline
 - Moved to later ops hardening:
-  - stuck-job cleanup command
+  - none for current ops baseline
 - Ops hardening done:
   - generated OpenAPI client automation baseline (`backend npm run openapi:generate`, `frontend npm run api:generate`)
   - Sentry/Logtail-style observability provider wiring baseline (`OBSERVABILITY_WEBHOOK_URL`, `OBSERVABILITY_PROVIDER`)
   - true dead-letter queue storage baseline (`dead-letter` Bull queue)
+  - stuck-job cleanup command (`backend npm run jobs:cleanup-stuck`)
 
 P3:
 
