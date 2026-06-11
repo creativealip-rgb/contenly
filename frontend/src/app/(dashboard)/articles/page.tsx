@@ -14,10 +14,11 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import {
   Search, Filter, MoreHorizontal, Eye, Edit, Trash2, RefreshCw, FileText,
-  CheckCircle2, Clock, Loader2, Pencil, Plus, Download, Coins } from 'lucide-react'
+  CheckCircle2, Clock, Pencil, Plus, Download, Coins } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { toast } from 'sonner'
 import { useConfirm } from '@/components/ui/confirm-dialog'
+import { EmptyState, ErrorState, TableSkeleton } from '@/components/ui/page-state'
 import {
   useArticles, useArticleStats, useDeleteArticle, useBulkDeleteArticles,
   useBulkUpdateStatus, useSyncScheduled } from '@/hooks/use-articles'
@@ -56,7 +57,12 @@ export default function ArticlesPage() {
     return () => clearTimeout(t)
   }, [search])
 
-  const { data, isLoading } = useArticles({ search: debouncedSearch, status: statusFilter, page, limit: 20 })
+  const {
+    data,
+    isLoading,
+    isError,
+    refetch,
+  } = useArticles({ search: debouncedSearch, status: statusFilter, page, limit: 20 })
   const { data: stats } = useArticleStats()
   const deleteArticle = useDeleteArticle()
   const bulkDelete = useBulkDeleteArticles()
@@ -199,9 +205,37 @@ export default function ArticlesPage() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={7} className="py-16 text-center"><Loader2 className="h-8 w-8 animate-spin text-slate-300 mx-auto" /></TableCell></TableRow>
+              <TableRow>
+                <TableCell colSpan={7} className="py-4">
+                  <TableSkeleton rows={5} columns={7} />
+                </TableCell>
+              </TableRow>
+            ) : isError ? (
+              <TableRow>
+                <TableCell colSpan={7} className="py-4">
+                  <ErrorState
+                    title="Artikel gagal dimuat"
+                    description="Data library belum bisa diambil. Coba ulangi request."
+                    onRetry={() => void refetch()}
+                    className="border-none shadow-none"
+                  />
+                </TableCell>
+              </TableRow>
             ) : articles.length === 0 ? (
-              <TableRow><TableCell colSpan={7} className="py-16 text-center text-slate-400 text-sm">Belum ada artikel. Buat dari Content Lab.</TableCell></TableRow>
+              <TableRow>
+                <TableCell colSpan={7} className="py-4">
+                  <EmptyState
+                    title="Belum ada artikel"
+                    description="Buat artikel pertama dari Content Lab, lalu draft otomatis muncul di sini."
+                    action={(
+                      <Button size="sm" onClick={() => router.push('/content-lab')} className="rounded-xl">
+                        <Plus className="mr-2 h-4 w-4" /> Buat Artikel
+                      </Button>
+                    )}
+                    className="border-none shadow-none"
+                  />
+                </TableCell>
+              </TableRow>
             ) : (
               articles.map((article) => (
                 <TableRow key={article.id} className="group hover:bg-slate-50/50 transition-colors">

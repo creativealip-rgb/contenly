@@ -419,7 +419,7 @@ Moved to later hardening:
 
 ### 16. Dashboard loading/error states
 
-Status: **PENDING**
+Status: **DONE (baseline)**
 
 Goal:
 
@@ -427,11 +427,18 @@ Goal:
 
 Tasks:
 
-- [ ] Audit dashboard pages with raw loading/error UI.
-- [ ] Add shared skeleton components.
-- [ ] Add empty states with actionable CTA.
-- [ ] Add retry button for failed queries.
-- [ ] Standardize copy and layout.
+- [x] Audit dashboard pages with raw loading/error UI.
+- [x] Add shared skeleton components.
+- [x] Add empty states with actionable CTA.
+- [x] Add retry button for failed queries.
+- [x] Standardize copy and layout.
+
+Implementation notes:
+
+- Shared page states live in `frontend/src/components/ui/page-state.tsx`.
+- Dashboard overview has full-page error + trend fallback retry.
+- Articles library has table skeleton, error retry, and empty CTA baseline.
+- Remaining candidate pages can adopt same component incrementally.
 
 Candidate areas:
 
@@ -698,10 +705,10 @@ P3:
 - Done:
   - role/admin permission audit
   - E2E smoke test
+  - dashboard loading/error states baseline
   - AI cost control baseline
   - WordPress robustness baseline
 - Pending:
-  - dashboard loading/error states
   - true user-level currency spending cap
   - full WordPress last-error DB fields
 

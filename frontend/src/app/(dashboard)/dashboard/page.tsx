@@ -8,12 +8,22 @@ import { KpiCard, RecentActivity, QuickActions } from '@/components/dashboard'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { ErrorState } from '@/components/ui/page-state'
 import { useDashboardStats, useTrends } from '@/hooks/use-dashboard'
 
 export default function DashboardPage() {
     const router = useRouter()
-    const { data: stats, isLoading } = useDashboardStats()
-    const { data: trends } = useTrends()
+    const {
+        data: stats,
+        isLoading,
+        isError: statsError,
+        refetch: refetchStats,
+    } = useDashboardStats()
+    const {
+        data: trends,
+        isError: trendsError,
+        refetch: refetchTrends,
+    } = useTrends()
 
     const s = stats ?? {
         totalArticles: 0,
@@ -33,6 +43,16 @@ export default function DashboardPage() {
             { title: 'Update Algoritma Google', source: 'SEO' },
             { title: 'Masa Depan Remote Work', source: 'Trends' },
         ]
+
+    if (statsError && !stats) {
+        return (
+            <ErrorState
+                title="Dashboard gagal dimuat"
+                description="Ringkasan performa belum bisa diambil. Cek koneksi lalu coba lagi."
+                onRetry={() => void refetchStats()}
+            />
+        )
+    }
 
     return (
         <div className="space-y-6 max-w-full overflow-hidden">
@@ -119,6 +139,15 @@ export default function DashboardPage() {
                                         Lihat Semua <ArrowRight className="w-3 h-3" />
                                     </Link>
                                 </div>
+
+                                {trendsError && (
+                                    <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300">
+                                        Topik populer gagal dimuat. Menampilkan contoh topik.{' '}
+                                        <button type="button" className="font-bold underline" onClick={() => void refetchTrends()}>
+                                            Coba lagi
+                                        </button>
+                                    </div>
+                                )}
 
                                 <div className="grid gap-3 sm:grid-cols-2">
                                     {isLoading ? (
