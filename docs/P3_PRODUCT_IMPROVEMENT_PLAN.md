@@ -476,7 +476,7 @@ Candidate caps:
 
 ### 20. E2E smoke test
 
-Status: **PARTIAL**
+Status: **DONE**
 
 Goal:
 
@@ -491,15 +491,19 @@ Current backend HTTP smoke:
 - [x] billing balance load
 - [x] list articles
 
-Pending browser smoke:
+Current browser smoke:
 
-- [ ] Playwright login
-- [ ] dashboard/settings page load
-- [ ] browser-level create/generate/save flow
+- [x] Playwright mocked authenticated session
+- [x] dashboard page load
+- [x] browser-level create/generate/save API flow
+- [x] articles page load
+- [x] billing page load
+- [x] settings route load
 
 Implementation notes:
 
 - Backend smoke exists at `backend/src/smoke/app-smoke.spec.ts`.
+- Browser smoke exists at `frontend/e2e/smoke.spec.ts`.
 - Prefer mocked AI response for deterministic CI.
 - Use seeded or mocked test user.
 - Avoid real external OpenAI/WordPress calls in smoke test.
@@ -583,7 +587,7 @@ Current status:
 - [ ] observability basic added
 - [ ] rate limit refined
 - [ ] background job resilience added
-- [~] backend HTTP smoke test added; browser E2E pending
+- [x] E2E smoke test added
 
 ## Remaining work summary
 
@@ -615,8 +619,7 @@ P3:
 
 - Done:
   - role/admin permission audit
-- Partial:
-  - E2E smoke test (backend HTTP smoke done; browser smoke pending)
+  - E2E smoke test
 - Pending:
   - dashboard loading/error states
   - WordPress robustness
@@ -624,13 +627,12 @@ P3:
 
 ## Next recommended order
 
-1. Browser E2E smoke test with mocked AI.
-2. API contract + typed frontend client.
-3. AI cost control guardrails.
-4. WordPress robustness.
-5. Queue retry/dead-letter/idempotency/stuck cleanup.
-6. Observability + rate limit refinement.
-7. Dashboard loading/error UX pass.
+1. API contract + typed frontend client.
+2. AI cost control guardrails.
+3. WordPress robustness.
+4. Queue retry/dead-letter/idempotency/stuck cleanup.
+5. Observability + rate limit refinement.
+6. Dashboard loading/error UX pass.
 
 Reason:
 
