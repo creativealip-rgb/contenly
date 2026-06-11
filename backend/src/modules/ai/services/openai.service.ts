@@ -209,6 +209,7 @@ export class OpenAiService {
       mode?: 'rewrite' | 'idea' | 'custom';
       systemPrompt?: string;
       model?: string;
+      userId?: string;
     },
   ): Promise<any> {
     const lengthGuide = {
@@ -252,21 +253,18 @@ export class OpenAiService {
       const selectedModel = this.aiCostControlService.resolveModel(
         await this.getTextModel(options.model),
       );
-      const costEstimate = this.aiCostControlService.guardPrompt({
-        feature: 'article_generation',
+      const guardInput = {
+        userId: options.userId,
+        feature: 'article_generation' as const,
         model: selectedModel,
         prompt: `${systemPrompt}\n\n${userPrompt}`,
         maxOutputTokens: 4000,
-      });
-      this.aiCostControlService.logUsage(
-        {
-          feature: 'article_generation',
-          model: selectedModel,
-          prompt: `${systemPrompt}\n\n${userPrompt}`,
-          maxOutputTokens: 4000,
-        },
-        costEstimate,
+      };
+      const costEstimate = await this.aiCostControlService.guardMonthlySpend(
+        guardInput,
+        this.aiCostControlService.guardPrompt(guardInput),
       );
+      this.aiCostControlService.logUsage(guardInput, costEstimate);
       console.log(
         `[OpenAiService] Generating content with model: ${selectedModel}`,
       );
@@ -281,6 +279,8 @@ export class OpenAiService {
         max_tokens: 4000,
         response_format: { type: 'json_object' },
       });
+
+      await this.aiCostControlService.recordSpend(guardInput, costEstimate);
 
       // Sanitize JSON - remove control characters that break parsing
       let rawContent = response.choices[0]?.message?.content || '{}';
@@ -579,7 +579,7 @@ Return JSON with:
     };
   }
 
-  async generateImage(prompt: string): Promise<string> {
+  async generateImage(prompt: string, userId?: string): Promise<string> {
     const codexApiKey = await this.getImageApiKey();
     const codexBaseUrl = await this.getImageBaseUrl();
     const imageModel = await this.getImageModel();
@@ -593,21 +593,18 @@ Return JSON with:
       );
     }
 
-    const costEstimate = this.aiCostControlService.guardPrompt({
-      feature: 'image_generation',
+    const guardInput = {
+      userId,
+      feature: 'image_generation' as const,
       model: imageModel,
       prompt: enhancedPrompt,
       maxOutputTokens: 0,
-    });
-    this.aiCostControlService.logUsage(
-      {
-        feature: 'image_generation',
-        model: imageModel,
-        prompt: enhancedPrompt,
-        maxOutputTokens: 0,
-      },
-      costEstimate,
+    };
+    const costEstimate = await this.aiCostControlService.guardMonthlySpend(
+      guardInput,
+      this.aiCostControlService.guardPrompt(guardInput),
     );
+    this.aiCostControlService.logUsage(guardInput, costEstimate);
 
     console.log(
       `🎨 Generating image via Codex ${imageModel} for: ${enhancedPrompt.substring(0, 60)}...`,
@@ -630,6 +627,8 @@ Return JSON with:
 
       if (!response.ok)
         throw new Error(`Codex API ${response.status}: ${response.statusText}`);
+
+      await this.aiCostControlService.recordSpend(guardInput, costEstimate);
 
       // Parse SSE stream to extract image data
       const reader = response.body.getReader();

@@ -528,7 +528,7 @@ Tasks:
 - [x] Add max prompt length per feature.
 - [x] Add model fallback configuration.
 - [x] Add per-feature token estimate.
-- [ ] Add spending cap per user.
+- [x] Add spending cap per user.
 - [x] Log AI usage by feature/user/model.
 - [x] Return clear error when cap reached.
 
@@ -537,7 +537,8 @@ Implementation notes:
 - Baseline guardrails live in `backend/src/modules/ai/services/ai-cost-control.service.ts`.
 - Protected features: article generation, SEO metadata generation, image generation, prompt generation.
 - Default caps can be overridden by env keys like `AI_ARTICLE_GENERATION_MAX_PROMPT_CHARS`, `AI_ARTICLE_GENERATION_MAX_ESTIMATED_TOKENS`, and `AI_FALLBACK_MODEL`.
-- Existing billing quota remains user spend cap for article/image actions; true currency spend cap by user remains future work.
+- User-level monthly currency cap uses `AI_MONTHLY_SPEND_CAP_USD` or feature-specific `AI_ARTICLE_GENERATION_MONTHLY_SPEND_CAP_USD` style env keys.
+- Estimated AI spend is recorded in `transaction` metadata with `source: ai_cost_control`; price defaults to `AI_DEFAULT_PRICE_PER_MILLION_TOKENS_USD` or `$1/million` fallback.
 
 Candidate caps:
 
@@ -709,7 +710,6 @@ P3:
   - AI cost control baseline
   - WordPress robustness baseline
 - Pending:
-  - true user-level currency spending cap
   - full WordPress last-error DB fields
 
 ## Next recommended order

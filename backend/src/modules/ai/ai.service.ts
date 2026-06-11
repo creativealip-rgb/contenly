@@ -46,6 +46,7 @@ export class AiService {
         ...dto.options,
         mode: dto.mode,
         model,
+        userId,
       } as any,
     );
 
@@ -257,7 +258,7 @@ export class AiService {
     }
 
     // Generate image
-    const imageUrl = await this.openAiService.generateImage(dto.prompt);
+    const imageUrl = await this.openAiService.generateImage(dto.prompt, userId);
 
     await this.billingService.recordUsage(userId, 'IMAGE_GENERATION', billing);
 
