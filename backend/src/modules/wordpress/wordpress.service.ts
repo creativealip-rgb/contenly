@@ -1,4 +1,11 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  Logger,
+  OnModuleInit,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { eq, and, sql } from 'drizzle-orm';
 import { DrizzleService } from '../../db/drizzle.service';
@@ -6,7 +13,13 @@ import { wpSite, categoryMapping, article } from '../../db/schema';
 import { ArticlesService } from '../articles/articles.service';
 import axios from 'axios';
 import sharp from 'sharp';
-import { WpCategory, WpPostData, WpPostResponse, ArticleStatus, ArticleUpdateData } from '../../db/types';
+import {
+  WpCategory,
+  WpPostData,
+  WpPostResponse,
+  ArticleStatus,
+  ArticleUpdateData,
+} from '../../db/types';
 import { BillingService } from '../billing/billing.service';
 import { BILLING_TIERS } from '../billing/billing.constants';
 import * as path from 'path';
@@ -14,8 +27,11 @@ import * as fs from 'fs';
 // import { Cron, Timeout } from '@nestjs/schedule';
 import { EncryptionService } from '../security/encryption.service';
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const isUuid = (value: string) => UUID_REGEX.test(value);
+const WP_REQUEST_TIMEOUT_MS = 10000;
+const WP_RETRYABLE_STATUS_CODES = new Set([408, 429, 500, 502, 503, 504]);
 
 @Injectable()
 export class WordpressService implements OnModuleInit {
@@ -27,7 +43,7 @@ export class WordpressService implements OnModuleInit {
     private articlesService: ArticlesService,
     private billingService: BillingService,
     private encryptionService: EncryptionService,
-  ) { }
+  ) {}
 
   async onModuleInit() {
     this.logger.log('WordpressService initialized.');
@@ -57,6 +73,74 @@ export class WordpressService implements OnModuleInit {
     return this.drizzle.db;
   }
 
+  private normalizeSiteUrl(url: string): string {
+    return url.trim().replace(/\/$/, '');
+  }
+
+  private getWpErrorMessage(error: any): string {
+    const status = error?.response?.status;
+    const wpMessage = error?.response?.data?.message;
+    const code = error?.code;
+
+    if (status === 401 || status === 403)
+      return 'WordPress authentication failed. Check username and application password.';
+    if (status === 404)
+      return 'WordPress REST API endpoint not found. Check site URL and permalink/REST API settings.';
+    if (status === 429)
+      return 'WordPress rate limit reached. Please retry later.';
+    if (status >= 500)
+      return 'WordPress server error. Please retry later or check site health.';
+    if (code === 'ECONNABORTED')
+      return 'WordPress request timed out. Check site connectivity.';
+    if (code === 'ENOTFOUND' || code === 'ECONNREFUSED')
+      return 'WordPress site is unreachable. Check site URL and hosting status.';
+    if (wpMessage) return `WordPress error: ${wpMessage}`;
+    return error?.message || 'Failed to communicate with WordPress.';
+  }
+
+  private shouldRetryWpRequest(error: any): boolean {
+    const status = error?.response?.status;
+    return (
+      !status ||
+      WP_RETRYABLE_STATUS_CODES.has(status) ||
+      error?.code === 'ECONNABORTED'
+    );
+  }
+
+  private async retryWpRequest<T>(
+    operation: () => Promise<T>,
+    label: string,
+    attempts = 2,
+  ): Promise<T> {
+    let lastError: any;
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      try {
+        return await operation();
+      } catch (error: any) {
+        lastError = error;
+        if (attempt >= attempts || !this.shouldRetryWpRequest(error)) break;
+        this.logger.warn(
+          `${label} failed on attempt ${attempt}; retrying: ${this.getWpErrorMessage(error)}`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, 250 * attempt));
+      }
+    }
+    throw lastError;
+  }
+
+  private async markSiteHealth(
+    siteId: string,
+    connected: boolean,
+  ): Promise<void> {
+    await this.db
+      .update(wpSite)
+      .set({
+        status: connected ? 'CONNECTED' : 'ERROR',
+        lastHealthCheck: new Date(),
+      })
+      .where(eq(wpSite.id, siteId));
+  }
+
   async getSites(userId: string) {
     return this.db.query.wpSite.findMany({
       where: eq(wpSite.userId, userId),
@@ -72,20 +156,32 @@ export class WordpressService implements OnModuleInit {
     });
   }
 
-  async connectSite(userId: string, data: { name: string; url: string; username: string; appPassword: string }) {
+  async connectSite(
+    userId: string,
+    data: { name: string; url: string; username: string; appPassword: string },
+  ) {
     // Check tier limits
     const tier = await this.billingService.getSubscriptionTier(userId);
     const limit = BILLING_TIERS[tier]?.maxWpSites || 1;
 
     const existingSites = await this.getSites(userId);
     if (existingSites.length >= limit) {
-      throw new BadRequestException(`Tier ${tier} limit reached. Maximum ${limit} WordPress sites allowed.`);
+      throw new BadRequestException(
+        `Tier ${tier} limit reached. Maximum ${limit} WordPress sites allowed.`,
+      );
     }
 
     // Test connection first
-    const isValid = await this.testConnection(data.url, data.username, data.appPassword);
+    const normalizedUrl = this.normalizeSiteUrl(data.url);
+    const isValid = await this.testConnection(
+      normalizedUrl,
+      data.username,
+      data.appPassword,
+    );
     if (!isValid) {
-      throw new BadRequestException('Failed to connect to WordPress site. Please check credentials.');
+      throw new BadRequestException(
+        'Failed to connect to WordPress site. Please check credentials.',
+      );
     }
 
     // Encrypt the app password
@@ -97,7 +193,7 @@ export class WordpressService implements OnModuleInit {
       .values({
         userId,
         name: data.name,
-        url: data.url.replace(/\/$/, ''), // Remove trailing slash
+        url: normalizedUrl,
         username: data.username,
         appPasswordEncrypted: encryptedPassword,
         status: 'CONNECTED',
@@ -111,26 +207,39 @@ export class WordpressService implements OnModuleInit {
     return site;
   }
 
-  async testConnection(url: string, username: string, appPassword: string): Promise<boolean> {
+  async testConnection(
+    url: string,
+    username: string,
+    appPassword: string,
+  ): Promise<boolean> {
     try {
       const auth = Buffer.from(`${username}:${appPassword}`).toString('base64');
-      const apiUrl = `${url}/wp-json/wp/v2/users/me`;
+      const apiUrl = `${this.normalizeSiteUrl(url)}/wp-json/wp/v2/users/me`;
       this.logger.log(`Testing connection to: ${apiUrl}`);
 
-      const response = await axios.get(apiUrl, {
-        headers: { Authorization: `Basic ${auth}` },
-        timeout: 10000,
-      });
+      const response = await this.retryWpRequest(
+        () =>
+          axios.get(apiUrl, {
+            headers: { Authorization: `Basic ${auth}` },
+            timeout: WP_REQUEST_TIMEOUT_MS,
+          }),
+        'testConnection',
+      );
 
       this.logger.log(`Connection test successful: ${response.status}`);
       return response.status === 200;
     } catch (error) {
-      this.logger.error(`Connection test failed for ${url}`);
+      this.logger.error(
+        `Connection test failed for ${url}: ${this.getWpErrorMessage(error)}`,
+      );
       return false;
     }
   }
 
-  async verifySiteConnection(userId: string, siteId: string): Promise<{ connected: boolean; message?: string }> {
+  async verifySiteConnection(
+    userId: string,
+    siteId: string,
+  ): Promise<{ connected: boolean; message?: string }> {
     const site = await this.db.query.wpSite.findFirst({
       where: eq(wpSite.id, siteId),
     });
@@ -138,31 +247,35 @@ export class WordpressService implements OnModuleInit {
     if (!site) throw new NotFoundException('Site not found');
     if (site.userId !== userId) throw new ForbiddenException('Access denied');
 
-    this.logger.log(`Verifying connection for site: ${site.name} (${site.url})`);
+    this.logger.log(
+      `Verifying connection for site: ${site.name} (${site.url})`,
+    );
 
     try {
-      const appPassword = this.encryptionService.decrypt(site.appPasswordEncrypted);
-      const isConnected = await this.testConnection(site.url, site.username, appPassword);
+      const appPassword = this.encryptionService.decrypt(
+        site.appPasswordEncrypted,
+      );
+      const isConnected = await this.testConnection(
+        site.url,
+        site.username,
+        appPassword,
+      );
 
       // Update last health check
+      await this.markSiteHealth(siteId, isConnected);
       if (isConnected) {
-        await this.db
-          .update(wpSite)
-          .set({ status: 'CONNECTED', lastHealthCheck: new Date() })
-          .where(eq(wpSite.id, siteId));
         this.logger.log(`Site ${site.name} connection verified successfully`);
       } else {
-        await this.db
-          .update(wpSite)
-          .set({ status: 'ERROR' })
-          .where(eq(wpSite.id, siteId));
         this.logger.warn(`Site ${site.name} connection test returned false`);
       }
 
       return { connected: isConnected };
     } catch (error: any) {
       const message = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(`verifySiteConnection error for site ${siteId}:`, message);
+      this.logger.error(
+        `verifySiteConnection error for site ${siteId}:`,
+        message,
+      );
       return { connected: false, message };
     }
   }
@@ -181,13 +294,23 @@ export class WordpressService implements OnModuleInit {
     if (site.userId !== userId) throw new ForbiddenException('Access denied');
 
     try {
-      const appPassword = this.encryptionService.decrypt(site.appPasswordEncrypted);
-      const auth = Buffer.from(`${site.username}:${appPassword}`).toString('base64');
+      const appPassword = this.encryptionService.decrypt(
+        site.appPasswordEncrypted,
+      );
+      const auth = Buffer.from(`${site.username}:${appPassword}`).toString(
+        'base64',
+      );
 
       this.logger.log('Fetching categories from WordPress API');
-      const response = await axios.get(`${site.url}/wp-json/wp/v2/categories?per_page=100`, {
-        headers: { Authorization: `Basic ${auth}` },
-      });
+      const response = await this.retryWpRequest(
+        () =>
+          axios.get(`${site.url}/wp-json/wp/v2/categories?per_page=100`, {
+            headers: { Authorization: `Basic ${auth}` },
+            timeout: WP_REQUEST_TIMEOUT_MS,
+          }),
+        'syncCategories',
+        3,
+      );
 
       this.logger.log(`Received ${response.data.length} categories`);
 
@@ -210,21 +333,28 @@ export class WordpressService implements OnModuleInit {
     }
   }
 
-  async publishPost(siteId: string, data: {
-    title: string;
-    content: string;
-    status?: 'draft' | 'publish' | 'private';
-    categoryIds?: number[];
-    featuredImageUrl?: string;
-  }) {
+  async publishPost(
+    siteId: string,
+    data: {
+      title: string;
+      content: string;
+      status?: 'draft' | 'publish' | 'private';
+      categoryIds?: number[];
+      featuredImageUrl?: string;
+    },
+  ) {
     const site = await this.db.query.wpSite.findFirst({
       where: eq(wpSite.id, siteId),
     });
 
     if (!site) throw new NotFoundException('Site not found');
 
-    const appPassword = this.encryptionService.decrypt(site.appPasswordEncrypted);
-    const auth = Buffer.from(`${site.username}:${appPassword}`).toString('base64');
+    const appPassword = this.encryptionService.decrypt(
+      site.appPasswordEncrypted,
+    );
+    const auth = Buffer.from(`${site.username}:${appPassword}`).toString(
+      'base64',
+    );
 
     // Create the post
     const response = await axios.post(
@@ -266,8 +396,12 @@ export class WordpressService implements OnModuleInit {
     });
     if (!site) throw new NotFoundException('Site not found');
 
-    const appPassword = this.encryptionService.decrypt(site.appPasswordEncrypted);
-    const auth = Buffer.from(`${site.username}:${appPassword}`).toString('base64');
+    const appPassword = this.encryptionService.decrypt(
+      site.appPasswordEncrypted,
+    );
+    const auth = Buffer.from(`${site.username}:${appPassword}`).toString(
+      'base64',
+    );
 
     try {
       let buffer: Buffer;
@@ -283,7 +417,9 @@ export class WordpressService implements OnModuleInit {
         filename = `upload-${Date.now()}.${extension}`;
       } else {
         // Fetch external image
-        const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+        const imageResponse = await axios.get(imageUrl, {
+          responseType: 'arraybuffer',
+        });
         buffer = Buffer.from(imageResponse.data, 'binary');
         mimeType = imageResponse.headers['content-type'] || 'image/png';
         filename = `ai-gen-${Date.now()}.png`;
@@ -296,7 +432,7 @@ export class WordpressService implements OnModuleInit {
           width: 1200,
           height: 628,
           fit: 'cover',
-          position: 'center'
+          position: 'center',
         })
         .toBuffer();
 
@@ -310,13 +446,15 @@ export class WordpressService implements OnModuleInit {
             'Content-Type': mimeType,
             'Content-Disposition': `attachment; filename="${filename}"`,
           },
-        }
+        },
       );
 
       return uploadResponse.data.id;
     } catch (error: any) {
       this.logger.error('uploadMediaFromUrl error', error.message);
-      throw new BadRequestException('Failed to process and upload image to WordPress');
+      throw new BadRequestException(
+        'Failed to process and upload image to WordPress',
+      );
     }
   }
 
@@ -331,8 +469,12 @@ export class WordpressService implements OnModuleInit {
     });
     if (!site) throw new NotFoundException('Site not found');
 
-    const appPassword = this.encryptionService.decrypt(site.appPasswordEncrypted);
-    const auth = Buffer.from(`${site.username}:${appPassword}`).toString('base64');
+    const appPassword = this.encryptionService.decrypt(
+      site.appPasswordEncrypted,
+    );
+    const auth = Buffer.from(`${site.username}:${appPassword}`).toString(
+      'base64',
+    );
 
     try {
       // Automatic Cropping to 1200x628
@@ -342,7 +484,7 @@ export class WordpressService implements OnModuleInit {
           width: 1200,
           height: 628,
           fit: 'cover',
-          position: 'center'
+          position: 'center',
         })
         .toBuffer();
 
@@ -355,13 +497,15 @@ export class WordpressService implements OnModuleInit {
             'Content-Type': mimeType,
             'Content-Disposition': `attachment; filename="${filename}"`,
           },
-        }
+        },
       );
 
       return uploadResponse.data.id;
     } catch (error: any) {
       this.logger.error('uploadMediaFromFile error', error.message);
-      throw new BadRequestException('Failed to process and upload image to WordPress');
+      throw new BadRequestException(
+        'Failed to process and upload image to WordPress',
+      );
     }
   }
 
@@ -391,28 +535,46 @@ export class WordpressService implements OnModuleInit {
       );
     }
 
-    this.logger.log(`Publish request - User: ${userId}, ArticleId: ${dto.articleId}, Title: ${dto.title}`);
+    this.logger.log(
+      `Publish request - User: ${userId}, ArticleId: ${dto.articleId}, Title: ${dto.title}`,
+    );
 
     try {
-      const appPassword = this.encryptionService.decrypt(site.appPasswordEncrypted);
-      const auth = Buffer.from(`${site.username}:${appPassword}`).toString('base64');
+      const appPassword = this.encryptionService.decrypt(
+        site.appPasswordEncrypted,
+      );
+      const auth = Buffer.from(`${site.username}:${appPassword}`).toString(
+        'base64',
+      );
 
       // Handle featured image if provided as URL (from AI generation or external source)
       let featuredMediaId: number | undefined;
-      if (dto.featuredImageUrl && (dto.featuredImageUrl.startsWith('http') || dto.featuredImageUrl.startsWith('data:'))) {
+      if (
+        dto.featuredImageUrl &&
+        (dto.featuredImageUrl.startsWith('http') ||
+          dto.featuredImageUrl.startsWith('data:'))
+      ) {
         try {
           this.logger.log('Uploading featured image...');
-          featuredMediaId = await this.uploadMediaFromUrl(site.id, dto.featuredImageUrl);
+          featuredMediaId = await this.uploadMediaFromUrl(
+            site.id,
+            dto.featuredImageUrl,
+          );
           this.logger.log(`Featured image uploaded, ID: ${featuredMediaId}`);
         } catch (imgError) {
-          this.logger.error('Failed to upload featured image, continuing without it', imgError);
+          this.logger.error(
+            'Failed to upload featured image, continuing without it',
+            imgError,
+          );
         }
       }
 
       const postData: WpPostData = {
         title: dto.title,
         content: dto.content,
-        status: (dto.status === 'future' ? 'future' : dto.status || 'draft') as WpPostData['status'],
+        status: (dto.status === 'future'
+          ? 'future'
+          : dto.status || 'draft') as WpPostData['status'],
       };
 
       if (featuredMediaId) {
@@ -432,15 +594,19 @@ export class WordpressService implements OnModuleInit {
 
       this.logger.log(`Publishing to: ${site.url}/wp-json/wp/v2/posts`);
 
-      const response = await axios.post(
-        `${site.url}/wp-json/wp/v2/posts`,
-        postData,
-        {
-          headers: { Authorization: `Basic ${auth}` },
-        }
+      const response = await this.retryWpRequest(
+        () =>
+          axios.post(`${site.url}/wp-json/wp/v2/posts`, postData, {
+            headers: { Authorization: `Basic ${auth}` },
+            timeout: WP_REQUEST_TIMEOUT_MS,
+          }),
+        'publishArticle',
       );
 
+      await this.markSiteHealth(site.id, true);
       this.logger.log(`Success! Post ID: ${response.data.id}`);
+
+      let syncWarning: string | undefined;
 
       // Save to local database
       try {
@@ -458,7 +624,7 @@ export class WordpressService implements OnModuleInit {
           wpSiteId: site.id,
           metaTitle: dto.title,
           slug: response.data.slug,
-          publishedAt: (localStatus === 'PUBLISHED' ? new Date() : null),
+          publishedAt: localStatus === 'PUBLISHED' ? new Date() : null,
           updatedAt: new Date(),
         };
 
@@ -468,7 +634,11 @@ export class WordpressService implements OnModuleInit {
 
         if (dto.articleId) {
           // Update existing article
-          await this.articlesService.update(userId, dto.articleId, articleUpdate);
+          await this.articlesService.update(
+            userId,
+            dto.articleId,
+            articleUpdate,
+          );
         } else {
           // Create new article
           await this.articlesService.create(userId, {
@@ -482,15 +652,20 @@ export class WordpressService implements OnModuleInit {
             wpSiteId: site.id,
             metaTitle: dto.title,
             slug: response.data.slug,
-            feedItemId: (dto.feedItemId && isUuid(dto.feedItemId)) ? dto.feedItemId : undefined,
+            feedItemId:
+              dto.feedItemId && isUuid(dto.feedItemId)
+                ? dto.feedItemId
+                : undefined,
           });
         }
       } catch (dbError: any) {
+        syncWarning = `WordPress post was created but local article sync failed: ${dbError.message}`;
         this.logger.error('Local DB update failed', dbError.message);
       }
 
       return {
         success: true,
+        syncWarning,
         post: {
           id: response.data.id,
           title: response.data.title.rendered,
@@ -500,10 +675,15 @@ export class WordpressService implements OnModuleInit {
         },
       };
     } catch (error: any) {
-      this.logger.error('publishArticle error', error.message);
-      throw new BadRequestException(
-        error.message || 'Failed to publish article to WordPress'
-      );
+      await this.markSiteHealth(site.id, false).catch((healthError: any) => {
+        this.logger.error(
+          'Failed to update WordPress site health',
+          healthError.message,
+        );
+      });
+      const message = this.getWpErrorMessage(error);
+      this.logger.error('publishArticle error', message);
+      throw new BadRequestException(message);
     }
   }
 
@@ -518,8 +698,12 @@ export class WordpressService implements OnModuleInit {
     if (!site) return [];
 
     try {
-      const appPassword = this.encryptionService.decrypt(site.appPasswordEncrypted);
-      const auth = Buffer.from(`${site.username}:${appPassword}`).toString('base64');
+      const appPassword = this.encryptionService.decrypt(
+        site.appPasswordEncrypted,
+      );
+      const auth = Buffer.from(`${site.username}:${appPassword}`).toString(
+        'base64',
+      );
 
       const fetchPosts = async (catId?: number) => {
         let url = `${site.url}/wp-json/wp/v2/posts?per_page=3&status=publish`;
@@ -540,7 +724,9 @@ export class WordpressService implements OnModuleInit {
 
       // Fallback: if category has no posts, fetch generic posts
       if (posts.length === 0 && categoryId) {
-        this.logger.log(`No posts in category ${categoryId}, falling back to recent posts`);
+        this.logger.log(
+          `No posts in category ${categoryId}, falling back to recent posts`,
+        );
         posts = await fetchPosts();
       }
 
@@ -565,7 +751,9 @@ export class WordpressService implements OnModuleInit {
         return;
       }
 
-      this.logger.log(`Found ${scheduledArticles.length} scheduled articles to check.`);
+      this.logger.log(
+        `Found ${scheduledArticles.length} scheduled articles to check.`,
+      );
 
       for (const art of scheduledArticles) {
         if (!art.wpSiteId || !art.wpPostId) continue;
@@ -582,24 +770,36 @@ export class WordpressService implements OnModuleInit {
         const site = wpSiteData[0];
 
         try {
-          const appPassword = this.encryptionService.decrypt(site.appPasswordEncrypted);
-          const auth = Buffer.from(`${site.username}:${appPassword}`).toString('base64');
+          const appPassword = this.encryptionService.decrypt(
+            site.appPasswordEncrypted,
+          );
+          const auth = Buffer.from(`${site.username}:${appPassword}`).toString(
+            'base64',
+          );
 
           // Check post status on WordPress
-          const response = await axios.get(`${site.url}/wp-json/wp/v2/posts/${art.wpPostId}`, {
-            headers: { Authorization: `Basic ${auth}` },
-            timeout: 5000,
-          });
+          const response = await axios.get(
+            `${site.url}/wp-json/wp/v2/posts/${art.wpPostId}`,
+            {
+              headers: { Authorization: `Basic ${auth}` },
+              timeout: 5000,
+            },
+          );
 
           if (response.data.status === 'publish') {
-            this.logger.log(`Article ${art.id} is now PUBLISHED on WordPress. Updating local status.`);
+            this.logger.log(
+              `Article ${art.id} is now PUBLISHED on WordPress. Updating local status.`,
+            );
             await this.articlesService.updateStatus(art.id, 'PUBLISHED', {
               wpPostId: String(response.data.id),
-              wpPostUrl: response.data.link
+              wpPostUrl: response.data.link,
             });
           }
         } catch (err: any) {
-          this.logger.error(`Failed to check status for article ${art.id}`, err.message);
+          this.logger.error(
+            `Failed to check status for article ${art.id}`,
+            err.message,
+          );
         }
       }
     } catch (error: any) {

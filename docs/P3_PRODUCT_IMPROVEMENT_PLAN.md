@@ -475,7 +475,7 @@ Checkpoints:
 
 ### 18. WordPress integration robustness
 
-Status: **PENDING**
+Status: **DONE (baseline)**
 
 Goal:
 
@@ -483,12 +483,20 @@ Goal:
 
 Tasks:
 
-- [ ] Add periodic connection test.
-- [ ] Add category sync retry.
-- [ ] Add publish rollback/status reconciliation.
-- [ ] Improve error reason shown to user.
-- [ ] Store last WP connectivity status.
+- [x] Add periodic connection test baseline via `verifySiteConnection`/scheduled sync hooks.
+- [x] Add category sync retry.
+- [x] Add publish rollback/status reconciliation baseline.
+- [x] Improve error reason shown to user.
+- [x] Store last WP connectivity status.
 - [ ] Store last sync/publish error code and message.
+
+Implementation notes:
+
+- WordPress requests now use timeout + retry for transient failures.
+- `verifySiteConnection` and publish success/failure update `status` and `lastHealthCheck`.
+- Publish returns `syncWarning` when remote post exists but local article sync fails.
+- Friendly errors cover auth, missing REST endpoint, rate limit, timeout, unreachable host, and server errors.
+- Full last error code/message needs DB columns/migration later.
 
 Failure modes to handle:
 
@@ -691,10 +699,11 @@ P3:
   - role/admin permission audit
   - E2E smoke test
   - AI cost control baseline
+  - WordPress robustness baseline
 - Pending:
   - dashboard loading/error states
-  - WordPress robustness
   - true user-level currency spending cap
+  - full WordPress last-error DB fields
 
 ## Next recommended order
 
