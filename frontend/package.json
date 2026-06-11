@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "api:generate": "node scripts/generate-api-client.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
