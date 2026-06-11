@@ -204,23 +204,31 @@ export const apiKey = pgTable('api_key', {
 // WORDPRESS SITES
 // ==========================================
 
-export const wpSite = pgTable('wp_site', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: text('user_id')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-  name: varchar('name', { length: 255 }).notNull(),
-  url: text('url').notNull(),
-  username: varchar('username', { length: 255 }).notNull(),
-  appPasswordEncrypted: text('app_password_encrypted').notNull(),
-  status: wpSiteStatusEnum('status').default('PENDING'),
-  categoriesCache: jsonb('categories_cache').default([]),
-  lastHealthCheck: timestamp('last_health_check'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
-}, (table) => ({
-  userIdIdx: index('wp_site_user_id_idx').on(table.userId),
-}));
+export const wpSite = pgTable(
+  'wp_site',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    name: varchar('name', { length: 255 }).notNull(),
+    url: text('url').notNull(),
+    username: varchar('username', { length: 255 }).notNull(),
+    appPasswordEncrypted: text('app_password_encrypted').notNull(),
+    status: wpSiteStatusEnum('status').default('PENDING'),
+    categoriesCache: jsonb('categories_cache').default([]),
+    lastHealthCheck: timestamp('last_health_check'),
+    lastErrorCode: varchar('last_error_code', { length: 100 }),
+    lastErrorMessage: text('last_error_message'),
+    lastErrorAt: timestamp('last_error_at'),
+    lastErrorOperation: varchar('last_error_operation', { length: 100 }),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    userIdIdx: index('wp_site_user_id_idx').on(table.userId),
+  }),
+);
 
 export const categoryMapping = pgTable(
   'category_mapping',
@@ -247,83 +255,95 @@ export const categoryMapping = pgTable(
 // RSS FEEDS
 // ==========================================
 
-export const feed = pgTable('feed', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: text('user_id')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-  name: varchar('name', { length: 255 }).notNull(),
-  url: text('url').notNull(),
-  pollingIntervalMinutes: integer('polling_interval_minutes').default(15),
-  autoPublish: boolean('auto_publish').default(false),
-  defaultWpSiteId: uuid('default_wp_site_id').references(() => wpSite.id, {
-    onDelete: 'set null',
+export const feed = pgTable(
+  'feed',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    name: varchar('name', { length: 255 }).notNull(),
+    url: text('url').notNull(),
+    pollingIntervalMinutes: integer('polling_interval_minutes').default(15),
+    autoPublish: boolean('auto_publish').default(false),
+    defaultWpSiteId: uuid('default_wp_site_id').references(() => wpSite.id, {
+      onDelete: 'set null',
+    }),
+    status: feedStatusEnum('status').default('ACTIVE'),
+    lastPolledAt: timestamp('last_polled_at'),
+    itemsFetched: integer('items_fetched').default(0),
+    successRate: real('success_rate').default(100),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    userIdIdx: index('feed_user_id_idx').on(table.userId),
+    statusIdx: index('feed_status_idx').on(table.status),
   }),
-  status: feedStatusEnum('status').default('ACTIVE'),
-  lastPolledAt: timestamp('last_polled_at'),
-  itemsFetched: integer('items_fetched').default(0),
-  successRate: real('success_rate').default(100),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
-}, (table) => ({
-  userIdIdx: index('feed_user_id_idx').on(table.userId),
-  statusIdx: index('feed_status_idx').on(table.status),
-}));
+);
 
-export const feedItem = pgTable('feed_item', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  feedId: uuid('feed_id')
-    .notNull()
-    .references(() => feed.id, { onDelete: 'cascade' }),
-  guid: text('guid').notNull().unique(),
-  title: text('title').notNull(),
-  url: text('url').notNull(),
-  contentPreview: text('content_preview'),
-  status: feedItemStatusEnum('status').default('PENDING'),
-  publishedAt: timestamp('published_at'),
-  fetchedAt: timestamp('fetched_at').notNull().defaultNow(),
-}, (table) => ({
-  feedIdIdx: index('feed_item_feed_id_idx').on(table.feedId),
-  statusIdx: index('feed_item_status_idx').on(table.status),
-}));
+export const feedItem = pgTable(
+  'feed_item',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    feedId: uuid('feed_id')
+      .notNull()
+      .references(() => feed.id, { onDelete: 'cascade' }),
+    guid: text('guid').notNull().unique(),
+    title: text('title').notNull(),
+    url: text('url').notNull(),
+    contentPreview: text('content_preview'),
+    status: feedItemStatusEnum('status').default('PENDING'),
+    publishedAt: timestamp('published_at'),
+    fetchedAt: timestamp('fetched_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    feedIdIdx: index('feed_item_feed_id_idx').on(table.feedId),
+    statusIdx: index('feed_item_status_idx').on(table.status),
+  }),
+);
 
 // ==========================================
 // ARTICLES
 // ==========================================
 
-export const article = pgTable('article', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: text('user_id')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-  feedItemId: uuid('feed_item_id').references(() => feedItem.id, {
-    onDelete: 'set null',
+export const article = pgTable(
+  'article',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    feedItemId: uuid('feed_item_id').references(() => feedItem.id, {
+      onDelete: 'set null',
+    }),
+    wpSiteId: uuid('wp_site_id').references(() => wpSite.id, {
+      onDelete: 'set null',
+    }),
+    sourceUrl: text('source_url').notNull(),
+    originalContent: text('original_content').notNull(),
+    generatedContent: text('generated_content').notNull(),
+    title: text('title').notNull(),
+    metaTitle: varchar('meta_title', { length: 255 }),
+    metaDescription: text('meta_description'),
+    slug: varchar('slug', { length: 255 }),
+    featuredImageUrl: text('featured_image_url'),
+    status: articleStatusEnum('status').default('DRAFT'),
+    wpPostId: varchar('wp_post_id', { length: 50 }),
+    wpPostUrl: text('wp_post_url'),
+    tokensUsed: real('tokens_used').default(0),
+    seoData: jsonb('seo_data').default({}),
+    versions: jsonb('versions').default([]),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+    publishedAt: timestamp('published_at'),
+  },
+  (table) => ({
+    userIdIdx: index('article_user_id_idx').on(table.userId),
+    statusIdx: index('article_status_idx').on(table.status),
+    createdAtIdx: index('article_created_at_idx').on(table.createdAt),
   }),
-  wpSiteId: uuid('wp_site_id').references(() => wpSite.id, {
-    onDelete: 'set null',
-  }),
-  sourceUrl: text('source_url').notNull(),
-  originalContent: text('original_content').notNull(),
-  generatedContent: text('generated_content').notNull(),
-  title: text('title').notNull(),
-  metaTitle: varchar('meta_title', { length: 255 }),
-  metaDescription: text('meta_description'),
-  slug: varchar('slug', { length: 255 }),
-  featuredImageUrl: text('featured_image_url'),
-  status: articleStatusEnum('status').default('DRAFT'),
-  wpPostId: varchar('wp_post_id', { length: 50 }),
-  wpPostUrl: text('wp_post_url'),
-  tokensUsed: real('tokens_used').default(0),
-  seoData: jsonb('seo_data').default({}),
-  versions: jsonb('versions').default([]),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
-  publishedAt: timestamp('published_at'),
-}, (table) => ({
-  userIdIdx: index('article_user_id_idx').on(table.userId),
-  statusIdx: index('article_status_idx').on(table.status),
-  createdAtIdx: index('article_created_at_idx').on(table.createdAt),
-}));
+);
 
 // ==========================================
 // BILLING & TOKENS
@@ -341,80 +361,101 @@ export const tokenBalance = pgTable('token_balance', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
-export const transaction = pgTable('transaction', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: text('user_id')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-  type: transactionTypeEnum('type').notNull(),
-  amount: real('amount').notNull(), // In dollars
-  tokens: real('tokens').notNull(),
-  stripePaymentId: varchar('stripe_payment_id', { length: 255 }),
-  status: transactionStatusEnum('status').default('PENDING'),
-  metadata: jsonb('metadata').default({}),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-}, (table) => ({
-  userIdIdx: index('transaction_user_id_idx').on(table.userId),
-  createdAtIdx: index('transaction_created_at_idx').on(table.createdAt),
-}));
+export const transaction = pgTable(
+  'transaction',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    type: transactionTypeEnum('type').notNull(),
+    amount: real('amount').notNull(), // In dollars
+    tokens: real('tokens').notNull(),
+    stripePaymentId: varchar('stripe_payment_id', { length: 255 }),
+    status: transactionStatusEnum('status').default('PENDING'),
+    metadata: jsonb('metadata').default({}),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    userIdIdx: index('transaction_user_id_idx').on(table.userId),
+    createdAtIdx: index('transaction_created_at_idx').on(table.createdAt),
+  }),
+);
 
-export const subscription = pgTable('subscription', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: text('user_id')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-  plan: subscriptionPlanEnum('plan').notNull().default('FREE'),
-  stripeSubscriptionId: varchar('stripe_subscription_id', { length: 255 }),
-  status: subscriptionStatusEnum('status').default('ACTIVE'),
-  tokensPerMonth: integer('tokens_per_month').notNull().default(0),
-  currentPeriodStart: timestamp('current_period_start').notNull().defaultNow(),
-  currentPeriodEnd: timestamp('current_period_end').notNull().defaultNow(),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
-  canceledAt: timestamp('canceled_at'),
-}, (table) => ({
-  userIdStatusIdx: index('subscription_user_id_status_idx').on(table.userId, table.status),
-}));
+export const subscription = pgTable(
+  'subscription',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    plan: subscriptionPlanEnum('plan').notNull().default('FREE'),
+    stripeSubscriptionId: varchar('stripe_subscription_id', { length: 255 }),
+    status: subscriptionStatusEnum('status').default('ACTIVE'),
+    tokensPerMonth: integer('tokens_per_month').notNull().default(0),
+    currentPeriodStart: timestamp('current_period_start')
+      .notNull()
+      .defaultNow(),
+    currentPeriodEnd: timestamp('current_period_end').notNull().defaultNow(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+    canceledAt: timestamp('canceled_at'),
+  },
+  (table) => ({
+    userIdStatusIdx: index('subscription_user_id_status_idx').on(
+      table.userId,
+      table.status,
+    ),
+  }),
+);
 
 // ==========================================
 // NOTIFICATIONS
 // ==========================================
 
-export const notification = pgTable('notification', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: text('user_id')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-  type: notificationTypeEnum('type').notNull(),
-  title: varchar('title', { length: 255 }).notNull(),
-  message: text('message').notNull(),
-  data: jsonb('data').default({}),
-  isRead: boolean('is_read').default(false),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-}, (table) => ({
-  userIdIdx: index('notification_user_id_idx').on(table.userId),
-  createdAtIdx: index('notification_created_at_idx').on(table.createdAt),
-}));
+export const notification = pgTable(
+  'notification',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    type: notificationTypeEnum('type').notNull(),
+    title: varchar('title', { length: 255 }).notNull(),
+    message: text('message').notNull(),
+    data: jsonb('data').default({}),
+    isRead: boolean('is_read').default(false),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    userIdIdx: index('notification_user_id_idx').on(table.userId),
+    createdAtIdx: index('notification_created_at_idx').on(table.createdAt),
+  }),
+);
 
 // ==========================================
 // DAILY USAGE LIMITS
 // ==========================================
 
-export const dailyUsage = pgTable('daily_usage', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: text('user_id')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-  date: timestamp('date').notNull().defaultNow(), // Intended to store just the date part ideally
-  featureType: featureTypeEnum('feature_type').notNull(),
-  count: integer('count').default(0),
-}, (table) => ({
-  uniqueDailyUserFeature: uniqueIndex('unique_daily_user_feature').on(
-    table.userId,
-    table.date,
-    table.featureType
-  ),
-}));
+export const dailyUsage = pgTable(
+  'daily_usage',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    date: timestamp('date').notNull().defaultNow(), // Intended to store just the date part ideally
+    featureType: featureTypeEnum('feature_type').notNull(),
+    count: integer('count').default(0),
+  },
+  (table) => ({
+    uniqueDailyUserFeature: uniqueIndex('unique_daily_user_feature').on(
+      table.userId,
+      table.date,
+      table.featureType,
+    ),
+  }),
+);
 
 // ==========================================
 // VIEW BOOST TABLE
@@ -440,26 +481,30 @@ export const viewBoostJobs = pgTable('view_boost_jobs', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
-export const instagramProject = pgTable('instagram_project', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: text('user_id')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-  title: varchar('title', { length: 255 }).notNull(),
-  sourceUrl: text('source_url'),
-  sourceContent: text('source_content'),
-  globalStyle: varchar('global_style', { length: 100 }),
-  fontFamily: varchar('font_family', { length: 100 }).default('Montserrat'),
-  templateId: varchar('template_id', { length: 100 }),
-  totalSlides: integer('total_slides').default(0),
-  status: varchar('status', { length: 50 }).default('draft'),
-  batchJobId: varchar('batch_job_id', { length: 100 }),
-  batchStatus: varchar('batch_status', { length: 50 }).default('idle'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
-}, (table) => ({
-  userIdIdx: index('instagram_project_user_id_idx').on(table.userId),
-}));
+export const instagramProject = pgTable(
+  'instagram_project',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    title: varchar('title', { length: 255 }).notNull(),
+    sourceUrl: text('source_url'),
+    sourceContent: text('source_content'),
+    globalStyle: varchar('global_style', { length: 100 }),
+    fontFamily: varchar('font_family', { length: 100 }).default('Montserrat'),
+    templateId: varchar('template_id', { length: 100 }),
+    totalSlides: integer('total_slides').default(0),
+    status: varchar('status', { length: 50 }).default('draft'),
+    batchJobId: varchar('batch_job_id', { length: 100 }),
+    batchStatus: varchar('batch_status', { length: 50 }).default('idle'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    userIdIdx: index('instagram_project_user_id_idx').on(table.userId),
+  }),
+);
 
 export const instagramSlide = pgTable('instagram_slide', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -492,50 +537,58 @@ export const stylePreset = pgTable('style_preset', {
 // VIDEO SCRIPT GENERATOR
 // ==========================================
 
-export const scriptProject = pgTable('script_project', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: text('user_id')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-  title: varchar('title', { length: 255 }).notNull(),
-  sourceUrl: text('source_url'),
-  sourceContent: text('source_content'),
-  headline: varchar('headline', { length: 255 }),
-  subHeadline: varchar('sub_headline', { length: 255 }),
-  caption: text('caption'),
-  hook: text('hook'),
-  thumbnailPrompt: text('thumbnail_prompt'),
-  thumbnailUrl: text('thumbnail_url'),
-  musicSuggestion: text('music_suggestion'),
-  hashtags: jsonb('hashtags').default([]),
-  targetDurationSeconds: integer('target_duration_seconds'),
-  status: varchar('status', { length: 50 }).default('draft'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
-}, (table) => ({
-  userIdIdx: index('script_project_user_id_idx').on(table.userId),
-  createdAtIdx: index('script_project_created_at_idx').on(table.createdAt),
-}));
+export const scriptProject = pgTable(
+  'script_project',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    title: varchar('title', { length: 255 }).notNull(),
+    sourceUrl: text('source_url'),
+    sourceContent: text('source_content'),
+    headline: varchar('headline', { length: 255 }),
+    subHeadline: varchar('sub_headline', { length: 255 }),
+    caption: text('caption'),
+    hook: text('hook'),
+    thumbnailPrompt: text('thumbnail_prompt'),
+    thumbnailUrl: text('thumbnail_url'),
+    musicSuggestion: text('music_suggestion'),
+    hashtags: jsonb('hashtags').default([]),
+    targetDurationSeconds: integer('target_duration_seconds'),
+    status: varchar('status', { length: 50 }).default('draft'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    userIdIdx: index('script_project_user_id_idx').on(table.userId),
+    createdAtIdx: index('script_project_created_at_idx').on(table.createdAt),
+  }),
+);
 
-export const scriptScene = pgTable('script_scene', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  projectId: uuid('project_id')
-    .notNull()
-    .references(() => scriptProject.id, { onDelete: 'cascade' }),
-  sceneNumber: integer('scene_number').notNull(),
-  visualContext: text('visual_context').notNull(),
-  voiceoverText: text('voiceover_text').notNull(),
-  estimatedDuration: integer('estimated_duration'), // in seconds, optional
-  emoji: varchar('emoji', { length: 10 }), // Scene mood emoji
-  footageSearches: jsonb('footage_searches').default([]),
-  brollPrompt: text('broll_prompt'), // Detailed English prompt for AI image gen / b-roll
-  selectedFootage: jsonb('selected_footage').default([]), // User-selected footage attached to scene
-  directorNotes: text('director_notes'), // Free-form notes for editors / collaborators
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
-}, (table) => ({
-  projectIdIdx: index('script_scene_project_id_idx').on(table.projectId),
-}));
+export const scriptScene = pgTable(
+  'script_scene',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => scriptProject.id, { onDelete: 'cascade' }),
+    sceneNumber: integer('scene_number').notNull(),
+    visualContext: text('visual_context').notNull(),
+    voiceoverText: text('voiceover_text').notNull(),
+    estimatedDuration: integer('estimated_duration'), // in seconds, optional
+    emoji: varchar('emoji', { length: 10 }), // Scene mood emoji
+    footageSearches: jsonb('footage_searches').default([]),
+    brollPrompt: text('broll_prompt'), // Detailed English prompt for AI image gen / b-roll
+    selectedFootage: jsonb('selected_footage').default([]), // User-selected footage attached to scene
+    directorNotes: text('director_notes'), // Free-form notes for editors / collaborators
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    projectIdIdx: index('script_scene_project_id_idx').on(table.projectId),
+  }),
+);
 
 // ==========================================
 // SOCIAL MEDIA ACCOUNTS
@@ -716,45 +769,55 @@ export const scheduledContent = pgTable('scheduled_content', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
-export const scheduledContentRelations = relations(scheduledContent, ({ one }) => ({
-  user: one(user, {
-    fields: [scheduledContent.userId],
-    references: [user.id],
+export const scheduledContentRelations = relations(
+  scheduledContent,
+  ({ one }) => ({
+    user: one(user, {
+      fields: [scheduledContent.userId],
+      references: [user.id],
+    }),
   }),
-}));
+);
 
 // ==========================================
 // CONTENT ANALYTICS (Views, Clicks, Engagement)
 // ==========================================
 
-export const contentAnalytics = pgTable('content_analytics', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: text('user_id')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-  contentType: varchar('content_type', { length: 50 }).notNull(), // 'article', 'carousel', 'video_script'
-  contentId: uuid('content_id').notNull(),
-  date: timestamp('date').notNull().defaultNow(),
-  views: integer('views').default(0),
-  clicks: integer('clicks').default(0),
-  engagement: integer('engagement').default(0), // likes, comments, shares
-  platform: varchar('platform', { length: 50 }), // where it was published
-  metadata: jsonb('metadata'), // additional metrics
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
-}, (table) => ({
-  uniqueContentDate: uniqueIndex('unique_content_date').on(
-    table.contentId,
-    table.date
-  ),
-}));
-
-export const contentAnalyticsRelations = relations(contentAnalytics, ({ one }) => ({
-  user: one(user, {
-    fields: [contentAnalytics.userId],
-    references: [user.id],
+export const contentAnalytics = pgTable(
+  'content_analytics',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    contentType: varchar('content_type', { length: 50 }).notNull(), // 'article', 'carousel', 'video_script'
+    contentId: uuid('content_id').notNull(),
+    date: timestamp('date').notNull().defaultNow(),
+    views: integer('views').default(0),
+    clicks: integer('clicks').default(0),
+    engagement: integer('engagement').default(0), // likes, comments, shares
+    platform: varchar('platform', { length: 50 }), // where it was published
+    metadata: jsonb('metadata'), // additional metrics
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    uniqueContentDate: uniqueIndex('unique_content_date').on(
+      table.contentId,
+      table.date,
+    ),
   }),
-}));
+);
+
+export const contentAnalyticsRelations = relations(
+  contentAnalytics,
+  ({ one }) => ({
+    user: one(user, {
+      fields: [contentAnalytics.userId],
+      references: [user.id],
+    }),
+  }),
+);
 
 // ==========================================
 // RENDER PRESETS (User-saved template configs)
@@ -762,7 +825,9 @@ export const contentAnalyticsRelations = relations(contentAnalytics, ({ one }) =
 
 export const renderPresets = pgTable('render_presets', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
   templateId: varchar('template_id', { length: 100 }).notNull(),
   name: varchar('name', { length: 255 }).notNull(),
   props: jsonb('props').notNull(),
@@ -791,7 +856,9 @@ export const renderJobStatusEnum = pgEnum('render_job_status', [
 
 export const renderJobs = pgTable('render_jobs', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
   type: varchar('type', { length: 50 }).notNull(), // 'template' | 'caption' | 'compose'
   status: renderJobStatusEnum('status').notNull().default('queued'),
   input: jsonb('input').notNull(), // render params (templateId, props, options, etc.)
@@ -827,7 +894,9 @@ export const videoClipStatusEnum = pgEnum('video_clip_status', [
 
 export const videoClipProjects = pgTable('video_clip_projects', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
   title: varchar('title', { length: 255 }).notNull(),
   sourceUrl: text('source_url').notNull(),
   status: videoClipStatusEnum('status').notNull().default('created'),
@@ -846,16 +915,21 @@ export const videoClipProjects = pgTable('video_clip_projects', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
-export const videoClipProjectsRelations = relations(videoClipProjects, ({ one }) => ({
-  user: one(user, {
-    fields: [videoClipProjects.userId],
-    references: [user.id],
+export const videoClipProjectsRelations = relations(
+  videoClipProjects,
+  ({ one }) => ({
+    user: one(user, {
+      fields: [videoClipProjects.userId],
+      references: [user.id],
+    }),
   }),
-}));
+);
 
 export const videoClipPreset = pgTable('video_clip_preset', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
   name: varchar('name', { length: 100 }).notNull(),
   description: text('description'),
   // Stored configuration: subtitle style, title style, aspect ratio, crop offset, b-roll defaults
@@ -867,7 +941,9 @@ export const videoClipPreset = pgTable('video_clip_preset', {
 
 export const contentTemplate = pgTable('content_template', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
   name: varchar('name', { length: 100 }).notNull(),
   description: text('description'),
   config: jsonb('config').notNull(),

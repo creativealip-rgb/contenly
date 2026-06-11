@@ -495,7 +495,7 @@ Tasks:
 - [x] Add publish rollback/status reconciliation baseline.
 - [x] Improve error reason shown to user.
 - [x] Store last WP connectivity status.
-- [ ] Store last sync/publish error code and message.
+- [x] Store last sync/publish error code and message.
 
 Implementation notes:
 
@@ -503,7 +503,7 @@ Implementation notes:
 - `verifySiteConnection` and publish success/failure update `status` and `lastHealthCheck`.
 - Publish returns `syncWarning` when remote post exists but local article sync fails.
 - Friendly errors cover auth, missing REST endpoint, rate limit, timeout, unreachable host, and server errors.
-- Full last error code/message needs DB columns/migration later.
+- Last error tracking uses `last_error_code`, `last_error_message`, `last_error_at`, and `last_error_operation` on `wp_site`.
 
 Failure modes to handle:
 
@@ -710,7 +710,7 @@ P3:
   - AI cost control baseline
   - WordPress robustness baseline
 - Pending:
-  - full WordPress last-error DB fields
+  - none for P3 baseline
 
 ## Next recommended order
 

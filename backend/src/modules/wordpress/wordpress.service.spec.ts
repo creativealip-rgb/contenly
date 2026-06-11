@@ -278,7 +278,15 @@ describe('WordpressService credential encryption', () => {
     ).rejects.toThrow('WordPress authentication failed');
 
     expect(db.set).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'ERROR' }),
+      expect.objectContaining({
+        status: 'ERROR',
+        lastErrorCode: '401',
+        lastErrorMessage: expect.stringContaining(
+          'WordPress authentication failed',
+        ),
+        lastErrorAt: expect.any(Date),
+        lastErrorOperation: 'publishArticle',
+      }),
     );
   });
 

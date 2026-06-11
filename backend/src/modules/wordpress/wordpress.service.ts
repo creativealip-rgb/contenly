@@ -128,16 +128,43 @@ export class WordpressService implements OnModuleInit {
     throw lastError;
   }
 
+  private getWpErrorCode(error: any): string {
+    return (
+      error?.response?.data?.code ||
+      error?.response?.status?.toString() ||
+      error?.code ||
+      'WP_UNKNOWN_ERROR'
+    );
+  }
+
   private async markSiteHealth(
     siteId: string,
     connected: boolean,
+    error?: any,
+    operation?: string,
   ): Promise<void> {
+    const now = new Date();
     await this.db
       .update(wpSite)
-      .set({
-        status: connected ? 'CONNECTED' : 'ERROR',
-        lastHealthCheck: new Date(),
-      })
+      .set(
+        connected
+          ? {
+              status: 'CONNECTED',
+              lastHealthCheck: now,
+              lastErrorCode: null,
+              lastErrorMessage: null,
+              lastErrorAt: null,
+              lastErrorOperation: null,
+            }
+          : {
+              status: 'ERROR',
+              lastHealthCheck: now,
+              lastErrorCode: this.getWpErrorCode(error),
+              lastErrorMessage: this.getWpErrorMessage(error),
+              lastErrorAt: now,
+              lastErrorOperation: operation || 'unknown',
+            },
+      )
       .where(eq(wpSite.id, siteId));
   }
 
@@ -151,6 +178,10 @@ export class WordpressService implements OnModuleInit {
         username: true,
         status: true,
         lastHealthCheck: true,
+        lastErrorCode: true,
+        lastErrorMessage: true,
+        lastErrorAt: true,
+        lastErrorOperation: true,
         createdAt: true,
       },
     });
@@ -262,7 +293,12 @@ export class WordpressService implements OnModuleInit {
       );
 
       // Update last health check
-      await this.markSiteHealth(siteId, isConnected);
+      await this.markSiteHealth(
+        siteId,
+        isConnected,
+        isConnected ? undefined : new Error('Connection test failed'),
+        'verifySiteConnection',
+      );
       if (isConnected) {
         this.logger.log(`Site ${site.name} connection verified successfully`);
       } else {
@@ -675,12 +711,14 @@ export class WordpressService implements OnModuleInit {
         },
       };
     } catch (error: any) {
-      await this.markSiteHealth(site.id, false).catch((healthError: any) => {
-        this.logger.error(
-          'Failed to update WordPress site health',
-          healthError.message,
-        );
-      });
+      await this.markSiteHealth(site.id, false, error, 'publishArticle').catch(
+        (healthError: any) => {
+          this.logger.error(
+            'Failed to update WordPress site health',
+            healthError.message,
+          );
+        },
+      );
       const message = this.getWpErrorMessage(error);
       this.logger.error('publishArticle error', message);
       throw new BadRequestException(message);
