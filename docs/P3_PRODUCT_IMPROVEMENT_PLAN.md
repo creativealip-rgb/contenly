@@ -1,4 +1,4 @@
-# P3 Product Improvement Plan
+# Contenly Priority Fix + Improvement Plan (P0-P3)
 
 ## Current baseline
 
@@ -9,7 +9,7 @@ Production status:
 - Database health reports `connected`.
 - Dokploy Raw deploy works using GitHub build context.
 
-Completed before this P3 plan:
+Completed already:
 
 - Backend build blocker fixed.
 - Backend build passes.
@@ -25,7 +25,314 @@ Completed before this P3 plan:
   - kept Traefik network routing
 - Runtime `AuthGuard` DI crash fixed with optional dependency.
 
-## Queue robustness area
+## P0 — Must fix immediately
+
+### 1. Backend build failed
+
+Status: **DONE**
+
+Problem:
+
+- Missing package: `@aws-sdk/client-s3`.
+- Fresh deploy could fail.
+
+Expected fix:
+
+```bash
+cd backend
+npm install @aws-sdk/client-s3
+npm run build
+```
+
+Current result:
+
+- Dependency/build issue fixed.
+- Backend build passes.
+- Production deploy completed successfully.
+
+### 2. Weak `/tmp` auth validation
+
+Status: **DONE**
+
+File:
+
+- `backend/src/main.ts`
+
+Problem:
+
+```ts
+cookies.includes('better-auth.session_token')
+```
+
+This only checked cookie name, not session validity.
+
+Impact:
+
+- `/tmp` file access could be opened with fake cookie name.
+
+Fix completed:
+
+- Added real Better Auth session validation through `auth.api.getSession()`.
+- Added middleware:
+  - `backend/src/config/tmp-auth.middleware.ts`
+- Added middleware test:
+  - `backend/src/config/tmp-auth.middleware.spec.ts`
+
+### 3. CORS used `startsWith`
+
+Status: **DONE**
+
+File:
+
+- `backend/src/main.ts`
+
+Problem:
+
+```ts
+origin.startsWith(allowedOrigin)
+```
+
+Impact:
+
+- Similar-looking origin could pass.
+
+Fix completed:
+
+- Switched to exact origin whitelist matching.
+
+### 4. Frontend lint had real bugs
+
+Status: **DONE**
+
+Important files:
+
+- `frontend/src/app/(dashboard)/settings/page.tsx`
+- `frontend/src/components/ui/confirm-dialog.tsx`
+- `frontend/src/app/(dashboard)/content-lab/components/sections/RSSFeedSection.tsx`
+
+Problems:
+
+- Function used before declaration.
+- Direct state mutation.
+- `Date.now()` during render.
+
+Impact:
+
+- UI bugs and strange rerenders.
+
+Fix completed:
+
+- Real lint/runtime bug patterns cleaned before cosmetic lint cleanup.
+- Final frontend lint result: `0 errors`, `0 warnings`.
+
+## P1 — Important for production stability
+
+### 5. Clean up `any` in API layer
+
+Status: **PARTIAL**
+
+Files/areas:
+
+- `frontend/src/lib/api.ts`
+- `frontend/src/hooks/*.ts`
+- backend guards/interceptors
+
+Impact:
+
+- Wrong payloads may not fail at compile time.
+
+Target fix:
+
+- Add shared types/Zod schema for request/response.
+
+Current progress:
+
+- Several risky `any` usages removed during lint cleanup.
+- Backend guard/request typing improved.
+- Full shared API contract/Zod layer is still pending.
+
+### 6. Public uploads hardening
+
+Status: **DONE / baseline hardened**
+
+File:
+
+- `backend/src/main.ts`
+
+Problem:
+
+```ts
+app.use('/uploads', expressStatic.static(...))
+```
+
+Target fix:
+
+- Allowlist MIME.
+- Allowlist extension.
+- Random filename.
+- Max size.
+- Block HTML/SVG if not required.
+- Validate image content.
+
+Current progress:
+
+- Upload/public risk hardened enough for P1 baseline.
+- Future audit can add deeper content scanning if needed.
+
+### 7. Secrets/env validation not strong enough
+
+Status: **PENDING**
+
+Problem:
+
+- App can start with empty/wrong env until runtime error.
+
+Target fix:
+
+- Zod/Joi schema validation on startup.
+- Required env examples:
+  - `DATABASE_URL`
+  - `REDIS_HOST`
+  - `BETTER_AUTH_SECRET`
+  - `OPENAI_API_KEY`
+  - `FRONTEND_URL`
+
+### 8. Backend integration tests not enough
+
+Status: **PARTIAL**
+
+Previous state:
+
+- 35 tests passed.
+
+Current state before final deploy cycle:
+
+- Backend tests were expanded and passed:
+  - 10 suites
+  - 57 tests
+
+Still needed:
+
+- Auth/session integration tests.
+- Billing token debit/refund integration tests.
+- Article publish integration tests.
+- WordPress credential encryption integration tests.
+- RSS polling integration tests.
+- AI failure handling integration tests.
+
+### 9. Frontend lint to 0 errors
+
+Status: **DONE**
+
+Previous state:
+
+```txt
+112 errors, 128 warnings
+```
+
+Fix areas:
+
+- No direct state mutation.
+- Hook deps.
+- No impure render.
+- No unescaped entities.
+- No unused imports.
+- Reduced `any`.
+
+Final result:
+
+```txt
+0 errors
+0 warnings
+```
+
+## P2 — Quality + maintainability
+
+### 10. Stack documentation not synced
+
+Status: **DONE**
+
+Problem:
+
+- `README.md` vs `docs/architecture.md` mismatch:
+  - Next 16 vs Next 15+
+  - Bull vs BullMQ
+  - OpenAI vs OpenRouter
+
+Fix completed:
+
+- Docs aligned with `package.json` and actual code.
+
+Touched docs include:
+
+- `docs/architecture.md`
+- `docs/deployment.md`
+- `docs/video-studio-update.md`
+- `camedia-ai.md`
+- `DEPLOY_DOKPLOY.md`
+- `DOKPLOY_DEPLOYMENT.md`
+
+### 11. Repo artefacts
+
+Status: **DONE**
+
+Examples:
+
+- `build_output*.txt`
+- `push_result_utf8.txt`
+- `git_status_rebase.txt`
+- `backend/src/test-file.ts`
+
+Fix completed:
+
+- Debug files removed.
+- `.gitignore` updated.
+- Build output/cache patterns covered.
+
+### 12. API contract not clear
+
+Status: **PENDING**
+
+Target fix:
+
+- Complete Swagger DTOs.
+- Typed API client for frontend.
+- Standard error response shape:
+
+```ts
+{ message, code, details }
+```
+
+### 13. Observability lacking
+
+Status: **PENDING**
+
+Target fix:
+
+- Structured logging.
+- Request ID.
+- Error tracking: Sentry/Logtail.
+- Bull/Redis job metrics.
+- Alerts for failed publish/render/AI.
+
+### 14. Rate limit still simple/global
+
+Status: **PENDING**
+
+Current state:
+
+- Global simple rate limit around 100 req/min.
+
+Target fix:
+
+- Stricter auth login limit.
+- Stricter AI endpoint limit.
+- Billing/webhook exempt or custom policy.
+- Per-user + per-IP limits.
+
+### 15. Background job resilience
+
+Status: **PENDING**
 
 Area:
 
@@ -36,11 +343,11 @@ Area:
 
 Required improvements:
 
-- [ ] Retry policy
-- [ ] Dead-letter queue
-- [ ] Idempotency key
-- [ ] Job timeout
-- [ ] Cleanup stuck jobs
+- Retry policy.
+- Dead-letter queue.
+- Idempotency key.
+- Job timeout.
+- Cleanup stuck jobs.
 
 Implementation notes:
 
@@ -53,6 +360,8 @@ Implementation notes:
 ## P3 — Product improvement
 
 ### 16. Dashboard loading/error states
+
+Status: **PENDING**
 
 Goal:
 
@@ -79,6 +388,8 @@ Candidate areas:
 
 ### 17. Role/admin permission audit
 
+Status: **PENDING**
+
 Goal:
 
 - Ensure admin/super-admin access is enforced by backend guards, not frontend visibility only.
@@ -98,6 +409,8 @@ Checkpoints:
 - Super-admin endpoints must use super-admin guard.
 
 ### 18. WordPress integration robustness
+
+Status: **PENDING**
 
 Goal:
 
@@ -124,6 +437,8 @@ Failure modes to handle:
 
 ### 19. AI cost control
 
+Status: **PENDING**
+
 Goal:
 
 - Reduce runaway AI cost and improve user-level budget safety.
@@ -147,6 +462,8 @@ Candidate caps:
 - Instagram studio generation
 
 ### 20. E2E smoke test
+
+Status: **PENDING**
 
 Goal:
 
@@ -172,7 +489,7 @@ Implementation notes:
 
 ### Day 1
 
-Already completed:
+Completed:
 
 - [x] fix `@aws-sdk/client-s3`
 - [x] backend build pass
@@ -181,33 +498,32 @@ Already completed:
 
 ### Day 2
 
-Already completed or superseded by lint cleanup:
+Completed:
 
-- [x] fix real frontend lint bugs
-- [x] settings issues cleaned
-- [x] confirm-dialog issue cleaned
-- [x] RSS-related lint cleanup included in frontend lint pass
+- [x] fix 3 frontend bug lint nyata:
+  - settings
+  - confirm-dialog
+  - RSSFeedSection
 
 ### Day 3
 
-Mostly completed:
+Partial:
 
+- [ ] env validation
 - [x] uploads validation/hardening
-- [ ] env validation audit and stricter startup validation
 
 ### Day 4
 
 Completed:
 
-- [x] lint errors reduced below 30
-- [x] frontend lint reached `0 errors`, `0 warnings`
+- [x] lint errors reduced `112 -> <30`
+- [x] lint reached `0 errors`, `0 warnings`
 
 ### Day 5
 
-Partially completed:
+Partial:
 
-- [x] backend unit tests pass before deploy
-- [x] auth guard/middleware tests added
+- [x] backend unit/auth guard tests added
 - [ ] billing integration tests
 - [ ] article integration tests
 
@@ -221,12 +537,12 @@ Completed:
 
 ### Day 7
 
-Partially completed:
+Partial:
 
 - [x] deploy flow fixed for Dokploy Raw
 - [x] live health endpoint OK
 - [ ] observability basic
-- [ ] E2E smoke test
+- [ ] smoke test deploy flow
 
 ## Target healthy checklist
 
@@ -242,22 +558,68 @@ Current status:
 - [x] Dokploy Raw deploy works
 - [ ] fresh clone deploy verified without cache end-to-end
 - [ ] backend Jest fresh install issue fixed
+- [ ] env validation added
+- [ ] complete API contract added
 - [ ] observability basic added
+- [ ] rate limit refined
+- [ ] background job resilience added
 - [ ] E2E smoke test added
+
+## Remaining work summary
+
+P0:
+
+- All items done.
+
+P1:
+
+- Done:
+  - uploads hardening
+  - frontend lint to 0
+- Partial/pending:
+  - API layer `any` cleanup/shared schema
+  - env validation
+  - deeper backend integration tests
+
+P2:
+
+- Done:
+  - docs sync
+  - repo artefact cleanup
+- Pending:
+  - API contract
+  - observability
+  - refined rate limit
+  - background job resilience
+
+P3:
+
+- Pending:
+  - dashboard loading/error states
+  - role/admin permission audit
+  - WordPress robustness
+  - AI cost control
+  - E2E smoke test
 
 ## Next recommended order
 
-1. Role/admin permission audit.
-2. E2E smoke test with mocked AI.
-3. AI cost control guardrails.
-4. WordPress robustness.
-5. Queue retry/dead-letter/idempotency/stuck cleanup.
-6. Dashboard loading/error UX pass.
+1. Env validation startup schema.
+2. Role/admin permission audit.
+3. E2E smoke test with mocked AI.
+4. API contract + typed frontend client.
+5. AI cost control guardrails.
+6. WordPress robustness.
+7. Queue retry/dead-letter/idempotency/stuck cleanup.
+8. Observability + rate limit refinement.
+9. Dashboard loading/error UX pass.
 
 Reason:
 
+- Env validation prevents bad deploys.
 - Permission audit protects security boundary.
 - E2E smoke test protects deploy confidence.
+- API contract reduces long-term regressions.
 - AI cost control protects spend.
 - WordPress/queue improvements improve reliability.
+- Observability/rate limit support production operation.
 - Dashboard polish can follow after core safety.
