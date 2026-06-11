@@ -142,7 +142,10 @@ export class FeedsService {
     // Add job to queue for immediate processing
     this.logger.log(`Triggering immediate poll for feed: ${feedId}`);
     try {
-      await this.feedQueue.add('poll-feed', { feedId }, { priority: 1 });
+      await this.feedQueue.add('poll-feed', { feedId }, {
+        priority: 1,
+        jobId: `feed-${feedId}-manual-${Math.floor(Date.now() / 60000)}`,
+      });
     } catch (error: any) {
       this.logger.warn(`Queue error (triggerPoll): ${error.message}. Attempting direct poll.`);
       // Fallback to direct poll if Redis is down

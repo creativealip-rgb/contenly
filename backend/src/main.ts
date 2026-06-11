@@ -9,10 +9,12 @@ import { AppModule } from './app.module';
 import { auth } from './auth/auth.config';
 import { uploadSecurityMiddleware } from './config/upload-security';
 import { createTmpAuthMiddleware } from './config/tmp-auth.middleware';
+import { HttpErrorFilter } from './common/filters/http-exception.filter';
+import { requestIdMiddleware } from './common/middleware/request-id.middleware';
 import * as path from 'path';
 import * as expressStatic from 'express';
 
-import { json, urlencoded } from 'express';
+import { json, urlencoded, type NextFunction, type Request, type Response } from 'express';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -28,11 +30,19 @@ async function bootstrap() {
   // Enable graceful shutdown
   app.enableShutdownHooks();
 
-  // Request logging (production-safe)
-  app.use((req, res, next) => {
+  app.use(requestIdMiddleware);
+
+  // Request logging (production-safe, structured)
+  app.use((req: Request & { requestId?: string }, res: Response, next: NextFunction) => {
     const start = Date.now();
     res.on('finish', () => {
-      logger.log(`${req.method} ${req.url} ${res.statusCode} ${Date.now() - start}ms`);
+      logger.log(JSON.stringify({
+        requestId: req.requestId,
+        method: req.method,
+        url: req.url,
+        statusCode: res.statusCode,
+        durationMs: Date.now() - start,
+      }));
     });
     next();
   });
@@ -69,8 +79,8 @@ async function bootstrap() {
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders:
-      'Content-Type, Accept, Authorization, x-forwarded-proto, cookie, ngrok-skip-browser-warning, Cache-Control',
-    exposedHeaders: 'set-cookie',
+      'Content-Type, Accept, Authorization, x-forwarded-proto, cookie, ngrok-skip-browser-warning, Cache-Control, x-request-id',
+    exposedHeaders: 'set-cookie, x-request-id',
   });
 
   // Global prefix with API versioning
@@ -110,6 +120,7 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
     }),
   );
+  app.useGlobalFilters(new HttpErrorFilter());
 
   // Swagger API Documentation
   const config = new DocumentBuilder()

@@ -13,6 +13,13 @@ import { BillingModule } from '../billing/billing.module';
     BillingModule,
     BullModule.registerQueue({
       name: 'feed-polling',
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 5000 },
+        timeout: 120000,
+        removeOnComplete: 100,
+        removeOnFail: 500,
+      },
     }),
   ],
   controllers: [FeedsController],

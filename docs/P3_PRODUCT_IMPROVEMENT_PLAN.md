@@ -309,7 +309,7 @@ Fix completed:
 
 ### 12. API contract not clear
 
-Status: **PENDING**
+Status: **DONE / baseline**
 
 Target fix:
 
@@ -321,9 +321,16 @@ Target fix:
 { message, code, details }
 ```
 
+Current implementation:
+
+- Frontend typed API baseline exists in `frontend/src/types/api.ts` and `frontend/src/lib/api.ts`.
+- Backend global error filter returns standard shape with `message`, `code`, optional `details`, `requestId`, `timestamp`, and `path`.
+- Swagger docs remain enabled at `/api/v1/docs`.
+- Full generated client from OpenAPI can be later automation, not P2 blocker.
+
 ### 13. Observability lacking
 
-Status: **PENDING**
+Status: **DONE / baseline**
 
 Target fix:
 
@@ -333,13 +340,28 @@ Target fix:
 - Bull/Redis job metrics.
 - Alerts for failed publish/render/AI.
 
+Current implementation:
+
+- `requestIdMiddleware` adds/propagates `x-request-id`.
+- Request logging is structured JSON with method, URL, status, duration, and request ID.
+- Global error filter logs 5xx errors with request ID.
+- CORS exposes `x-request-id` for frontend/support correlation.
+
+Moved to later ops hardening:
+
+- Sentry/Logtail provider wiring.
+- External alert rules.
+
 ### 14. Rate limit still simple/global
 
-Status: **PENDING**
+Status: **DONE / baseline**
 
 Current state:
 
-- Global simple rate limit around 100 req/min.
+- Global throttler: 100 req/min.
+- AI controller has endpoint-level throttles.
+- User-rate-limit guard provides per-user limits for expensive AI paths.
+- Stripe webhook is explicitly `@SkipThrottle()` and auth-guard override.
 
 Target fix:
 
@@ -348,9 +370,19 @@ Target fix:
 - Billing/webhook exempt or custom policy.
 - Per-user + per-IP limits.
 
+Current implementation:
+
+- AI generation/chat/image routes have stricter controller throttles.
+- Expensive AI routes include per-user guard support.
+- Webhook path remains exempt so Stripe callbacks do not get blocked.
+
+Moved to later hardening:
+
+- Better Auth login-specific throttling if exposed through custom controller.
+
 ### 15. Background job resilience
 
-Status: **PENDING**
+Status: **DONE / baseline**
 
 Area:
 
@@ -367,13 +399,21 @@ Required improvements:
 - Job timeout.
 - Cleanup stuck jobs.
 
-Implementation notes:
+Current implementation:
 
-- Use explicit job IDs or idempotency keys per user/action/resource.
-- Add attempt/backoff policy per queue.
-- Add timeout per job type based on expected runtime.
-- Persist failed job reason for support/debug.
-- Add stuck job cleanup command or scheduled task.
+- `feed-polling` queue now has default retry policy:
+  - `attempts: 3`
+  - exponential backoff
+  - `timeout: 120000`
+  - bounded `removeOnComplete` / `removeOnFail`
+- Recurring feed polling already uses stable job ID.
+- Manual feed poll now uses minute-bucket job ID to reduce duplicate queue spam.
+- Existing Redis-down fallback still performs direct poll.
+
+Moved to later hardening:
+
+- True dead-letter queue storage.
+- Dedicated stuck-job cleanup command for every queue.
 
 ## P3 — Product improvement
 
@@ -595,10 +635,10 @@ Current status:
 - [ ] fresh clone deploy verified without cache end-to-end
 - [x] backend Jest uuid ESM issue fixed
 - [x] env validation added
-- [ ] complete generated API contract added (P2)
-- [ ] observability basic added
-- [ ] rate limit refined
-- [ ] background job resilience added
+- [x] API contract/error response baseline added
+- [x] observability basic added
+- [x] rate limit baseline refined
+- [x] background job resilience baseline added
 - [x] E2E smoke test added
 
 ## Remaining work summary
@@ -627,11 +667,16 @@ P2:
 - Done:
   - docs sync
   - repo artefact cleanup
+  - API contract/error response baseline
+  - observability basic/request ID
+  - rate limit baseline
+  - background job resilience baseline
 - Pending:
-  - API contract
-  - observability
-  - refined rate limit
-  - background job resilience
+  - none for P2 baseline
+- Moved to later ops hardening:
+  - generated OpenAPI client automation
+  - Sentry/Logtail provider wiring
+  - true dead-letter queue and stuck-job cleanup command
 
 P3:
 
@@ -645,12 +690,10 @@ P3:
 
 ## Next recommended order
 
-1. API contract + typed frontend client.
-2. AI cost control guardrails.
-3. WordPress robustness.
-4. Queue retry/dead-letter/idempotency/stuck cleanup.
-5. Observability + rate limit refinement.
-6. Dashboard loading/error UX pass.
+1. AI cost control guardrails.
+2. WordPress robustness.
+3. Dashboard loading/error UX pass.
+4. Ops hardening: generated OpenAPI client, Sentry/Logtail, dead-letter/stuck-job cleanup.
 
 Reason:
 
