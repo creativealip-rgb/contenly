@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { api } from '@/lib/api'
 import { toast } from 'sonner'
+import { SuperAdminGuard } from '@/components/guards'
 
 type ProviderStatus = {
   provider: string
@@ -98,7 +99,8 @@ export default function AdminApiKeysPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 p-4 md:p-8 dark:bg-slate-950">
+    <SuperAdminGuard>
+      <main className="min-h-screen bg-slate-50 p-4 md:p-8 dark:bg-slate-950">
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
@@ -200,6 +202,7 @@ export default function AdminApiKeysPage() {
           </CardContent>
         </Card>
       </div>
-    </main>
+      </main>
+    </SuperAdminGuard>
   )
 }

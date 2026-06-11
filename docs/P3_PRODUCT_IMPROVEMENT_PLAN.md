@@ -181,7 +181,7 @@ Current progress:
 
 ### 7. Secrets/env validation not strong enough
 
-Status: **PENDING**
+Status: **DONE**
 
 Problem:
 
@@ -196,6 +196,12 @@ Target fix:
   - `BETTER_AUTH_SECRET`
   - `OPENAI_API_KEY`
   - `FRONTEND_URL`
+
+Current implementation:
+
+- `backend/src/config/validate-env.ts` validates startup env and is imported by `backend/src/main.ts`.
+- `backend/src/config/validate-env.spec.ts` covers required local env, missing values, and production Redis/AI key requirements.
+- Verified with `npm run build` and targeted env validation test.
 
 ### 8. Backend integration tests not enough
 
@@ -388,7 +394,7 @@ Candidate areas:
 
 ### 17. Role/admin permission audit
 
-Status: **PENDING**
+Status: **PARTIAL**
 
 Goal:
 
@@ -396,11 +402,15 @@ Goal:
 
 Tasks:
 
-- [ ] List all frontend admin/super-admin routes.
-- [ ] Map each route to backend API endpoints.
-- [ ] Verify endpoint guard coverage.
-- [ ] Add missing backend guards.
-- [ ] Add tests for blocked non-admin access.
+- [x] List all frontend admin/super-admin routes.
+- [x] Map each route to backend API endpoints.
+- [x] Verify endpoint guard coverage.
+- [x] Add missing frontend UX guard on `/admin/api-keys`.
+- [ ] Add integration tests for blocked non-admin access.
+
+Current audit doc:
+
+- `docs/ROLE_ADMIN_PERMISSION_AUDIT.md`
 
 Checkpoints:
 
@@ -507,9 +517,9 @@ Completed:
 
 ### Day 3
 
-Partial:
+Completed:
 
-- [ ] env validation
+- [x] env validation
 - [x] uploads validation/hardening
 
 ### Day 4
@@ -558,7 +568,7 @@ Current status:
 - [x] Dokploy Raw deploy works
 - [ ] fresh clone deploy verified without cache end-to-end
 - [ ] backend Jest fresh install issue fixed
-- [ ] env validation added
+- [x] env validation added
 - [ ] complete API contract added
 - [ ] observability basic added
 - [ ] rate limit refined
@@ -578,7 +588,6 @@ P1:
   - frontend lint to 0
 - Partial/pending:
   - API layer `any` cleanup/shared schema
-  - env validation
   - deeper backend integration tests
 
 P2:
@@ -594,29 +603,28 @@ P2:
 
 P3:
 
+- Partial:
+  - role/admin permission audit
 - Pending:
   - dashboard loading/error states
-  - role/admin permission audit
   - WordPress robustness
   - AI cost control
   - E2E smoke test
 
 ## Next recommended order
 
-1. Env validation startup schema.
-2. Role/admin permission audit.
-3. E2E smoke test with mocked AI.
-4. API contract + typed frontend client.
-5. AI cost control guardrails.
-6. WordPress robustness.
-7. Queue retry/dead-letter/idempotency/stuck cleanup.
-8. Observability + rate limit refinement.
-9. Dashboard loading/error UX pass.
+1. Role/admin permission audit integration tests.
+2. E2E smoke test with mocked AI.
+3. API contract + typed frontend client.
+4. AI cost control guardrails.
+5. WordPress robustness.
+6. Queue retry/dead-letter/idempotency/stuck cleanup.
+7. Observability + rate limit refinement.
+8. Dashboard loading/error UX pass.
 
 Reason:
 
-- Env validation prevents bad deploys.
-- Permission audit protects security boundary.
+- Permission audit tests protect security boundary.
 - E2E smoke test protects deploy confidence.
 - API contract reduces long-term regressions.
 - AI cost control protects spend.
