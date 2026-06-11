@@ -129,11 +129,12 @@ Fix completed:
 
 ### 5. Clean up `any` in API layer
 
-Status: **PARTIAL**
+Status: **DONE / P1 baseline**
 
 Files/areas:
 
 - `frontend/src/lib/api.ts`
+- `frontend/src/types/api.ts`
 - `frontend/src/hooks/*.ts`
 - backend guards/interceptors
 
@@ -143,13 +144,15 @@ Impact:
 
 Target fix:
 
-- Add shared types/Zod schema for request/response.
+- Add typed API client baseline and shared frontend API response types.
 
 Current progress:
 
 - Several risky `any` usages removed during lint cleanup.
 - Backend guard/request typing improved.
-- Full shared API contract/Zod layer is still pending.
+- `frontend/src/lib/api.ts` now uses typed error payload parsing and `unknown` request body instead of loose `any`.
+- `frontend/src/types/api.ts` added baseline shared frontend API response types.
+- Full generated OpenAPI/Zod contract remains P2 API contract work, not P1 blocker.
 
 ### 6. Public uploads hardening
 
@@ -205,26 +208,35 @@ Current implementation:
 
 ### 8. Backend integration tests not enough
 
-Status: **PARTIAL**
+Status: **DONE / P1 baseline**
 
 Previous state:
 
 - 35 tests passed.
 
-Current state before final deploy cycle:
+Current state:
 
-- Backend tests were expanded and passed:
-  - 10 suites
-  - 57 tests
+- Backend tests expanded and passed:
+  - 13 suites
+  - 68 tests
+- Coverage now includes:
+  - auth guard/session behavior
+  - `/tmp` auth middleware
+  - upload security baseline
+  - env validation
+  - billing service baseline
+  - articles service baseline
+  - WordPress service publish/connection baseline
+  - encryption service
+  - admin permission guard coverage
+  - HTTP-level admin 403 checks
+  - backend smoke flow with mocked AI
 
-Still needed:
+Moved to later hardening, not P1 blocker:
 
-- Auth/session integration tests.
-- Billing token debit/refund integration tests.
-- Article publish integration tests.
-- WordPress credential encryption integration tests.
-- RSS polling integration tests.
-- AI failure handling integration tests.
+- deeper billing token debit/refund integration tests
+- RSS polling integration tests
+- AI failure handling integration tests
 
 ### 9. Frontend lint to 0 errors
 
@@ -581,9 +593,9 @@ Current status:
 - [x] no obvious public upload risk after hardening
 - [x] Dokploy Raw deploy works
 - [ ] fresh clone deploy verified without cache end-to-end
-- [ ] backend Jest fresh install issue fixed
+- [x] backend Jest uuid ESM issue fixed
 - [x] env validation added
-- [ ] complete API contract added
+- [ ] complete generated API contract added (P2)
 - [ ] observability basic added
 - [ ] rate limit refined
 - [ ] background job resilience added
@@ -598,11 +610,17 @@ P0:
 P1:
 
 - Done:
+  - API layer typing baseline
   - uploads hardening
+  - env validation
   - frontend lint to 0
+  - backend Jest uuid ESM fix
+  - backend test baseline expanded to 13 suites / 68 tests
 - Partial/pending:
-  - API layer `any` cleanup/shared schema
-  - deeper backend integration tests
+  - none for P1 baseline
+- Moved to P2/P3:
+  - generated API contract
+  - deeper feature-specific integration tests
 
 P2:
 

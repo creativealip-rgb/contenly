@@ -1,55 +1,57 @@
+import type { ApiErrorPayload, AuthResponse } from '../types/api'
 
-interface User {
-    id: string;
-    email: string;
-    fullName: string;
-    avatarUrl?: string;
-    createdAt?: string;
-    updatedAt?: string;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://contenly.app/api/v1'
+
+type RequestMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
+
+export type RequestBody = unknown
+
+async function parseError(response: Response): Promise<ApiErrorPayload> {
+    const fallback: ApiErrorPayload = {
+        message: response.statusText || 'An unknown error occurred',
+        code: `HTTP_${response.status}`,
+    }
+
+    try {
+        const payload = (await response.json()) as Partial<ApiErrorPayload>
+        return {
+            message: payload.message || fallback.message,
+            code: payload.code || fallback.code,
+            details: payload.details,
+        }
+    } catch {
+        return fallback
+    }
 }
-
-interface AuthResponse {
-    user: User;
-    session: {
-        token: string;
-        expiresAt: string;
-    };
-}
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://contenly.app/api/v1';
-
-type RequestMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
-
-type RequestBody = Record<string, unknown> | unknown[] | string | number | boolean | null;
 
 async function request<T>(endpoint: string, method: RequestMethod, body?: RequestBody): Promise<T> {
     const headers: HeadersInit = {
         'Content-Type': 'application/json',
-    };
+    }
 
     const config: RequestInit = {
         method,
         headers,
         credentials: 'include', // Important for Better Auth session cookies
-    };
-
-    if (body) {
-        config.body = JSON.stringify(body);
     }
 
-    const response = await fetch(`${API_URL}${endpoint}`, config);
+    if (body !== undefined) {
+        config.body = JSON.stringify(body)
+    }
+
+    const response = await fetch(`${API_URL}${endpoint}`, config)
 
     if (!response.ok) {
-        const error = await response.json().catch(() => ({ message: 'An unknown error occurred' }));
-        throw new Error(error.message || `Request failed: ${response.statusText}`);
+        const error = await parseError(response)
+        throw new Error(error.message)
     }
 
     // Handle 204 No Content
     if (response.status === 204) {
-        return {} as T;
+        return undefined as T
     }
 
-    return response.json();
+    return response.json() as Promise<T>
 }
 
 export const api = {
@@ -75,7 +77,7 @@ export const api = {
             request<void>('/auth/reset-password', 'POST', data),
 
         signInSocial: (provider: 'google' | 'github') => {
-            window.location.href = `${API_URL}/auth/${provider}`;
+            window.location.href = `${API_URL}/auth/${provider}`
         },
     },
-};
+}

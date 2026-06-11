@@ -6,7 +6,6 @@ import { wpSite, categoryMapping, article } from '../../db/schema';
 import { ArticlesService } from '../articles/articles.service';
 import axios from 'axios';
 import sharp from 'sharp';
-import { validate as uuidValidate } from 'uuid';
 import { WpCategory, WpPostData, WpPostResponse, ArticleStatus, ArticleUpdateData } from '../../db/types';
 import { BillingService } from '../billing/billing.service';
 import { BILLING_TIERS } from '../billing/billing.constants';
@@ -14,6 +13,9 @@ import * as path from 'path';
 import * as fs from 'fs';
 // import { Cron, Timeout } from '@nestjs/schedule';
 import { EncryptionService } from '../security/encryption.service';
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const isUuid = (value: string) => UUID_REGEX.test(value);
 
 @Injectable()
 export class WordpressService implements OnModuleInit {
@@ -480,7 +482,7 @@ export class WordpressService implements OnModuleInit {
             wpSiteId: site.id,
             metaTitle: dto.title,
             slug: response.data.slug,
-            feedItemId: (dto.feedItemId && uuidValidate(dto.feedItemId)) ? dto.feedItemId : undefined,
+            feedItemId: (dto.feedItemId && isUuid(dto.feedItemId)) ? dto.feedItemId : undefined,
           });
         }
       } catch (dbError: any) {

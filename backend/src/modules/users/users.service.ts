@@ -5,7 +5,7 @@ import { user, apiKey, tokenBalance, subscription } from '../../db/schema';
 import { BILLING_TIERS } from '../billing/billing.constants';
 import { UpdateUserDto } from './dto';
 import * as bcrypt from 'bcrypt';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { auth } from '../../auth/auth.config';
 
 @Injectable()
@@ -85,7 +85,7 @@ export class UsersService {
   }
 
   async createApiKey(userId: string, name: string) {
-    const rawKey = `cam_${uuidv4().replace(/-/g, '')}`;
+    const rawKey = `cam_${randomUUID().replace(/-/g, '')}`;
     const keyHash = await bcrypt.hash(rawKey, 10);
     const keyPrefix = rawKey.substring(0, 12);
 
@@ -256,7 +256,7 @@ export class UsersService {
           plan,
           status: 'ACTIVE',
           tokensPerMonth: tokens,
-          stripeSubscriptionId: `manual_${uuidv4()}`,
+          stripeSubscriptionId: `manual_${randomUUID()}`,
           currentPeriodStart: new Date(),
           currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
         });
