@@ -690,10 +690,11 @@ P3:
 - Done:
   - role/admin permission audit
   - E2E smoke test
+  - AI cost control baseline
 - Pending:
   - dashboard loading/error states
   - WordPress robustness
-  - AI cost control
+  - true user-level currency spending cap
 
 ## Next recommended order
 
