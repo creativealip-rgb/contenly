@@ -11,10 +11,17 @@ import { uploadSecurityMiddleware } from './config/upload-security';
 import { createTmpAuthMiddleware } from './config/tmp-auth.middleware';
 import { HttpErrorFilter } from './common/filters/http-exception.filter';
 import { requestIdMiddleware } from './common/middleware/request-id.middleware';
+import { ObservabilityService } from './common/observability/observability.service';
 import * as path from 'path';
 import * as expressStatic from 'express';
 
-import { json, urlencoded, type NextFunction, type Request, type Response } from 'express';
+import {
+  json,
+  urlencoded,
+  type NextFunction,
+  type Request,
+  type Response,
+} from 'express';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -33,22 +40,31 @@ async function bootstrap() {
   app.use(requestIdMiddleware);
 
   // Request logging (production-safe, structured)
-  app.use((req: Request & { requestId?: string }, res: Response, next: NextFunction) => {
-    const start = Date.now();
-    res.on('finish', () => {
-      logger.log(JSON.stringify({
-        requestId: req.requestId,
-        method: req.method,
-        url: req.url,
-        statusCode: res.statusCode,
-        durationMs: Date.now() - start,
-      }));
-    });
-    next();
-  });
+  app.use(
+    (
+      req: Request & { requestId?: string },
+      res: Response,
+      next: NextFunction,
+    ) => {
+      const start = Date.now();
+      res.on('finish', () => {
+        logger.log(
+          JSON.stringify({
+            requestId: req.requestId,
+            method: req.method,
+            url: req.url,
+            statusCode: res.statusCode,
+            durationMs: Date.now() - start,
+          }),
+        );
+      });
+      next();
+    },
+  );
 
   // CORS Setup
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000,http://localhost:3010';
+  const frontendUrl =
+    process.env.FRONTEND_URL || 'http://localhost:3000,http://localhost:3010';
   const origins = frontendUrl
     .split(',')
     .map((url) => url.trim())
@@ -91,7 +107,9 @@ async function bootstrap() {
   // Serve tmp files (for Remotion audio during compose) — require valid session
   app.use(
     '/tmp',
-    createTmpAuthMiddleware(logger, ({ headers }) => auth.api.getSession({ headers })),
+    createTmpAuthMiddleware(logger, ({ headers }) =>
+      auth.api.getSession({ headers }),
+    ),
     expressStatic.static(path.resolve(process.cwd(), 'tmp')),
   );
 
@@ -120,7 +138,7 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
     }),
   );
-  app.useGlobalFilters(new HttpErrorFilter());
+  app.useGlobalFilters(new HttpErrorFilter(app.get(ObservabilityService)));
 
   // Swagger API Documentation
   const config = new DocumentBuilder()

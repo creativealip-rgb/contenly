@@ -13,6 +13,7 @@ import { DrizzleModule } from './db/drizzle.module';
 // Common
 import { CsrfMiddleware } from './common/middleware/csrf.middleware';
 import { AuditService } from './common/services/audit.service';
+import { ObservabilityService } from './common/observability/observability.service';
 
 // Feature Modules
 import { SecurityModule } from './modules/security/security.module';
@@ -105,6 +106,7 @@ import { AdminSettingsModule } from './modules/admin-settings/admin-settings.mod
   providers: [
     AppService,
     AuditService,
+    ObservabilityService,
     {
       provide: Reflector,
       useValue: new Reflector(),
@@ -114,7 +116,7 @@ import { AdminSettingsModule } from './modules/admin-settings/admin-settings.mod
       useClass: ThrottlerGuard,
     },
   ],
-  exports: [AuditService],
+  exports: [AuditService, ObservabilityService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

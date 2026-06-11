@@ -697,10 +697,10 @@ P2:
 - Pending:
   - none for P2 baseline
 - Moved to later ops hardening:
-  - Sentry/Logtail provider wiring
   - true dead-letter queue and stuck-job cleanup command
 - Ops hardening done:
   - generated OpenAPI client automation baseline (`backend npm run openapi:generate`, `frontend npm run api:generate`)
+  - Sentry/Logtail-style observability provider wiring baseline (`OBSERVABILITY_WEBHOOK_URL`, `OBSERVABILITY_PROVIDER`)
 
 P3:
 
