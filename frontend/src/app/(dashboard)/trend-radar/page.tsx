@@ -11,6 +11,8 @@ import {
     Globe,
     Clock,
     Zap,
+    Rss,
+    Video,
     SearchX
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
@@ -29,6 +31,7 @@ import { useContentLabStore } from '@/stores/content-lab-store'
 import { useBilling } from '@/hooks/use-billing'
 import { Lock } from 'lucide-react'
 import { useTrendSearch, useTrendAnalysis } from '@/hooks/use-trend-radar'
+import { api } from '@/lib/api'
 
 interface TrendItem {
     id: string;
@@ -48,6 +51,7 @@ export default function TrendRadarPage() {
     const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '')
     const [selectedTrend, setSelectedTrend] = useState<TrendItem | null>(null)
     const [isSheetOpen, setIsSheetOpen] = useState(false)
+    const [actionLoading, setActionLoading] = useState<'article' | 'feed' | 'video' | null>(null)
     const { data: billingData } = useBilling()
     const isFreeTier = billingData?.tier === 'FREE'
 
@@ -81,10 +85,61 @@ export default function TrendRadarPage() {
     const handleDraftInLab = () => {
         if (!selectedTrend) return
 
+        setActionLoading('article')
         setScrapeUrl(selectedTrend.url)
         setActiveTab('url')
-        toast.success('Topic sent to Content Lab!')
+        toast.success('Topik dikirim ke Content Lab')
         router.push('/content-lab')
+    }
+
+    const getTrendOrigin = (url: string) => {
+        try {
+            return new URL(url).origin
+        } catch {
+            return url
+        }
+    }
+
+    const handleCreateFeed = async () => {
+        if (!selectedTrend) return
+        setActionLoading('feed')
+        try {
+            const feedUrl = getTrendOrigin(selectedTrend.url)
+            await api.post('/feeds', {
+                name: selectedTrend.source || selectedTrend.title.slice(0, 60),
+                url: feedUrl,
+                pollingIntervalMinutes: 15,
+            })
+            toast.success('Sumber web dibuat dari tren')
+            router.push('/feeds')
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Gagal membuat feed')
+        } finally {
+            setActionLoading(null)
+        }
+    }
+
+    const handleCreateVideoScript = async () => {
+        if (!selectedTrend) return
+        setActionLoading('video')
+        try {
+            const project = await api.post<{ id: string }>('/video-scripts/projects', {
+                title: selectedTrend.title,
+                sourceUrl: selectedTrend.url,
+                sourceContent: [
+                    selectedTrend.title,
+                    analysis?.strategy ? `Strategi: ${analysis.strategy}` : '',
+                    analysis?.hooks?.length ? `Hooks:\n${analysis.hooks.map((hook, i) => `${i + 1}. ${hook}`).join('\n')}` : '',
+                    analysis?.keywords?.length ? `Keywords: ${analysis.keywords.join(', ')}` : '',
+                ].filter(Boolean).join('\n\n'),
+            })
+            toast.success('Video script dibuat dari tren')
+            router.push(`/video-scripts/${project.id}`)
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Gagal membuat video script')
+        } finally {
+            setActionLoading(null)
+        }
     }
 
     const analysis = analysisMutation.data
@@ -337,13 +392,36 @@ export default function TrendRadarPage() {
                         </div>
 
                         <div className="p-8 border-t border-white/40 dark:border-white/10 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl">
-                            <Button
-                                onClick={handleDraftInLab}
-                                className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-blue-500/20"
-                                disabled={isAnalyzing}
-                            >
-                                <Zap className="h-4 w-4 mr-2" /> Buat Artikel di Content Lab
-                            </Button>
+                            <div className="grid gap-3">
+                                <Button
+                                    onClick={handleDraftInLab}
+                                    className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-blue-500/20"
+                                    disabled={isAnalyzing || actionLoading !== null}
+                                >
+                                    {actionLoading === 'article' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Zap className="h-4 w-4 mr-2" />}
+                                    Buat Artikel di Content Lab
+                                </Button>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <Button
+                                        variant="outline"
+                                        onClick={handleCreateFeed}
+                                        className="h-12 rounded-2xl font-black uppercase tracking-widest text-xs"
+                                        disabled={isAnalyzing || actionLoading !== null}
+                                    >
+                                        {actionLoading === 'feed' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Rss className="h-4 w-4 mr-2" />}
+                                        Buat Feed
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        onClick={handleCreateVideoScript}
+                                        className="h-12 rounded-2xl font-black uppercase tracking-widest text-xs"
+                                        disabled={isAnalyzing || actionLoading !== null}
+                                    >
+                                        {actionLoading === 'video' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Video className="h-4 w-4 mr-2" />}
+                                        Buat Video
+                                    </Button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </SheetContent>
