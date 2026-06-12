@@ -130,13 +130,42 @@ export class AdminSettingsController {
       for (const chunk of chunks.reverse()) {
         try {
           const parsed = JSON.parse(chunk);
-          if (parsed?.choices?.[0]?.message?.content || parsed?.error?.message) return parsed;
+          if (
+            parsed?.choices?.[0]?.message?.content ||
+            parsed?.data?.[0]?.url ||
+            parsed?.data?.[0]?.b64_json ||
+            parsed?.url ||
+            parsed?.b64_json ||
+            parsed?.error?.message
+          ) {
+            return parsed;
+          }
         } catch {
           // keep scanning older chunks
         }
       }
       return null;
     }
+  }
+
+  private async readImageTestResponse(response: Response) {
+    const reader = response.body?.getReader();
+    if (!reader) return response.text();
+
+    const decoder = new TextDecoder();
+    let raw = '';
+    const started = Date.now();
+
+    while (Date.now() - started < 55000) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      raw += decoder.decode(value, { stream: true });
+      if (raw.includes('partial_image') || raw.includes('b64_json') || raw.includes('"url"')) {
+        break;
+      }
+    }
+
+    return raw;
   }
 
   @Post('providers/:provider/test')
@@ -175,20 +204,23 @@ export class AdminSettingsController {
         signal: AbortSignal.timeout(60000),
       });
 
-      const raw = await response.text();
-      let parsed: any;
-      try {
-        parsed = JSON.parse(raw);
-      } catch {
-        parsed = null;
-      }
+      const raw = await this.readImageTestResponse(response);
+      const parsed: any = this.parseProviderResponse(raw);
+      const hasImage = Boolean(
+        parsed?.data?.[0]?.url ||
+        parsed?.data?.[0]?.b64_json ||
+        parsed?.url ||
+        parsed?.b64_json ||
+        raw.includes('partial_image') ||
+        raw.includes('b64_json'),
+      );
 
       return {
-        ok: response.ok,
+        ok: response.ok && hasImage,
         status: response.status,
         latencyMs: Date.now() - started,
         model,
-        message: parsed?.data?.[0]?.url || parsed?.error?.message || raw.slice(0, 300),
+        message: hasImage ? 'Image generation OK' : parsed?.error?.message || raw.slice(0, 300),
       };
     }
 
