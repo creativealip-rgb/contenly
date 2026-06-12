@@ -189,4 +189,61 @@ export class FeedsService {
       this.logger.warn(`Could not remove scheduled polling: ${error.message}`);
     }
   }
+
+  async parseFeedUrl(url: string) {
+    const cheerio = await import('cheerio');
+    const variations = [
+      url,
+      url.endsWith('/') ? `${url}feed/` : `${url}/feed/`,
+      url.endsWith('/') ? `${url}rss/` : `${url}/rss/`,
+      url.endsWith('/') ? `${url}atom.xml` : `${url}/atom.xml`,
+    ];
+
+    for (const targetUrl of variations) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        const response = await fetch(targetUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            Accept: 'application/rss+xml, application/xml, text/xml, */*',
+          },
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) continue;
+        const text = await response.text();
+        if (!text.trim().startsWith('<')) continue;
+        if (!(text.includes('<rss') || text.includes('<feed') || text.includes('<rdf:RDF'))) continue;
+
+        const $ = cheerio.load(text, { xmlMode: true });
+        const items: Array<{ title: string; url: string; excerpt: string; publishedAt: string; id: string }> = [];
+        $('item, entry').each((_, element) => {
+          const el = $(element);
+          const title = el.find('title').first().text();
+          let link = el.find('link').first().text();
+          if (!link) link = el.find('link[rel="alternate"]').attr('href') || el.find('link').attr('href') || '';
+          const description = el.find('description').first().text() || el.find('content').first().text() || el.find('summary').first().text() || '';
+          const pubDate = el.find('pubDate').first().text() || el.find('date').first().text() || el.find('updated').first().text() || new Date().toISOString();
+          if (title && link) {
+            items.push({
+              title: title.replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').replace(/<[^>]*>/g, '').trim(),
+              url: link.trim(),
+              excerpt: `${description.replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').replace(/<[^>]*>/g, '').trim().substring(0, 200)}...`,
+              publishedAt: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
+              id: link.trim(),
+            });
+          }
+        });
+
+        if (items.length > 0) return { success: true, items: items.slice(0, 20) };
+      } catch (error: any) {
+        this.logger.warn(`Feed parse failed for ${targetUrl}: ${error.message}`);
+      }
+    }
+
+    return { success: false, error: 'Could not find a valid RSS feed at this URL', items: [] };
+  }
+
 }
