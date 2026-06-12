@@ -610,6 +610,27 @@ Return JSON with:
       `🎨 Generating image via Codex ${imageModel} for: ${enhancedPrompt.substring(0, 60)}...`,
     );
 
+    let imageData: string | null = null;
+    let imageUrl: string | null = null;
+
+    const returnGeneratedImage = async () => {
+      if (imageUrl) {
+        const imageBuffer = this.imageBufferFromDataUrl(imageUrl);
+        if (imageBuffer) {
+          const r2Url = await this.uploadGeneratedImageToR2(imageBuffer);
+          if (r2Url) return r2Url;
+        }
+        return imageUrl;
+      }
+      if (imageData) {
+        const imageBuffer = Buffer.from(imageData, 'base64');
+        const r2Url = await this.uploadGeneratedImageToR2(imageBuffer);
+        if (r2Url) return r2Url;
+        return `data:image/png;base64,${imageData}`;
+      }
+      return null;
+    };
+
     try {
       const response = await fetch(`${codexBaseUrl}/v1/images/generations`, {
         method: 'POST',
@@ -634,8 +655,6 @@ Return JSON with:
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
-      let imageData: string | null = null;
-      let imageUrl: string | null = null;
 
       const applyParsedImage = (parsed: any) => {
         if (parsed.data?.[0]?.b64_json) imageData = parsed.data[0].b64_json;
@@ -658,6 +677,10 @@ Return JSON with:
               ? trimmed.substring(6)
               : trimmed;
             applyParsedImage(JSON.parse(payload));
+            const generatedImage = await returnGeneratedImage();
+            if (generatedImage) {
+              return generatedImage;
+            }
           } catch {}
         }
       }
@@ -671,19 +694,9 @@ Return JSON with:
         } catch {}
       }
 
-      if (imageUrl) {
-        const imageBuffer = this.imageBufferFromDataUrl(imageUrl);
-        if (imageBuffer) {
-          const r2Url = await this.uploadGeneratedImageToR2(imageBuffer);
-          if (r2Url) return r2Url;
-        }
-        return imageUrl;
-      }
-      if (imageData) {
-        const imageBuffer = Buffer.from(imageData, 'base64');
-        const r2Url = await this.uploadGeneratedImageToR2(imageBuffer);
-        if (r2Url) return r2Url;
-        return `data:image/png;base64,${imageData}`;
+      const generatedImage = await returnGeneratedImage();
+      if (generatedImage) {
+        return generatedImage;
       }
       throw new Error('No image returned from Codex');
     } catch (error: any) {
