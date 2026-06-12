@@ -13,6 +13,7 @@ import { wpSite, categoryMapping, article } from '../../db/schema';
 import { ArticlesService } from '../articles/articles.service';
 import axios from 'axios';
 import sharp from 'sharp';
+import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import {
   WpCategory,
   WpPostData,
@@ -71,6 +72,69 @@ export class WordpressService implements OnModuleInit {
 
   get db() {
     return this.drizzle.db;
+  }
+
+  private parseGeneratedAssetKey(imageUrl: string): string | null {
+    const marker = '/api/v1/ai/assets/';
+    const markerIndex = imageUrl.indexOf(marker);
+    if (markerIndex === -1) return null;
+
+    const encodedKey = imageUrl.slice(markerIndex + marker.length).split(/[?#]/)[0];
+    if (!encodedKey) return null;
+
+    return decodeURIComponent(encodedKey);
+  }
+
+  private async getR2Config(): Promise<{
+    accountId: string;
+    bucketName: string;
+    endpoint: string;
+    accessKeyId: string;
+    secretAccessKey: string;
+  } | null> {
+    const accountId = this.configService.get<string>('R2_ACCOUNT_ID') || '';
+    const bucketName = this.configService.get<string>('R2_BUCKET_NAME') || '';
+    const endpoint = this.configService.get<string>('R2_ENDPOINT') || '';
+    const accessKeyId = this.configService.get<string>('R2_ACCESS_KEY_ID') || '';
+    const secretAccessKey = this.configService.get<string>('R2_SECRET_ACCESS_KEY') || '';
+
+    if (!accountId || !bucketName || !endpoint || !accessKeyId || !secretAccessKey) {
+      return null;
+    }
+
+    return { accountId, bucketName, endpoint, accessKeyId, secretAccessKey };
+  }
+
+  private async fetchGeneratedAssetFromR2(imageUrl: string): Promise<{ buffer: Buffer; mimeType: string } | null> {
+    const key = this.parseGeneratedAssetKey(imageUrl);
+    if (!key) return null;
+
+    const config = await this.getR2Config();
+    if (!config) return null;
+
+    const client = new S3Client({
+      region: 'auto',
+      endpoint: config.endpoint,
+      credentials: {
+        accessKeyId: config.accessKeyId,
+        secretAccessKey: config.secretAccessKey,
+      },
+      forcePathStyle: true,
+    });
+
+    const object = await client.send(
+      new GetObjectCommand({ Bucket: config.bucketName, Key: key }),
+    );
+
+    const chunks: Buffer[] = [];
+    for await (const chunk of object.Body as AsyncIterable<Buffer | Uint8Array>) {
+      chunks.push(Buffer.from(chunk));
+    }
+
+    return {
+      buffer: Buffer.concat(chunks),
+      mimeType: object.ContentType || 'image/png',
+    };
   }
 
   private normalizeSiteUrl(url: string): string {
@@ -452,13 +516,19 @@ export class WordpressService implements OnModuleInit {
         const extension = mimeType.split('/')[1] || 'png';
         filename = `upload-${Date.now()}.${extension}`;
       } else {
-        // Fetch external image
-        const imageResponse = await axios.get(imageUrl, {
-          responseType: 'arraybuffer',
-        });
-        buffer = Buffer.from(imageResponse.data, 'binary');
-        const responseContentType = imageResponse.headers['content-type'];
-        mimeType = typeof responseContentType === 'string' ? responseContentType : 'image/png';
+        const generatedAsset = await this.fetchGeneratedAssetFromR2(imageUrl);
+        if (generatedAsset) {
+          buffer = generatedAsset.buffer;
+          mimeType = generatedAsset.mimeType;
+        } else {
+          // Fetch external image
+          const imageResponse = await axios.get(imageUrl, {
+            responseType: 'arraybuffer',
+          });
+          buffer = Buffer.from(imageResponse.data, 'binary');
+          const responseContentType = imageResponse.headers['content-type'];
+          mimeType = typeof responseContentType === 'string' ? responseContentType : 'image/png';
+        }
         filename = `ai-gen-${Date.now()}.png`;
       }
 
@@ -589,7 +659,8 @@ export class WordpressService implements OnModuleInit {
       if (
         dto.featuredImageUrl &&
         (dto.featuredImageUrl.startsWith('http') ||
-          dto.featuredImageUrl.startsWith('data:'))
+          dto.featuredImageUrl.startsWith('data:') ||
+          dto.featuredImageUrl.includes('/api/v1/ai/assets/'))
       ) {
         try {
           this.logger.log('Uploading featured image...');
