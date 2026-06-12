@@ -643,7 +643,7 @@ Return JSON with:
         body: JSON.stringify(
           this.buildImageRequestBody(imageModel, enhancedPrompt),
         ),
-        signal: AbortSignal.timeout(180000),
+        signal: AbortSignal.timeout(300000),
       });
 
       if (!response.ok)

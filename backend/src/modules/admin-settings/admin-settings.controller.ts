@@ -156,7 +156,7 @@ export class AdminSettingsController {
     let raw = '';
     const started = Date.now();
 
-    while (Date.now() - started < 55000) {
+    while (Date.now() - started < 295000) {
       const { done, value } = await reader.read();
       if (done) break;
       raw += decoder.decode(value, { stream: true });
@@ -201,7 +201,7 @@ export class AdminSettingsController {
           image_detail: 'low',
           output_format: 'png',
         }),
-        signal: AbortSignal.timeout(60000),
+        signal: AbortSignal.timeout(300000),
       });
 
       const raw = await this.readImageTestResponse(response);
