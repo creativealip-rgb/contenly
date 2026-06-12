@@ -2,15 +2,17 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { RssFeed } from '@/lib/feeds-store'
 
-type FeedResponse = RssFeed & { pollingIntervalMinutes?: number }
+type FeedResponse = RssFeed & { pollingIntervalMinutes?: number; lastPolledAt?: string | Date | null }
 
 type FeedsResponse = FeedResponse[] | { data?: FeedResponse[] }
 
 function transformFeed(feed: FeedResponse): RssFeed {
+  const lastSynced = feed.lastSynced || feed.lastPolledAt
   return {
     ...feed,
     pollingInterval: feed.pollingIntervalMinutes,
     status: feed.status || 'active',
+    lastSynced: lastSynced ? new Date(lastSynced).toISOString() : undefined,
   }
 }
 

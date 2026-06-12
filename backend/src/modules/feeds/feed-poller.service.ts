@@ -129,6 +129,7 @@ export class FeedPollerService {
         .set({
           lastPolledAt: new Date(),
           itemsFetched: totalItems,
+          status: 'ACTIVE',
           updatedAt: new Date(),
         })
         .where(eq(feed.id, feedData.id));
