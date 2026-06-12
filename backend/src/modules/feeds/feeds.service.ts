@@ -36,8 +36,15 @@ export class FeedsService {
     ]);
     return { data, total, page, limit };
   }
+  private normalizeFeedUrl(url: string) {
+    const trimmed = url.trim();
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return `https://${trimmed}`;
+  }
+
   async create(userId: string, data: { name: string; url: string; pollingIntervalMinutes?: number }) {
-    this.logger.log(`Creating feed for user: ${userId}, URL: ${data.url}`);
+    const normalizedUrl = this.normalizeFeedUrl(data.url);
+    this.logger.log(`Creating feed for user: ${userId}, URL: ${normalizedUrl}`);
     try {
       const tier = await this.billingService.getSubscriptionTier(userId);
       const tierConfig = BILLING_TIERS[tier];
@@ -55,7 +62,7 @@ export class FeedsService {
         .values({
           userId,
           name: data.name,
-          url: data.url,
+          url: normalizedUrl,
           pollingIntervalMinutes: pollingInterval,
         })
         .returning();
@@ -192,11 +199,12 @@ export class FeedsService {
 
   async parseFeedUrl(url: string) {
     const cheerio = await import('cheerio');
+    const normalizedUrl = this.normalizeFeedUrl(url);
     const variations = [
-      url,
-      url.endsWith('/') ? `${url}feed/` : `${url}/feed/`,
-      url.endsWith('/') ? `${url}rss/` : `${url}/rss/`,
-      url.endsWith('/') ? `${url}atom.xml` : `${url}/atom.xml`,
+      normalizedUrl,
+      normalizedUrl.endsWith('/') ? `${normalizedUrl}feed/` : `${normalizedUrl}/feed/`,
+      normalizedUrl.endsWith('/') ? `${normalizedUrl}rss/` : `${normalizedUrl}/rss/`,
+      normalizedUrl.endsWith('/') ? `${normalizedUrl}atom.xml` : `${normalizedUrl}/atom.xml`,
     ];
 
     for (const targetUrl of variations) {

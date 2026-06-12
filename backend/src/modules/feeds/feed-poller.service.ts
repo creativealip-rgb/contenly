@@ -45,17 +45,18 @@ export class FeedPollerService {
 
       // Parse RSS feed with simple discovery
       let rssFeed;
+      const normalizedUrl = /^https?:\/\//i.test(feedData.url) ? feedData.url : `https://${feedData.url}`;
       const urlsToTry = [
-        feedData.url,
+        normalizedUrl,
+        normalizedUrl.endsWith('/')
+          ? `${normalizedUrl}feed/`
+          : `${normalizedUrl}/feed/`,
         feedData.url.endsWith('/')
-          ? `${feedData.url}feed/`
-          : `${feedData.url}/feed/`,
+          ? `${normalizedUrl}rss/`
+          : `${normalizedUrl}/rss/`,
         feedData.url.endsWith('/')
-          ? `${feedData.url}rss/`
-          : `${feedData.url}/rss/`,
-        feedData.url.endsWith('/')
-          ? `${feedData.url}feed.xml`
-          : `${feedData.url}/feed.xml`,
+          ? `${normalizedUrl}feed.xml`
+          : `${normalizedUrl}/feed.xml`,
       ];
 
       let lastError;
