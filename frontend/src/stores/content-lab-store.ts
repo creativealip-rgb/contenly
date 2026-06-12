@@ -119,7 +119,20 @@ export const useContentLabStore = create<ContentLabState>((set) => ({
     setPublishResult: (publishResult) => set({ publishResult }),
 
     setCurrentStep: (currentStep) => set({ currentStep }),
-    setSourceType: (sourceType) => set({ sourceType, activeTab: sourceType === 'feed' ? 'rss' : sourceType === 'url' ? 'url' : 'idea' }),
+    setSourceType: (sourceType) => set({
+        sourceType,
+        activeTab: sourceType === 'feed' ? 'rss' : sourceType === 'url' ? 'url' : 'idea',
+        generatedContent: '',
+        generatedTitle: '',
+        sourceContent: '',
+        selectedArticle: null,
+        generatedArticleId: null,
+        featuredImage: '',
+        slug: '',
+        metaTitle: '',
+        metaDescription: '',
+        publishResult: null,
+    }),
     setMaxReachedStep: (maxReachedStep) => set({ maxReachedStep }),
 
     // Reset Action (Optional, if we needed manual reset)

@@ -57,8 +57,8 @@ export default function ContentLabPage() {
                 store.setMetaDescription(article.metaDescription || '')
                 store.setSlug(article.slug || '')
                 store.setGeneratedArticleId(article.id)
-                if (article.featuredImageUrl) store.setFeaturedImage(article.featuredImageUrl)
-                if (article.sourceUrl) store.setSelectedArticle({ id: article.id, title: article.title, url: article.sourceUrl })
+                store.setFeaturedImage(article.featuredImageUrl || '')
+                store.setSelectedArticle(article.sourceUrl ? { id: article.id, title: article.title, url: article.sourceUrl } : null)
                 // Skip to step 4
                 setCurrentStep(4)
                 setMaxReachedStep(4)

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { useContentLabStore } from '@/stores/content-lab-store'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
@@ -15,6 +15,8 @@ export function useAIContent() {
     const [isRefreshingSEO, setIsRefreshingSEO] = useState(false)
     const [isGeneratingImage, setIsGeneratingImage] = useState(false)
     const [isScanning, setIsScanning] = useState(false)
+    const rewriteInFlightRef = useRef(false)
+    const imageInFlightRef = useRef(false)
 
     const {
         sourceContent, setSourceContent,
@@ -31,6 +33,7 @@ export function useAIContent() {
         setMetaTitle,
         generatedContent,
         generatedTitle,
+        generatedArticleId,
         setFeaturedImage,
         activeTab
     } = useContentLabStore()
@@ -90,14 +93,18 @@ export function useAIContent() {
     }, [scrapeUrl, API_BASE_URL, setSourceContent, setSelectedArticle, setGeneratedTitle])
 
     const handleAIRewrite = useCallback(async (selectedCategoryId: number | null) => {
+        if (rewriteInFlightRef.current) return
         const hasSource = activeTab === 'idea' ? articleIdea.trim() : sourceContent.trim();
         if (!hasSource) {
             toast.error(activeTab === 'idea' ? 'Harap masukkan ide Anda terlebih dahulu' : 'Harap pilih artikel terlebih dahulu')
             return
         }
+        rewriteInFlightRef.current = true
         setIsRewriting(true)
         setGeneratedContent('')
         setGeneratedTitle('')
+        setGeneratedArticleId(null)
+        setFeaturedImage('')
 
         try {
             const response = await fetch(`${API_BASE_URL}/ai/generate`, {
@@ -163,6 +170,7 @@ export function useAIContent() {
             console.error('AI Rewrite error:', error)
             toast.error('Terjadi kesalahan saat memproses AI')
         } finally {
+            rewriteInFlightRef.current = false
             setIsRewriting(false)
         }
     }, [
@@ -180,6 +188,7 @@ export function useAIContent() {
         setSlug,
         setMetaTitle,
         setGeneratedArticleId,
+        setFeaturedImage,
         queryClient,
     ])
 
@@ -215,11 +224,13 @@ export function useAIContent() {
     }, [generatedContent, generatedTitle, API_BASE_URL, setMetaTitle, setMetaDescription, setSlug])
 
     const handleGenerateImage = useCallback(async () => {
+        if (imageInFlightRef.current) return
         if (!generatedTitle) {
             toast.error('Harap buat konten terlebih dahulu')
             return
         }
 
+        imageInFlightRef.current = true
         setIsGeneratingImage(true)
         try {
             const response = await fetch(`${API_BASE_URL}/ai/generate-image`, {
@@ -231,11 +242,18 @@ export function useAIContent() {
                 })
             })
             const data = await response.json()
-            if (data.success && data.data?.imageUrl) {
-                setFeaturedImage(data.data.imageUrl)
-                toast.success('Gambar berhasil dibuat!')
-            } else if (data.imageUrl) {
-                setFeaturedImage(data.imageUrl)
+            const imageUrl = data.success && data.data?.imageUrl ? data.data.imageUrl : data.imageUrl
+            if (imageUrl) {
+                setFeaturedImage(imageUrl)
+                if (generatedArticleId) {
+                    await fetch(`${API_BASE_URL}/articles/${generatedArticleId}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ featuredImageUrl: imageUrl }),
+                    })
+                    queryClient.invalidateQueries({ queryKey: ['articles'] })
+                }
                 toast.success('Gambar berhasil dibuat!')
             } else {
                 toast.error('Gagal membuat gambar')
@@ -244,9 +262,10 @@ export function useAIContent() {
             console.error('Image Gen error:', error)
             toast.error('Terjadi kesalahan saat membuat gambar')
         } finally {
+            imageInFlightRef.current = false
             setIsGeneratingImage(false)
         }
-    }, [generatedTitle, API_BASE_URL, setFeaturedImage])
+    }, [generatedTitle, generatedArticleId, API_BASE_URL, setFeaturedImage, queryClient])
 
     return {
         isScraping,
