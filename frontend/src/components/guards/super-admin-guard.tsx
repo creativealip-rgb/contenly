@@ -14,6 +14,8 @@ export function SuperAdminGuard({ children }: { children: React.ReactNode }) {
         }
     }, [isAuthenticated, isLoading, router])
 
+    const role = user?.role?.toLowerCase()
+
     if (isLoading || !isAuthenticated) {
         return (
             <div className="flex items-center justify-center min-h-screen">
@@ -22,7 +24,7 @@ export function SuperAdminGuard({ children }: { children: React.ReactNode }) {
         )
     }
 
-    if (user?.role !== 'super_admin') {
+    if (role !== 'super_admin') {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-4">
                 <div className="h-20 w-20 rounded-full bg-red-50 flex items-center justify-center text-red-600">

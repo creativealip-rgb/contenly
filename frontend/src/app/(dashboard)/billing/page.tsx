@@ -155,7 +155,7 @@ export default function BillingPage() {
                     <p className="text-slate-500">Tingkatkan akun Anda untuk mendapatkan lebih banyak fitur dan limit harian.</p>
                 </div>
 
-                <div className="grid gap-6 md:grid-cols-3">
+                <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
                     {/* Free Plan */}
                     <Card className={`relative overflow-hidden border-2 transition-all duration-300 ${!subscription?.plan || subscription.plan === 'FREE' ? 'border-blue-500 shadow-lg' : 'border-slate-200 dark:border-slate-800'}`}>
                         {(!subscription?.plan || subscription.plan === 'FREE') && (
@@ -298,6 +298,55 @@ export default function BillingPage() {
                                 trigger={
                                     <Button variant="outline" className="w-full border-blue-500 text-blue-600 hover:bg-blue-50" disabled={subscription?.plan === 'BUSINESS'}>
                                         {subscription?.plan === 'BUSINESS' ? 'Paket Saat Ini' : 'Hubungi Sales'}
+                                    </Button>
+                                }
+                            />
+                        </CardContent>
+                    </Card>
+
+                    {/* Enterprise Plan */}
+                    <Card className={`relative overflow-hidden border-2 transition-all duration-300 ${subscription?.plan === 'ENTERPRISE' ? 'border-blue-500 shadow-lg' : 'border-slate-200 dark:border-slate-800'}`}>
+                        {subscription?.plan === 'ENTERPRISE' && (
+                            <div className="absolute top-0 right-0 bg-blue-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-tighter">
+                                Aktif
+                            </div>
+                        )}
+                        <CardHeader>
+                            <CardTitle>Enterprise</CardTitle>
+                            <CardDescription>Untuk skala bisnis besar</CardDescription>
+                            <div className="pt-4">
+                                <span className="text-3xl font-bold">Rp 1,5jt</span>
+                                <span className="text-slate-500 text-sm"> / bulan</span>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <ul className="space-y-2 text-sm">
+                                <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                    <span className="font-bold">2.000 Token Kredit</span>
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                    <span>70 Artikel / hari</span>
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                    <span>70 Gambar AI / hari</span>
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                    <span className="font-bold">Maksimal 5 Situs WP</span>
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                    <span>Api Access & Webhooks</span>
+                                </li>
+                            </ul>
+                            <WhatsAppActionModal
+                                plan="ENTERPRISE"
+                                trigger={
+                                    <Button variant="outline" className="w-full border-blue-500 text-blue-600 hover:bg-blue-50" disabled={subscription?.plan === 'ENTERPRISE'}>
+                                        {subscription?.plan === 'ENTERPRISE' ? 'Paket Saat Ini' : 'Hubungi Sales'}
                                     </Button>
                                 }
                             />

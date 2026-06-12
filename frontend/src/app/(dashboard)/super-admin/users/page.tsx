@@ -179,7 +179,7 @@ export default function UserManagementPage() {
     }
 
     const getRoleBadge = (role: string) => {
-        switch (role) {
+        switch (role?.toLowerCase()) {
             case 'super_admin':
                 return <Badge className="bg-red-500/10 text-red-600 hover:bg-red-500/20 border-red-500/20"><ShieldAlert className="w-3 h-3 mr-1" /> Super Admin</Badge>
             case 'admin':
