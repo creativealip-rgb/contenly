@@ -195,7 +195,7 @@ export class AdminSettingsController {
           model,
           prompt: dto.prompt || 'A beautiful futuristic workspace with a computer screen showing "OK" in glowing cyan text',
           n: 1,
-          size: model.includes('gpt-5.5-image') ? 'auto' : '1080x1350',
+          size: model.toLowerCase().includes('image') ? 'auto' : '1024x1024',
           quality: 'auto',
           background: 'auto',
           image_detail: 'low',
