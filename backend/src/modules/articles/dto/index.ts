@@ -2,9 +2,10 @@ import { IsString, IsOptional, IsNumber, IsArray, IsIn } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 
 export class CreateArticleDto {
-  @ApiProperty()
+  @ApiPropertyOptional()
   @IsString()
-  sourceUrl: string;
+  @IsOptional()
+  sourceUrl?: string;
 
   @ApiProperty()
   @IsString()

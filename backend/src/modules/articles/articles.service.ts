@@ -124,7 +124,7 @@ export class ArticlesService {
       .insert(article)
       .values({
         userId,
-        sourceUrl: dto.sourceUrl,
+        sourceUrl: dto.sourceUrl || '',
         originalContent: dto.originalContent,
         generatedContent: dto.generatedContent,
         title: dto.title,
