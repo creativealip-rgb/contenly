@@ -193,14 +193,12 @@ export default function InstagramStudioEditorPage() {
               currentSlide={currentSlide} currentSlideIndex={currentSlideIndex} totalSlides={project.slides.length}
               editedContent={editedContent} setEditedContent={setEditedContent}
               hasUnsavedChanges={hasUnsavedChanges} setHasUnsavedChanges={setHasUnsavedChanges}
-              isGeneratingImage={isGeneratingImage} isGeneratingText={isGeneratingText}
-              onUpdateSlide={handleUpdateSlide} onGenerateImage={handleGenerateImage} onGenerateText={handleGenerateText}
+              isGeneratingImage={isGeneratingImage}
+              onUpdateSlide={handleUpdateSlide} onGenerateImage={handleGenerateImage}
               onReorderSlide={handleReorderSlide} onDeleteSlide={handleDeleteSlide} onNavigate={setCurrentSlideIndex}
+              onGenerateAll={handleGenerateAll} isGeneratingAll={isGeneratingAll || !project.slides?.length}
             />
             <div className="flex gap-2">
-              <Button onClick={handleGenerateAll} disabled={isGeneratingAll || !project.slides?.length} className="flex-1 bg-gradient-to-r from-violet-500 to-pink-600 hover:from-violet-600 hover:to-pink-700">
-                {isGeneratingAll ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" />Membuat Semua Gambar...</>) : (<><Sparkles className="h-4 w-4 mr-2" />Generate Semua ({(project.slides?.length || 0) * 2} Token)</>)}
-              </Button>
               <Button onClick={handleExport} disabled={isExporting || !project.slides?.some(s => s.imageUrl)} className="flex-1 bg-gradient-to-r from-pink-500 to-purple-600">
                 {isExporting ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" />Mengekspor...</>) : (<><Download className="h-4 w-4 mr-2" />Ekspor Korsel</>)}
               </Button>
