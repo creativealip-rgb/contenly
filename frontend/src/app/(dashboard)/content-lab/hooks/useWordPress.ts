@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { useState, useCallback } from 'react'
-import { WordPressSite, getSites} from '@/lib/sites-store'
+import { WordPressSite, getSites, getActiveSite } from '@/lib/sites-store'
 import { useContentLabStore } from '@/stores/content-lab-store'
 import { toast } from 'sonner'
 
@@ -18,6 +19,8 @@ export function useWordPress() {
     const [scheduleTime, setScheduleTime] = useState('')
 
     const {
+        generatedContent,
+        generatedTitle,
         selectedArticle,
         scrapeUrl,
         sourceContent,
@@ -74,11 +77,13 @@ export function useWordPress() {
                     content: currentContent,
                     status,
                     categories: selectedCategory ? [selectedCategory] : undefined,
-                    sourceUrl: selectedArticle?.url || scrapeUrl || '',
+                    sourceUrl: selectedArticle?.url || scrapeUrl || undefined,
                     originalContent: selectedArticle?.content || sourceContent || '',
                     feedItemId: selectedArticle?.id,
-                    featuredImageUrl: featuredImage,
-                    articleId: generatedArticleId }) })
+                    featuredImageUrl: featuredImage && !featuredImage.startsWith('data:') ? featuredImage : undefined,
+                    articleId: generatedArticleId,
+                }),
+            })
 
             const data = await response.json()
 
@@ -86,23 +91,28 @@ export function useWordPress() {
                 setPublishResult({
                     success: true,
                     message: status === 'publish' ? 'Artikel berhasil dipublish!' : 'Draft berhasil disimpan!',
-                    link: data.post.link })
+                    link: data.post.link,
+                })
                 toast.success(status === 'publish' ? 'Berhasil dipublish!' : 'Draft tersimpan!')
             } else {
                 setPublishResult({
                     success: false,
-                    message: data.error || 'Gagal mempublish artikel' })
+                    message: data.error || 'Gagal mempublish artikel',
+                })
                 toast.error('Gagal mempublish')
             }
-        } catch (error: unknown) {
+        } catch (error: any) {
             setPublishResult({
                 success: false,
-                message: error instanceof Error ? error.message : 'Terjadi kesalahan' })
+                message: error.message || 'Terjadi kesalahan',
+            })
             toast.error('Terjadi kesalahan')
         } finally {
             setIsPublishing(false)
         }
     }, [
+        generatedContent,
+        generatedTitle,
         selectedCategory,
         selectedArticle,
         scrapeUrl,
@@ -132,12 +142,14 @@ export function useWordPress() {
                     content: schedContent,
                     status: 'future',
                     categories: selectedCategory ? [selectedCategory] : undefined,
-                    sourceUrl: selectedArticle?.url || scrapeUrl || '',
+                    sourceUrl: selectedArticle?.url || scrapeUrl || undefined,
                     originalContent: selectedArticle?.content || sourceContent || '',
                     feedItemId: selectedArticle?.id,
-                    featuredImageUrl: featuredImage,
+                    featuredImageUrl: featuredImage && !featuredImage.startsWith('data:') ? featuredImage : undefined,
                     articleId: generatedArticleId,
-                    date: scheduledDateTime }) })
+                    date: scheduledDateTime,
+                }),
+            })
 
             const data = await response.json()
 
@@ -145,24 +157,29 @@ export function useWordPress() {
                 setPublishResult({
                     success: true,
                     message: `Artikel berhasil dijadwalkan untuk ${new Date(scheduledDateTime).toLocaleString('id-ID')}`,
-                    link: data.post.link })
+                    link: data.post.link,
+                })
                 setIsScheduleOpen(false)
                 toast.success('Berhasil dijadwalkan!')
             } else {
                 setPublishResult({
                     success: false,
-                    message: data.error || 'Gagal menjadwalkan artikel' })
+                    message: data.error || 'Gagal menjadwalkan artikel',
+                })
                 toast.error('Gagal menjadwalkan')
             }
-        } catch (error: unknown) {
+        } catch (error: any) {
             setPublishResult({
                 success: false,
-                message: error instanceof Error ? error.message : 'Terjadi kesalahan' })
+                message: error.message || 'Terjadi kesalahan',
+            })
             toast.error('Terjadi kesalahan')
         } finally {
             setIsPublishing(false)
         }
     }, [
+        generatedContent,
+        generatedTitle,
         scheduleDate,
         scheduleTime,
         selectedCategory,

@@ -1,5 +1,6 @@
 'use client'
 
+import { Separator } from '@/components/ui/separator'
 import { motion } from 'framer-motion'
 import { ContentLabState, ContentLabHandlers } from './types'
 import { AIConfigSection } from './sections/AIConfigSection'
@@ -59,8 +60,6 @@ export function ToolsPanel({
             <SEOSection
                 isRefreshingSEO={isRefreshingSEO}
                 onRefreshSEO={handleRefreshSEO}
-                isGeneratingImage={isGeneratingImage}
-                onGenerateImage={handleGenerateImage}
             />
 
             <PublishingSection

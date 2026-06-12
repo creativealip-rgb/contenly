@@ -106,6 +106,11 @@ const icons = {
             <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
     ),
+    close: (
+        <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth="2">
+            <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+    ),
     createContent: (
         <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth="1.5">
             <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" strokeLinecap="round" strokeLinejoin="round" />
@@ -146,6 +151,7 @@ interface NavItem {
     icon: React.ReactNode
     role?: string
     tourId?: string
+    badge?: string
 }
 
 interface NavGroup {
@@ -170,16 +176,16 @@ const navGroups: NavGroup[] = [
         items: [
             { href: '/content-lab', label: 'Content Lab', icon: icons.contentLab, tourId: 'content-lab' },
             { href: '/instagram-studio', label: 'Instagram Studio', icon: icons.instagram, tourId: 'instagram-studio' },
-            { href: '/video-scripts', label: 'Video Scripts', icon: icons.video, tourId: 'video-scripts' },
-            { href: '/video-clips', label: 'Video Clips', icon: icons.video },
-            { href: '/motion-graphics', label: 'Motion Graphics', icon: icons.video },
+            { href: '/video-scripts', label: 'Video Scripts', icon: icons.video },
+            { href: '/video-clips', label: 'Video Clips', icon: icons.video, role: 'super_admin', badge: 'Soon' },
+            { href: '/motion-graphics', label: 'Motion Graphics', icon: icons.video, badge: 'Soon' },
             { href: '/articles', label: 'Artikel', icon: icons.articles },
             { href: '/calendar', label: 'Kalender', icon: icons.calendar, tourId: 'calendar' },
         ],
     },
     {
         id: 'discovery',
-        label: 'Discovery',
+        label: 'Riset Tren',
         icon: icons.discovery,
         items: [
             { href: '/trend-radar', label: 'Radar Tren', icon: icons.radar },
@@ -203,8 +209,7 @@ const navGroups: NavGroup[] = [
             { href: '/integrations', label: 'Integrasi', icon: icons.integrations, tourId: 'integrations' },
             { href: '/notifications', label: 'Notifikasi', icon: icons.billing },
             { href: '/billing', label: 'Tagihan', icon: icons.billing },
-            { href: '/settings', label: 'Pengaturan', icon: icons.settings },
-            { href: '/admin/api-keys', label: 'Provider & Model', icon: icons.settings, role: 'super_admin' },
+            { href: '/admin/api-keys', label: 'Provider & API', icon: icons.settings },
             { href: '/super-admin/users', label: 'Pengguna', icon: icons.userManagement, role: 'super_admin' },
         ],
     },
@@ -230,18 +235,19 @@ export function Sidebar() {
         }
     }
 
-    const isAdmin = user?.role === 'admin' || user?.role === 'super_admin'
+    const _role = user?.role?.toLowerCase();
+    const isAdmin = _role === 'admin' || _role === 'super_admin'
 
     const renderNavItem = (item: NavItem, isSubItem: boolean = false) => {
-        if (item.role === 'super_admin' && user?.role !== 'super_admin') {
+        if (item.role === 'super_admin' && _role !== 'super_admin' && !item.badge) {
             return null
         }
 
         const isViewBoost = item.href === '/view-boost'
-        const isDisabled = isViewBoost && !isAdmin
+        const isDisabled = (isViewBoost && !isAdmin) || (item.role === 'super_admin' && _role !== 'super_admin')
         const isActive = !isDisabled && (pathname === item.href || pathname.startsWith(item.href + '/'))
 
-        if (isDisabled) {
+        if (isDisabled && !item.badge) {
             return null
         }
 
@@ -252,16 +258,19 @@ export function Sidebar() {
                 whileTap={isSubItem ? {} : { scale: 0.98 }}
             >
                 <Link
-                    href={item.href}
-                    onClick={handleMobileLinkClick}
+                    href={isDisabled ? '#' : item.href}
+                    onClick={isDisabled ? (e) => e.preventDefault() : handleMobileLinkClick}
                     data-tour={item.tourId}
                     aria-current={isActive ? "page" : undefined}
+                    aria-disabled={isDisabled}
                     className={cn(
-                        "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition-all duration-300",
-                        isActive
-                            ? "bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none"
-                            : "text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-slate-800/80",
-                        isSubItem && "ml-4 py-2"
+                        "group flex items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-bold transition-all duration-300",
+                        isDisabled
+                            ? "text-slate-300 dark:text-slate-600 cursor-not-allowed opacity-60"
+                            : isActive
+                            ? "bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none active:scale-[0.98]"
+                            : "text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-slate-800/80 active:scale-[0.98]",
+                        isSubItem && "ml-4 py-2.5"
                     )}
                 >
                     <div className={cn(
@@ -272,12 +281,19 @@ export function Sidebar() {
                     </div>
                     <span className={cn(
                         "truncate transition-all duration-500",
-                        isCollapsed ? "md:w-0 md:opacity-0" : "md:w-auto md:opacity-100"
+                        isCollapsed ? "md:w-0 md:opacity-0" : "md:w-auto md:opacity-100",
+                        isDisabled && "opacity-50"
                     )}>
                         {item.label}
                     </span>
 
-                    {isActive && !isCollapsed && (
+                    {item.badge && !isCollapsed && (
+                        <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
+                            {item.badge}
+                        </span>
+                    )}
+
+                    {isActive && !isCollapsed && !item.badge && (
                         <motion.div
                             layoutId="active-pill"
                             className="ml-auto h-1.5 w-1.5 rounded-full bg-white"
@@ -290,6 +306,7 @@ export function Sidebar() {
 
     return (
         <>
+            {/* Backdrop overlay */}
             <div
                 className={cn(
                     "fixed inset-0 z-30 bg-background/80 backdrop-blur-sm transition-all duration-200 md:hidden",
@@ -300,18 +317,31 @@ export function Sidebar() {
 
             <aside
                 className={cn(
-                    "fixed left-0 top-20 z-40 h-[calc(100vh-6rem)] transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]",
-                    "mx-4 rounded-[2rem] border border-white/40 dark:border-white/10 glass shadow-2xl shadow-slate-200/50 dark:shadow-none",
+                    "fixed left-0 top-0 md:top-20 z-40 h-screen md:h-[calc(100vh-6rem)] transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]",
+                    "md:mx-4 md:rounded-[2rem] md:border md:border-white/40 md:dark:border-white/10 md:glass md:shadow-2xl md:shadow-slate-200/50 md:dark:shadow-none",
+                    "bg-white dark:bg-slate-900 md:bg-transparent",
                     isCollapsed ? "md:w-[80px]" : "md:w-72",
                     "w-72",
                     isOpen ? "translate-x-0" : "-translate-x-[calc(100%+2rem)] md:translate-x-0"
                 )}
             >
                 <div className="flex h-full flex-col">
-                    <nav role="navigation" aria-label="Menu utama" className="flex-1 space-y-1.5 p-4 overflow-y-auto">
+                    {/* Mobile header with close button */}
+                    <div className="flex items-center justify-between p-4 md:hidden border-b border-border/50">
+                        <span className="text-lg font-black text-slate-900 dark:text-white">Menu</span>
+                        <button
+                            onClick={() => setOpen(false)}
+                            className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 active:scale-95 transition-all"
+                            aria-label="Tutup menu"
+                        >
+                            {icons.close}
+                        </button>
+                    </div>
+
+                    <nav role="navigation" aria-label="Menu utama" className="flex-1 space-y-1.5 p-4 pb-24 md:pb-4 overflow-y-auto">
                         {navGroups.map((group) => {
                             const filteredItems = group.items.filter(item => {
-                                if (item.role === 'super_admin' && user?.role !== 'super_admin') {
+                                if (item.role === 'super_admin' && _role !== 'super_admin') {
                                     return false
                                 }
                                 if (item.role === 'admin' && !isAdmin) {
@@ -341,7 +371,7 @@ export function Sidebar() {
                                         onClick={() => toggleGroup(group.id)}
                                         aria-label={`${isGroupOpen ? 'Tutup' : 'Buka'} grup ${group.label}`}
                                         className={cn(
-                                            "group flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition-all duration-300",
+                                            "group flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-bold transition-all duration-300 active:scale-[0.98]",
                                             "text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-slate-800/80"
                                         )}
                                     >
@@ -387,14 +417,14 @@ export function Sidebar() {
                         })}
                     </nav>
 
-                    <div className="mt-auto border-t border-border p-4">
+                    <div className="hidden md:block mt-auto border-t border-border p-4">
                         <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => setCollapsed(!isCollapsed)}
                             aria-label={isCollapsed ? 'Perluas sidebar' : 'Kecilkan sidebar'}
                             className={cn(
-                                "hidden md:flex w-full rounded-xl transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-accent/50",
+                                "flex w-full rounded-xl transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-accent/50",
                                 isCollapsed ? "justify-center px-2" : "justify-start"
                             )}
                         >

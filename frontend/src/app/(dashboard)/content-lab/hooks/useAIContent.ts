@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { useState, useCallback } from 'react'
-import { Article, useContentLabStore } from '@/stores/content-lab-store'
+import { useContentLabStore } from '@/stores/content-lab-store'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -19,7 +20,7 @@ export function useAIContent() {
         sourceContent, setSourceContent,
         articleIdea,
         selectedArticle, setSelectedArticle,
-        scrapeUrl,
+        scrapeUrl, setScrapeUrl,
         aiTone,
         aiLength,
         setGeneratedContent,
@@ -34,7 +35,7 @@ export function useAIContent() {
         activeTab
     } = useContentLabStore()
 
-    const handleSelectArticle = useCallback(async (article: Article) => {
+    const handleSelectArticle = useCallback(async (article: any) => {
         setSelectedArticle(article)
         setIsScanning(true)
         try {
@@ -50,12 +51,12 @@ export function useAIContent() {
             } else {
                 setSourceContent(`# ${article.title}\n\n${article.excerpt || article.description || ''}\n\nSource: ${article.url}`)
             }
-        } catch {
+        } catch (error) {
             setSourceContent(`# ${article.title}\n\n${article.excerpt || article.description || ''}\n\nSource: ${article.url}`)
         } finally {
             setIsScanning(false)
         }
-    }, [setSelectedArticle, setSourceContent])
+    }, [API_BASE_URL, setSelectedArticle, setSourceContent])
 
     const handleScrape = useCallback(async () => {
         if (!scrapeUrl) return
@@ -63,7 +64,8 @@ export function useAIContent() {
         setSourceContent('')
         try {
             // Use frontend /api/scraper proxy (forwards cookies properly)
-            const response = await fetch('/api/scraper', {
+            const API = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
+            const response = await fetch(`${API}/scraper/scrape`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -85,7 +87,7 @@ export function useAIContent() {
         } finally {
             setIsScraping(false)
         }
-    }, [scrapeUrl, setSourceContent, setSelectedArticle, setGeneratedTitle])
+    }, [scrapeUrl, API_BASE_URL, setSourceContent, setSelectedArticle, setGeneratedTitle])
 
     const handleAIRewrite = useCallback(async (selectedCategoryId: number | null) => {
         const hasSource = activeTab === 'idea' ? articleIdea.trim() : sourceContent.trim();
@@ -105,14 +107,15 @@ export function useAIContent() {
                 body: JSON.stringify({
                     originalContent: activeTab === 'idea' ? articleIdea : sourceContent,
                     title: selectedArticle?.title || 'Rewritten Article',
-                    sourceUrl: selectedArticle?.url || scrapeUrl || '',
+                    sourceUrl: selectedArticle?.url || scrapeUrl || undefined,
                     mode: activeTab === 'idea' ? 'idea' : 'rewrite',
                     categoryId: selectedCategoryId,
                     options: {
                         tone: aiTone,
                         length: aiLength === 'shorter' ? 'short' : aiLength === 'longer' ? 'long' : 'medium'
                     }
-                }) })
+                }),
+            })
             const result = await response.json()
             if (result.success && result.data) {
                 setGeneratedContent(result.data.content)
@@ -132,12 +135,14 @@ export function useAIContent() {
                             title: result.data.title,
                             generatedContent: result.data.content,
                             originalContent: sourceText,
-                            sourceUrl: selectedArticle?.url || scrapeUrl || '',
+                            sourceUrl: selectedArticle?.url || scrapeUrl || undefined,
                             metaTitle: result.data.title,
                             metaDescription: result.data.metaDescription || '',
                             slug: result.data.slug || '',
                             tokensUsed: result.data.tokensUsed || 0,
-                            status: 'DRAFT' }) })
+                            status: 'DRAFT',
+                        }),
+                    })
                     if (articleRes.ok) {
                         const saved = await articleRes.json()
                         setGeneratedArticleId(saved.id)
@@ -192,7 +197,9 @@ export function useAIContent() {
                 credentials: 'include',
                 body: JSON.stringify({
                     title: generatedTitle,
-                    content: generatedContent }) })
+                    content: generatedContent,
+                }),
+            })
 
             const result = await response.json()
             if (result.metaTitle) setMetaTitle(result.metaTitle)

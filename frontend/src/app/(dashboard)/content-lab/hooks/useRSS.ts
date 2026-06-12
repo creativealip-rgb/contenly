@@ -1,13 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { useState, useCallback } from 'react'
 import { RssFeed, getFeeds, addFeed, removeFeed } from '@/lib/feeds-store'
-import { Article } from '@/stores/content-lab-store'
 import { toast } from 'sonner'
 
 export function useRSS() {
     const [feeds, setFeeds] = useState<RssFeed[]>([])
-    const [articles, setArticles] = useState<Article[]>([])
+    const [articles, setArticles] = useState<any[]>([])
     const [selectedFeed, setSelectedFeed] = useState('')
     const [isFetchingRSS, setIsFetchingRSS] = useState(false)
     const [isAddFeedOpen, setIsAddFeedOpen] = useState(false)
@@ -27,9 +27,11 @@ export function useRSS() {
         setIsFetchingRSS(true)
         setArticles([])
         try {
-            const response = await fetch('/api/rss', {
+            const API = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
+            const response = await fetch(`${API}/feeds/fetch-items`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ url: feedUrl }),
             })
             const data = await response.json()

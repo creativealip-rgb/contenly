@@ -4,22 +4,17 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { RefreshCw, Image as ImageIcon, Trash2, Loader2, Sparkles } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
 import { useContentLabStore } from '@/stores/content-lab-store'
-import NextImage from 'next/image'
 
 interface SEOSectionProps {
     isRefreshingSEO: boolean;
     onRefreshSEO: () => void;
-    isGeneratingImage: boolean;
-    onGenerateImage: () => void;
 }
 
 export function SEOSection({
     isRefreshingSEO,
     onRefreshSEO,
-    isGeneratingImage,
-    onGenerateImage
 }: SEOSectionProps) {
     const {
         metaTitle, setMetaTitle,
@@ -27,7 +22,6 @@ export function SEOSection({
         generatedContent,
         slug, setSlug,
         metaDescription, setMetaDescription,
-        featuredImage, setFeaturedImage
     } = useContentLabStore()
 
     return (
@@ -66,59 +60,8 @@ export function SEOSection({
                 />
             </div>
 
-            {/* SEO Score */}
             <GooglePreviewMock title={metaTitle || generatedTitle || ''} description={metaDescription} slug={slug} />
             <SeoScoreIndicator title={metaTitle || generatedTitle || ''} description={metaDescription} slug={slug} />
-
-            <div className="relative group rounded-2xl overflow-hidden aspect-[16/9] border-2 border-dashed border-slate-100 dark:border-slate-800 bg-slate-50/50 flex items-center justify-center transition-all hover:bg-slate-50">
-                {featuredImage ? (
-                    <>
-                        <NextImage src={featuredImage} alt="Featured" fill className="object-cover" unoptimized />
-                        <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-sm">
-                            <Button variant="secondary" size="sm" className="h-8 text-[10px] font-bold rounded-lg" onClick={() => document.getElementById('image-input')?.click()}>
-                                Ganti
-                            </Button>
-                            <Button variant="destructive" size="sm" className="h-8 w-8 p-0 rounded-lg" onClick={() => setFeaturedImage('')}>
-                                <Trash2 className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    </>
-                ) : (
-                    <div className="flex flex-col items-center gap-3">
-                        <div className="text-center p-4 cursor-pointer" onClick={() => document.getElementById('image-input')?.click()}>
-                            <div className="p-3 bg-white text-blue-600 rounded-full w-fit mx-auto mb-2 shadow-sm border border-slate-100">
-                                <ImageIcon className="h-5 w-5" />
-                            </div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-blue-600/60">Gambar Utama</p>
-                        </div>
-
-                        {generatedTitle && (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 text-[10px] font-bold text-blue-600 bg-blue-50/50 hover:bg-blue-100 rounded-lg px-3"
-                                onClick={(e) => { e.stopPropagation(); onGenerateImage(); }}
-                                disabled={isGeneratingImage}
-                            >
-                                {isGeneratingImage ? (
-                                    <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                                ) : (
-                                    <Sparkles className="h-3 w-3 mr-1" />
-                                )}
-                                Buat via AI (2T)
-                            </Button>
-                        )}
-                    </div>
-                )}
-                <input id="image-input" type="file" className="hidden" accept="image/*" onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onloadend = () => setFeaturedImage(reader.result as string);
-                        reader.readAsDataURL(file);
-                    }
-                }} />
-            </div>
         </div>
     )
 }
