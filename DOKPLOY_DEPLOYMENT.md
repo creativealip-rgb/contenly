@@ -3,6 +3,8 @@
 ## 📋 Overview
 Panduan ini akan membantu Anda deploy project Contently (NestJS Backend + Next.js Frontend) ke VPS menggunakan Dokploy.
 
+> **Production source of truth:** `https://contenly.app` saat ini build dari branch `main` lewat Dokploy **Raw Compose**. Branch efektif ada di `/etc/dokploy/compose/contenly/code/docker-compose.yml` sebagai `https://github.com/creativealip-rgb/contenly.git#main`. Lihat detail: [`docs/live-deployment.md`](docs/live-deployment.md).
+
 ## 🏗️ Arsitektur Deployment
 
 ```
