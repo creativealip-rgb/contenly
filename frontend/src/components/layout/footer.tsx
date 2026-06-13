@@ -63,7 +63,7 @@ export function Footer() {
                     <div className="col-span-2 md:col-span-4 lg:col-span-5">
                         <Link href="/" className="flex items-center gap-3 mb-6">
                             <div className="flex items-center justify-center overflow-hidden">
-                                <Image src="/logo-full.png" alt="Contently Logo" width={140} height={40} className="object-contain h-10 w-auto" />
+                                <Image src="/logo-full.png" alt="Contenly Logo" width={140} height={40} className="object-contain h-10 w-auto" />
                             </div>
                         </Link>
                         <p className="text-muted-foreground max-w-xs leading-relaxed">
@@ -142,7 +142,7 @@ export function Footer() {
                 {/* Bottom Bar */}
                 <div className="mt-16 pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
                     <p className="text-sm text-muted-foreground">
-                        © {new Date().getFullYear()} Contently. All rights reserved.
+                        © {new Date().getFullYear()} Contenly. All rights reserved.
                     </p>
                     <div className="flex items-center gap-6">
                         <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">

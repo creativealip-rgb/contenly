@@ -42,12 +42,6 @@ export class ArticlesController {
     });
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get article details' })
-  async findById(@CurrentUser() user: User, @Param('id') id: string) {
-    return this.articlesService.findById(user.id, id);
-  }
-
   @Post()
   @ApiOperation({ summary: 'Create new article' })
   async create(@CurrentUser() user: User, @Body() dto: CreateArticleDto) {
@@ -74,6 +68,12 @@ export class ArticlesController {
   @ApiOperation({ summary: 'Aggregate stats per status + total tokens' })
   async getStats(@CurrentUser() user: User) {
     return this.articlesService.getStats(user.id);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get article details' })
+  async findById(@CurrentUser() user: User, @Param('id') id: string) {
+    return this.articlesService.findById(user.id, id);
   }
 
   @Post('bulk/delete')

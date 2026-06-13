@@ -160,14 +160,6 @@ export class OpenAiService {
     fallback: string,
   ): Promise<string> {
     try {
-      await this.drizzle.db.execute(sql`
-        CREATE TABLE IF NOT EXISTS system_settings (
-          key text PRIMARY KEY,
-          value text NOT NULL,
-          created_at timestamp NOT NULL DEFAULT now(),
-          updated_at timestamp NOT NULL DEFAULT now()
-        )
-      `);
       const result = await this.drizzle.db.execute(
         sql`SELECT value FROM system_settings WHERE key = ${key} LIMIT 1`,
       );

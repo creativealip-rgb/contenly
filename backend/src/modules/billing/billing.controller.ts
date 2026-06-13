@@ -136,7 +136,11 @@ export class BillingController {
 
         try {
             // Verify webhook signature using raw body
-            const rawBody = req.rawBody || JSON.stringify(req.body);
+            const rawBody = req.rawBody;
+            if (!rawBody) {
+                this.logger.error('Stripe webhook raw body is missing');
+                throw new BadRequestException('Webhook raw body missing');
+            }
             event = this.stripe.webhooks.constructEvent(
                 rawBody,
                 signature,

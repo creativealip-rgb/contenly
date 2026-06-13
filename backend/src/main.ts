@@ -25,7 +25,7 @@ import {
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { rawBody: true });
 
   // Increase body size limits for featured images
   app.use(json({ limit: '5mb' }));

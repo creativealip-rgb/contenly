@@ -34,26 +34,13 @@ export class AdminSettingsController {
     return (this.config.get<string>('IMAGE_MODEL') || this.config.get<string>('IMAGE_GENERATION_MODEL') || 'cx/gpt-5.4-image').trim();
   }
 
-  private async ensureSettingsTable() {
-    await this.drizzle.db.execute(sql`
-      CREATE TABLE IF NOT EXISTS system_settings (
-        key text PRIMARY KEY,
-        value text NOT NULL,
-        created_at timestamp NOT NULL DEFAULT now(),
-        updated_at timestamp NOT NULL DEFAULT now()
-      )
-    `);
-  }
-
   private async getSetting(key: string, fallback = ''): Promise<string> {
-    await this.ensureSettingsTable();
     const result = await this.drizzle.db.execute(sql`SELECT value FROM system_settings WHERE key = ${key} LIMIT 1`);
     const rows = Array.isArray(result) ? result : ((result as any).rows || []);
     return rows[0]?.value ?? fallback;
   }
 
   private async setSetting(key: string, value: string) {
-    await this.ensureSettingsTable();
     await this.drizzle.db.execute(sql`
       INSERT INTO system_settings (key, value, updated_at)
       VALUES (${key}, ${value}, now())

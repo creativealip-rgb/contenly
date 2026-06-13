@@ -3,7 +3,7 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { TelegramBotService } from './telegram-bot.service';
 
 @ApiTags('Telegram Bot')
-@Controller('api/telegram-bot')
+@Controller('telegram-bot')
 export class TelegramBotController {
   constructor(private readonly telegramBotService: TelegramBotService) {}
 
