@@ -58,19 +58,48 @@ export default function InstagramStudioEditorPage() {
   const [isGeneratingAll, setIsGeneratingAll] = useState(false)
 
   const handleGenerateAll = async () => {
+    if (!project?.slides?.length || isGeneratingAll) return
+
     setIsGeneratingAll(true)
+    let successCount = 0
+    let failedCount = 0
+
     try {
-      const response = await fetch(`${API_BASE_URL}/instagram-studio/projects/${projectId}/generate-all`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include' })
-      if (response.ok) {
-        const updatedProject = await response.json()
-        setProject(updatedProject)
-        toast.success('Semua gambar berhasil dibuat!')
-      } else {
-        const errData = await response.json().catch(() => null)
-        toast.error(`Gagal: ${errData?.message || response.statusText}`)
+      for (const slide of project.slides) {
+        setIsGeneratingImage(slide.id)
+        toast.info(`Generate slide ${slide.slideNumber} dari ${project.slides.length}...`)
+
+        const response = await fetch(`${API_BASE_URL}/instagram-studio/slides/${slide.id}/generate-image`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ style: project.globalStyle }),
+        })
+
+        if (response.ok) {
+          successCount++
+          const updatedSlide = await response.json()
+          setProject((prev) => prev ? {
+            ...prev,
+            slides: prev.slides.map((s) => s.id === slide.id ? { ...s, ...updatedSlide } : s),
+          } : prev)
+        } else {
+          failedCount++
+          const errData = await response.json().catch(() => null)
+          console.error(`Failed to generate slide ${slide.slideNumber}:`, errData?.message || response.statusText)
+        }
       }
-    } catch (error) { console.error('Failed to generate all:', error); toast.error('Terjadi kesalahan') }
-    finally { setIsGeneratingAll(false) }
+
+      await fetchProject()
+      if (failedCount) toast.warning(`Selesai: ${successCount} berhasil, ${failedCount} gagal`)
+      else toast.success('Semua gambar berhasil dibuat!')
+    } catch (error) {
+      console.error('Failed to generate all:', error)
+      toast.error('Terjadi kesalahan')
+    } finally {
+      setIsGeneratingImage(null)
+      setIsGeneratingAll(false)
+    }
   }
 
   const handleGenerateImage = async (slideId: string) => {
