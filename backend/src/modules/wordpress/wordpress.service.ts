@@ -213,8 +213,6 @@ export class WordpressService implements OnModuleInit {
     auth: string,
     requestedCategories?: number[],
   ): Promise<number[] | undefined> {
-    if (requestedCategories?.length) return requestedCategories;
-
     try {
       const response = await this.retryWpRequest<any>(
         () =>
@@ -231,10 +229,12 @@ export class WordpressService implements OnModuleInit {
         slug: cat.slug,
       }));
       const defaultCategoryId = this.pickDefaultCategoryId(categories);
-      return defaultCategoryId ? [defaultCategoryId] : undefined;
+      const resolved = new Set(requestedCategories || []);
+      if (defaultCategoryId) resolved.add(defaultCategoryId);
+      return resolved.size ? Array.from(resolved) : undefined;
     } catch (error: any) {
       this.logger.warn(`Failed to resolve default category: ${this.getWpErrorMessage(error)}`);
-      return undefined;
+      return requestedCategories?.length ? requestedCategories : undefined;
     }
   }
 
