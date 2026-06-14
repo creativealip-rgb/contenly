@@ -36,6 +36,7 @@ interface SidebarPanelsProps {
   isExportingAudio: boolean
   onExportAudio: () => void
   isExportingVideo: boolean
+  videoRenderProgress: { progress: number; message: string } | null
   onExportVideo: () => void
   isComposing: boolean
   onComposeVideo: () => void
@@ -66,6 +67,7 @@ export function SidebarPanels({
   isExportingAudio,
   onExportAudio,
   isExportingVideo,
+  videoRenderProgress,
   onExportVideo,
   isComposing,
   onComposeVideo,
@@ -208,6 +210,17 @@ export function SidebarPanels({
                 )}
                 {isExportingVideo ? 'Rendering MP4...' : 'Render MP4'}
               </Button>
+              {videoRenderProgress && (
+                <div className="mt-2 space-y-1 rounded-lg bg-slate-100 p-2 text-xs text-slate-600">
+                  <div className="flex items-center justify-between">
+                    <span>{videoRenderProgress.message}</span>
+                    <span>{videoRenderProgress.progress}%</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-slate-200">
+                    <div className="h-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-blue-500" style={{ width: `${Math.min(100, Math.max(0, videoRenderProgress.progress))}%` }} />
+                  </div>
+                </div>
+              )}
               <Button
                 disabled={!hasScenes || isComposing}
                 onClick={onComposeVideo}

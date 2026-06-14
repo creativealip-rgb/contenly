@@ -82,6 +82,7 @@ export default function VideoScriptEditorPage() {
   const [ttsAudioUrl, setTtsAudioUrl] = useState<string | null>(null)
   const [isExportingAudio, setIsExportingAudio] = useState(false)
   const [isExportingVideo, setIsExportingVideo] = useState(false)
+  const [videoRenderProgress, setVideoRenderProgress] = useState<{ progress: number; message: string } | null>(null)
   const [selectedVoice, setSelectedVoice] = useState<'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer'>('nova')
   const [sidebarTab, setSidebarTab] = useState<'setup' | 'export' | 'tools'>('setup')
   const [isComposing, setIsComposing] = useState(false)
@@ -451,6 +452,7 @@ export default function VideoScriptEditorPage() {
 
   const handleExportVideo = async () => {
     setIsExportingVideo(true)
+    setVideoRenderProgress({ progress: 5, message: 'Queued' })
     try {
       const response = await fetch(`${API_BASE_URL}/video-scripts/projects/${projectId}/export/video/job`, {
         method: 'POST',
@@ -462,11 +464,12 @@ export default function VideoScriptEditorPage() {
       const job = await response.json()
       toast.success('Render MP4 dimulai. Tunggu sampai selesai.')
 
-      for (let attempt = 0; attempt < 90; attempt++) {
-        await new Promise((resolve) => setTimeout(resolve, 3000))
+      for (let attempt = 0; attempt < 72; attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, 5000))
         const statusRes = await fetch(`${API_BASE_URL}/video-scripts/render-jobs/${job.id}`, { credentials: 'include' })
         if (!statusRes.ok) { const d = await statusRes.json().catch(() => ({})); throw new Error(d.message || 'Gagal cek status render') }
         const status = await statusRes.json()
+        setVideoRenderProgress({ progress: status.progress || 0, message: status.message || status.status })
         if (status.status === 'completed' && status.downloadUrl) {
           const anchor = document.createElement('a')
           anchor.href = status.downloadUrl
@@ -479,7 +482,7 @@ export default function VideoScriptEditorPage() {
       }
       throw new Error('Render MP4 timeout')
     } catch (error: unknown) { toast.error(getErrorMessage(error, 'Gagal export video MP4.')) }
-    finally { setIsExportingVideo(false) }
+    finally { setIsExportingVideo(false); setVideoRenderProgress(null) }
   }
 
   const handleComposeVideo = async () => {
@@ -733,7 +736,7 @@ export default function VideoScriptEditorPage() {
             isExportingZip={isExportingZip} onExportZip={handleExportZip}
             selectedVoice={selectedVoice} setSelectedVoice={setSelectedVoice}
             isExportingAudio={isExportingAudio} onExportAudio={handleExportAudio}
-            isExportingVideo={isExportingVideo} onExportVideo={handleExportVideo}
+            isExportingVideo={isExportingVideo} videoRenderProgress={videoRenderProgress} onExportVideo={handleExportVideo}
             isComposing={isComposing} onComposeVideo={handleComposeVideo}
             isTranscribing={isTranscribing} onTranscribe={handleTranscribe}
             transcription={transcription}

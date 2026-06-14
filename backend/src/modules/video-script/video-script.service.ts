@@ -1340,6 +1340,7 @@ ${project.sourceContent}`;
       voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
       width?: number;
       height?: number;
+      onProgress?: (progress: number, message: string) => void;
     } = {},
   ) {
     const project = await this.getProject(userId, projectId);
@@ -1360,8 +1361,10 @@ ${project.sourceContent}`;
     const subtitlePath = path.join(outputDir, `${project.id}-${stamp}.srt`);
     const concatPath = path.join(outputDir, `${project.id}-${stamp}-concat.txt`);
 
+    options.onProgress?.(15, 'Generating voiceover audio');
     const audio = await this.exportAudio(userId, projectId, options.voice || 'alloy');
     await fs.writeFile(audioPath, audio.buffer);
+    options.onProgress?.(30, 'Preparing scenes and captions');
 
     const scenes = project.scenes
       .filter((scene) => (scene.voiceoverText || scene.visualContext || '').trim())
@@ -1395,6 +1398,8 @@ ${project.sourceContent}`;
 
     try {
       for (const [index, scene] of scenes.entries()) {
+        const sceneProgress = 35 + Math.round((index / Math.max(1, scenes.length)) * 35);
+        options.onProgress?.(sceneProgress, `Rendering scene ${index + 1}/${scenes.length}`);
         const duration = Math.max(3, scene.estimatedDuration || 5);
         const segmentPath = path.join(outputDir, `${project.id}-${stamp}-scene-${index + 1}.mp4`);
         const mediaPath = await this.downloadSceneFootage(scene.selectedFootage, outputDir, `${project.id}-${stamp}-${index + 1}`);
@@ -1418,6 +1423,8 @@ ${project.sourceContent}`;
         'utf8',
       );
 
+      options.onProgress?.(75, 'Combining scene clips');
+
       await execFileAsync('ffmpeg', [
         '-y',
         '-f', 'concat',
@@ -1432,6 +1439,8 @@ ${project.sourceContent}`;
         'format=yuv420p',
       ].join(',');
 
+      options.onProgress?.(88, 'Adding captions and final audio');
+
       await execFileAsync('ffmpeg', [
         '-y',
         '-i', videoPath,
@@ -1445,6 +1454,7 @@ ${project.sourceContent}`;
         '-shortest',
         outputPath,
       ], { timeout: 900000 });
+      options.onProgress?.(96, 'Saving MP4 export');
     } finally {
       await Promise.all([
         fs.unlink(audioPath).catch(() => undefined),
@@ -1470,6 +1480,7 @@ ${project.sourceContent}`;
       voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
       width?: number;
       height?: number;
+      onProgress?: (progress: number, message: string) => void;
     } = {},
   ) {
     const result = await this.exportVideo(userId, projectId, options);
@@ -1533,8 +1544,11 @@ ${project.sourceContent}`;
     if (!job) return;
 
     try {
-      this.updateVideoRenderJob(jobId, { status: 'rendering', progress: 20, message: 'Rendering MP4' });
-      const result = await this.exportVideoToFile(job.userId, job.projectId, options);
+      this.updateVideoRenderJob(jobId, { status: 'rendering', progress: 10, message: 'Starting render' });
+      const result = await this.exportVideoToFile(job.userId, job.projectId, {
+        ...options,
+        onProgress: (progress, message) => this.updateVideoRenderJob(jobId, { progress, message }),
+      });
       this.updateVideoRenderJob(jobId, {
         status: 'completed',
         progress: 100,
