@@ -1,6 +1,7 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
+import { Agent as UndiciAgent } from 'undici';
 import {
   GetObjectCommand,
   PutObjectCommand,
@@ -738,6 +739,7 @@ Return JSON with:
     };
 
     try {
+      const allowSelfSignedImageGateway = /sslip\.io|localhost|127\.0\.0\.1/i.test(codexBaseUrl);
       const response = await fetch(`${codexBaseUrl}/v1/images/generations`, {
         method: 'POST',
         headers: {
@@ -750,7 +752,12 @@ Return JSON with:
           this.buildImageRequestBody(imageModel, enhancedPrompt),
         ),
         signal: AbortSignal.timeout(300000),
-      });
+        ...(allowSelfSignedImageGateway && {
+          dispatcher: new UndiciAgent({
+            connect: { rejectUnauthorized: false },
+          }),
+        }),
+      } as any);
 
       if (!response.ok)
         throw new Error(`Codex API ${response.status}: ${response.statusText}`);
