@@ -6,6 +6,21 @@ import { useContentLabStore } from '@/stores/content-lab-store'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 
+function getAiErrorMessage(error: any, fallback: string) {
+    const code = error?.code || error?.error?.code
+    const retryAfter = error?.details?.retryAfter || error?.error?.details?.retryAfter
+
+    if (code === 'AI_RATE_LIMITED') {
+        return retryAfter
+            ? `AI sedang ramai. Coba lagi dalam ${retryAfter} detik.`
+            : 'AI sedang ramai. Coba lagi sebentar.'
+    }
+    if (code === 'AI_TIMEOUT') {
+        return 'AI butuh terlalu lama. Coba lagi dengan konten lebih pendek.'
+    }
+    return error?.message || error?.error || fallback
+}
+
 export function useAIContent() {
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
     const queryClient = useQueryClient()
@@ -164,7 +179,7 @@ export function useAIContent() {
 
                 toast.success('Konten berhasil dibuat dan disimpan sebagai draft!')
             } else {
-                toast.error(result.error || 'Gagal membuat konten')
+                toast.error(getAiErrorMessage(result, 'Gagal membuat konten'))
             }
         } catch (error) {
             console.error('AI Rewrite error:', error)
@@ -211,6 +226,10 @@ export function useAIContent() {
             })
 
             const result = await response.json()
+            if (!response.ok) {
+                toast.error(getAiErrorMessage(result, 'Gagal memperbarui SEO'))
+                return
+            }
             if (result.metaTitle) setMetaTitle(result.metaTitle)
             if (result.metaDescription) setMetaDescription(result.metaDescription)
             if (result.slug) setSlug(result.slug)
@@ -256,7 +275,7 @@ export function useAIContent() {
                 }
                 toast.success('Gambar berhasil dibuat!')
             } else {
-                toast.error('Gagal membuat gambar')
+                toast.error(getAiErrorMessage(data, 'Gagal membuat gambar'))
             }
         } catch (error) {
             console.error('Image Gen error:', error)

@@ -227,6 +227,32 @@ export class OpenAiService {
     return this.getSystemSetting('model_image_generation', fallback);
   }
 
+  private async getFallbackTextModel(primaryModel: string): Promise<string | null> {
+    const fallback = await this.getSystemSetting(
+      'model_text_fallback',
+      this.configService.get('AI_FALLBACK_MODEL') || 'tr/MiniMax-M3',
+    );
+    if (!fallback || fallback === primaryModel) return null;
+    return fallback;
+  }
+
+  private async createChatCompletionWithFallback(params: any, options?: any): Promise<any> {
+    try {
+      return await this.openai.chat.completions.create(params, options);
+    } catch (error: any) {
+      const fallbackModel = await this.getFallbackTextModel(params?.model);
+      if (error?.status !== 429 || !fallbackModel) throw error;
+
+      console.warn(
+        `[OpenAiService] Primary model rate-limited (${params.model}); falling back to ${fallbackModel}`,
+      );
+      return this.openai.chat.completions.create(
+        { ...params, model: fallbackModel },
+        options,
+      );
+    }
+  }
+
   async generateContent(
     originalContent: string,
     options: {
@@ -305,7 +331,7 @@ export class OpenAiService {
 
       let response: any;
       try {
-        response = await this.openai.chat.completions.create(
+        response = await this.createChatCompletionWithFallback(
           {
             model: selectedModel,
             messages: [
@@ -443,7 +469,7 @@ Return JSON with:
       costEstimate,
     );
 
-    const response = await this.openai.chat.completions.create({
+    const response = await this.createChatCompletionWithFallback({
       model: selectedModel,
       messages: [
         {
@@ -807,8 +833,11 @@ Return JSON with:
     Return ONLY the JSON.`;
 
     try {
-      const response = await this.openai.chat.completions.create({
-        model: model || this.model,
+      const selectedModel = this.aiCostControlService.resolveModel(
+        await this.getTextModel(model),
+      );
+      const response = await this.createChatCompletionWithFallback({
+        model: selectedModel,
         messages: [
           {
             role: 'system',
