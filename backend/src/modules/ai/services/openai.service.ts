@@ -174,6 +174,42 @@ export class OpenAiService {
     }
   }
 
+  /**
+   * Clean LLM output before JSON.parse. Reasoning models (e.g. tr/MiniMax-M3) wrap
+   * their final answer in `<think>...` blocks and Markdown ```json fences even when
+   * `response_format: json_object` is requested. Strip both so the parser sees pure
+   * JSON. Falls back to returning the original text on no-op.
+   */
+  private stripThinkTags(raw: string): string {
+    if (!raw) return raw;
+    let s = raw;
+    // 1) Drop `<think>...</think>` blocks (DeepSeek R1, MiniMax reasoning style)
+    s = s.replace(/<think>[\s\S]*?<\/think>/gi, '');
+    // 2) Drop Markdown ```json ... ``` fences
+    s = s.replace(/```(?:json)?\s*([\s\S]*?)```/gi, '$1');
+    // 3) Drop a leading prose line that some models emit before the JSON object
+    //    e.g. "Here is the JSON you asked for:\n{...}"
+    const firstBrace = s.indexOf('{');
+    const firstBracket = s.indexOf('[');
+    let cutFrom = -1;
+    if (firstBrace !== -1 && firstBracket !== -1) {
+      cutFrom = Math.min(firstBrace, firstBracket);
+    } else if (firstBrace !== -1) {
+      cutFrom = firstBrace;
+    } else if (firstBracket !== -1) {
+      cutFrom = firstBracket;
+    }
+    if (cutFrom > 0) {
+      s = s.substring(cutFrom);
+    }
+    // 4) Trim trailing prose after the closing brace/bracket
+    const lastClose = Math.max(s.lastIndexOf('}'), s.lastIndexOf(']'));
+    if (lastClose !== -1 && lastClose < s.length - 1) {
+      s = s.substring(0, lastClose + 1);
+    }
+    return s.trim();
+  }
+
   async getTextModel(override?: string): Promise<string> {
     // Admin-configured model must win over plan/env defaults so the Provider & Model UI
     // actually controls live AI calls. Per-call overrides are only fallback defaults.
@@ -261,21 +297,36 @@ export class OpenAiService {
         `[OpenAiService] Generating content with model: ${selectedModel}`,
       );
 
-      const response = await this.openai.chat.completions.create({
-        model: selectedModel,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature: 0.7,
-        max_tokens: 4000,
-        response_format: { type: 'json_object' },
-      });
+      // 90s hard timeout — most article rewrites complete in 8-20s; anything
+      // longer usually means the upstream is rate-limited or stuck. Surface
+      // as 504 AI_TIMEOUT to the caller instead of hanging the request.
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 90_000);
+
+      let response: any;
+      try {
+        response = await this.openai.chat.completions.create(
+          {
+            model: selectedModel,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt },
+            ],
+            temperature: 0.7,
+            max_tokens: 4000,
+            response_format: { type: 'json_object' },
+          },
+          { signal: controller.signal } as any,
+        );
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       await this.aiCostControlService.recordSpend(guardInput, costEstimate);
 
-      // Sanitize JSON - remove control characters that break parsing
-      let rawContent = response.choices[0]?.message?.content || '{}';
+      // Sanitize JSON - strip reasoning blocks (<think>...</think>) and Markdown
+      // ```json fences, then remove control characters that break parsing.
+      let rawContent = this.stripThinkTags(response.choices[0]?.message?.content || '{}');
       rawContent = rawContent.replace(/[\x00-\x1f\x7f-\x9f]/g, ' ');
       const result = JSON.parse(rawContent);
 
@@ -299,6 +350,26 @@ export class OpenAiService {
         slug: result.slug || '',
       };
     } catch (error: any) {
+      // Local abort (our 90s timeout) → bubble up as a clear timeout error.
+      if (error?.name === 'APIUserAbortError' || error?.code === 'aborted' || error?.name === 'AbortError') {
+        const err = new Error('AI generation timed out after 90s');
+        (err as any).status = 504;
+        (err as any).code = 'AI_TIMEOUT';
+        throw err;
+      }
+
+      // Upstream 429 — surface the reset time so the UI can show a useful message.
+      if (error?.status === 429) {
+        const resetSec = error?.headers?.['x-ratelimit-reset']
+          || error?.error?.metadata?.reset_in
+          || 60;
+        const err = new Error(`AI provider rate limit reached. Retry in ${resetSec}s.`);
+        (err as any).status = 429;
+        (err as any).code = 'AI_RATE_LIMITED';
+        (err as any).retryAfter = resetSec;
+        throw err;
+      }
+
       console.error('[OpenAiService] Generation failed:', {
         message: error.message,
         status: error.status,
@@ -371,7 +442,10 @@ Return JSON with:
       response_format: { type: 'json_object' },
     });
 
-    const result = JSON.parse(response.choices[0]?.message?.content || '{}');
+    // Reasoning models wrap output in <think>...```json fences — strip before parse.
+    const cleanContent = this.stripThinkTags(response.choices[0]?.message?.content || '{}')
+      .replace(/[\x00-\x1f\x7f-\x9f]/g, ' ');
+    const result = JSON.parse(cleanContent);
     return {
       metaTitle: result.metaTitle || title,
       metaDescription: result.metaDescription || content.substring(0, 160),
@@ -733,7 +807,9 @@ Return JSON with:
         response_format: { type: 'json_object' },
       });
 
-      return JSON.parse(response.choices[0]?.message?.content || '{}');
+      const cleanContent = this.stripThinkTags(response.choices[0]?.message?.content || '{}')
+        .replace(/[\x00-\x1f\x7f-\x9f]/g, ' ');
+      return JSON.parse(cleanContent);
     } catch (error) {
       console.error('[OpenAiService] Trend analysis failed:', error);
       return {
@@ -805,8 +881,10 @@ Return JSON with:
         response_format: { type: 'json_object' },
       });
 
-      // Sanitize JSON - remove control characters that break parsing
-      let rawContent = response.choices[0]?.message?.content || '{}';
+      // Sanitize JSON - strip reasoning blocks (think tags) and Markdown json
+      // fences before parsing. Reasoning models output both even with
+      // response_format: json_object, which crashes JSON.parse.
+      let rawContent = this.stripThinkTags(response.choices[0]?.message?.content || '{}');
       rawContent = rawContent.replace(/[\x00-\x1f\x7f-\x9f]/g, ' ');
       const result = JSON.parse(rawContent);
       console.log(

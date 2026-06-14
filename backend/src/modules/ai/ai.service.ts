@@ -326,13 +326,83 @@ Keep each field concise but descriptive. Use English.`;
         temperature: 0.7,
       });
 
-    const prompt = response.choices[0]?.message?.content?.trim();
+    // Reasoning models (e.g. tr/MiniMax-M3) wrap the final answer in
+    // `<think>...` blocks and Markdown ```json fences. Strip both, then try to
+    // parse as JSON; on success, format the fields into a single readable prompt
+    // string the user can paste into Midjourney/DALL-E/etc.
+    const raw = response.choices[0]?.message?.content?.trim() || '';
+    const stripped = this.stripThinkTags(raw)
+      .replace(/```(?:json)?\s*([\s\S]*?)```/gi, '$1')
+      .trim();
 
-    if (!prompt) {
+    if (!stripped) {
       throw new BadRequestException('Failed to generate prompt');
     }
 
+    let prompt: string;
+    try {
+      const parsed = JSON.parse(stripped);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        // Assemble fields in a stable order with `label: value` lines.
+        const orderedKeys = [
+          'subject', 'action', 'scene', 'cameraMovement', 'duration',
+          'style', 'lighting', 'composition', 'colors', 'mood',
+          'additionalDetails',
+        ];
+        const seen = new Set<string>();
+        const lines: string[] = [];
+        for (const k of orderedKeys) {
+          const v = parsed[k];
+          if (typeof v === 'string' && v.trim()) {
+            lines.push(`${this.toTitle(k)}: ${v.trim()}`);
+            seen.add(k);
+          }
+        }
+        for (const [k, v] of Object.entries(parsed)) {
+          if (seen.has(k)) continue;
+          if (typeof v === 'string' && v.trim()) {
+            lines.push(`${this.toTitle(k)}: ${v.trim()}`);
+          }
+        }
+        prompt = lines.length > 0 ? lines.join(', ') : stripped;
+      } else {
+        prompt = stripped;
+      }
+    } catch {
+      // Not JSON — return the cleaned prose as the prompt.
+      prompt = stripped;
+    }
+
     return { prompt };
+  }
+
+  /** Helper used by generatePrompt to format JSON field names like "additionalDetails" → "Additional Details". */
+  private toTitle(key: string): string {
+    return key
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/^./, (s) => s.toUpperCase())
+      .trim();
+  }
+
+  /**
+   * Strip reasoning-model artifacts (`<think>...` blocks and Markdown
+   * ```json fences) from raw LLM output. Kept as a thin wrapper around
+   * OpenAiService.stripThinkTags for callers that don't go through the service.
+   */
+  private stripThinkTags(raw: string): string {
+    if (!raw) return raw;
+    let s = raw.replace(/<think>[\s\S]*?<\/think>/gi, '');
+    s = s.replace(/```(?:json)?\s*([\s\S]*?)```/gi, '$1');
+    const firstBrace = s.indexOf('{');
+    const firstBracket = s.indexOf('[');
+    let cutFrom = -1;
+    if (firstBrace !== -1 && firstBracket !== -1) cutFrom = Math.min(firstBrace, firstBracket);
+    else if (firstBrace !== -1) cutFrom = firstBrace;
+    else if (firstBracket !== -1) cutFrom = firstBracket;
+    if (cutFrom > 0) s = s.substring(cutFrom);
+    const lastClose = Math.max(s.lastIndexOf('}'), s.lastIndexOf(']'));
+    if (lastClose !== -1 && lastClose < s.length - 1) s = s.substring(0, lastClose + 1);
+    return s.trim();
   }
 
   async getGeneratedImageAsset(key: string) {
