@@ -8,7 +8,8 @@
     "build": "npm run build --prefix backend && npm run build --prefix frontend",
     "install:all": "npm install --prefix backend && npm install --prefix frontend",
     "smoke:contenly": "node scripts/smoke-contenly-e2e.mjs",
-    "smoke:contenly:publish": "node scripts/smoke-contenly-e2e.mjs --publish"
+    "smoke:contenly:publish": "node scripts/smoke-contenly-e2e.mjs --publish",
+    "smoke:video-script:mp4": "node scripts/smoke-video-script-mp4.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

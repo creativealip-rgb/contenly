@@ -35,6 +35,8 @@ interface SidebarPanelsProps {
   setSelectedVoice: (v: VoiceOption) => void
   isExportingAudio: boolean
   onExportAudio: () => void
+  isExportingVideo: boolean
+  onExportVideo: () => void
   isComposing: boolean
   onComposeVideo: () => void
   // Tools
@@ -63,6 +65,8 @@ export function SidebarPanels({
   setSelectedVoice,
   isExportingAudio,
   onExportAudio,
+  isExportingVideo,
+  onExportVideo,
   isComposing,
   onComposeVideo,
   isTranscribing,
@@ -191,6 +195,19 @@ export function SidebarPanels({
             </div>
 
             <div className="border-t pt-3">
+              <Button
+                disabled={!hasScenes || isExportingVideo}
+                onClick={onExportVideo}
+                className="w-full bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white mb-2"
+                size="sm"
+              >
+                {isExportingVideo ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Film className="mr-2 h-4 w-4" />
+                )}
+                {isExportingVideo ? 'Exporting MP4...' : 'Export MP4'}
+              </Button>
               <Button
                 disabled={!hasScenes || isComposing}
                 onClick={onComposeVideo}

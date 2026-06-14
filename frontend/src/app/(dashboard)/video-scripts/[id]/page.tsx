@@ -81,6 +81,7 @@ export default function VideoScriptEditorPage() {
   const [playingTtsSceneId, setPlayingTtsSceneId] = useState<string | null>(null)
   const [ttsAudioUrl, setTtsAudioUrl] = useState<string | null>(null)
   const [isExportingAudio, setIsExportingAudio] = useState(false)
+  const [isExportingVideo, setIsExportingVideo] = useState(false)
   const [selectedVoice, setSelectedVoice] = useState<'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer'>('nova')
   const [sidebarTab, setSidebarTab] = useState<'setup' | 'export' | 'tools'>('setup')
   const [isComposing, setIsComposing] = useState(false)
@@ -448,6 +449,25 @@ export default function VideoScriptEditorPage() {
     finally { setIsExportingAudio(false) }
   }
 
+  const handleExportVideo = async () => {
+    setIsExportingVideo(true)
+    try {
+      const response = await fetch(`${API_BASE_URL}/video-scripts/projects/${projectId}/export/video`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ voice: selectedVoice }),
+      })
+      if (!response.ok) { const d = await response.json().catch(() => ({})); throw new Error(d.message || 'Gagal export video MP4') }
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement('a'); anchor.href = url; anchor.download = `${(projectForm.title || 'video-script').replace(/[^a-z0-9]/gi, '_').toLowerCase()}.mp4`
+      document.body.appendChild(anchor); anchor.click(); document.body.removeChild(anchor); URL.revokeObjectURL(url)
+      toast.success('Video MP4 berhasil di-download.')
+    } catch (error: unknown) { toast.error(getErrorMessage(error, 'Gagal export video MP4.')) }
+    finally { setIsExportingVideo(false) }
+  }
+
   const handleComposeVideo = async () => {
     setIsComposing(true)
     try {
@@ -699,6 +719,7 @@ export default function VideoScriptEditorPage() {
             isExportingZip={isExportingZip} onExportZip={handleExportZip}
             selectedVoice={selectedVoice} setSelectedVoice={setSelectedVoice}
             isExportingAudio={isExportingAudio} onExportAudio={handleExportAudio}
+            isExportingVideo={isExportingVideo} onExportVideo={handleExportVideo}
             isComposing={isComposing} onComposeVideo={handleComposeVideo}
             isTranscribing={isTranscribing} onTranscribe={handleTranscribe}
             transcription={transcription}
