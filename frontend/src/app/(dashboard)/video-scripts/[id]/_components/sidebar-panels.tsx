@@ -206,7 +206,7 @@ export function SidebarPanels({
                 ) : (
                   <Film className="mr-2 h-4 w-4" />
                 )}
-                {isExportingVideo ? 'Exporting MP4...' : 'Export MP4'}
+                {isExportingVideo ? 'Rendering MP4...' : 'Render MP4'}
               </Button>
               <Button
                 disabled={!hasScenes || isComposing}

@@ -452,18 +452,32 @@ export default function VideoScriptEditorPage() {
   const handleExportVideo = async () => {
     setIsExportingVideo(true)
     try {
-      const response = await fetch(`${API_BASE_URL}/video-scripts/projects/${projectId}/export/video`, {
+      const response = await fetch(`${API_BASE_URL}/video-scripts/projects/${projectId}/export/video/job`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ voice: selectedVoice }),
       })
-      if (!response.ok) { const d = await response.json().catch(() => ({})); throw new Error(d.message || 'Gagal export video MP4') }
-      const blob = await response.blob()
-      const url = URL.createObjectURL(blob)
-      const anchor = document.createElement('a'); anchor.href = url; anchor.download = `${(projectForm.title || 'video-script').replace(/[^a-z0-9]/gi, '_').toLowerCase()}.mp4`
-      document.body.appendChild(anchor); anchor.click(); document.body.removeChild(anchor); URL.revokeObjectURL(url)
-      toast.success('Video MP4 berhasil di-download.')
+      if (!response.ok) { const d = await response.json().catch(() => ({})); throw new Error(d.message || 'Gagal mulai render video MP4') }
+      const job = await response.json()
+      toast.success('Render MP4 dimulai. Tunggu sampai selesai.')
+
+      for (let attempt = 0; attempt < 90; attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, 3000))
+        const statusRes = await fetch(`${API_BASE_URL}/video-scripts/render-jobs/${job.id}`, { credentials: 'include' })
+        if (!statusRes.ok) { const d = await statusRes.json().catch(() => ({})); throw new Error(d.message || 'Gagal cek status render') }
+        const status = await statusRes.json()
+        if (status.status === 'completed' && status.downloadUrl) {
+          const anchor = document.createElement('a')
+          anchor.href = status.downloadUrl
+          anchor.download = `${(projectForm.title || 'video-script').replace(/[^a-z0-9]/gi, '_').toLowerCase()}.mp4`
+          document.body.appendChild(anchor); anchor.click(); document.body.removeChild(anchor)
+          toast.success('Video MP4 selesai dan siap di-download.')
+          return
+        }
+        if (status.status === 'failed') throw new Error(status.error || 'Render MP4 gagal')
+      }
+      throw new Error('Render MP4 timeout')
     } catch (error: unknown) { toast.error(getErrorMessage(error, 'Gagal export video MP4.')) }
     finally { setIsExportingVideo(false) }
   }

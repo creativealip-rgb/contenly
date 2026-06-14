@@ -22,6 +22,7 @@ import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { execFile } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
@@ -78,9 +79,24 @@ type ScriptProjectDetails = Omit<
   scenes: Array<ScriptSceneRecord & { footageSearches: FootageSearch[]; selectedFootage: SelectedFootage[] }>;
 };
 
+type VideoRenderJob = {
+  id: string;
+  projectId: string;
+  userId: string;
+  status: 'queued' | 'rendering' | 'completed' | 'failed';
+  progress: number;
+  message: string;
+  downloadUrl?: string;
+  size?: number;
+  error?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 @Injectable()
 export class VideoScriptService {
   private readonly logger = new Logger(VideoScriptService.name);
+  private readonly videoRenderJobs = new Map<string, VideoRenderJob>();
 
   constructor(
     private readonly drizzle: DrizzleService,
@@ -1469,6 +1485,81 @@ ${project.sourceContent}`;
       downloadUrl: `/api/v1/video-scripts/exports/${storedFilename}`,
       size: result.buffer.length,
     };
+  }
+
+  startVideoRenderJob(
+    userId: string,
+    projectId: string,
+    options: {
+      voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
+      width?: number;
+      height?: number;
+    } = {},
+  ) {
+    const now = new Date().toISOString();
+    const job: VideoRenderJob = {
+      id: randomUUID(),
+      projectId,
+      userId,
+      status: 'queued',
+      progress: 5,
+      message: 'Queued',
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.videoRenderJobs.set(job.id, job);
+
+    void this.runVideoRenderJob(job.id, options);
+    return job;
+  }
+
+  getVideoRenderJob(userId: string, jobId: string) {
+    const job = this.videoRenderJobs.get(jobId);
+    if (!job || job.userId !== userId) {
+      throw new NotFoundException('Render job not found');
+    }
+    return job;
+  }
+
+  private async runVideoRenderJob(
+    jobId: string,
+    options: {
+      voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
+      width?: number;
+      height?: number;
+    },
+  ) {
+    const job = this.videoRenderJobs.get(jobId);
+    if (!job) return;
+
+    try {
+      this.updateVideoRenderJob(jobId, { status: 'rendering', progress: 20, message: 'Rendering MP4' });
+      const result = await this.exportVideoToFile(job.userId, job.projectId, options);
+      this.updateVideoRenderJob(jobId, {
+        status: 'completed',
+        progress: 100,
+        message: 'Completed',
+        downloadUrl: result.downloadUrl,
+        size: result.size,
+      });
+    } catch (error) {
+      this.updateVideoRenderJob(jobId, {
+        status: 'failed',
+        progress: 100,
+        message: 'Failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  private updateVideoRenderJob(jobId: string, patch: Partial<VideoRenderJob>) {
+    const job = this.videoRenderJobs.get(jobId);
+    if (!job) return;
+    this.videoRenderJobs.set(jobId, {
+      ...job,
+      ...patch,
+      updatedAt: new Date().toISOString(),
+    });
   }
 
   async getStoredVideoExport(filename: string) {

@@ -269,6 +269,26 @@ export class VideoScriptController {
     res.send(result.buffer);
   }
 
+  @Post('projects/:id/export/video/job')
+  @ApiOperation({ summary: 'Start MP4 render job and poll status later' })
+  async startVideoRenderJob(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body()
+    body: { voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer'; width?: number; height?: number },
+  ) {
+    return this.service.startVideoRenderJob(user.id, id, body || {});
+  }
+
+  @Get('render-jobs/:jobId')
+  @ApiOperation({ summary: 'Get MP4 render job status' })
+  async getVideoRenderJob(
+    @CurrentUser() user: User,
+    @Param('jobId') jobId: string,
+  ) {
+    return this.service.getVideoRenderJob(user.id, jobId);
+  }
+
   @Post('projects/:id/export/video/file')
   @ApiOperation({ summary: 'Render MP4 video and return stored download URL' })
   async exportVideoToFile(
