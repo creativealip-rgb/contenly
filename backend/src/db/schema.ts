@@ -200,6 +200,13 @@ export const apiKey = pgTable('api_key', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+export const systemSettings = pgTable('system_settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
 // ==========================================
 // WORDPRESS SITES
 // ==========================================
