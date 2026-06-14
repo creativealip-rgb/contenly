@@ -29,13 +29,14 @@ export const getFeeds = async (): Promise<RssFeed[]> => {
             return []
         }
 
-        const feeds = await response.json()
+        const payload = await response.json()
+        const feeds = Array.isArray(payload) ? payload : (payload.data || [])
 
         // Transform backend format to match frontend interface
         return (feeds as RssFeed[]).map((feed) => ({
             ...feed,
             pollingInterval: feed.pollingIntervalMinutes, // Map backend field
-            status: feed.status || 'active',
+            status: (feed.status || 'active').toString().toLowerCase() as RssFeed['status'],
         }))
     } catch (error) {
         console.error('Error fetching feeds:', error)
