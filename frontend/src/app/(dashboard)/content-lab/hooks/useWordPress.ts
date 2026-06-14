@@ -6,6 +6,12 @@ import { WordPressSite, getSites, getActiveSite } from '@/lib/sites-store'
 import { useContentLabStore } from '@/stores/content-lab-store'
 import { toast } from 'sonner'
 
+function pickDefaultCategory(categories: Array<{ id: number; name: string; slug?: string }>) {
+    return categories.find((cat) =>
+        cat.slug?.includes('blog') || cat.name.toLowerCase().includes('blog')
+    ) || categories[0]
+}
+
 export function useWordPress() {
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 
@@ -49,6 +55,8 @@ export function useWordPress() {
                 const categories = await response.json()
                 if (Array.isArray(categories)) {
                     setWpCategories(categories)
+                    const fallbackCategory = pickDefaultCategory(categories)
+                    setSelectedCategory((current) => current ?? fallbackCategory?.id ?? null)
                 }
             }
         } catch (error) {

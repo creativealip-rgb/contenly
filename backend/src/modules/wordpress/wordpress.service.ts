@@ -201,6 +201,43 @@ export class WordpressService implements OnModuleInit {
     );
   }
 
+  private pickDefaultCategoryId(categories: WpCategory[]): number | undefined {
+    return (
+      categories.find((cat) => cat.slug?.includes('blog') || cat.name.toLowerCase().includes('blog')) ||
+      categories[0]
+    )?.id;
+  }
+
+  private async resolvePublishCategories(
+    site: typeof wpSite.$inferSelect,
+    auth: string,
+    requestedCategories?: number[],
+  ): Promise<number[] | undefined> {
+    if (requestedCategories?.length) return requestedCategories;
+
+    try {
+      const response = await this.retryWpRequest<any>(
+        () =>
+          axios.get(`${site.url}/wp-json/wp/v2/categories?per_page=100`, {
+            headers: { Authorization: `Basic ${auth}` },
+            timeout: WP_REQUEST_TIMEOUT_MS,
+          }),
+        'resolvePublishCategories',
+      );
+
+      const categories: WpCategory[] = response.data.map((cat: any) => ({
+        id: cat.id,
+        name: cat.name,
+        slug: cat.slug,
+      }));
+      const defaultCategoryId = this.pickDefaultCategoryId(categories);
+      return defaultCategoryId ? [defaultCategoryId] : undefined;
+    } catch (error: any) {
+      this.logger.warn(`Failed to resolve default category: ${this.getWpErrorMessage(error)}`);
+      return undefined;
+    }
+  }
+
   private async markSiteHealth(
     siteId: string,
     connected: boolean,
@@ -689,9 +726,13 @@ export class WordpressService implements OnModuleInit {
         postData.featured_media = featuredMediaId;
       }
 
-      // Add categories if provided
-      if (dto.categories && dto.categories.length > 0) {
-        postData.categories = dto.categories;
+      const publishCategories = await this.resolvePublishCategories(
+        site,
+        auth,
+        dto.categories,
+      );
+      if (publishCategories?.length) {
+        postData.categories = publishCategories;
       }
 
       // For scheduled posts
