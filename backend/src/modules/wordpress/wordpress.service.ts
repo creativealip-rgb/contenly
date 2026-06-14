@@ -753,6 +753,30 @@ export class WordpressService implements OnModuleInit {
       `Publish request - User: ${userId}, ArticleId: ${dto.articleId}, Title: ${dto.title}`,
     );
 
+    if (dto.articleId) {
+      const existingArticle = await this.articlesService.findById(userId, dto.articleId);
+      if (
+        existingArticle.status === 'PUBLISHED' &&
+        existingArticle.wpPostId &&
+        existingArticle.wpPostUrl
+      ) {
+        this.logger.log(`Article ${dto.articleId} already published; reusing WordPress post ${existingArticle.wpPostId}`);
+        return {
+          success: true,
+          skipped: true,
+          syncWarning: 'Article already published; reused existing WordPress post.',
+          verificationWarnings: [],
+          post: {
+            id: Number(existingArticle.wpPostId),
+            title: existingArticle.title,
+            status: 'publish',
+            link: existingArticle.wpPostUrl,
+            date: existingArticle.publishedAt || existingArticle.updatedAt,
+          },
+        };
+      }
+    }
+
     try {
       const appPassword = this.encryptionService.decrypt(
         site.appPasswordEncrypted,

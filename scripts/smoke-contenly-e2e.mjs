@@ -11,6 +11,7 @@ const PUBLISH = args.has('--publish') || process.env.CONTENLY_SMOKE_PUBLISH === 
 const GENERATE_IMAGE = args.has('--image') || process.env.CONTENLY_SMOKE_IMAGE === '1'
 const FEED_URL = process.env.CONTENLY_SMOKE_FEED_URL || ''
 const CATEGORY_ID = Number(process.env.CONTENLY_SMOKE_CATEGORY_ID || 33)
+const ITEM_INDEX = Math.max(0, Number(process.env.CONTENLY_SMOKE_ITEM_INDEX || 0))
 const TIMEOUT_MS = Number(process.env.CONTENLY_SMOKE_TIMEOUT_MS || 120000)
 
 const results = []
@@ -103,10 +104,10 @@ async function main() {
   })
   const items = pickItems(feedItemsResp.data)
   if (!items.length) fail('fetch RSS items', 'No RSS items returned', { data: feedItemsResp.data })
-  const item = items[0]
+  const item = items[Math.min(ITEM_INDEX, items.length - 1)]
   const sourceUrl = item.link || item.url
-  if (!sourceUrl) fail('pick RSS item', 'RSS item missing link/url', { item })
-  log('fetch RSS items', { message: `${items.length} items; picked ${item.title}` })
+  if (!sourceUrl) fail('pick RSS item', 'RSS item missing link/url', { item, ITEM_INDEX })
+  log('fetch RSS items', { message: `${items.length} items; picked [${Math.min(ITEM_INDEX, items.length - 1)}] ${item.title}` })
 
   const scrapeResp = await request(`${API_BASE}/scraper/scrape`, {
     method: 'POST',
@@ -147,7 +148,6 @@ async function main() {
     imageUrl = imageResp.data?.data?.imageUrl || imageResp.data?.imageUrl
     if (!imageUrl) fail('AI image', 'Image URL missing', { data: imageResp.data })
     const assetResp = await request(imageUrl.startsWith('http') ? imageUrl : `${API_BASE.replace(/\/api\/v1$/, '')}${imageUrl}`, {
-      auth: false,
       step: 'AI image asset',
     })
     if (assetResp.res.headers.get('content-type')?.includes('image') !== true) {
@@ -198,12 +198,13 @@ async function main() {
   })
   if (!publishResp.data?.success) fail('publish WordPress', 'Publish failed', { data: publishResp.data })
   const post = publishResp.data.post
-  log('publish WordPress', { message: `${post.id} ${post.link}` })
+  const expectedTitle = publishResp.data.skipped ? post.title : generated.title
+  log('publish WordPress', { message: `${post.id} ${post.link}${publishResp.data.skipped ? ' (reused existing post)' : ''}` })
 
   // Give WP cache a beat.
   await sleep(1000)
 
-  const wpApi = await request(`${WP_BASE}/wp-json/wp/v2/posts/${post.id}?_fields=id,status,link,categories,title`, {
+  const wpApi = await request(`${WP_BASE}/wp-json/wp/v2/posts/${post.id}?_fields=id,status,link,categories,title,featured_media`, {
     auth: false,
     step: 'WP API verify',
   })
@@ -212,17 +213,20 @@ async function main() {
   if (!Array.isArray(wp.categories) || !wp.categories.includes(36) || !wp.categories.includes(CATEGORY_ID)) {
     fail('WP API verify', `Expected categories include 36 and ${CATEGORY_ID}`, { wp })
   }
-  log('WP API verify', { message: `categories ${JSON.stringify(wp.categories)}` })
+  if (GENERATE_IMAGE && !wp.featured_media) {
+    fail('WP API verify', 'Expected featured_media when GENERATE_IMAGE=true', { wp })
+  }
+  log('WP API verify', { message: `categories ${JSON.stringify(wp.categories)}${GENERATE_IMAGE ? `; featured_media ${wp.featured_media}` : ''}` })
 
   const postPage = await request(post.link, { auth: false, step: 'WP post page' })
-  if (!textContains(postPage.text, generated.title.slice(0, 40))) {
-    fail('WP post page', 'Post page does not contain generated title', { link: post.link })
+  if (!textContains(postPage.text, expectedTitle.slice(0, 40))) {
+    fail('WP post page', 'Post page does not contain expected title', { link: post.link, expectedTitle })
   }
   log('WP post page', { message: `HTTP ${postPage.res.status}` })
 
   const blogPage = await request(`${WP_BASE}/blog/`, { auth: false, step: 'WP blog page' })
-  if (!textContains(blogPage.text, generated.title.slice(0, 40))) {
-    fail('WP blog page', 'Blog page does not contain generated title')
+  if (!textContains(blogPage.text, expectedTitle.slice(0, 40))) {
+    fail('WP blog page', 'Blog page does not contain expected title', { blog: `${WP_BASE}/blog/`, expectedTitle })
   }
   log('WP blog page', { message: 'title found' })
 
@@ -240,7 +244,7 @@ async function main() {
     wpPostId: post.id,
     wpPostUrl: post.link,
     categories: wp.categories,
-    title: generated.title,
+    title: expectedTitle,
   }, null, 2))
 }
 

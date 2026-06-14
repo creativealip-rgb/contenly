@@ -120,11 +120,27 @@ export class ArticlesService {
   }
 
   async create(userId: string, dto: CreateArticleDto) {
+    const normalizedSourceUrl = dto.sourceUrl?.trim() || '';
+
+    if (normalizedSourceUrl) {
+      const [existingArticle] = await this.db
+        .select()
+        .from(article)
+        .where(and(eq(article.userId, userId), eq(article.sourceUrl, normalizedSourceUrl)))
+        .orderBy(desc(article.createdAt))
+        .limit(1);
+
+      if (existingArticle) {
+        this.logger.log(`Duplicate sourceUrl detected; reusing article ${existingArticle.id}`);
+        return existingArticle;
+      }
+    }
+
     const [newArticle] = await this.db
       .insert(article)
       .values({
         userId,
-        sourceUrl: dto.sourceUrl || '',
+        sourceUrl: normalizedSourceUrl,
         originalContent: dto.originalContent,
         generatedContent: dto.generatedContent,
         title: dto.title,
@@ -135,6 +151,7 @@ export class ArticlesService {
         wpPostId: dto.wpPostId,
         wpPostUrl: dto.wpPostUrl,
         wpSiteId: dto.wpSiteId,
+        featuredImageUrl: dto.featuredImageUrl,
         feedItemId: dto.feedItemId,
         tokensUsed: dto.tokensUsed || 0,
       })

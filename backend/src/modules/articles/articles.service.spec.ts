@@ -129,6 +129,7 @@ describe('ArticlesService', () => {
                 status: 'DRAFT',
             };
 
+            mockDb.__selectResults = [{ result: [], terminal: 'limit' }];
             mockDb.insert.mockReturnThis();
             mockDb.values.mockReturnThis();
             mockDb.returning.mockResolvedValue([mockCreatedArticle]);
@@ -137,6 +138,29 @@ describe('ArticlesService', () => {
 
             expect(result.title).toBe(createDto.title);
             expect(result.status).toBe('DRAFT');
+        });
+
+        it('should reuse existing article for duplicate sourceUrl', async () => {
+            const createDto = {
+                title: 'Duplicate Article',
+                originalContent: 'Original content',
+                generatedContent: 'Generated content',
+                sourceUrl: ' https://example.com/source ',
+            };
+            const existingArticle = {
+                id: 'existing-id',
+                userId: mockUserId,
+                title: 'Existing Article',
+                sourceUrl: 'https://example.com/source',
+                status: 'DRAFT',
+            };
+
+            mockDb.__selectResults = [{ result: [existingArticle], terminal: 'limit' }];
+
+            const result = await service.create(mockUserId, createDto);
+
+            expect(result).toEqual(existingArticle);
+            expect(mockDb.insert).not.toHaveBeenCalled();
         });
     });
 

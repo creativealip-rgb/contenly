@@ -62,6 +62,11 @@ export class CreateArticleDto {
   @ApiPropertyOptional()
   @IsString()
   @IsOptional()
+  featuredImageUrl?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
   status?: string;
 }
 
