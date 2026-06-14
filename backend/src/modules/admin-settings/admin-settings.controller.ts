@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { sql } from 'drizzle-orm';
+import { count, sql } from 'drizzle-orm';
+import { feed, article } from '../../db/schema';
 import { SessionAuthGuard } from '../../common/guards/session-auth.guard';
 import { SuperAdminGuard } from '../../common/guards/super-admin.guard';
 import { DrizzleService } from '../../db/drizzle.service';
@@ -17,6 +18,44 @@ export class AdminSettingsController {
     private readonly config: ConfigService,
     private readonly drizzle: DrizzleService,
   ) {}
+
+  @Post('smoke/lite')
+  async runSmokeLite() {
+    const startedAt = new Date();
+    const checks: Array<{ step: string; ok: boolean; message: string }> = [];
+
+    try {
+      await this.drizzle.db.execute(sql`SELECT 1`);
+      checks.push({ step: 'database', ok: true, message: 'connected' });
+    } catch (error: any) {
+      checks.push({ step: 'database', ok: false, message: error?.message || 'database check failed' });
+    }
+
+    try {
+      const [feeds] = await this.drizzle.db.select({ value: count() }).from(feed);
+      checks.push({ step: 'feeds', ok: Number(feeds?.value || 0) > 0, message: `${Number(feeds?.value || 0)} feeds` });
+    } catch (error: any) {
+      checks.push({ step: 'feeds', ok: false, message: error?.message || 'feeds check failed' });
+    }
+
+    try {
+      const [articles] = await this.drizzle.db.select({ value: count() }).from(article);
+      checks.push({ step: 'articles', ok: true, message: `${Number(articles?.value || 0)} articles` });
+    } catch (error: any) {
+      checks.push({ step: 'articles', ok: false, message: error?.message || 'articles check failed' });
+    }
+
+    const ok = checks.every((check) => check.ok);
+    return {
+      ok,
+      status: ok ? 'passed' : 'failed',
+      startedAt: startedAt.toISOString(),
+      finishedAt: new Date().toISOString(),
+      checks,
+      fullSmokeCommand: 'CONTENLY_COOKIE_JAR=/tmp/c.txt npm run smoke:contenly:publish',
+      imageSmokeCommand: 'CONTENLY_COOKIE_JAR=/tmp/c.txt CONTENLY_SMOKE_ITEM_INDEX=1 npm run smoke:contenly:publish -- --image',
+    };
+  }
 
   private get baseUrl() {
     return (this.config.get<string>('OPENAI_BASE_URL') || 'https://9router-168-144-37-19.sslip.io/v1').replace(/\/$/, '');

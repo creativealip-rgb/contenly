@@ -13,6 +13,15 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    container_name: contenly-redis
+    restart: unless-stopped
+    networks:
+      default:
+        aliases:
+          - redis
+
   backend:
     build:
       context: .
@@ -24,6 +33,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_started
     networks:
       - default
       - dokploy-network

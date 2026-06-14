@@ -22,6 +22,15 @@ type ProviderStatus = {
 type ModelItem = { id: string; name?: string; contextLength?: number | null }
 type ModelConfig = { textModel: string; imageModel: string; textProvider: string; imageProvider: string }
 type ModelTestResult = { ok: boolean; status: number; latencyMs: number; message?: string }
+type SmokeLiteResult = {
+  ok: boolean
+  status: string
+  startedAt: string
+  finishedAt: string
+  checks: Array<{ step: string; ok: boolean; message: string }>
+  fullSmokeCommand: string
+  imageSmokeCommand: string
+}
 
 const errorMessage = (error: unknown, fallback: string) => error instanceof Error ? error.message : fallback
 
@@ -34,6 +43,8 @@ export default function AdminApiKeysPage() {
   const [saving, setSaving] = useState(false)
   const [testingModel, setTestingModel] = useState<string | null>(null)
   const [testResult, setTestResult] = useState<string>('')
+  const [smokeLoading, setSmokeLoading] = useState(false)
+  const [smokeResult, setSmokeResult] = useState<SmokeLiteResult | null>(null)
 
   const filteredModels = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -98,6 +109,22 @@ export default function AdminApiKeysPage() {
     }
   }
 
+  async function runSmokeLite() {
+    setSmokeLoading(true)
+    setSmokeResult(null)
+    try {
+      const result = await api.post<SmokeLiteResult>('/admin/settings/smoke/lite')
+      setSmokeResult(result)
+      if (result.ok) toast.success('Smoke lite passed')
+      else toast.error('Smoke lite failed')
+    } catch (error: unknown) {
+      const message = errorMessage(error, 'Smoke lite gagal')
+      toast.error(message)
+    } finally {
+      setSmokeLoading(false)
+    }
+  }
+
   return (
     <SuperAdminGuard>
       <main className="min-h-screen bg-slate-50 p-4 md:p-8 dark:bg-slate-950">
@@ -142,6 +169,36 @@ export default function AdminApiKeysPage() {
                 </div>
               </div>
             ))}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Smoke Test</CardTitle>
+            <CardDescription>Run regression smoke-lite dari dashboard. Full publish/image smoke tetap via command.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button onClick={runSmokeLite} disabled={smokeLoading}>{smokeLoading ? 'Running...' : 'Run Smoke Lite'}</Button>
+            {smokeResult && (
+              <div className="space-y-3 rounded-2xl border bg-white p-4 text-sm dark:bg-slate-900">
+                <div className="flex items-center gap-2">
+                  <Badge variant={smokeResult.ok ? 'default' : 'destructive'}>{smokeResult.status}</Badge>
+                  <span className="text-slate-500">{smokeResult.finishedAt}</span>
+                </div>
+                <div className="grid gap-2 md:grid-cols-3">
+                  {smokeResult.checks.map((check) => (
+                    <div key={check.step} className="rounded-xl bg-slate-100 p-3 dark:bg-slate-800">
+                      <p className="font-bold">{check.ok ? '✅' : '❌'} {check.step}</p>
+                      <p className="text-slate-500">{check.message}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="space-y-2 rounded-xl bg-slate-100 p-3 font-mono text-xs dark:bg-slate-800">
+                  <p>{smokeResult.fullSmokeCommand}</p>
+                  <p>{smokeResult.imageSmokeCommand}</p>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
