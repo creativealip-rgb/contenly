@@ -238,6 +238,76 @@ export class WordpressService implements OnModuleInit {
     }
   }
 
+  private async verifyPublishedPost(
+    site: typeof wpSite.$inferSelect,
+    auth: string,
+    postId: number | string,
+    postUrl: string,
+    expectedCategories?: number[],
+    expectedTitle?: string,
+  ): Promise<string[]> {
+    const warnings: string[] = [];
+
+    try {
+      const postResponse = await this.retryWpRequest<any>(
+        () =>
+          axios.get(
+            `${site.url}/wp-json/wp/v2/posts/${postId}?_fields=id,status,link,categories,title`,
+            { headers: { Authorization: `Basic ${auth}` }, timeout: WP_REQUEST_TIMEOUT_MS },
+          ),
+        'verifyPublishedPost.wpApi',
+      );
+      const wpPost = postResponse.data;
+      if (wpPost.status !== 'publish') {
+        warnings.push(`WordPress post status is ${wpPost.status}`);
+      }
+      const wpCategories = Array.isArray(wpPost.categories) ? wpPost.categories : [];
+      for (const categoryId of expectedCategories || []) {
+        if (!wpCategories.includes(categoryId)) {
+          warnings.push(`WordPress post missing category ${categoryId}`);
+        }
+      }
+    } catch (error: any) {
+      warnings.push(`WordPress API verification failed: ${this.getWpErrorMessage(error)}`);
+    }
+
+    try {
+      const pageResponse = await axios.get(postUrl, {
+        timeout: WP_REQUEST_TIMEOUT_MS,
+        maxRedirects: 0,
+        validateStatus: (status) => status >= 200 && status < 400,
+      });
+      if (pageResponse.status >= 300) {
+        warnings.push(`WordPress post URL redirects to ${pageResponse.headers?.location || 'unknown'}`);
+      } else if (
+        expectedTitle &&
+        typeof pageResponse.data === 'string' &&
+        !pageResponse.data.toLowerCase().includes(expectedTitle.slice(0, 40).toLowerCase())
+      ) {
+        warnings.push('WordPress post page does not contain expected title');
+      }
+    } catch (error: any) {
+      warnings.push(`WordPress post URL verification failed: ${this.getWpErrorMessage(error)}`);
+    }
+
+    try {
+      const blogResponse = await axios.get(`${site.url}/blog/`, {
+        timeout: WP_REQUEST_TIMEOUT_MS,
+      });
+      if (
+        expectedTitle &&
+        typeof blogResponse.data === 'string' &&
+        !blogResponse.data.toLowerCase().includes(expectedTitle.slice(0, 40).toLowerCase())
+      ) {
+        warnings.push('WordPress blog page does not contain expected title');
+      }
+    } catch (error: any) {
+      warnings.push(`WordPress blog verification failed: ${this.getWpErrorMessage(error)}`);
+    }
+
+    return warnings;
+  }
+
   private async markSiteHealth(
     siteId: string,
     connected: boolean,
@@ -743,7 +813,7 @@ export class WordpressService implements OnModuleInit {
 
       this.logger.log(`Publishing to: ${site.url}/wp-json/wp/v2/posts`);
 
-      const response = await this.retryWpRequest(
+      const response = await this.retryWpRequest<any>(
         () =>
           axios.post(`${site.url}/wp-json/wp/v2/posts`, postData, {
             headers: { Authorization: `Basic ${auth}` },
@@ -756,6 +826,20 @@ export class WordpressService implements OnModuleInit {
       this.logger.log(`Success! Post ID: ${response.data.id}`);
 
       let syncWarning: string | undefined;
+      const verificationWarnings = dto.status === 'publish'
+        ? await this.verifyPublishedPost(
+            site,
+            auth,
+            response.data.id,
+            response.data.link,
+            publishCategories,
+            dto.title,
+          )
+        : [];
+      if (verificationWarnings.length) {
+        syncWarning = `WordPress post was created but verification found issues: ${verificationWarnings.join('; ')}`;
+        this.logger.warn(syncWarning);
+      }
 
       // Save to local database
       try {
@@ -815,6 +899,7 @@ export class WordpressService implements OnModuleInit {
       return {
         success: true,
         syncWarning,
+        verificationWarnings,
         post: {
           id: response.data.id,
           title: response.data.title.rendered,
