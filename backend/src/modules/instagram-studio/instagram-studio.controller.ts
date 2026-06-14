@@ -213,7 +213,7 @@ export class InstagramStudioController {
     @Param('id') projectId: string,
     @Body() body: { content?: string },
   ) {
-    return this.service.generateHashtags(user.id, projectId, body.content);
+    return this.service.generateHashtags(user.id, projectId, body?.content);
   }
 
   // --- Slide Management APIs ---
