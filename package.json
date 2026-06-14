@@ -6,7 +6,9 @@
     "dev": "node scripts/run-parallel.js dev",
     "start": "node scripts/run-parallel.js start",
     "build": "npm run build --prefix backend && npm run build --prefix frontend",
-    "install:all": "npm install --prefix backend && npm install --prefix frontend"
+    "install:all": "npm install --prefix backend && npm install --prefix frontend",
+    "smoke:contenly": "node scripts/smoke-contenly-e2e.mjs",
+    "smoke:contenly:publish": "node scripts/smoke-contenly-e2e.mjs --publish"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
