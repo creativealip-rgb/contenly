@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import {
@@ -351,11 +351,22 @@ export class OpenAiService {
       };
     } catch (error: any) {
       // Local abort (our 90s timeout) → bubble up as a clear timeout error.
-      if (error?.name === 'APIUserAbortError' || error?.code === 'aborted' || error?.name === 'AbortError') {
-        const err = new Error('AI generation timed out after 90s');
-        (err as any).status = 504;
-        (err as any).code = 'AI_TIMEOUT';
-        throw err;
+      // The OpenAI client surfaces aborts with several shapes: name may be
+      // 'APIUserAbortError' (older openai) or 'AbortError' (Node 18+), or the
+      // message may simply read 'Request was aborted' / 'aborted'.
+      const isAbort =
+        error?.name === 'APIUserAbortError' ||
+        error?.name === 'AbortError' ||
+        error?.code === 'aborted' ||
+        /request was aborted|aborted/i.test(error?.message || '');
+      if (isAbort) {
+        throw new HttpException(
+          {
+            message: 'AI generation timed out after 90s',
+            code: 'AI_TIMEOUT',
+          },
+          HttpStatus.GATEWAY_TIMEOUT,
+        );
       }
 
       // Upstream 429 — surface the reset time so the UI can show a useful message.
@@ -363,11 +374,14 @@ export class OpenAiService {
         const resetSec = error?.headers?.['x-ratelimit-reset']
           || error?.error?.metadata?.reset_in
           || 60;
-        const err = new Error(`AI provider rate limit reached. Retry in ${resetSec}s.`);
-        (err as any).status = 429;
-        (err as any).code = 'AI_RATE_LIMITED';
-        (err as any).retryAfter = resetSec;
-        throw err;
+        throw new HttpException(
+          {
+            message: `AI provider rate limit reached. Retry in ${resetSec}s.`,
+            code: 'AI_RATE_LIMITED',
+            details: { retryAfter: resetSec },
+          },
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
       }
 
       console.error('[OpenAiService] Generation failed:', {
