@@ -90,7 +90,7 @@ export class InstagramStudioService {
                 title: dto.title,
                 sourceUrl: dto.sourceUrl,
                 sourceContent: finalContent,
-                globalStyle: dto.globalStyle,
+                globalStyle: dto.globalStyle || dto.styleId,
                 fontFamily: dto.fontFamily || 'Montserrat',
                 templateId: dto.templateId,
             })
@@ -202,10 +202,13 @@ export class InstagramStudioService {
         const tier = await this.billingService.getSubscriptionTier(userId);
         const model = BILLING_TIERS[tier]?.aiModel;
 
+        const storyboardStyle = dto.style || dto.styleId || project.globalStyle;
+        const targetSlides = dto.targetSlides ?? dto.slideCount;
+
         const storyboard = await this.storyboardService.generateStoryboard(
             content,
-            dto.style || project.globalStyle,
-            dto.targetSlides,
+            storyboardStyle,
+            targetSlides,
             model,
             dto.templateId,
         );

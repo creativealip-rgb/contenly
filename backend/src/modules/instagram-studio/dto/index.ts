@@ -26,6 +26,11 @@ export class CreateProjectDto {
   @IsString()
   globalStyle?: string;
 
+  // Backward-compatible alias used by older frontend payloads.
+  @IsOptional()
+  @IsString()
+  styleId?: string;
+
   @IsOptional()
   @IsString()
   fontFamily?: string;
@@ -33,6 +38,18 @@ export class CreateProjectDto {
   @IsOptional()
   @IsString()
   templateId?: string;
+
+  // Accepted for older clients; currently not persisted on project.
+  @IsOptional()
+  @IsString()
+  aspectRatio?: string;
+
+  // Accepted for older clients; storyboard generation uses targetSlides/slideCount later.
+  @IsOptional()
+  @IsInt()
+  @Min(3)
+  @Max(10)
+  slideCount?: number;
 }
 
 export class UpdateProjectDto {
@@ -85,11 +102,28 @@ export class GenerateStoryboardDto {
   @IsString()
   style?: string;
 
+  // Backward-compatible alias used by older frontend payloads.
+  @IsOptional()
+  @IsString()
+  styleId?: string;
+
   @IsOptional()
   @IsInt()
   @Min(3)
   @Max(10)
   targetSlides?: number;
+
+  // Backward-compatible alias used by older frontend payloads.
+  @IsOptional()
+  @IsInt()
+  @Min(3)
+  @Max(10)
+  slideCount?: number;
+
+  // Accepted for older clients; currently not used by storyboard generation.
+  @IsOptional()
+  @IsString()
+  aspectRatio?: string;
 
   @IsOptional()
   @IsString()
