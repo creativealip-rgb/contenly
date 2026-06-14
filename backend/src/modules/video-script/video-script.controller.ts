@@ -238,6 +238,25 @@ export class VideoScriptController {
     return this.service.exportScript(user.id, id, format || 'json');
   }
 
+  @Post('projects/:id/export/video')
+  @ApiOperation({ summary: 'Export video script as MP4 video with TTS voiceover and captions' })
+  async exportVideo(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body()
+    body: { voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer'; width?: number; height?: number },
+    @Res() res: Response,
+  ) {
+    const result = await this.service.exportVideo(user.id, id, body || {});
+
+    res.setHeader('Content-Type', 'video/mp4');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${result.filename}"`,
+    );
+    res.send(result.buffer);
+  }
+
   @Post('projects/:id/export/audio')
   @ApiOperation({ summary: 'Export video script as MP3 voiceover using TTS' })
   async exportAudio(
