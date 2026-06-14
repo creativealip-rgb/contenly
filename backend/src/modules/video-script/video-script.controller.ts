@@ -228,6 +228,18 @@ export class VideoScriptController {
     res.send(result.buffer);
   }
 
+  @Get('exports/:filename')
+  @ApiOperation({ summary: 'Download stored MP4 video export' })
+  async downloadStoredVideoExport(
+    @Param('filename') filename: string,
+    @Res() res: Response,
+  ) {
+    const result = await this.service.getStoredVideoExport(filename);
+    res.setHeader('Content-Type', 'video/mp4');
+    res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+    res.send(result.buffer);
+  }
+
   @Get('projects/:id/export')
   @ApiOperation({ summary: 'Export video script in various formats' })
   async exportScript(
@@ -255,6 +267,17 @@ export class VideoScriptController {
       `attachment; filename="${result.filename}"`,
     );
     res.send(result.buffer);
+  }
+
+  @Post('projects/:id/export/video/file')
+  @ApiOperation({ summary: 'Render MP4 video and return stored download URL' })
+  async exportVideoToFile(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body()
+    body: { voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer'; width?: number; height?: number },
+  ) {
+    return this.service.exportVideoToFile(user.id, id, body || {});
   }
 
   @Post('projects/:id/export/audio')

@@ -1447,6 +1447,43 @@ ${project.sourceContent}`;
     };
   }
 
+  async exportVideoToFile(
+    userId: string,
+    projectId: string,
+    options: {
+      voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
+      width?: number;
+      height?: number;
+    } = {},
+  ) {
+    const result = await this.exportVideo(userId, projectId, options);
+    const publicDir = path.resolve(process.cwd(), 'tmp', 'video-scripts');
+    await fs.mkdir(publicDir, { recursive: true });
+    const storedFilename = `${projectId}-${Date.now()}.mp4`;
+    const storedPath = path.join(publicDir, storedFilename);
+    await fs.writeFile(storedPath, result.buffer);
+    return {
+      filename: result.filename,
+      storedFilename,
+      path: storedPath,
+      downloadUrl: `/api/v1/video-scripts/exports/${storedFilename}`,
+      size: result.buffer.length,
+    };
+  }
+
+  async getStoredVideoExport(filename: string) {
+    if (!/^[a-f0-9-]+-\d+\.mp4$/i.test(filename)) {
+      throw new NotFoundException('Export not found');
+    }
+    const filePath = path.resolve(process.cwd(), 'tmp', 'video-scripts', filename);
+    try {
+      const buffer = await fs.readFile(filePath);
+      return { buffer, filename };
+    } catch {
+      throw new NotFoundException('Export not found');
+    }
+  }
+
   private normalizeSelectedFootage(value: unknown): SelectedFootage[] {
     if (!Array.isArray(value)) return [];
     return value
