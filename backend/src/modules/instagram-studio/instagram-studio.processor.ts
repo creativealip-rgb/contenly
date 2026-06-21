@@ -4,7 +4,6 @@ import { Job } from 'bull';
 import { DrizzleService } from '../../db/drizzle.service';
 import { instagramProject, instagramSlide } from '../../db/schema';
 import { eq } from 'drizzle-orm';
-import { InstagramStudioService } from './instagram-studio.service';
 import { OpenAiService } from '../ai/services/openai.service';
 import { BillingService } from '../billing/billing.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -19,6 +18,21 @@ export class InstagramStudioProcessor {
     private billingService: BillingService,
     private notificationsService: NotificationsService,
   ) {}
+
+  private buildImagePrompt(visualPrompt: string, style: string, textContent: string): string {
+    const base = `${visualPrompt}. Style: ${style}`.trim();
+    if (!textContent) return base;
+
+    const maxPromptLength = 1100;
+    const instructionPrefix = `${base}. Include this readable headline text in the design: "`;
+    const instructionSuffix = '". Use clean typography, high contrast, editorial Instagram carousel style.';
+    const maxTextLength = Math.max(80, maxPromptLength - instructionPrefix.length - instructionSuffix.length);
+    const trimmedText = textContent.length > maxTextLength
+      ? `${textContent.slice(0, maxTextLength - 1)}…`
+      : textContent;
+
+    return `${instructionPrefix}${trimmedText}${instructionSuffix}`;
+  }
 
   @Process({ name: 'generate-all-images', concurrency: 1 })
   async handleGenerateAll(job: Job<{ projectId: string; userId: string }>) {
@@ -59,9 +73,7 @@ export class InstagramStudioProcessor {
           const visualPrompt = slide.visualPrompt || '';
           const style = project.globalStyle || 'Modern Minimalist';
 
-          const finalPrompt = textContent
-            ? `${visualPrompt}. Style: ${style}. The image must prominently feature the following text as an integral part of the design layout: "${textContent}". The text should be large, readable, and elegantly integrated into the visual composition with proper typography hierarchy.`
-            : `${visualPrompt}. Style: ${style}`;
+          const finalPrompt = this.buildImagePrompt(visualPrompt, style, textContent);
 
           this.logger.log(`Generating slide ${slide.slideNumber} image for project ${projectId}`);
           const imageUrl = await this.openAiService.generateImage(finalPrompt);

@@ -6,6 +6,8 @@ const COOKIE_JAR = process.env.CONTENLY_COOKIE_JAR || '/tmp/contenly-admin-cooki
 const SOURCE_URL = process.env.CONTENLY_IG_SOURCE_URL || 'https://techcrunch.com/2026/06/20/in-the-weights-is-your-new-ai-centric-vanity-search/'
 const TIMEOUT_MS = Number(process.env.CONTENLY_IG_TIMEOUT_MS || 180000)
 const RUN_TEXT_OVERLAY = ['1', 'true', 'yes'].includes(String(process.env.CONTENLY_IG_RUN_TEXT_OVERLAY || '').toLowerCase())
+const RUN_ALL_IMAGES = ['1', 'true', 'yes'].includes(String(process.env.CONTENLY_IG_RUN_ALL_IMAGES || '').toLowerCase())
+const IMAGE_CONCURRENCY = Math.max(1, Number(process.env.CONTENLY_IG_IMAGE_CONCURRENCY || 3))
 
 async function timed(step, fn) {
   const start = Date.now()
@@ -111,6 +113,26 @@ async function main() {
     timeoutMs: TIMEOUT_MS,
   }))
   ok('generate first image', imageResp.data?.imageUrl || imageResp.data?.image_url || 'ok')
+
+  if (RUN_ALL_IMAGES && slides.length > 1) {
+    const remaining = slides.slice(1)
+    let index = 0
+    const worker = async () => {
+      while (index < remaining.length) {
+        const slide = remaining[index++]
+        const resp = await req(`/instagram-studio/slides/${slide.id}/generate-image`, {
+          method: 'POST',
+          json: { style: 'modern minimal, clean Indonesian news carousel' },
+          step: `generate image slide ${slide.slideNumber || slide.id}`,
+          timeoutMs: TIMEOUT_MS,
+        })
+        ok(`generate image slide ${slide.slideNumber || slide.id}`, resp.data?.imageUrl || resp.data?.image_url || 'ok')
+      }
+    }
+    await timed(`generate remaining ${remaining.length} images parallel x${Math.min(IMAGE_CONCURRENCY, remaining.length)}`, () =>
+      Promise.all(Array.from({ length: Math.min(IMAGE_CONCURRENCY, remaining.length) }, worker)),
+    )
+  }
 
   if (RUN_TEXT_OVERLAY) {
     const textResp = await timed('generate text overlay', () => req(`/instagram-studio/slides/${firstSlide.id}/generate-text`, {

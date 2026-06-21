@@ -45,6 +45,21 @@ export class InstagramStudioService {
         private templateService: TemplateService,
     ) { }
 
+    private buildImagePrompt(visualPrompt: string, style: string, textContent: string): string {
+        const base = `${visualPrompt}. Style: ${style}`.trim();
+        if (!textContent) return base;
+
+        const maxPromptLength = 1100;
+        const instructionPrefix = `${base}. Include this readable headline text in the design: "`;
+        const instructionSuffix = '". Use clean typography, high contrast, editorial Instagram carousel style.';
+        const maxTextLength = Math.max(80, maxPromptLength - instructionPrefix.length - instructionSuffix.length);
+        const trimmedText = textContent.length > maxTextLength
+            ? `${textContent.slice(0, maxTextLength - 1)}…`
+            : textContent;
+
+        return `${instructionPrefix}${trimmedText}${instructionSuffix}`;
+    }
+
     async fetchUrlContent(url: string) {
         if (!url) {
             throw new BadRequestException('URL is required');
@@ -267,10 +282,8 @@ export class InstagramStudioService {
         const visualPrompt = dto.prompt || slide.visualPrompt || '';
         const style = dto.style || project.globalStyle || 'Modern Minimalist';
 
-        // Build a prompt that includes the text as part of the design
-        const finalPrompt = textContent
-            ? `${visualPrompt}. Style: ${style}. The image must prominently feature the following text as an integral part of the design layout: "${textContent}". The text should be large, readable, and elegantly integrated into the visual composition with proper typography hierarchy.`
-            : `${visualPrompt}. Style: ${style}`;
+        // Build a compact prompt that includes the text as part of the design.
+        const finalPrompt = this.buildImagePrompt(visualPrompt, style, textContent);
 
         try {
             const imageUrl = await this.openAiService.generateImage(finalPrompt);
@@ -316,9 +329,7 @@ export class InstagramStudioService {
                 const visualPrompt = slide.visualPrompt || '';
                 const style = project.globalStyle || 'Modern Minimalist';
 
-                const finalPrompt = textContent
-                    ? `${visualPrompt}. Style: ${style}. The image must prominently feature the following text as an integral part of the design layout: "${textContent}". The text should be large, readable, and elegantly integrated into the visual composition with proper typography hierarchy.`
-                    : `${visualPrompt}. Style: ${style}`;
+                const finalPrompt = this.buildImagePrompt(visualPrompt, style, textContent);
 
                 const imageUrl = await this.openAiService.generateImage(finalPrompt);
 
