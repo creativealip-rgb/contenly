@@ -22,9 +22,17 @@ export class ImageTextService {
     /**
      * Downloads an image from a URL and returns it as a Buffer
      */
+    private resolveImageUrl(url: string): string {
+        if (/^https?:\/\//i.test(url) || url.startsWith('data:')) return url;
+        const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'https://contenly.app';
+        const publicBaseUrl = frontendUrl.split(',')[0].trim().replace(/\/$/, '');
+        return `${publicBaseUrl}${url.startsWith('/') ? url : `/${url}`}`;
+    }
+
     private async downloadImage(url: string): Promise<Buffer> {
-        this.logger.log(`Downloading base image from: ${url}`);
-        const response = await axios.get(url, { responseType: 'arraybuffer' });
+        const resolvedUrl = this.resolveImageUrl(url);
+        this.logger.log(`Downloading base image from: ${resolvedUrl}`);
+        const response = await axios.get(resolvedUrl, { responseType: 'arraybuffer' });
         return Buffer.from(response.data as ArrayBuffer);
     }
 
