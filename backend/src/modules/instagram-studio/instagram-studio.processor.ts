@@ -25,7 +25,9 @@ export class InstagramStudioProcessor {
 
     const maxPromptLength = 1100;
     const instructionPrefix = `${base}. Include this readable headline text in the design: "`;
-    const instructionSuffix = '". Keep consistent carousel system across slides: same dark navy/cyan editorial tech style, same margins, same footer bar, same page-number/copyright placement, same typography scale, no random logos, no realistic document/card mockups unless explicitly requested.';
+    const hasFooter = textContent.split('\n').filter((line) => line.trim()).length >= 3;
+    const footerInstruction = hasFooter ? ' Include footer/source text as a small bottom template strip.' : ' Do not add footer, copyright, logo, source strip, or page number.';
+    const instructionSuffix = `". Keep consistent carousel system across slides: same dark navy/cyan editorial tech style, same margins, same typography scale, no random logos, no realistic document/card mockups unless explicitly requested.${footerInstruction}`;
     const maxTextLength = Math.max(80, maxPromptLength - instructionPrefix.length - instructionSuffix.length);
     const trimmedText = textContent.length > maxTextLength
       ? `${textContent.slice(0, maxTextLength - 1)}…`

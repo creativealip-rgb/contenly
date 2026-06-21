@@ -53,6 +53,31 @@ export function SlideEditor({
   onGenerateAll,
   isGeneratingAll,
 }: SlideEditorProps) {
+  const splitContent = (value: string) => {
+    const lines = value.split('\n').map((line) => line.trim()).filter(Boolean)
+    return {
+      headline: lines[0] || '',
+      body: lines.slice(1, -1).join('\n'),
+      footer: lines.length > 1 ? lines[lines.length - 1] : '',
+    }
+  }
+
+  const mergeContent = (parts: { headline: string; body: string; footer?: string }) =>
+    [parts.headline, parts.body, parts.footer].filter((part) => part?.trim()).join('\n')
+
+  const contentParts = splitContent(editedContent)
+  const hasFooter = Boolean(contentParts.footer)
+
+  const updateStructuredText = (updates: Partial<typeof contentParts>) => {
+    const next = { ...contentParts, ...updates }
+    setEditedContent(mergeContent(next))
+    setHasUnsavedChanges(true)
+  }
+
+  const saveStructuredText = () => {
+    if (hasUnsavedChanges && currentSlide) onUpdateSlide(currentSlide.id, { textContent: editedContent })
+  }
+
   return (
     <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
       <CardHeader className="pb-3 border-b mb-4">
@@ -81,14 +106,46 @@ export function SlideEditor({
       <CardContent className="space-y-4">
         {currentSlide && (
           <>
-            <div className="space-y-2">
-              <Label>Teks Konten</Label>
-              <Textarea
-                value={editedContent}
-                onChange={(e) => { setEditedContent(e.target.value); setHasUnsavedChanges(true) }}
-                onBlur={() => { if (hasUnsavedChanges) onUpdateSlide(currentSlide.id, { textContent: editedContent }) }}
-                className="min-h-[80px]"
-              />
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label>Headline</Label>
+                <Input
+                  value={contentParts.headline}
+                  onChange={(e) => updateStructuredText({ headline: e.target.value })}
+                  onBlur={saveStructuredText}
+                  placeholder="Judul utama slide"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Body / Poin</Label>
+                <Textarea
+                  value={contentParts.body}
+                  onChange={(e) => updateStructuredText({ body: e.target.value })}
+                  onBlur={saveStructuredText}
+                  className="min-h-[80px]"
+                  placeholder="Isi singkat atau poin pendukung"
+                />
+              </div>
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <input
+                  type="checkbox"
+                  checked={hasFooter}
+                  onChange={(e) => updateStructuredText({ footer: e.target.checked ? 'Sumber: contenly.app' : '' })}
+                  onBlur={saveStructuredText}
+                />
+                Pakai footer / sumber
+              </label>
+              {hasFooter && (
+                <div className="space-y-2">
+                  <Label>Footer</Label>
+                  <Input
+                    value={contentParts.footer}
+                    onChange={(e) => updateStructuredText({ footer: e.target.value })}
+                    onBlur={saveStructuredText}
+                    placeholder="Sumber / credit / CTA kecil"
+                  />
+                </div>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Prompt Visual</Label>
