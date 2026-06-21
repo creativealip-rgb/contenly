@@ -13,6 +13,7 @@ import { AiModule } from '../ai/ai.module';
 import { BillingModule } from '../billing/billing.module';
 import { ScraperModule } from '../scraper/scraper.module';
 import { AuthModule } from '../auth/auth.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { AuthModule } from '../auth/auth.module';
     BillingModule,
     ScraperModule,
     AuthModule,
+    NotificationsModule,
     BullModule.registerQueue({ name: 'instagram-studio' }),
   ],
   controllers: [InstagramStudioController],
