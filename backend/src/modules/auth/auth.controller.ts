@@ -95,7 +95,7 @@ export class AuthController {
   }
 
   // Handle all Better Auth routes (OAuth, callbacks, etc.)
-  @All('*')
+  @All('*path')
   @Throttle({ default: { limit: 20, ttl: 60000 } })
   async handleBetterAuth(@Req() req: Request, @Res() res: Response) {
     console.log(`🔵 Better Auth: ${req.method} ${req.url}`);

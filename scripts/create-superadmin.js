@@ -12,7 +12,7 @@ async function createSuperAdmin() {
 
     console.log('User created:', result);
 
-    // Update role to SUPER_ADMIN via database
+    // Update role to super_admin via database
     const { drizzle } = require('drizzle-orm/node-postgres');
     const { user } = require('../backend/dist/db/schema');
     const { eq } = require('drizzle-orm');
@@ -22,10 +22,10 @@ async function createSuperAdmin() {
     const db = drizzle(client);
 
     await db.update(user)
-      .set({ role: 'SUPER_ADMIN' })
+      .set({ role: 'super_admin' })
       .where(eq(user.email, 'admin@contenly.web.id'));
 
-    console.log('Role updated to SUPER_ADMIN');
+    console.log('Role updated to super_admin');
     process.exit(0);
   } catch (error) {
     console.error('Error:', error);

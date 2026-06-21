@@ -1,4 +1,10 @@
-import { Module, Global, MiddlewareConsumer, NestModule } from '@nestjs/common';
+import {
+  Module,
+  Global,
+  MiddlewareConsumer,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { BullModule } from '@nestjs/bull';
@@ -124,6 +130,6 @@ import { AdminSettingsModule } from './modules/admin-settings/admin-settings.mod
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(CsrfMiddleware).forRoutes('*');
+    consumer.apply(CsrfMiddleware).forRoutes({ path: '*path', method: RequestMethod.ALL });
   }
 }
