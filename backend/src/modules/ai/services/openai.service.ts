@@ -535,7 +535,7 @@ Return JSON with:
         size: 'auto',
         quality: 'auto',
         background: 'auto',
-        image_detail: 'high',
+        image_detail: 'low',
         output_format: 'png',
       };
     }

@@ -5,6 +5,19 @@ const API_BASE = process.env.CONTENLY_API_BASE || 'https://contenly.app/api/v1'
 const COOKIE_JAR = process.env.CONTENLY_COOKIE_JAR || '/tmp/contenly-admin-cookies.txt'
 const SOURCE_URL = process.env.CONTENLY_IG_SOURCE_URL || 'https://techcrunch.com/2026/06/20/in-the-weights-is-your-new-ai-centric-vanity-search/'
 const TIMEOUT_MS = Number(process.env.CONTENLY_IG_TIMEOUT_MS || 180000)
+const RUN_TEXT_OVERLAY = ['1', 'true', 'yes'].includes(String(process.env.CONTENLY_IG_RUN_TEXT_OVERLAY || '').toLowerCase())
+
+async function timed(step, fn) {
+  const start = Date.now()
+  try {
+    const result = await fn()
+    console.log(`⏱️ ${step} took ${((Date.now() - start) / 1000).toFixed(1)}s`)
+    return result
+  } catch (error) {
+    console.log(`⏱️ ${step} failed after ${((Date.now() - start) / 1000).toFixed(1)}s`)
+    throw error
+  }
+}
 
 function cookieHeader() {
   const raw = fs.readFileSync(COOKIE_JAR, 'utf8')
@@ -81,31 +94,35 @@ async function main() {
   if (!projectId) throw new Error(`project id missing: ${JSON.stringify(projectResp.data).slice(0, 500)}`)
   ok('create project', projectId)
 
-  const storyboard = await req(`/instagram-studio/projects/${projectId}/generate-storyboard`, {
+  const storyboard = await timed('generate storyboard', () => req(`/instagram-studio/projects/${projectId}/generate-storyboard`, {
     method: 'POST',
     json: { content, style: 'modern minimal, clean Indonesian news carousel' },
     step: 'generate storyboard',
-  })
+  }))
   const slides = storyboard.data?.slides || []
   if (!slides.length) throw new Error(`no slides returned: ${JSON.stringify(storyboard.data).slice(0, 500)}`)
   ok('generate storyboard', `${slides.length} slides`)
 
   const firstSlide = slides[0]
-  const imageResp = await req(`/instagram-studio/slides/${firstSlide.id}/generate-image`, {
+  const imageResp = await timed('generate first image', () => req(`/instagram-studio/slides/${firstSlide.id}/generate-image`, {
     method: 'POST',
     json: { style: 'modern minimal, clean Indonesian news carousel' },
     step: 'generate first image',
     timeoutMs: TIMEOUT_MS,
-  })
+  }))
   ok('generate first image', imageResp.data?.imageUrl || imageResp.data?.image_url || 'ok')
 
-  const textResp = await req(`/instagram-studio/slides/${firstSlide.id}/generate-text`, {
-    method: 'POST',
-    step: 'generate text overlay',
-    allowBad: true,
-  })
-  if (textResp.res.ok) ok('generate text overlay', 'ok')
-  else ok('generate text overlay skipped/failed non-blocking', `HTTP ${textResp.res.status}`)
+  if (RUN_TEXT_OVERLAY) {
+    const textResp = await timed('generate text overlay', () => req(`/instagram-studio/slides/${firstSlide.id}/generate-text`, {
+      method: 'POST',
+      step: 'generate text overlay',
+      allowBad: true,
+    }))
+    if (textResp.res.ok) ok('generate text overlay', 'ok')
+    else ok('generate text overlay skipped/failed non-blocking', `HTTP ${textResp.res.status}`)
+  } else {
+    ok('generate text overlay skipped', 'text already requested inside image prompt; set CONTENLY_IG_RUN_TEXT_OVERLAY=1 to test legacy overlay')
+  }
 
   if (slides.length > 1) {
     await req(`/instagram-studio/projects/${projectId}/slides/reorder`, {
