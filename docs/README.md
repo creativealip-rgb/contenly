@@ -12,6 +12,8 @@ Untuk pemahaman mendalam, silakan eksplorasi sub-dokumen berikut:
 2.  **[Fitur Produk](features.md)**: Penjelasan mendalam tentang setiap modul (Content Lab, Instagram Studio, dsb).
 3.  **[User Flow & Workflows](user-flow.md)**: Panduan langkah demi langkah cara menggunakan platform.
 4.  **[Panduan Deployment](deployment.md)**: Cara installasi lokal dan konfigurasi produksi.
+5.  **[Live Deployment Source of Truth](live-deployment.md)**: Status production `contenly.app`, compose path, branch live, command deploy, dan hasil verifikasi terbaru.
+6.  **[Log 2026-06-21 Production Hardening](log-2026-06-21-production-hardening.md)**: Rangkuman audit, build, deploy, smoke test, dan fix yang sudah dilakukan.
 
 ## 🚀 Quick Start
 Untuk menjalankan project ini secara lokal:

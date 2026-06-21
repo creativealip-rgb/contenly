@@ -1,6 +1,6 @@
 # Live Deployment Source of Truth
 
-Last verified: 2026-06-12
+Last verified: 2026-06-21
 
 ## Production domain
 
@@ -65,7 +65,7 @@ Both backend and frontend must point to the same branch unless intentionally tes
    git pull --ff-only origin main
    git push origin main
    ```
-3. Trigger Dokploy redeploy for `Contenly Compose`.
+3. Trigger Dokploy redeploy for `Contenly Compose`, or use manual command below.
 4. Verify live routes:
    ```bash
    curl -I https://contenly.app
@@ -79,10 +79,10 @@ Use only when Dokploy UI is unavailable or manual rebuild is required:
 
 ```bash
 cd /etc/dokploy/compose/contenly/code
-
-docker compose -f docker-compose.yml build backend frontend
-docker compose -f docker-compose.yml up -d --force-recreate backend frontend
+docker compose -p contenly up -d --build
 ```
+
+Always include `-p contenly`. Without it, Compose may use the directory name (`code`) as the project name and collide with fixed container names such as `contenly-redis`.
 
 If using `docker-compose.dokploy.yml` in repo, confirm server compose path first. Current live server path uses `docker-compose.yml` under Dokploy compose directory.
 
@@ -150,3 +150,58 @@ Mistake: pushing to `contenly-deploy` and expecting `https://contenly.app` to ch
 Why wrong: live compose builds from `#main`.
 
 Correct: push production changes to `main`, or explicitly change compose context branch.
+
+## 2026-06-21 production hardening verification
+
+Latest verified production commit after hardening:
+
+```txt
+bc99e5b fix: disable schema push on startup by default
+```
+
+Recent shipped commits:
+
+```txt
+024fcbd chore: reduce audit findings and fix PWA cache
+9517f11 fix: align admin role and wildcard routes
+bc99e5b fix: disable schema push on startup by default
+```
+
+Post-deploy verification:
+
+```txt
+https://contenly.app/health -> healthy, database connected
+contenly-frontend-1 -> Up
+contenly-backend-1 -> Up
+contenly-postgres-1 -> Up healthy
+contenly-redis -> Up
+```
+
+Smoke test passed:
+
+```txt
+RSS fetch -> scrape -> AI generate -> AI image -> draft -> WordPress publish -> WP API verify -> Contenly article PUBLISHED
+```
+
+Smoke publish proof:
+
+```txt
+WP post ID: 428
+WP media ID: 427
+WP URL: https://nggawe.web.id/in-the-weights-cara-baru-mengukur-seberapa-kuat-nama-anda-diingat-model-ai/
+Contenly article ID: 71d10d26-6f74-4af9-bf4a-a16c342f655b
+```
+
+Production startup policy:
+
+- `backend/start.sh` does **not** run `drizzle-kit push --force` by default.
+- Enable only deliberately with `RUN_DB_PUSH_ON_STARTUP=1`.
+- Reason: automatic schema push attempted destructive changes and enum conversions on production.
+
+Known remaining warning:
+
+```txt
+RESEND_API_KEY not set - password reset emails will only be logged
+```
+
+Full work log: [`log-2026-06-21-production-hardening.md`](log-2026-06-21-production-hardening.md).
