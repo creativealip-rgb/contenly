@@ -1,5 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { AiController } from './ai.controller';
+import { AiAssetsController } from './ai-assets.controller';
 import { AiService } from './ai.service';
 import { AuthModule } from '../auth/auth.module';
 import { OpenAiService } from './services/openai.service';
@@ -15,7 +16,7 @@ import { WordpressModule } from '../wordpress/wordpress.module';
     forwardRef(() => ArticlesModule),
     forwardRef(() => WordpressModule),
   ],
-  controllers: [AiController],
+  controllers: [AiAssetsController, AiController],
   providers: [AiService, OpenAiService, AiCostControlService],
   exports: [AiService, OpenAiService, AiCostControlService],
 })
