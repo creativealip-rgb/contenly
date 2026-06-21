@@ -25,7 +25,7 @@ export class InstagramStudioProcessor {
 
     const maxPromptLength = 1100;
     const instructionPrefix = `${base}. Include this readable headline text in the design: "`;
-    const instructionSuffix = '". Use clean typography, high contrast, editorial Instagram carousel style.';
+    const instructionSuffix = '". Keep consistent carousel system across slides: same dark navy/cyan editorial tech style, same margins, same footer bar, same page-number/copyright placement, same typography scale, no random logos, no realistic document/card mockups unless explicitly requested.';
     const maxTextLength = Math.max(80, maxPromptLength - instructionPrefix.length - instructionSuffix.length);
     const trimmedText = textContent.length > maxTextLength
       ? `${textContent.slice(0, maxTextLength - 1)}…`
