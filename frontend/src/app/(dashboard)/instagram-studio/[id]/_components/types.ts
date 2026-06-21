@@ -9,6 +9,9 @@ export interface Project {
   fontFamily: string
   totalSlides: number
   status: string
+  batchStatus?: 'idle' | 'generating' | 'completed' | 'failed' | string
+  batchProgressDone?: number
+  batchProgressTotal?: number
   createdAt: string
   slides: Slide[]
 }

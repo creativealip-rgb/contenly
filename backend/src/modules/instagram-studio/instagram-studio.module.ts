@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
+import { BullModule } from '@nestjs/bull';
 import { InstagramStudioController } from './instagram-studio.controller';
 import { InstagramStudioService } from './instagram-studio.service';
+import { InstagramStudioProcessor } from './instagram-studio.processor';
 import { StoryboardService } from './services/storyboard.service';
 import { FontService } from './services/font.service';
 import { ExportService } from './services/export.service';
@@ -13,10 +15,18 @@ import { ScraperModule } from '../scraper/scraper.module';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [DrizzleModule, AiModule, BillingModule, ScraperModule, AuthModule],
+  imports: [
+    DrizzleModule,
+    AiModule,
+    BillingModule,
+    ScraperModule,
+    AuthModule,
+    BullModule.registerQueue({ name: 'instagram-studio' }),
+  ],
   controllers: [InstagramStudioController],
   providers: [
     InstagramStudioService,
+    InstagramStudioProcessor,
     StoryboardService,
     FontService,
     ExportService,

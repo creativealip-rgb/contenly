@@ -18,6 +18,8 @@ import { ImageTextService } from './services/image-text.service';
 import { TemplateService, CarouselTemplate } from './services/template.service';
 import archiver from 'archiver';
 import { Readable } from 'stream';
+import { InjectQueue } from '@nestjs/bull';
+import type { Queue } from 'bull';
 import {
     CreateProjectDto,
     UpdateProjectDto,
@@ -43,6 +45,7 @@ export class InstagramStudioService {
         private scraperService: ScraperService,
         private imageTextService: ImageTextService,
         private templateService: TemplateService,
+        @InjectQueue('instagram-studio') private instagramQueue: Queue,
     ) { }
 
     private buildImagePrompt(visualPrompt: string, style: string, textContent: string): string {
@@ -320,34 +323,27 @@ export class InstagramStudioService {
             throw new BadRequestException('No slides to generate images for');
         }
 
-        const results = [];
-        for (const slide of project.slides) {
-            try {
-                const billing = await this.billingService.ensureBilling(userId, 'SLIDE_IMAGE');
-                if (!billing.allowed) {
-                    throw new BadRequestException(billing.reason || 'Billing limit reached');
-                }
-                const textContent = slide.textContent || '';
-                const visualPrompt = slide.visualPrompt || '';
-                const style = project.globalStyle || 'Modern Minimalist';
-
-                const finalPrompt = this.buildImagePrompt(visualPrompt, style, textContent);
-
-                const imageUrl = await this.openAiService.generateImage(finalPrompt);
-
-                await this.drizzle.db
-                    .update(instagramSlide)
-                    .set({ imageUrl })
-                    .where(eq(instagramSlide.id, slide.id));
-
-                await this.billingService.recordUsage(userId, 'SLIDE_IMAGE', billing);
-
-                results.push({ slideId: slide.id, slideNumber: slide.slideNumber, success: true });
-            } catch (error: any) {
-                this.logger.error(`[Generate All] Slide ${slide.slideNumber} failed: ${error.message}`);
-                results.push({ slideId: slide.id, slideNumber: slide.slideNumber, success: false, error: error.message });
-            }
+        if (project.batchStatus === 'generating') {
+            return project;
         }
+
+        const totalSlides = project.slides.length;
+        const job = await this.instagramQueue.add('generate-all-images', { projectId, userId }, {
+            attempts: 1,
+            removeOnComplete: true,
+            removeOnFail: false,
+        });
+
+        await this.drizzle.db
+            .update(instagramProject)
+            .set({
+                batchJobId: String(job.id),
+                batchStatus: 'generating',
+                batchProgressDone: 0,
+                batchProgressTotal: totalSlides,
+                updatedAt: new Date(),
+            })
+            .where(eq(instagramProject.id, projectId));
 
         return this.getProject(userId, projectId);
     }

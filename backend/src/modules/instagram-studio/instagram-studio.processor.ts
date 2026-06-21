@@ -43,12 +43,6 @@ export class InstagramStudioProcessor {
     
     this.logger.log(`Starting background generateAllImages for project: ${projectId}`);
     
-    // Update project status to generating
-    await db
-      .update(instagramProject)
-      .set({ batchStatus: 'generating' })
-      .where(eq(instagramProject.id, projectId));
-
     try {
       // Fetch fresh project details with slides
       const project = await db.query.instagramProject.findFirst({
@@ -62,8 +56,21 @@ export class InstagramStudioProcessor {
         throw new Error('Project or slides not found');
       }
 
+      const totalSlides = project.slides.length;
       let succeededCount = 0;
       let failedCount = 0;
+      let processedCount = 0;
+
+      // Update project status to generating with progress reset
+      await db
+        .update(instagramProject)
+        .set({
+          batchStatus: 'generating',
+          batchProgressDone: 0,
+          batchProgressTotal: totalSlides,
+          updatedAt: new Date(),
+        })
+        .where(eq(instagramProject.id, projectId));
 
       for (const slide of project.slides) {
         try {
@@ -90,13 +97,28 @@ export class InstagramStudioProcessor {
         } catch (error: any) {
           this.logger.error(`[Background Generate All] Slide ${slide.slideNumber} failed: ${error.message}`);
           failedCount++;
+        } finally {
+          processedCount++;
+          await db
+            .update(instagramProject)
+            .set({
+              batchProgressDone: processedCount,
+              batchProgressTotal: totalSlides,
+              updatedAt: new Date(),
+            })
+            .where(eq(instagramProject.id, projectId));
         }
       }
 
       // Update project status to completed/idle
       await db
         .update(instagramProject)
-        .set({ batchStatus: 'completed' })
+        .set({
+          batchStatus: 'completed',
+          batchProgressDone: totalSlides,
+          batchProgressTotal: totalSlides,
+          updatedAt: new Date(),
+        })
         .where(eq(instagramProject.id, projectId));
 
       await this.notificationsService.create(userId, 'JOB_SUCCESS',
@@ -107,7 +129,7 @@ export class InstagramStudioProcessor {
       this.logger.error(`[Background Generate All] Project ${projectId} failed: ${error.message}`);
       await db
         .update(instagramProject)
-        .set({ batchStatus: 'failed' })
+        .set({ batchStatus: 'failed', updatedAt: new Date() })
         .where(eq(instagramProject.id, projectId));
 
       await this.notificationsService.create(userId, 'JOB_FAILED',

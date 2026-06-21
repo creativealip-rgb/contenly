@@ -36,12 +36,37 @@ export default function InstagramStudioEditorPage() {
   }, [projectId])
   useEffect(() => { if (project?.slides?.length) setEditedContent(project.slides[currentSlideIndex]?.textContent || '') }, [project, currentSlideIndex])
 
-  const fetchProject = async () => {
+  useEffect(() => {
+    if (project?.batchStatus !== 'generating') return
+    const timer = window.setInterval(async () => {
+      const previousStatus = project.batchStatus
+      const previousDone = project.batchProgressDone || 0
+      const previousTotal = project.batchProgressTotal || project.slides?.length || 0
+      const updated = await fetchProject({ silent: true })
+      if (updated?.batchStatus === 'completed' && previousStatus === 'generating') {
+        toast.success(`${updated.batchProgressDone || previousTotal}/${updated.batchProgressTotal || previousTotal} selesai`)
+        setIsGeneratingAll(false)
+        setIsGeneratingImage(null)
+      } else if (updated?.batchStatus === 'failed' && previousStatus === 'generating') {
+        toast.error(`Generate gagal di ${previousDone}/${previousTotal}`)
+        setIsGeneratingAll(false)
+        setIsGeneratingImage(null)
+      }
+    }, 5000)
+    return () => window.clearInterval(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project?.batchStatus, project?.batchProgressDone, project?.batchProgressTotal, projectId])
+
+  const fetchProject = async (options?: { silent?: boolean }) => {
     try {
       const response = await fetch(`${API_BASE_URL}/instagram-studio/projects/${projectId}`, { credentials: 'include', headers: { 'ngrok-skip-browser-warning': 'true' } })
       const data = await response.json()
       setProject(data)
-    } catch (error) { console.error('Failed to fetch project:', error) }
+      return data as Project
+    } catch (error) {
+      if (!options?.silent) console.error('Failed to fetch project:', error)
+      return null
+    }
     finally { setIsLoading(false) }
   }
 
@@ -58,60 +83,27 @@ export default function InstagramStudioEditorPage() {
   const [isGeneratingAll, setIsGeneratingAll] = useState(false)
 
   const handleGenerateAll = async () => {
-    if (!project?.slides?.length || isGeneratingAll) return
+    if (!project?.slides?.length || isGeneratingAll || project.batchStatus === 'generating') return
 
     setIsGeneratingAll(true)
     setIsGeneratingImage('all')
     toast.info(`Generate ${project.slides.length} gambar jalan di background...`)
 
-    const concurrency = 3
-    const slides = [...project.slides]
-    let successCount = 0
-    let failedCount = 0
-    let nextIndex = 0
-
-    const generateSlide = async (slide: Slide) => {
-      const response = await fetch(`${API_BASE_URL}/instagram-studio/slides/${slide.id}/generate-image`, {
+    try {
+      const response = await fetch(`${API_BASE_URL}/instagram-studio/projects/${projectId}/generate-all`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ style: project.globalStyle }),
       })
-
       if (!response.ok) {
         const errData = await response.json().catch(() => null)
         throw new Error(errData?.message || response.statusText)
       }
-
-      const updatedSlide = await response.json()
-      successCount++
-      setProject((prev) => prev ? {
-        ...prev,
-        slides: prev.slides.map((s) => s.id === slide.id ? { ...s, ...updatedSlide } : s),
-      } : prev)
-    }
-
-    const worker = async () => {
-      while (nextIndex < slides.length) {
-        const slide = slides[nextIndex++]
-        try {
-          await generateSlide(slide)
-        } catch (error) {
-          failedCount++
-          console.error(`Failed to generate slide ${slide.slideNumber}:`, error)
-        }
-      }
-    }
-
-    try {
-      await Promise.all(Array.from({ length: Math.min(concurrency, slides.length) }, () => worker()))
-      await fetchProject()
-      if (failedCount) toast.warning(`Selesai: ${successCount} berhasil, ${failedCount} gagal`)
-      else toast.success('Semua gambar berhasil dibuat!')
+      const updatedProject = await response.json()
+      setProject(updatedProject)
     } catch (error) {
       console.error('Failed to generate all:', error)
       toast.error('Terjadi kesalahan')
-    } finally {
       setIsGeneratingImage(null)
       setIsGeneratingAll(false)
     }
@@ -200,6 +192,10 @@ export default function InstagramStudioEditorPage() {
   }
 
   const currentSlide = project?.slides?.[currentSlideIndex]
+  const batchDone = project?.batchProgressDone || 0
+  const batchTotal = project?.batchProgressTotal || project?.slides?.length || 0
+  const isBatchGenerating = project?.batchStatus === 'generating'
+  const batchPercent = batchTotal ? Math.min(100, Math.round((batchDone / batchTotal) * 100)) : 0
 
   if (isLoading) {
     return (<div className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-pink-600" /></div>)
@@ -218,6 +214,20 @@ export default function InstagramStudioEditorPage() {
         </div>
         <Badge className={project.status === 'ready' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}>{project.status}</Badge>
       </div>
+
+      {isBatchGenerating && (
+        <Card className="border-violet-200 bg-violet-50/70 dark:bg-violet-950/20">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between text-sm font-medium text-violet-800 dark:text-violet-200">
+              <span>Generating {batchDone}/{batchTotal} images...</span>
+              <span>{batchPercent}%</span>
+            </div>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-violet-100 dark:bg-violet-900">
+              <div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-pink-500 transition-all duration-500" style={{ width: `${batchPercent}%` }} />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {!project.slides || project.slides.length === 0 ? (
         <Card className="glass border-2 border-white/60 dark:border-white/20 overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500 rounded-3xl">
@@ -240,7 +250,7 @@ export default function InstagramStudioEditorPage() {
               isGeneratingImage={isGeneratingImage}
               onUpdateSlide={handleUpdateSlide} onGenerateImage={handleGenerateImage}
               onReorderSlide={handleReorderSlide} onDeleteSlide={handleDeleteSlide} onNavigate={setCurrentSlideIndex}
-              onGenerateAll={handleGenerateAll} isGeneratingAll={isGeneratingAll || !project.slides?.length}
+              onGenerateAll={handleGenerateAll} isGeneratingAll={isGeneratingAll || isBatchGenerating || !project.slides?.length}
             />
             <div className="flex gap-2">
               <Button onClick={handleExport} disabled={isExporting || !project.slides?.some(s => s.imageUrl)} className="flex-1 bg-gradient-to-r from-pink-500 to-purple-600">
