@@ -61,35 +61,50 @@ export default function InstagramStudioEditorPage() {
     if (!project?.slides?.length || isGeneratingAll) return
 
     setIsGeneratingAll(true)
+    setIsGeneratingImage('all')
+    toast.info(`Generate ${project.slides.length} gambar jalan di background...`)
+
+    const concurrency = 3
+    const slides = [...project.slides]
     let successCount = 0
     let failedCount = 0
+    let nextIndex = 0
 
-    try {
-      for (const slide of project.slides) {
-        setIsGeneratingImage(slide.id)
-        toast.info(`Generate slide ${slide.slideNumber} dari ${project.slides.length}...`)
+    const generateSlide = async (slide: Slide) => {
+      const response = await fetch(`${API_BASE_URL}/instagram-studio/slides/${slide.id}/generate-image`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ style: project.globalStyle }),
+      })
 
-        const response = await fetch(`${API_BASE_URL}/instagram-studio/slides/${slide.id}/generate-image`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ style: project.globalStyle }),
-        })
-
-        if (response.ok) {
-          successCount++
-          const updatedSlide = await response.json()
-          setProject((prev) => prev ? {
-            ...prev,
-            slides: prev.slides.map((s) => s.id === slide.id ? { ...s, ...updatedSlide } : s),
-          } : prev)
-        } else {
-          failedCount++
-          const errData = await response.json().catch(() => null)
-          console.error(`Failed to generate slide ${slide.slideNumber}:`, errData?.message || response.statusText)
-        }
+      if (!response.ok) {
+        const errData = await response.json().catch(() => null)
+        throw new Error(errData?.message || response.statusText)
       }
 
+      const updatedSlide = await response.json()
+      successCount++
+      setProject((prev) => prev ? {
+        ...prev,
+        slides: prev.slides.map((s) => s.id === slide.id ? { ...s, ...updatedSlide } : s),
+      } : prev)
+    }
+
+    const worker = async () => {
+      while (nextIndex < slides.length) {
+        const slide = slides[nextIndex++]
+        try {
+          await generateSlide(slide)
+        } catch (error) {
+          failedCount++
+          console.error(`Failed to generate slide ${slide.slideNumber}:`, error)
+        }
+      }
+    }
+
+    try {
+      await Promise.all(Array.from({ length: Math.min(concurrency, slides.length) }, () => worker()))
       await fetchProject()
       if (failedCount) toast.warning(`Selesai: ${successCount} berhasil, ${failedCount} gagal`)
       else toast.success('Semua gambar berhasil dibuat!')
