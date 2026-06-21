@@ -1,5 +1,5 @@
-const CACHE_NAME = 'contenly-static-v1';
-const CORE_ASSETS = ['/', '/manifest.json', '/pwa-icon.png', '/favicon.png'];
+const CACHE_NAME = 'contenly-static-v2';
+const CORE_ASSETS = ['/manifest.json', '/pwa-icon.png', '/favicon.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -21,11 +21,14 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
-  if (url.pathname.startsWith('/api/')) return;
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/_next/')) return;
+
+  if (event.request.mode === 'navigate') {
+    event.respondWith(fetch(event.request));
+    return;
+  }
 
   event.respondWith(
-    caches.match(event.request).then((cached) =>
-      cached || fetch(event.request).catch(() => caches.match('/')),
-    ),
+    fetch(event.request).catch(() => caches.match(event.request)),
   );
 });
